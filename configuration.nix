@@ -12,7 +12,7 @@
 
   # Use the GRUB 2 boot loader.
   #boot.initrd.prepend = [ "/boot/initramfs-linux.img" ];
-  boot.loader.grub.extraEntriesBeforeNixOS = true;
+  boot.loader.grub.default = 4;
   boot.loader.grub.enable = true;
   boot.loader.grub.version = 2;
   boot.loader.grub.efiSupport = true;
@@ -80,6 +80,10 @@
 
   # Enable the KDE Desktop Environment.
   services.xserver.displayManager.gdm.enable = true;
+  services.xserver.displayManager.gdm.autoLogin = {
+     enable = true;
+     user = "fusion809";
+  };
   services.xserver.desktopManager.gnome3.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
