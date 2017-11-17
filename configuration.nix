@@ -12,7 +12,7 @@
 
   # Use the GRUB 2 boot loader.
   #boot.initrd.prepend = [ "/boot/initramfs-linux.img" ];
-  boot.extraGrubEntriesBeforeNixOS = true;
+  boot.loader.grub.extraEntriesBeforeNixOS = true;
   boot.loader.grub.enable = true;
   boot.loader.grub.version = 2;
   boot.loader.grub.efiSupport = true;
