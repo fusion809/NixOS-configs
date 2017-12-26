@@ -38,7 +38,7 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-    wget vim git zsh firefox hexchat os-prober
+    btrfs-progs wget vim git zsh firefox hexchat os-prober
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -63,7 +63,7 @@
   users.extraUsers.fusion809 = 
  { isNormalUser = true;
    home = "/home/fusion809";
-   description = "Brenton's user";
+   description = "Brenton Horne";
    extraGroups = [ "wheel" "networkmanager" ];
  };
 
@@ -99,13 +99,16 @@
   system.stateVersion = "17.09"; # Did you read the comment?
   security.sudo.wheelNeedsPassword = false;
 
-  fileSystems.gentoo.device = "/dev/sda2";
-  fileSystems.gentoo.mountPoint = "/gentoo";
-  fileSystems.arch.device = "/dev/sda3";
-  fileSystems.arch.mountPoint = "/arch";
+  fileSystems.gentoo.device = "/dev/sda3";
+  fileSystems.gentoo.mountPoint = "/arch";
+  fileSystems.arch.device = "/dev/sda4";
+  fileSystems.arch.mountPoint = "/gentoo";
   fileSystems.data.device = "/dev/sdb1";
   fileSystems.data.mountPoint = "/data";
   fileSystems.boot.device = "/dev/sda1";
   fileSystems.boot.mountPoint = "/boot";
+  swapDevices = [
+    { device = "/dev/sda2"; }
+  ];
 }
 

@@ -13,8 +13,8 @@
   boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/6e74993f-ad22-4b1c-b9cc-b56a731aeafc";
-      fsType = "ext4";
+    { device = "/dev/disk/by-uuid/47082ebf-39f2-48eb-a116-5910bd1026c5";
+      fsType = "btrfs";
     };
 
   nix.maxJobs = lib.mkDefault 8;
