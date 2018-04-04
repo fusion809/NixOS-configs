@@ -96,17 +96,17 @@
   # compatible, in order to avoid breaking some software such as database
   # servers. You should change this only after NixOS release notes say you
   # should.
-  system.stateVersion = "17.09"; # Did you read the comment?
+  system.stateVersion = "18.03"; # Did you read the comment?
   security.sudo.wheelNeedsPassword = false;
 
   fileSystems.gentoo.device = "/dev/sda3";
-  fileSystems.gentoo.mountPoint = "/arch";
-  fileSystems.arch.device = "/dev/sda4";
-  fileSystems.arch.mountPoint = "/gentoo";
+  fileSystems.gentoo.mountPoint = "/gentoo";
+  fileSystems.debian.device = "/dev/sda4";
+  fileSystems.debian.mountPoint = "/debian";
   fileSystems.data.device = "/dev/sdb1";
   fileSystems.data.mountPoint = "/data";
   fileSystems.boot.device = "/dev/sda1";
-  fileSystems.boot.mountPoint = "/boot";
+  fileSystems.boot.mountPoint = "/boot/efi";
   swapDevices = [
     { device = "/dev/sda2"; }
   ];
