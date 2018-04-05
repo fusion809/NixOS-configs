@@ -22,7 +22,7 @@
   boot.loader.grub.device = "nodev"; # or "nodev" for efi only
   boot.loader.grub.useOSProber = true; # got to OS probe other distros
 
-  networking.hostName = "fusion809-pc"; # Define your hostname.
+  networking.hostName = "fusion809-nixos-pc"; # Define your hostname.
   #networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Select internationalisation properties.
@@ -38,7 +38,7 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-    btrfs-progs wget vim git zsh firefox hexchat os-prober
+    btrfs-progs wget vim git zsh firefox hexchat os-prober gnome-shell-dash-to-panel chrome-gnome-shell gnome-shell-system-monitor
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -106,7 +106,7 @@
   fileSystems.data.device = "/dev/sdb1";
   fileSystems.data.mountPoint = "/data";
   fileSystems.boot.device = "/dev/sda1";
-  fileSystems.boot.mountPoint = "/boot/efi";
+  fileSystems.boot.mountPoint = "/boot";
   swapDevices = [
     { device = "/dev/sda2"; }
   ];
