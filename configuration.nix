@@ -38,7 +38,7 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-     wget vim git zsh vlc firefox hexchat os-prober
+     wget vim git zsh vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel
   ];
 
   nixpkgs.config.allowUnfree = true;
