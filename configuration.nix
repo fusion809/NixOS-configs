@@ -38,7 +38,7 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-    btrfs-progs wget vim git zsh firefox hexchat os-prober gnome-shell-dash-to-panel chrome-gnome-shell gnome-shell-system-monitor
+     wget vim git zsh vlc firefox hexchat os-prober
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -78,13 +78,16 @@
   # Enable touchpad support.
   services.xserver.libinput.enable = true;
 
-  # Enable the KDE Desktop Environment.
+  # Enable the GNOME Desktop Environment.
   services.xserver.displayManager.gdm.enable = true;
   services.xserver.displayManager.gdm.autoLogin = {
      enable = true;
      user = "fusion809";
   };
   services.xserver.desktopManager.gnome3.enable = true;
+
+  # Enable the KDE Desktop Environment.
+  services.xserver.desktopManager.plasma5.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   # users.extraUsers.guest = {
