@@ -41,6 +41,11 @@
      wget vim git zsh vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel
   ];
 
+  environment.shells = [
+     pkgs.zsh pkgs.bashInteractive
+  ];
+
+  users.defaultUserShell = pkgs.zsh;
   nixpkgs.config.allowUnfree = true;
 
   # Some programs need SUID wrappers, can be configured further or are
