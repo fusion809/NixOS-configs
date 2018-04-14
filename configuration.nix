@@ -64,7 +64,7 @@
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
-  #networking.networkmanager.enable = false;
+  networking.networkmanager.enable = true;
   users.extraUsers.fusion809 = 
  { isNormalUser = true;
    home = "/home/fusion809";
@@ -85,11 +85,17 @@
 
   # Enable the GNOME Desktop Environment.
   services.xserver.displayManager.gdm.enable = true;
+  #services.xserver.displayManager.slim.autoLogin = true;
   services.xserver.displayManager.gdm.autoLogin = {
      enable = true;
      user = "fusion809";
   };
   services.xserver.desktopManager.gnome3.enable = true;
+  #services.xserver.windowManager.i3.enable = true;
+  #services.xserver.windowManager.i3.extraPackages = with pkgs; [
+  #   rofi i3status feh dmenu networkmanager_dmenu
+  #];
+  #services.xserver.windowManager.i3.extraSessionCommands = "bash $HOME/.xsession";
 
   # Enable the KDE Desktop Environment.
   services.xserver.desktopManager.plasma5.enable = true;
