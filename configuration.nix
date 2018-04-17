@@ -12,7 +12,7 @@
 
   # Use the GRUB 2 boot loader.
   #boot.initrd.prepend = [ "/boot/initramfs-linux.img" ];
-  boot.loader.grub.default = 4;
+  boot.loader.grub.default = 0;
   boot.loader.grub.enable = true;
   boot.loader.grub.version = 2;
   boot.loader.grub.efiSupport = true;
@@ -47,7 +47,7 @@
 
   users.defaultUserShell = pkgs.zsh;
   nixpkgs.config.allowUnfree = true;
-
+ 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.bash.enableCompletion = true;
@@ -64,7 +64,7 @@
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
-  networking.networkmanager.enable = true;
+#  networking.networkmanager.enable = true;
   users.extraUsers.fusion809 = 
  { isNormalUser = true;
    home = "/home/fusion809";
@@ -84,14 +84,21 @@
   services.xserver.libinput.enable = true;
 
   # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
   #services.xserver.displayManager.slim.autoLogin = true;
-  services.xserver.displayManager.gdm.autoLogin = {
+  services.xserver.displayManager.gdm = {
      enable = true;
-     user = "fusion809";
+     autoLogin.enable = true;
+     autoLogin.user = "fusion809";
   };
   services.xserver.desktopManager.gnome3.enable = true;
+  nixpkgs.config.firefox.enableGnomeExtensions = true;
+  services.gnome3.chrome-gnome-shell.enable = true;
   #services.xserver.windowManager.i3.enable = true;
+  #services.xserver.displayManager.lightdm = {
+  #  enable = true;
+  #  autoLogin.enable = true;
+  #  autoLogin.user = "fusion809";
+  #};
   #services.xserver.windowManager.i3.extraPackages = with pkgs; [
   #   rofi i3status feh dmenu networkmanager_dmenu
   #];
