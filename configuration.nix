@@ -23,7 +23,6 @@
   boot.loader.grub.useOSProber = true; # got to OS probe other distros
 
   networking.hostName = "fusion809-pc"; # Define your hostname.
-  networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
   hardware.pulseaudio.enable = true; # Not sure if audio will work without it
 
   # Select internationalisation properties.
@@ -102,6 +101,7 @@
 
   # Enable the KDE Desktop Environment.
   services.xserver.desktopManager.plasma5.enable = true;
+  services.xserver.desktopManager.gnome3.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   # users.extraUsers.guest = {
