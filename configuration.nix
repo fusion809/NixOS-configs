@@ -65,7 +65,7 @@
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
-#  networking.networkmanager.enable = true;
+  networking.networkmanager.enable = true;
   users.extraUsers.fusion809 = 
  { isNormalUser = true;
    home = "/home/fusion809";
