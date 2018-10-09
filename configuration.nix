@@ -86,13 +86,7 @@
   services.xserver.libinput.enable = true;
 
   # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.slim.autoLogin = true;
   services.xserver.windowManager.i3.enable = true;
- # services.xserver.displayManager.lightdm = {
- #   enable = true;
- #   autoLogin.enable = true;
- #   autoLogin.user = "fusion809";
- # };
   services.xserver.windowManager.i3.extraPackages = with pkgs; [
      rofi i3status feh networkmanager_dmenu
   ];
@@ -101,7 +95,12 @@
 
   # Enable the KDE Desktop Environment.
   services.xserver.desktopManager.plasma5.enable = true;
-  services.xserver.desktopManager.gnome3.enable = true;
+#  services.xserver.desktopManager.gnome3.enable = true;
+  services.xserver.displayManager.sddm = {
+     enable = true;
+     autoLogin.enable = true;
+     autoLogin.user = "fusion809";
+  };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   # users.extraUsers.guest = {
