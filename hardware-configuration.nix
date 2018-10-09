@@ -9,14 +9,13 @@
     ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usbhid" "usb_storage" "sd_mod" "sr_mod" "rtsx_pci_sdmmc" ];
-  boot.kernelModules = [ "kvm-intel" "wl" ];
-  boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.nvidia ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/e9932132-51e1-444b-8aa4-853f646b29df";
+    { device = "/dev/disk/by-label/NixOS";
       fsType = "ext4";
     };
 
-  nix.maxJobs = lib.mkDefault 8;
+  nix.maxJobs = lib.mkDefault 16;
   powerManagement.cpuFreqGovernor = "powersave";
 }

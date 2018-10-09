@@ -22,8 +22,9 @@
   boot.loader.grub.device = "nodev"; # or "nodev" for efi only
   boot.loader.grub.useOSProber = true; # got to OS probe other distros
 
-  networking.hostName = "fusion809-nixos-pc"; # Define your hostname.
-  #networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  networking.hostName = "fusion809-pc"; # Define your hostname.
+  networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  hardware.pulseaudio.enable = true; # Not sure if audio will work without it
 
   # Select internationalisation properties.
   i18n = {
@@ -38,7 +39,7 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-     wget vim git zsh vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel lvm2
+     wget vim git zsh vlc firefox hexchat konversation os-prober yakuake libsForQt5.kglobalaccel pcmanfm lxappearance
   ];
 
   environment.shells = [
@@ -57,7 +58,7 @@
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
+  services.openssh.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
@@ -84,25 +85,17 @@
   services.xserver.libinput.enable = true;
 
   # Enable the GNOME Desktop Environment.
-  #services.xserver.displayManager.slim.autoLogin = true;
-  services.xserver.displayManager.gdm = {
-     enable = true;
-     autoLogin.enable = true;
-     autoLogin.user = "fusion809";
-  };
-  services.xserver.desktopManager.gnome3.enable = true;
-  nixpkgs.config.firefox.enableGnomeExtensions = true;
-  services.gnome3.chrome-gnome-shell.enable = true;
-  #services.xserver.windowManager.i3.enable = true;
-  #services.xserver.displayManager.lightdm = {
-  #  enable = true;
-  #  autoLogin.enable = true;
-  #  autoLogin.user = "fusion809";
-  #};
-  #services.xserver.windowManager.i3.extraPackages = with pkgs; [
-  #   rofi i3status feh dmenu networkmanager_dmenu
-  #];
-  #services.xserver.windowManager.i3.extraSessionCommands = "bash $HOME/.xsession";
+  services.xserver.displayManager.slim.autoLogin = true;
+  services.xserver.windowManager.i3.enable = true;
+ # services.xserver.displayManager.lightdm = {
+ #   enable = true;
+ #   autoLogin.enable = true;
+ #   autoLogin.user = "fusion809";
+ # };
+  services.xserver.windowManager.i3.extraPackages = with pkgs; [
+     rofi i3status feh python3.6-pip networkmanager_dmenu
+  ];
+  services.xserver.windowManager.i3.extraSessionCommands = "bash $HOME/.xsession";
 
   # Enable the KDE Desktop Environment.
   services.xserver.desktopManager.plasma5.enable = true;
@@ -117,19 +110,19 @@
   # compatible, in order to avoid breaking some software such as database
   # servers. You should change this only after NixOS release notes say you
   # should.
-  system.stateVersion = "18.03"; # Did you read the comment?
+  system.stateVersion = "18.09"; # Did you read the comment?
   security.sudo.wheelNeedsPassword = false;
 
-  fileSystems.gentoo.device = "/dev/sda3";
+  fileSystems.gentoo.device = "/dev/sda5";
   fileSystems.gentoo.mountPoint = "/gentoo";
-  fileSystems.debian.device = "/dev/sda4";
-  fileSystems.debian.mountPoint = "/debian";
-  fileSystems.data.device = "/dev/sdb1";
-  fileSystems.data.mountPoint = "/data";
-  fileSystems.boot.device = "/dev/sda1";
-  fileSystems.boot.mountPoint = "/boot";
+  fileSystems.arch.device = "/dev/sda6";
+  fileSystems.arch.mountPoint = "/arch";
+  fileSystems.home.device = "/dev/sdb1";
+  fileSystems.home.mountPoint = "/home";
   swapDevices = [
-    { device = "/dev/sda2"; }
+    { device = "/dev/sda7"; }
   ];
+  fileSystems.tumbleweed.device = "/dev/sda8";
+  fileSystems.tumbleweed.mountPoint = "/tumbleweed";
 }
 
