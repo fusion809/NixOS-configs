@@ -39,9 +39,10 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-     wget vim git zsh vlc firefox hexchat konversation os-prober yakuake libsForQt5.kglobalaccel pcmanfm lxappearance
+     wget vim git zsh vlc firefox hexchat konversation os-prober yakuake libsForQt5.kglobalaccel pcmanfm lxappearance virtualbox flatpak
   ];
 
+  services.flatpak.enable = true;
   environment.shells = [
      pkgs.zsh pkgs.bashInteractive
   ];
@@ -69,6 +70,7 @@
   users.extraUsers.fusion809 = 
  { isNormalUser = true;
    home = "/home/fusion809";
+   uid = 1000;
    description = "Brenton Horne";
    extraGroups = [ "wheel" "networkmanager" ];
  };
@@ -93,9 +95,10 @@
  #   autoLogin.user = "fusion809";
  # };
   services.xserver.windowManager.i3.extraPackages = with pkgs; [
-     rofi i3status feh python3.6-pip networkmanager_dmenu
+     rofi i3status feh networkmanager_dmenu
   ];
   services.xserver.windowManager.i3.extraSessionCommands = "bash $HOME/.xsession";
+  services.xserver.videoDrivers = [ "nvidia" ];
 
   # Enable the KDE Desktop Environment.
   services.xserver.desktopManager.plasma5.enable = true;
@@ -117,12 +120,10 @@
   fileSystems.gentoo.mountPoint = "/gentoo";
   fileSystems.arch.device = "/dev/sda6";
   fileSystems.arch.mountPoint = "/arch";
-  fileSystems.home.device = "/dev/sdb1";
-  fileSystems.home.mountPoint = "/home";
-  swapDevices = [
-    { device = "/dev/sda7"; }
-  ];
+  fileSystems.data.device = "/dev/sdb1";
+  fileSystems.data.mountPoint = "/data";
   fileSystems.tumbleweed.device = "/dev/sda8";
   fileSystems.tumbleweed.mountPoint = "/tumbleweed";
+  virtualisation.virtualbox.host.enable = true;
+  virtualisation.virtualbox.host.enableExtensionPack = true;
 }
-
