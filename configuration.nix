@@ -23,7 +23,6 @@
   boot.loader.grub.useOSProber = true; # got to OS probe other distros
 
   networking.hostName = "fusion809-pc"; # Define your hostname.
-  hardware.pulseaudio.enable = true; # Not sure if audio will work without it
 
   # Select internationalisation properties.
   i18n = {
@@ -59,6 +58,9 @@
 
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
+  sound.enable = true;
+  hardware.pulseaudio.enable = true;
+  hardware.pulseaudio.support32Bit = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
@@ -71,7 +73,7 @@
    home = "/home/fusion809";
    uid = 1000;
    description = "Brenton Horne";
-   extraGroups = [ "wheel" "networkmanager" ];
+   extraGroups = [ "audio" "wheel" "networkmanager" ];
  };
 
   # Enable CUPS to print documents.
@@ -121,7 +123,9 @@
   fileSystems.arch.mountPoint = "/arch";
   fileSystems.data.device = "/dev/sdb1";
   fileSystems.data.mountPoint = "/data";
-  fileSystems.tumbleweed.device = "/dev/sda8";
+  fileSystems.void.device = "/dev/sda8";
+  fileSystems.void.mountPoint = "/void";
+  fileSystems.tumbleweed.device = "/dev/sda9";
   fileSystems.tumbleweed.mountPoint = "/tumbleweed";
   virtualisation.virtualbox.host.enable = true;
   virtualisation.virtualbox.host.enableExtensionPack = true;

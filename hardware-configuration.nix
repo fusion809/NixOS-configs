@@ -12,7 +12,7 @@
   boot.kernelModules = [ "kvm-amd" "vboxdrv" "vboxpci" "vboxnetadp" "vboxnetflt" ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/713b4d92-14c6-4369-ba3d-84355a1018bd";
+    { device = "/dev/disk/by-uuid/f8cdbd9e-0240-432c-a828-0e49ba582c03";
       fsType = "ext4";
     };
 
