@@ -37,7 +37,7 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-     wget vim git zsh vlc firefox hexchat konversation os-prober yakuake libsForQt5.kglobalaccel pcmanfm lxappearance virtualbox flatpak
+     wget sudo vim git zsh vlc firefox hexchat konversation os-prober yakuake libsForQt5.kglobalaccel pcmanfm lxappearance virtualbox flatpak
   ];
 
   services.flatpak.enable = true;
@@ -88,11 +88,6 @@
   services.xserver.libinput.enable = true;
 
   # Enable the GNOME Desktop Environment.
-  services.xserver.windowManager.i3.enable = true;
-  services.xserver.windowManager.i3.extraPackages = with pkgs; [
-     rofi i3status feh networkmanager_dmenu
-  ];
-  services.xserver.windowManager.i3.extraSessionCommands = "bash $HOME/.xsession";
   services.xserver.videoDrivers = [ "nvidia" ];
 
   # Enable the KDE Desktop Environment.
@@ -115,6 +110,7 @@
   # servers. You should change this only after NixOS release notes say you
   # should.
   system.stateVersion = "18.09"; # Did you read the comment?
+  security.sudo.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
   fileSystems.gentoo.device = "/dev/sda5";
