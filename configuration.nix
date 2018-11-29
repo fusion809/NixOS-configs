@@ -43,10 +43,11 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-     wget vim git zsh vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel virtualbox flatpak
+     wget vim git vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel konqueror
   ];
 
-  # As user I could install: julia_10, octaveFull, openra, sage, scilab-bin
+  # As user I could install additional packages, like: 
+  # atom, codeblocks-full, julia_10, octaveFull, openra, sage, scilab-bin, vscode
 
   services.flatpak.enable = true;
   environment.shells = [
