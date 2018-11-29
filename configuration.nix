@@ -37,8 +37,16 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
-     wget sudo vim git zsh vlc firefox hexchat konversation os-prober yakuake libsForQt5.kglobalaccel pcmanfm lxappearance virtualbox flatpak
+  # These packages will be from the stable branch of the repos (with older, but more tested packages)
+  # If you need newer ones install them as user, after adding the unstable repository by running:
+  # sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos-unstable
+  # sudo nix-channel --update nixos-unstable
+  # and then install the package with:
+  # nix-env -f '<nixos-unstable>' -iA package
+     wget vim git zsh vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel virtualbox flatpak
   ];
+
+  # As user I could install: julia_10, octaveFull, openra, sage, scilab-bin
 
   services.flatpak.enable = true;
   environment.shells = [
