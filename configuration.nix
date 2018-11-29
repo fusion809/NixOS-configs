@@ -43,7 +43,7 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-     wget vim git vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel konqueror
+     wget vim git vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel
   ];
 
   # As user I could install additional packages, like: 
