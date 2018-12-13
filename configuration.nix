@@ -43,7 +43,7 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-     wget vim git vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel
+     wget git vimHugeX vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel ffmpegthumbnailer
   ];
 
   # As user I could install additional packages, like: 
@@ -83,6 +83,11 @@
    uid = 1000;
    description = "Brenton Horne";
    extraGroups = [ "audio" "wheel" "networkmanager" ];
+   packages = [
+   (pkgs.appimage-run.override {
+      extraPkgs = p: with p; [ harfbuzz mono ]; 
+    })
+    ];
  };
 
   # Enable CUPS to print documents.
@@ -96,11 +101,11 @@
   # Enable touchpad support.
   services.xserver.libinput.enable = true;
 
-  # Enable the GNOME Desktop Environment.
   services.xserver.videoDrivers = [ "nvidia" ];
 
   # Enable the KDE Desktop Environment.
   services.xserver.desktopManager.plasma5.enable = true;
+  # Enable the GNOME Desktop Environment.
   services.xserver.desktopManager.gnome3.enable = true;
   services.xserver.displayManager.sddm = {
      enable = true;
