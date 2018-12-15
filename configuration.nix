@@ -43,7 +43,7 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-     wget git vimHugeX vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel ffmpegthumbnailer
+     wget git vimHugeX vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel ffmpegthumbnailer psmisc
   ];
 
   # As user I could install additional packages, like: 
@@ -112,6 +112,9 @@
      autoLogin.enable = true;
      autoLogin.user = "fusion809";
   };
+  services.xserver.displayManager.gdm = {
+     enable = false;
+  };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   # users.extraUsers.guest = {
@@ -133,8 +136,6 @@
   fileSystems.arch.mountPoint = "/arch";
   fileSystems.data.device = "/dev/sdb1";
   fileSystems.data.mountPoint = "/data";
-  fileSystems.void.device = "/dev/sda8";
-  fileSystems.void.mountPoint = "/void";
   fileSystems.tumbleweed.device = "/dev/sda9";
   fileSystems.tumbleweed.mountPoint = "/tumbleweed";
   virtualisation.virtualbox.host.enable = true;

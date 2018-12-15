@@ -9,10 +9,11 @@
     ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
-  boot.kernelModules = [ "kvm-amd" "vboxdrv" "vboxpci" "vboxnetadp" "vboxnetflt" ];
+  boot.kernelModules = [ "kvm-amd" ];
+  boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/f8cdbd9e-0240-432c-a828-0e49ba582c03";
+    { device = "/dev/disk/by-uuid/9c21128a-27d4-415e-b020-0cc6e2aec4c8";
       fsType = "ext4";
     };
 
@@ -21,9 +22,7 @@
       fsType = "vfat";
     };
 
-  swapDevices =
-    [ { device = "/dev/disk/by-uuid/2ffeb6b4-e038-44c1-8e45-73df9a4286f3"; }
-    ];
+  swapDevices = [ ];
 
   nix.maxJobs = lib.mkDefault 16;
 }
