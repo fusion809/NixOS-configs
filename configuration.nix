@@ -43,7 +43,7 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-     wget git vimHugeX vlc firefox hexchat os-prober yakuake libsForQt5.kglobalaccel ffmpegthumbnailer psmisc
+     wget git gitAndTools.hub vimHugeX vlc firefox hexchat os-prober yakuake konversation libsForQt5.kglobalaccel ffmpegthumbnailer psmisc efibootmgr gnome3.gnome-tweaks chrome-gnome-shell gimp gnome3.zenity octave imagemagick gnome3.gnome-mines gnome3.aisleriot atom vscode notepadqq neovim julia scilab-bin google-chrome googleearth opera vivaldi
   ];
 
   # As user I could install additional packages, like: 
@@ -107,6 +107,12 @@
   services.xserver.desktopManager.plasma5.enable = true;
   # Enable the GNOME Desktop Environment.
   services.xserver.desktopManager.gnome3.enable = true;
+  services.gnome3.chrome-gnome-shell.enable = true;
+  # i3
+  services.xserver.windowManager.i3.enable = true;
+  services.xserver.windowManager.i3.extraPackages = with pkgs; [
+     rofi i3status feh networkmanager_dmenu i3pystatus rxvt
+  ];
   services.xserver.displayManager.sddm = {
      enable = true;
      autoLogin.enable = true;
