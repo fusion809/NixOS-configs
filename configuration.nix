@@ -43,7 +43,7 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-     wget git gitAndTools.hub vimHugeX vlc firefox hexchat os-prober yakuake konversation libsForQt5.kglobalaccel ffmpegthumbnailer psmisc efibootmgr gnome3.gnome-tweaks chrome-gnome-shell gimp gnome3.zenity octave imagemagick gnome3.gnome-mines gnome3.aisleriot atom vscode notepadqq neovim julia scilab-bin google-chrome googleearth opera vivaldi
+     wget git gitAndTools.hub vimHugeX vlc firefox hexchat os-prober yakuake konversation libsForQt5.kglobalaccel ffmpegthumbnailer psmisc efibootmgr gnome3.gnome-tweaks chrome-gnome-shell gimp gnome3.zenity octave imagemagick gnome3.gnome-mines gnome3.aisleriot atom vscode notepadqq neovim julia scilab-bin google-chrome googleearth xclip font-awesome_5
   ];
 
   # As user I could install additional packages, like: 
