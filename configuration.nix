@@ -43,7 +43,11 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-    wget os-prober psmisc efibootmgr gnome3.gnome-tweaks gnome3.zenity xclip p7zip
+    wget os-prober psmisc efibootmgr gnome3.gnome-tweaks gnome3.zenity xclip neofetch pciutils
+
+    # Archiving
+    p7zip
+    libarchive
 
     # Terminals
     yakuake
@@ -63,6 +67,7 @@
     google-chrome
     firefox
     tor-browser-bundle-bin
+    vivaldi
 
     # IRC
     hexchat
@@ -71,6 +76,7 @@
     # Other network stuff
     googleearth
     qbittorrent
+    thunderbird
 
     # Office
     libreoffice-fresh
@@ -101,6 +107,7 @@
     python27Packages.osc
     python37Full
     rpm
+    ruby_2_5
     
     # Chemistry
     marvin
@@ -113,13 +120,16 @@
     gnuplot
     octaveFull
     # julia_10; commented out due to the insane RAM and CPU usage of test suite that I have not found how to disable, even when editing nix file directly
+    julia_10
     scilab-bin
     wxmaxima
     # SageMath can be handy, but really increases build time
 
     # Games
     gnome3.aisleriot
+    gnome3.gnome-chess
     gnome3.gnome-mines
+    gnome3.gnome-mahjongg
     # Cannot add SuperTux or SuperTuxKart as their build fails, have to install from nixos (stable)
 
     ## OpenRA
@@ -127,9 +137,9 @@
     openraPackages.mods.ca
     openraPackages.mods.d2
     openraPackages.mods.dr
-    #openraPackages.mods.gen
+    openraPackages.mods.gen
     openraPackages.mods.kknd
-    openraPackages.mods.mw
+    #openraPackages.mods.mw
     openraPackages.mods.ra2
     openraPackages.mods.raclassic
     openraPackages.mods.rv
@@ -178,7 +188,7 @@
    extraGroups = [ "audio" "wheel" "networkmanager" ];
    packages = [
    (pkgs.appimage-run.override {
-      extraPkgs = p: with p; [ harfbuzz mono ]; 
+      extraPkgs = p: with p; [ harfbuzz mono fuse ]; 
     })
     ];
  };
