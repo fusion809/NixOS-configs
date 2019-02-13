@@ -43,7 +43,7 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-    wget os-prober psmisc efibootmgr gnome3.gnome-tweaks gnome3.zenity xclip neofetch pciutils
+    wget psmisc efibootmgr gnome3.gnome-tweaks gnome3.zenity xclip neofetch pciutils
 
     # Archiving
     p7zip
@@ -56,6 +56,7 @@
 
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
+    ffmpeg
     font-awesome_5
     gimp
     imagemagick
