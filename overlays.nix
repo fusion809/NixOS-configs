@@ -55,5 +55,34 @@ stdenv = super.stdenv // { inherit lib; };
     libpng = libpng_apng;
     enableGTK3 = true;
   };
+    inherit (
+    let
+      defaultOctaveOptions = {
+        qt = null;
+        ghostscript = null;
+        graphicsmagick = null;
+        llvm = null;
+        hdf5 = null;
+        glpk = null;
+        suitesparse = null;
+        jdk = null;
+        openblas = if stdenv.isDarwin then openblasCompat else openblas;
+      };
+
+      hgOctaveOptions =
+        (removeAttrs defaultOctaveOptions ["ghostscript"]) // {
+          overridePlatforms = stdenv.lib.platforms.none;
+        };
+    in {
+      octave = callPackage (forkNixpkgsPath + /pkgs/development/interpreters/octave ) defaultOctaveOptions;
+      octaveHg = lowPrio (callPackage (forkNixpkgsPath + /pkgs/development/interpreters/octave/hg.nix ) hgOctaveOptions);
+  }) octave octaveHg;
+
+  octaveFull = (lowPrio (octave.override {
+    qt = qt4;
+    overridePlatforms = ["x86_64-linux" "x86_64-darwin"];
+    openblas = if stdenv.isDarwin then openblasCompat else openblas;
+  }));
+
 }) ]
 

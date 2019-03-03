@@ -43,7 +43,7 @@
   # sudo nix-channel --update nixos-unstable
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
-    wget psmisc efibootmgr gnome3.gnome-tweaks gnome3.zenity xclip neofetch pciutils
+    wget psmisc efibootmgr xclip neofetch pciutils
 
     # Archiving
     p7zip
@@ -60,6 +60,8 @@
     font-awesome_5
     gimp
     imagemagick
+    inkscape
+    scribus
     vlc
     librsvg
 
@@ -75,6 +77,8 @@
     konversation
 
     # Other network stuff
+    gnome3.empathy
+    aria2
     googleearth
     qbittorrent
     thunderbird
@@ -82,13 +86,13 @@
     # Office
     libreoffice-fresh
     wpsoffice
+    okular
 
     # Editors
     atom
     vscode
     neovim
     notepadqq
-    sublime3
     vimHugeX
   
     # Development tools
@@ -111,6 +115,7 @@
     ruby_2_5
     
     # Chemistry
+    avogadro
     marvin
     #pymol, commented out due to build failures
     jmol
@@ -127,6 +132,7 @@
     # SageMath can be handy, but really increases build time
 
     # Games
+    zeroad
     gnome3.aisleriot
     gnome3.gnome-chess
     gnome3.gnome-mines
@@ -148,6 +154,11 @@
     openraPackages.mods.ss
     openraPackages.mods.ura
     openraPackages.mods.yr
+
+    # Other GNOME apps
+    gnome3.gnome-tweaks
+    gnome3.zenity
+    gnome3.gnome-calculator
   ];
 
   # As user I could install additional packages, like: 
@@ -155,7 +166,7 @@
 
   services.flatpak.enable = true;
   environment.shells = [
-     pkgs.zsh pkgs.bashInteractive
+     pkgs.zsh pkgs.bashInteractive pkgs.fish pkgs.tcsh
   ];
 
   users.defaultUserShell = pkgs.zsh;
@@ -240,8 +251,6 @@
   security.sudo.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
-  fileSystems.gentoo.device = "/dev/sda5";
-  fileSystems.gentoo.mountPoint = "/gentoo";
   fileSystems.arch.device = "/dev/sda6";
   fileSystems.arch.mountPoint = "/arch";
   fileSystems.data.device = "/dev/sdb1";
