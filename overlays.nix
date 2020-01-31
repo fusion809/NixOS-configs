@@ -16,18 +16,6 @@ in with pkgs; {
     };
     overlays = [ ];
   };
-
-stdenv = super.stdenv // { inherit lib; };
-  lib = super.lib.recursiveUpdate super.lib {
-    maintainers = {
-      fusion809 = {
-        email = "brentonhorne77@gmail.com";
-        github = "fusion809";
-        name = "Brenton Horne";
-      };
-    };
-  };
-
 #  openraPackages = import (/data/GitHub/others/nixpkgs-msteen/pkgs/games/openra) pkgs;
   openraPackages = import (forkNixpkgsPath + /pkgs/games/openra) pkgs;
   openra = openraPackages.engines.release;
@@ -46,11 +34,12 @@ stdenv = super.stdenv // { inherit lib; };
     gtk3 = if stdenv.isDarwin then gtk3-x11 else gtk3;
   });
 
+#  atom = callPackage (forkNixpkgsPath + /pkgs/applications/editors/atom) {};
   vscode = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vscode) {};
   marvin = callPackage (forkNixpkgsPath + /pkgs/applications/science/chemistry/marvin) { };
-  googleearth = callPackage (/home/fusion809/GitHub/mine/packaging/nixpkgs.googleearth-pr/pkgs/applications/misc/googleearth) {};
+#  googleearth = callPackage (/home/fusion809/GitHub/mine/packaging/nixpkgs/pkgs/applications/misc/googleearth) {};
   appimageTools = callPackage (gitother + /nixpkgs-tilpner/pkgs/build-support/appimage) {};
-    thunderbird = callPackage (forkNixpkgsPath + /pkgs/applications/networking/mailreaders/thunderbird ) {
+  thunderbird = callPackage (forkNixpkgsPath + /pkgs/applications/networking/mailreaders/thunderbird ) {
     inherit (gnome2) libIDL;
     libpng = libpng_apng;
     enableGTK3 = true;
@@ -84,5 +73,9 @@ stdenv = super.stdenv // { inherit lib; };
     openblas = if stdenv.isDarwin then openblasCompat else openblas;
   }));
 
+  masterpdfeditor = libsForQt5.callPackage (forkNixpkgsPath + /pkgs/applications/misc/masterpdfeditor) { };
+#  wpsoffice = callPackage (forkNixpkgsPath + /pkgs/applications/office/wpsoffice ) {};
+# broken
+  runescape-launcher = callPackage (forkNixpkgsPath + /pkgs/games/runescape-launcher) {} ;
 }) ]
 

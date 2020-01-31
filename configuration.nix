@@ -21,12 +21,13 @@
   # Define on which hard drive you want to install Grub.
   boot.loader.grub.device = "nodev"; # or "nodev" for efi only
   boot.loader.grub.useOSProber = true; # got to OS probe other distros
+  boot.loader.grub.configurationLimit = 3;
 
   networking.hostName = "fusion809-pc"; # Define your hostname.
   # Select internationalisation properties.
+  console.keyMap = "us";
+  console.font = "Lat2-Terminus16";
   i18n = {
-    consoleFont = "Lat2-Terminus16";
-    consoleKeyMap = "us";
     defaultLocale = "en_AU.UTF-8";
   };
 
@@ -45,6 +46,8 @@
   # nix-env -f '<nixos-unstable>' -iA package
     wget psmisc efibootmgr xclip neofetch pciutils
 
+    superTuxKart
+    superTux
     # Archiving
     p7zip
     libarchive
@@ -66,53 +69,52 @@
     librsvg
 
     # Browsers
-    chrome-gnome-shell
+#    chrome-gnome-shell
     google-chrome
-    firefox
+#    firefox
     tor-browser-bundle-bin
     vivaldi
+    brave
 
     # IRC
     hexchat
-    konversation
+ #   konversation
 
     # Other network stuff
-    gnome3.empathy
-    aria2
+ #   gnome3.empathy
+ #   aria2
     googleearth
     qbittorrent
-    thunderbird
 
     # Office
     libreoffice-fresh
-    wpsoffice
     okular
 
     # Editors
     atom
     vscode
-    neovim
+ #   neovim
     notepadqq
     vimHugeX
   
     # Development tools
-    clang_7
-    cloc
-    codeblocks
-    cppcheck
-    dpkg
-    gcc
-    gdb
-    gist
-    git
-    gitAndTools.hub
-    gnome-builder
-    gnumake
-    kdevelop
-    python27Packages.osc
-    python37Full
-    rpm
-    ruby_2_5
+ #   clang_7
+ #   cloc
+ #   codeblocks
+ #   cppcheck
+ #   dpkg
+ #   gcc
+ #   gdb
+ #   gist
+     git
+ #   gitAndTools.hub
+ #   gnome-builder
+ #   gnumake
+ #   kdevelop
+ #   python27Packages.osc
+ #   python37Full
+ #   rpm
+ #   ruby_2_5
     
     # Chemistry
     avogadro
@@ -121,14 +123,14 @@
     jmol
 
     # Math
-    gap
-    giac
-    gnuplot
-    octaveFull
+  #  gap
+  #  giac
+  #  gnuplot
+    #octaveFull
     # julia_10; commented out due to the insane RAM and CPU usage of test suite that I have not found how to disable, even when editing nix file directly
-    julia_10
-    scilab-bin
-    wxmaxima
+  #  julia_10
+  #  scilab-bin
+  #  wxmaxima
     # SageMath can be handy, but really increases build time
 
     # Games
@@ -140,33 +142,33 @@
     # Cannot add SuperTux or SuperTuxKart as their build fails, have to install from nixos (stable)
 
     ## OpenRA
-    openraPackages.engines.bleed
-    openraPackages.mods.ca
-    openraPackages.mods.d2
-    openraPackages.mods.dr
-    openraPackages.mods.gen
-    openraPackages.mods.kknd
+    #openraPackages.engines.bleed
+    #openraPackages.mods.ca
+    #openraPackages.mods.d2
+    #openraPackages.mods.dr
+    #openraPackages.mods.gen
+    #openraPackages.mods.kknd
     #openraPackages.mods.mw
-    openraPackages.mods.ra2
-    openraPackages.mods.raclassic
-    openraPackages.mods.rv
-    openraPackages.mods.sp
-    openraPackages.mods.ss
-    openraPackages.mods.ura
-    openraPackages.mods.yr
-
+    #openraPackages.mods.ra2
+    #openraPackages.mods.raclassic
+    #openraPackages.mods.rv
+    #openraPackages.mods.sp
+    #openraPackages.mods.ss
+    #openraPackages.mods.ura
+    #openraPackages.mods.yr
+  rofi
     # Other GNOME apps
-    gnome3.gnome-tweaks
+  #  gnome3.gnome-tweaks
     gnome3.zenity
-    gnome3.gnome-calculator
+  #  gnome3.gnome-calculator
   ];
 
   # As user I could install additional packages, like: 
-  # atom, codeblocks-full, julia_10, octaveFull, openra, sage, scilab-bin, vscode
+  # atom, codeblocks-full, julia_10, octaveFull, #openra, sage, scilab-bin, vscode
 
   services.flatpak.enable = true;
   environment.shells = [
-     pkgs.zsh pkgs.bashInteractive pkgs.fish pkgs.tcsh
+     pkgs.zsh pkgs.bashInteractive
   ];
 
   users.defaultUserShell = pkgs.zsh;
@@ -221,13 +223,13 @@
   # Enable the KDE Desktop Environment.
   services.xserver.desktopManager.plasma5.enable = true;
   # Enable the GNOME Desktop Environment.
-  services.xserver.desktopManager.gnome3.enable = true;
-  services.gnome3.chrome-gnome-shell.enable = true;
+  #services.xserver.desktopManager.gnome3.enable = true;
+  #services.gnome3.chrome-gnome-shell.enable = true;
   # i3
-  services.xserver.windowManager.i3.enable = true;
-  services.xserver.windowManager.i3.extraPackages = with pkgs; [
-     rofi i3status feh networkmanager_dmenu i3pystatus rxvt kdevelop
-  ];
+  #services.xserver.windowManager.i3.enable = true;
+  #services.xserver.windowManager.i3.extraPackages = with pkgs; [
+  #   rofi i3status feh networkmanager_dmenu i3pystatus rxvt kdevelop
+  #];
   services.xserver.displayManager.sddm = {
      enable = true;
      autoLogin.enable = true;
@@ -247,16 +249,18 @@
   # compatible, in order to avoid breaking some software such as database
   # servers. You should change this only after NixOS release notes say you
   # should.
-  system.stateVersion = "18.09"; # Did you read the comment?
+  system.stateVersion = "20.03pre"; # Did you read the comment?
   security.sudo.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
-  fileSystems.arch.device = "/dev/sda6";
+  fileSystems.arch.device = "/dev/sda5";
   fileSystems.arch.mountPoint = "/arch";
   fileSystems.data.device = "/dev/sdb1";
   fileSystems.data.mountPoint = "/data";
-  fileSystems.tumbleweed.device = "/dev/sda9";
-  fileSystems.tumbleweed.mountPoint = "/tumbleweed";
+  fileSystems.debian.device = "/dev/sda9";
+  fileSystems.debian.mountPoint = "/debian";
   virtualisation.virtualbox.host.enable = true;
   virtualisation.virtualbox.host.enableExtensionPack = true;
+  nixpkgs.config.allowBroken = true;
+  xdg.portal.enable = true;
 }
