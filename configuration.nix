@@ -46,16 +46,14 @@
   # nix-env -f '<nixos-unstable>' -iA package
     wget psmisc efibootmgr xclip neofetch pciutils
 
-    superTuxKart
-    superTux
     # Archiving
     p7zip
     libarchive
 
     # Terminals
     yakuake
+    gwenview
     libsForQt5.kglobalaccel
-    rxvt_unicode-with-plugins
 
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
@@ -66,6 +64,7 @@
     inkscape
     scribus
     vlc
+    mediainfo-gui
     librsvg
 
     # Browsers
@@ -73,7 +72,6 @@
     google-chrome
 #    firefox
     tor-browser-bundle-bin
-    vivaldi
     brave
 
     # IRC
@@ -84,11 +82,12 @@
  #   gnome3.empathy
  #   aria2
     googleearth
-    qbittorrent
 
     # Office
     libreoffice-fresh
+    zotero
     okular
+    gnome3.evince
 
     # Editors
     atom
@@ -105,9 +104,9 @@
  #   dpkg
  #   gcc
  #   gdb
- #   gist
+     gist
      git
- #   gitAndTools.hub
+     gitAndTools.hub
  #   gnome-builder
  #   gnumake
  #   kdevelop
@@ -116,6 +115,7 @@
  #   rpm
  #   ruby_2_5
     
+    kdeApplications.kcalc
     # Chemistry
     avogadro
     marvin
@@ -126,7 +126,9 @@
   #  gap
   #  giac
   #  gnuplot
-    #octaveFull
+    octaveFull
+    pspp
+    #sagemath
     # julia_10; commented out due to the insane RAM and CPU usage of test suite that I have not found how to disable, even when editing nix file directly
   #  julia_10
   #  scilab-bin
@@ -134,7 +136,11 @@
     # SageMath can be handy, but really increases build time
 
     # Games
-    zeroad
+#    zeroad
+#    urbanterror
+    superTuxKart
+    superTux
+#    warzone2100
     gnome3.aisleriot
     gnome3.gnome-chess
     gnome3.gnome-mines

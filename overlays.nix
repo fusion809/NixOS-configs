@@ -16,8 +16,10 @@ in with pkgs; {
     };
     overlays = [ ];
   };
-#  openraPackages = import (/data/GitHub/others/nixpkgs-msteen/pkgs/games/openra) pkgs;
+
+  brave = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/brave) {};
   openraPackages = import (forkNixpkgsPath + /pkgs/games/openra) pkgs;
+  jmol = callPackage (forkNixpkgsPath + /pkgs/applications/science/chemistry/jmol) {};
   openra = openraPackages.engines.release;
 
   vim = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vim) { 
