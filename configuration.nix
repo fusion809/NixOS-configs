@@ -22,6 +22,7 @@
   boot.loader.grub.device = "nodev"; # or "nodev" for efi only
   boot.loader.grub.useOSProber = true; # got to OS probe other distros
   boot.loader.grub.configurationLimit = 3;
+  nix.autoOptimiseStore = true;
 
   networking.hostName = "fusion809-pc"; # Define your hostname.
   # Select internationalisation properties.
@@ -70,7 +71,7 @@
     # Browsers
 #    chrome-gnome-shell
     google-chrome
-#    firefox
+    firefox
     tor-browser-bundle-bin
     brave
 

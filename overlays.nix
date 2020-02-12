@@ -9,6 +9,19 @@ let
   gitpkgs = github + /mine/packaging;
   forkNixpkgsPath = gitpkgs + /nixpkgs;
 
+  firefox = {
+    enableAdobeFlash = true ;
+  };
+  google-chrome = {
+    enableAdobeFlash = true ;
+    enablePepperFlash = true;
+  };
+
+  packageOverrides = pkgs: with pkgs; rec {
+    # FF bin with plugins
+    firefox-bin-wrapper = wrapFirefox { browser = firefox-bin; };
+  };
+
 in with pkgs; {
   fork = import forkNixpkgsPath {
     config = {
@@ -16,6 +29,7 @@ in with pkgs; {
     };
     overlays = [ ];
   };
+
 
   brave = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/brave) {};
   openraPackages = import (forkNixpkgsPath + /pkgs/games/openra) pkgs;
