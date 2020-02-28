@@ -1,4 +1,4 @@
-# Edit this configuration file to define what should be installed on
+  # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
@@ -21,9 +21,10 @@
   # Define on which hard drive you want to install Grub.
   boot.loader.grub.device = "nodev"; # or "nodev" for efi only
   boot.loader.grub.useOSProber = true; # got to OS probe other distros
-  boot.loader.grub.configurationLimit = 3;
+  boot.loader.grub.configurationLimit = 2;
   nix.autoOptimiseStore = true;
-
+  #nixpkgs.config.firefox.enableAdobeFlash = true;
+  
   networking.hostName = "fusion809-pc"; # Define your hostname.
   # Select internationalisation properties.
   console.keyMap = "us";
@@ -49,6 +50,8 @@
 
     # Archiving
     p7zip
+    ark
+    unzip
     libarchive
 
     # Terminals
@@ -59,11 +62,12 @@
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
     ffmpeg
+    ffmpegthumbs
+    kdeApplications.kio-extras
     font-awesome_5
     gimp
     imagemagick
     inkscape
-    scribus
     vlc
     mediainfo-gui
     librsvg
@@ -72,8 +76,9 @@
 #    chrome-gnome-shell
     google-chrome
     firefox
+    aria2
+    zoom-us
     tor-browser-bundle-bin
-    brave
 
     # IRC
     hexchat
@@ -82,7 +87,7 @@
     # Other network stuff
  #   gnome3.empathy
  #   aria2
-    googleearth
+    #googleearth
 
     # Office
     libreoffice-fresh
@@ -116,7 +121,6 @@
  #   rpm
  #   ruby_2_5
     
-    kdeApplications.kcalc
     # Chemistry
     avogadro
     marvin
@@ -128,14 +132,18 @@
   #  giac
   #  gnuplot
     octaveFull
+    python37Packages.jupyterlab
+    python37Packages.jupyterlab_launcher
     pspp
     #sagemath
+    #texmaker
     # julia_10; commented out due to the insane RAM and CPU usage of test suite that I have not found how to disable, even when editing nix file directly
   #  julia_10
-  #  scilab-bin
+    # Doesn't run per https://github.com/NixOS/nixpkgs/issues/70319
+    #scilab-bin
   #  wxmaxima
     # SageMath can be handy, but really increases build time
-
+    mono
     # Games
 #    zeroad
 #    urbanterror
@@ -149,6 +157,7 @@
     # Cannot add SuperTux or SuperTuxKart as their build fails, have to install from nixos (stable)
 
     ## OpenRA
+    # Can no longer be built
     #openraPackages.engines.bleed
     #openraPackages.mods.ca
     #openraPackages.mods.d2
@@ -174,6 +183,7 @@
   # atom, codeblocks-full, julia_10, octaveFull, #openra, sage, scilab-bin, vscode
 
   services.flatpak.enable = true;
+  services.accounts-daemon.enable = true;
   environment.shells = [
      pkgs.zsh pkgs.bashInteractive
   ];
@@ -260,11 +270,13 @@
   security.sudo.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
-  fileSystems.arch.device = "/dev/sda5";
+  # Using UUIDs is important, as if /dev/sdXn is used NixOS will try to mount the wrong petition
+  # Due to the presence of two disks, which confuses it sometimes
+  fileSystems.arch.device = "/dev/disk/by-uuid/c324ba12-1932-45e4-9f38-f13bbcfef1d0";
   fileSystems.arch.mountPoint = "/arch";
-  fileSystems.data.device = "/dev/sdb1";
+  fileSystems.data.device = "/dev/disk/by-uuid/95eac782-d467-42c1-b31e-11020b29a353";
   fileSystems.data.mountPoint = "/data";
-  fileSystems.debian.device = "/dev/sda9";
+  fileSystems.debian.device = "/dev/disk/by-uuid/dd381240-03fa-4255-a89b-39b6b28bd0a0";
   fileSystems.debian.mountPoint = "/debian";
   virtualisation.virtualbox.host.enable = true;
   virtualisation.virtualbox.host.enableExtensionPack = true;

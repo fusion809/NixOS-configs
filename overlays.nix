@@ -9,14 +9,6 @@ let
   gitpkgs = github + /mine/packaging;
   forkNixpkgsPath = gitpkgs + /nixpkgs;
 
-  firefox = {
-    enableAdobeFlash = true ;
-  };
-  google-chrome = {
-    enableAdobeFlash = true ;
-    enablePepperFlash = true;
-  };
-
   packageOverrides = pkgs: with pkgs; rec {
     # FF bin with plugins
     firefox-bin-wrapper = wrapFirefox { browser = firefox-bin; };
@@ -30,7 +22,8 @@ in with pkgs; {
     overlays = [ ];
   };
 
-
+  zsh = callPackage (forkNixpkgsPath + /pkgs/shells/zsh) {};
+  flashplayer = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/mozilla-plugins/flashplayer) {};
   brave = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/brave) {};
   openraPackages = import (forkNixpkgsPath + /pkgs/games/openra) pkgs;
   jmol = callPackage (forkNixpkgsPath + /pkgs/applications/science/chemistry/jmol) {};
