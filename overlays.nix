@@ -22,6 +22,8 @@ in with pkgs; {
     overlays = [ ];
   };
 
+  jabref = callPackage (forkNixpkgsPath + /pkgs/applications/office/jabref) {};
+  sagemath = callPackage (forkNixpkgsPath + /pkgs/applications/science/math/sage) {};
   zsh = callPackage (forkNixpkgsPath + /pkgs/shells/zsh) {};
   flashplayer = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/mozilla-plugins/flashplayer) {};
   brave = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/brave) {};

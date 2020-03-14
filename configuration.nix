@@ -47,6 +47,7 @@
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
     wget psmisc efibootmgr xclip neofetch pciutils
+    wine
 
     # Archiving
     p7zip
@@ -75,9 +76,7 @@
     # Browsers
 #    chrome-gnome-shell
     google-chrome
-    firefox
     aria2
-    zoom-us
     tor-browser-bundle-bin
 
     # IRC
@@ -131,12 +130,13 @@
   #  gap
   #  giac
   #  gnuplot
-    octaveFull
+    ( octaveFull.override { python = python.withPackages (ps: with ps; [ sympy ]);} ) 
+    (python.withPackages (ps: with ps; [ sympy ]))
     python37Packages.jupyterlab
     python37Packages.jupyterlab_launcher
     pspp
-    #sagemath
-    #texmaker
+    sagemath
+    jabref
     # julia_10; commented out due to the insane RAM and CPU usage of test suite that I have not found how to disable, even when editing nix file directly
   #  julia_10
     # Doesn't run per https://github.com/NixOS/nixpkgs/issues/70319
@@ -181,7 +181,6 @@
 
   # As user I could install additional packages, like: 
   # atom, codeblocks-full, julia_10, octaveFull, #openra, sage, scilab-bin, vscode
-
   services.flatpak.enable = true;
   services.accounts-daemon.enable = true;
   environment.shells = [
@@ -266,7 +265,7 @@
   # compatible, in order to avoid breaking some software such as database
   # servers. You should change this only after NixOS release notes say you
   # should.
-  system.stateVersion = "20.03pre"; # Did you read the comment?
+  system.stateVersion = "20.09pre"; # Did you read the comment?
   security.sudo.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
