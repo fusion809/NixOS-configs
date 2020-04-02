@@ -63,8 +63,8 @@
     lyx
 
     # i3 stuff
-    python37Full
     lxappearance
+    i3pystatus
 
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
@@ -137,7 +137,6 @@
   #  giac
   #  gnuplot
     ( octaveFull.override { python = python.withPackages (ps: with ps; [ sympy ]);} ) 
-    (python.withPackages (ps: with ps; [ sympy ]))
     python37Packages.jupyterlab
     python37Packages.jupyterlab_launcher
     #pspp
@@ -249,8 +248,8 @@
   # i3
   services.xserver.windowManager.i3.enable = true;
   services.xserver.windowManager.i3.extraPackages = with pkgs; [
-     rofi i3status feh networkmanager_dmenu i3pystatus rxvt
-     python37Packages.colour python37Packages.netifaces python37Packages.psutil
+     rofi i3status feh networkmanager_dmenu rxvt
+     (python37.withPackages(ps: [ (ps.toPythonModule (i3pystatus.override { python3Packages = ps; })) ]))
   ];
   services.xserver.displayManager.sddm = {
      enable = true;
