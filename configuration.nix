@@ -47,7 +47,6 @@
   # and then install the package with:
   # nix-env -f '<nixos-unstable>' -iA package
     wget psmisc efibootmgr xclip neofetch pciutils
-    wine
 
     # Archiving
     p7zip
@@ -59,6 +58,13 @@
     yakuake
     gwenview
     libsForQt5.kglobalaccel
+    texlive.combined.scheme-full
+    texstudio
+    lyx
+
+    # i3 stuff
+    python37Full
+    lxappearance
 
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
@@ -67,6 +73,7 @@
     kdeApplications.kio-extras
     font-awesome_5
     gimp
+    optipng
     imagemagick
     inkscape
     vlc
@@ -77,7 +84,6 @@
 #    chrome-gnome-shell
     google-chrome
     aria2
-    tor-browser-bundle-bin
 
     # IRC
     hexchat
@@ -90,8 +96,9 @@
 
     # Office
     libreoffice-fresh
+    #wpsoffice
     zotero
-    okular
+#    okular
     gnome3.evince
 
     # Editors
@@ -116,7 +123,6 @@
  #   gnumake
  #   kdevelop
  #   python27Packages.osc
- #   python37Full
  #   rpm
  #   ruby_2_5
     
@@ -134,16 +140,15 @@
     (python.withPackages (ps: with ps; [ sympy ]))
     python37Packages.jupyterlab
     python37Packages.jupyterlab_launcher
-    pspp
-    sagemath
+    #pspp
+    # Best to use it through the Arch chroot
+    #sagemath
     jabref
     # julia_10; commented out due to the insane RAM and CPU usage of test suite that I have not found how to disable, even when editing nix file directly
   #  julia_10
     # Doesn't run per https://github.com/NixOS/nixpkgs/issues/70319
     #scilab-bin
   #  wxmaxima
-    # SageMath can be handy, but really increases build time
-    mono
     # Games
 #    zeroad
 #    urbanterror
@@ -237,15 +242,16 @@
   services.xserver.videoDrivers = [ "nvidia" ];
 
   # Enable the KDE Desktop Environment.
-  services.xserver.desktopManager.plasma5.enable = true;
+  #services.xserver.desktopManager.plasma5.enable = true;
   # Enable the GNOME Desktop Environment.
   #services.xserver.desktopManager.gnome3.enable = true;
   #services.gnome3.chrome-gnome-shell.enable = true;
   # i3
-  #services.xserver.windowManager.i3.enable = true;
-  #services.xserver.windowManager.i3.extraPackages = with pkgs; [
-  #   rofi i3status feh networkmanager_dmenu i3pystatus rxvt kdevelop
-  #];
+  services.xserver.windowManager.i3.enable = true;
+  services.xserver.windowManager.i3.extraPackages = with pkgs; [
+     rofi i3status feh networkmanager_dmenu i3pystatus rxvt
+     python37Packages.colour python37Packages.netifaces python37Packages.psutil
+  ];
   services.xserver.displayManager.sddm = {
      enable = true;
      autoLogin.enable = true;
@@ -265,7 +271,10 @@
   # compatible, in order to avoid breaking some software such as database
   # servers. You should change this only after NixOS release notes say you
   # should.
-  system.stateVersion = "20.09pre"; # Did you read the comment?
+  system.autoUpgrade.enable = true;
+  system.autoUpgrade.channel = https://nixos.org/channels/nixos-unstable;
+  system.autoUpgrade.dates = "19:30";
+  system.stateVersion = "20.03pre"; # Did you read the comment?
   security.sudo.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
@@ -277,8 +286,8 @@
   fileSystems.data.mountPoint = "/data";
   fileSystems.debian.device = "/dev/disk/by-uuid/dd381240-03fa-4255-a89b-39b6b28bd0a0";
   fileSystems.debian.mountPoint = "/debian";
-  virtualisation.virtualbox.host.enable = true;
-  virtualisation.virtualbox.host.enableExtensionPack = true;
+  #virtualisation.virtualbox.host.enable = true;
+  #virtualisation.virtualbox.host.enableExtensionPack = true;
   nixpkgs.config.allowBroken = true;
   xdg.portal.enable = true;
 }

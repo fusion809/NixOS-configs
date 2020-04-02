@@ -49,7 +49,7 @@ in with pkgs; {
   vscode = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vscode) {};
   marvin = callPackage (forkNixpkgsPath + /pkgs/applications/science/chemistry/marvin) { };
 #  googleearth = callPackage (/home/fusion809/GitHub/mine/packaging/nixpkgs/pkgs/applications/misc/googleearth) {};
-  appimageTools = callPackage (gitother + /nixpkgs-tilpner/pkgs/build-support/appimage) {};
+  #appimageTools = callPackage (gitother + /nixpkgs/pkgs/build-support/appimage) {};
   thunderbird = callPackage (forkNixpkgsPath + /pkgs/applications/networking/mailreaders/thunderbird ) {
     inherit (gnome2) libIDL;
     libpng = libpng_apng;
