@@ -1,4 +1,4 @@
-  # Edit this configuration file to define what should be installed on
+# Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
@@ -63,6 +63,7 @@
     lyx
 
     # i3 stuff
+    pcmanfm
     lxappearance
     i3pystatus
 
@@ -176,7 +177,6 @@
     #openraPackages.mods.ss
     #openraPackages.mods.ura
     #openraPackages.mods.yr
-  rofi
     # Other GNOME apps
   #  gnome3.gnome-tweaks
     gnome3.zenity
@@ -248,7 +248,7 @@
   # i3
   services.xserver.windowManager.i3.enable = true;
   services.xserver.windowManager.i3.extraPackages = with pkgs; [
-     rofi i3status feh networkmanager_dmenu rxvt
+     rofi i3status konsole
      (python37.withPackages(ps: [ (ps.toPythonModule (i3pystatus.override { python3Packages = ps; })) ]))
   ];
   services.xserver.displayManager.sddm = {
