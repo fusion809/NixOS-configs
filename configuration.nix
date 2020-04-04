@@ -216,8 +216,8 @@
   fileSystems.data.mountPoint = "/data";
   fileSystems.debian.device = "/dev/disk/by-uuid/dd381240-03fa-4255-a89b-39b6b28bd0a0";
   fileSystems.debian.mountPoint = "/debian";
-  #virtualisation.virtualbox.host.enable = true;
-  #virtualisation.virtualbox.host.enableExtensionPack = true;
+  virtualisation.virtualbox.host.enable = true;
+  virtualisation.virtualbox.host.enableExtensionPack = true;
   nixpkgs.config.allowBroken = true;
   xdg.portal.enable = true;
 }
