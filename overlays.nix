@@ -22,40 +22,29 @@ in with pkgs; {
     overlays = [ ];
   };
 
-  jabref = callPackage (forkNixpkgsPath + /pkgs/applications/office/jabref) {};
-  sagemath = callPackage (forkNixpkgsPath + /pkgs/applications/science/math/sage) {};
   zsh = callPackage (forkNixpkgsPath + /pkgs/shells/zsh) {};
-  flashplayer = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/mozilla-plugins/flashplayer) {};
-  brave = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/brave) {};
-  openraPackages = import (forkNixpkgsPath + /pkgs/games/openra) pkgs;
-  jmol = callPackage (forkNixpkgsPath + /pkgs/applications/science/chemistry/jmol) {};
-  openra = openraPackages.engines.release;
 
+  # Code/text editors
   vim = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vim) { 
     inherit (darwin) cf-private;
     inherit (darwin.apple_sdk.frameworks) Carbon Cocoa;
   };
-
   vimHugeX = vim_configurable;
-
   vim_configurable = vimUtils.makeCustomizable (callPackage ( forkNixpkgsPath + /pkgs/applications/editors/vim/configurable.nix ) { 
     inherit (darwin.apple_sdk.frameworks) CoreServices Cocoa Foundation CoreData;
     inherit (darwin) libobjc cf-private;
     gtk2 = if stdenv.isDarwin then gtk2-x11 else gtk2;
     gtk3 = if stdenv.isDarwin then gtk3-x11 else gtk3;
   });
-
-#  atom = callPackage (forkNixpkgsPath + /pkgs/applications/editors/atom) {};
   vscode = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vscode) {};
+
+  # Chemistry
+  jmol = callPackage (forkNixpkgsPath + /pkgs/applications/science/chemistry/jmol) {};
   marvin = callPackage (forkNixpkgsPath + /pkgs/applications/science/chemistry/marvin) { };
-#  googleearth = callPackage (/home/fusion809/GitHub/mine/packaging/nixpkgs/pkgs/applications/misc/googleearth) {};
-  #appimageTools = callPackage (gitother + /nixpkgs/pkgs/build-support/appimage) {};
-  thunderbird = callPackage (forkNixpkgsPath + /pkgs/applications/networking/mailreaders/thunderbird ) {
-    inherit (gnome2) libIDL;
-    libpng = libpng_apng;
-    enableGTK3 = true;
-  };
-    inherit (
+  
+  # Maths software
+  jabref = callPackage (forkNixpkgsPath + /pkgs/applications/office/jabref) {};
+  inherit (
     let
       defaultOctaveOptions = {
         qt = null;
@@ -84,9 +73,21 @@ in with pkgs; {
     openblas = if stdenv.isDarwin then openblasCompat else openblas;
   }));
 
-  masterpdfeditor = libsForQt5.callPackage (forkNixpkgsPath + /pkgs/applications/misc/masterpdfeditor) { };
-#  wpsoffice = callPackage (forkNixpkgsPath + /pkgs/applications/office/wpsoffice ) {};
-# broken
-  runescape-launcher = callPackage (forkNixpkgsPath + /pkgs/games/runescape-launcher) {} ;
+  sagemath = callPackage (forkNixpkgsPath + /pkgs/applications/science/math/sage) {};
+
+  #masterpdfeditor = libsForQt5.callPackage (forkNixpkgsPath + /pkgs/applications/misc/masterpdfeditor) { };
+  #wpsoffice = callPackage (forkNixpkgsPath + /pkgs/applications/office/wpsoffice ) {};
+  # broken
+  #runescape-launcher = callPackage (forkNixpkgsPath + /pkgs/games/runescape-launcher) {} ;
+  # flashplayer = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/mozilla-plugins/flashplayer) {};
+  # brave = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/brave) {};
+  # openraPackages = import (forkNixpkgsPath + /pkgs/games/openra) pkgs;
+  # openra = openraPackages.engines.release;
+  # appimageTools = callPackage (gitother + /nixpkgs/pkgs/build-support/appimage) {};
+  # thunderbird = callPackage (forkNixpkgsPath + /pkgs/applications/networking/mailreaders/thunderbird ) {
+  #  inherit (gnome2) libIDL;
+  #  libpng = libpng_apng;
+  #  enableGTK3 = true;
+  #};
 }) ]
 

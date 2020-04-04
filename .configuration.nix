@@ -54,11 +54,15 @@
     unzip
     libarchive
 
-    # i3 stuff
+    # Terminals
     dolphin
+    mate.eom
+    texlive.combined.scheme-full
+    texstudio
+
+    # i3 stuff
     pcmanfm
     lxappearance
-    mate.eom
 
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
@@ -74,50 +78,106 @@
     mediainfo-gui
     librsvg
 
-    # Networking
+    # Browsers
+#    chrome-gnome-shell
     google-chrome
     aria2
 
     # IRC
     hexchat
+ #   konversation
+
+    # Other network stuff
+ #   gnome3.empathy
+ #   aria2
+    #googleearth
 
     # Office
     libreoffice-fresh
+    #wpsoffice
     zotero
+#    okular
     gnome3.evince
 
     # Editors
     atom
     vscode
+ #   neovim
     notepadqq
     vimHugeX
   
     # Development tools
-    gist
-    git
-    gitAndTools.hub
+ #   clang_7
+ #   cloc
+ #   codeblocks
+ #   cppcheck
+ #   dpkg
+ #   gcc
+ #   gdb
+     gist
+     git
+     gitAndTools.hub
+ #   gnome-builder
+ #   gnumake
+ #   kdevelop
+ #   python27Packages.osc
+ #   rpm
+ #   ruby_2_5
     
     # Chemistry
     avogadro
     marvin
+    #pymol, commented out due to build failures
     jmol
 
-    # Maths
+    # Math
+  #  gap
+  #  giac
+  #  gnuplot
     ( octaveFull.override { python = python.withPackages (ps: with ps; [ sympy ]);} ) 
+    python37Packages.jupyterlab
+    python37Packages.jupyterlab_launcher
+    #pspp
+    # Best to use it through the Arch chroot
+    #sagemath
     jabref
-    texlive.combined.scheme-full
-    texstudio
-
+    # julia_10; commented out due to the insane RAM and CPU usage of test suite that I have not found how to disable, even when editing nix file directly
+  #  julia_10
+    # Doesn't run per https://github.com/NixOS/nixpkgs/issues/70319
+    #scilab-bin
+  #  wxmaxima
     # Games
+#    zeroad
+#    urbanterror
     superTuxKart
     superTux
+#    warzone2100
     gnome3.aisleriot
     gnome3.gnome-chess
     gnome3.gnome-mines
     gnome3.gnome-mahjongg
+    # Cannot add SuperTux or SuperTuxKart as their build fails, have to install from nixos (stable)
 
-    # Zenity
+    ## OpenRA
+    # Can no longer be built
+    #openraPackages.engines.bleed
+    #openraPackages.mods.ca
+    #openraPackages.mods.d2
+    #openraPackages.mods.dr
+    #openraPackages.mods.gen
+    #openraPackages.mods.kknd
+    #openraPackages.mods.mw
+    #openraPackages.mods.ra2
+    #openraPackages.mods.raclassic
+    #openraPackages.mods.rv
+    #openraPackages.mods.sp
+    #openraPackages.mods.ss
+    #openraPackages.mods.ura
+    #openraPackages.mods.yr
+    # Other GNOME apps
+  #  gnome3.gnome-tweaks
     gnome3.zenity
+  #  gnome3.gnome-calculator
   ];
 
   # As user I could install additional packages, like: 
