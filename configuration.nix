@@ -55,17 +55,14 @@
     libarchive
 
     # Terminals
-    yakuake
-    gwenview
-    libsForQt5.kglobalaccel
+    dolphin
+    mate.eom
     texlive.combined.scheme-full
     texstudio
-    lyx
 
     # i3 stuff
     pcmanfm
     lxappearance
-    i3pystatus
 
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
