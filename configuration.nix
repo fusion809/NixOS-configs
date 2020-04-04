@@ -40,12 +40,6 @@
   # $ nix-env -qaP | grep wget
   nixpkgs.overlays = import /home/fusion809/.config/nixpkgs/overlays.nix ;
   environment.systemPackages = with pkgs; [
-  # These packages will be from the stable branch of the repos (with older, but more tested packages)
-  # If you need newer ones install them as user, after adding the unstable repository by running:
-  # sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos-unstable
-  # sudo nix-channel --update nixos-unstable
-  # and then install the package with:
-  # nix-env -f '<nixos-unstable>' -iA package
     wget psmisc efibootmgr xclip neofetch pciutils
 
     # Archiving
@@ -103,8 +97,8 @@
     jmol
 
     # Maths
-    ( octaveFull.override { python = python.withPackages (ps: with ps; [ sympy ]);} ) 
     jabref
+    ( octaveFull.override { python = python.withPackages (ps: with ps; [ sympy ]);} ) 
     texlive.combined.scheme-full
     texstudio
 

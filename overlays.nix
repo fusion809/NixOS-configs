@@ -25,6 +25,8 @@ in with pkgs; {
   zsh = callPackage (forkNixpkgsPath + /pkgs/shells/zsh) {};
 
   # Code/text editors
+  # Best run Atom in the chroot, as I only use it for Julia and
+  # Julia is a very tedious package to build on NixOS
   vim = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vim) { 
     inherit (darwin) cf-private;
     inherit (darwin.apple_sdk.frameworks) Carbon Cocoa;
