@@ -78,9 +78,14 @@ in with pkgs; {
   sagemath = callPackage (forkNixpkgsPath + /pkgs/applications/science/math/sage) {};
 
   #masterpdfeditor = libsForQt5.callPackage (forkNixpkgsPath + /pkgs/applications/misc/masterpdfeditor) { };
-  #wpsoffice = callPackage (forkNixpkgsPath + /pkgs/applications/office/wpsoffice ) {};
+  wpsoffice = let dict = builtins.fetchurl { url = "https://github.com/wps-community/wps_community_website/raw/master/root/download/dicts/en_GB.zip"; sha256 = "0056c14xjx7zz90cla4xajr6qznlim4lnr22cp3gfiqkvm32dzx0"; };
+   in fork.wpsoffice.overrideAttrs (attrs: {
+        installPhase = attrs.installPhase + ''
+           ${super.unzip}/bin/unzip ${dict} -d $out/opt/kingsoft/wps-office/office6/dicts/spellcheck
+        '';
+    });
   # broken
-  #runescape-launcher = callPackage (forkNixpkgsPath + /pkgs/games/runescape-launcher) {} ;
+  runescape-launcher = callPackage (forkNixpkgsPath + /pkgs/games/runescape-launcher) {} ;
   # flashplayer = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/mozilla-plugins/flashplayer) {};
   # brave = callPackage (forkNixpkgsPath + /pkgs/applications/networking/browsers/brave) {};
   # openraPackages = import (forkNixpkgsPath + /pkgs/games/openra) pkgs;

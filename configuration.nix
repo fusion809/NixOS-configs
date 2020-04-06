@@ -72,11 +72,13 @@
     google-chrome
     aria2
 
-    # IRC
+    # Social
+    zoom-us
     hexchat
 
     # Office
     libreoffice-fresh
+    wpsoffice
     zotero
     gnome3.evince
 
