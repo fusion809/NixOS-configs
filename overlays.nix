@@ -27,17 +27,16 @@ in with pkgs; {
   # Code/text editors
   # Best run Atom in the chroot, as I only use it for Julia and
   # Julia is a very tedious package to build on NixOS
-  vim = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vim) { 
-    inherit (darwin) cf-private;
+  vim = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vim ) {
     inherit (darwin.apple_sdk.frameworks) Carbon Cocoa;
-  };
+  };  
   vimHugeX = vim_configurable;
-  vim_configurable = vimUtils.makeCustomizable (callPackage ( forkNixpkgsPath + /pkgs/applications/editors/vim/configurable.nix ) { 
+  vim_configurable = vimUtils.makeCustomizable (callPackage (forkNixpkgsPath + /pkgs/applications/editors/vim/configurable.nix ) {
     inherit (darwin.apple_sdk.frameworks) CoreServices Cocoa Foundation CoreData;
-    inherit (darwin) libobjc cf-private;
+    inherit (darwin) libobjc;
     gtk2 = if stdenv.isDarwin then gtk2-x11 else gtk2;
     gtk3 = if stdenv.isDarwin then gtk3-x11 else gtk3;
-  });
+  });  
   vscode = callPackage (forkNixpkgsPath + /pkgs/applications/editors/vscode) {};
 
   # Chemistry

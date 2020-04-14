@@ -42,6 +42,22 @@
   environment.systemPackages = with pkgs; [
     wget psmisc efibootmgr xclip neofetch pciutils
 
+    papirus-icon-theme
+    tango-icon-theme
+    numix-icon-theme
+    paper-icon-theme
+    moka-icon-theme
+    arc-icon-theme
+    deepin.deepin-icon-theme
+    deepin.deepin-gtk-theme
+    adapta-gtk-theme
+    mojave-gtk-theme
+    numix-gtk-theme
+    numix-solarized-gtk-theme
+    numix-sx-gtk-theme
+    paper-gtk-theme
+    sierra-gtk-theme
+
     # Archiving
     p7zip
     ark
@@ -52,7 +68,6 @@
     dolphin
     pcmanfm
     lxappearance
-    mate.eom
 
     # Audio/graphics/video/fonts
     ffmpegthumbnailer
@@ -67,18 +82,23 @@
     vlc
     mediainfo-gui
     librsvg
+    mate.eom
 
     # Networking
     google-chrome
     aria2
+    thunderbird
 
     # Social
     zoom-us
+    audacity
+    skypeforlinux
     hexchat
+    gnome3.cheese
+    gnome3.gnome-tweak-tool
 
     # Office
     libreoffice-fresh
-    wpsoffice
     zotero
     gnome3.evince
 
@@ -181,7 +201,7 @@
   # i3
   services.xserver.windowManager.i3.enable = true;
   services.xserver.windowManager.i3.extraPackages = with pkgs; [
-     rofi i3status konsole
+     rofi i3status konsole playerctl
      (python37.withPackages(ps: [ (ps.toPythonModule (i3pystatus.override { python3Packages = ps; })) ]))
   ];
   services.xserver.displayManager.sddm = {
