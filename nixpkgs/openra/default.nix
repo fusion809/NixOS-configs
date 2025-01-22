@@ -1,7 +1,10 @@
+{ pkgs }:
+
 let
-  pkgs = import <nixpkgs> {};
+#  pkgs = import <nixpkgs> {};
   buildOpenRAEngine = pkgs.callPackage ./build-engine.nix { };
   callPackage' = path: pkgs.callPackage path { inherit buildOpenRAEngine; };
+};
 in
 {
   engines = {
