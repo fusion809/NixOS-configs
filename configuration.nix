@@ -53,13 +53,16 @@
   services.xserver.desktopManager.gnome.enable = true;
   services.xserver.displayManager.gdm.wayland = false; # Make it use X11 by default
   services.gnome.gnome-browser-connector.enable = true;
-  #nixpkgs.config.permittedInsecurePackages = [
-  #  "dotnet-sdk-6.0.428"
-  #];
+  nixpkgs.config.permittedInsecurePackages = [
+    "dotnet-sdk-6.0.428"
+  ];
   environment.gnome.excludePackages = (with pkgs; [
   	epiphany
         geary
 	totem
+        gnome-maps
+        yelp
+        gnome-logs
 	gnome-calculator
 	gnome-calendar
 	gnome-clocks
@@ -151,11 +154,12 @@
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
-  nixpkgs.overlays = import /home/fusion809/overlays.nix;
+  nixpkgs.overlays = import /home/fusion809/NixOS-configs/overlays.nix;
 
   environment.systemPackages = (with pkgs; [
 	fastfetch
 	hyfetch
+        keychain
         wget
 	gnome-tweaks
         whitesur-gtk-theme
@@ -169,6 +173,7 @@
 	cosmic-wallpapers
 	git
 	xclip
+        #openra-git
     ]) ++ (with pkgs.nixos-artwork.wallpapers; [
 		binary-black
 		catppuccin-mocha
