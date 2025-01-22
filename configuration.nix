@@ -172,7 +172,7 @@
         budgie-backgrounds
 	pantheon.elementary-wallpapers
         unzip
-        runescape
+        #runescape
 	cosmic-wallpapers
 	git
 	xclip
