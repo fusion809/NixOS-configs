@@ -55,6 +55,8 @@
   services.gnome.gnome-browser-connector.enable = true;
   nixpkgs.config.permittedInsecurePackages = [
     "dotnet-sdk-6.0.428"
+    "openssl-1.1.1w"
+    "dotnet-runtime-6.0.428"
   ];
   environment.gnome.excludePackages = (with pkgs; [
   	epiphany
@@ -170,6 +172,7 @@
         budgie-backgrounds
 	pantheon.elementary-wallpapers
         unzip
+        runescape
 	cosmic-wallpapers
 	git
 	xclip
