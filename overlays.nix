@@ -2,9 +2,8 @@
 
 let
   pkgs = self;
-  inherit (pkgs) lib;
+  inherit (pkgs) lib callPackage;
   forkNixpkgsPath = ./nixpkgs;
-  callPackage = lib.callPackageWith (pkgs // builtins.removeAttrs pkgs.xorg [ "callPackage" "newScope" "overrideScope" "packages" ]);
 
 in with pkgs; {
   #fork = import forkNixpkgsPath {
@@ -18,7 +17,7 @@ in with pkgs; {
   #  overlays = [ ];
   #};
 
-  openraPackages = import (forkNixpkgsPath + /openra/default.nix) {inherit pkgs; }; # Import as a set
+  openraPackages = import (forkNixpkgsPath + /openra/default.nix) pkgs; # Import as a set
   openra-git = openraPackages.engines.git; # Access the git engine directly
   runescape = callPackage (forkNixpkgsPath + /runescape/package.nix) {}; 
 }) ]

@@ -28,10 +28,14 @@ function sclipf {
 	sudo xclip -sel clip < $1
 }
 
+function git-branch {
+	git rev-parse --abbrev-ref HEAD
+}
+
 function push {
 	git add --all
 	git commit -m "$@"
-	git push origin 24.11
+	git push origin $(git-branch)
 }
 
 function cdnc {
