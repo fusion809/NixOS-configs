@@ -151,7 +151,7 @@
     allowUnfree = true;
     permittedInsecurePackages = [
     # "openssl-1.1.1w" Used by RuneScape
-      "dotnet-runtime-6.0.428"
+      "dotnet-runtime-6.0.36"
       "dotnet-sdk-6.0.428"
     ];
   };
