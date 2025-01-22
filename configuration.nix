@@ -53,11 +53,6 @@
   services.xserver.desktopManager.gnome.enable = true;
   services.xserver.displayManager.gdm.wayland = false; # Make it use X11 by default
   services.gnome.gnome-browser-connector.enable = true;
-  nixpkgs.config.permittedInsecurePackages = [
-    "dotnet-sdk-6.0.428"
-    "openssl-1.1.1w"
-    "dotnet-runtime-6.0.428"
-  ];
   environment.gnome.excludePackages = (with pkgs; [
   	epiphany
         geary
@@ -152,8 +147,14 @@
   programs.vim.package = pkgs.vim-full;
 
   # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-
+  nixpkgs.config = {
+    allowUnfree = true;
+    permittedInsecurePackages = [
+    # "openssl-1.1.1w" Used by RuneScape
+      "dotnet-runtime-6.0.428"
+      "dotnet-sdk-6.0.428"
+    ];
+  };
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   nixpkgs.overlays = import /home/fusion809/NixOS-configs/overlays.nix;
@@ -176,7 +177,7 @@
 	cosmic-wallpapers
 	git
 	xclip
-        #openra-git
+        openra-git
     ]) ++ (with pkgs.nixos-artwork.wallpapers; [
 		binary-black
 		catppuccin-mocha
