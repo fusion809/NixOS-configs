@@ -1,0 +1,26 @@
+function rebuild {
+	nixos-rebuild switch
+}
+
+alias nixrb=rebuild
+
+function nixcg {
+	nix-collect-garbage -d
+}
+
+function update {
+	nix-channel --update
+	rebuild
+}
+
+function vbash {
+	vim ~/.bashrc
+}
+
+function sbash {
+	source ~/.bashrc
+}
+
+function vcf {
+	vim /etc/nixos/configuration.nix
+}
