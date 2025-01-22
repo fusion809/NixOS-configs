@@ -3,7 +3,7 @@
 let
   pkgs = self;
   inherit (pkgs) lib;
-  forkNixpkgsPath = /home/fusion809/nixpkgs;
+  forkNixpkgsPath = /home/fusion809/NixOS-configs/nixpkgs;
 
 in with pkgs; {
   fork = import forkNixpkgsPath {
