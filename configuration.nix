@@ -177,7 +177,7 @@
 	cosmic-wallpapers
 	git
 	xclip
-        openra-git
+        #openra-git
     ]) ++ (with pkgs.nixos-artwork.wallpapers; [
 		binary-black
 		catppuccin-mocha
