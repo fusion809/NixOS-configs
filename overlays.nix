@@ -3,7 +3,7 @@
 let
   pkgs = self;
   inherit (pkgs) lib;
-  forkNixpkgsPath = /home/fusion809/NixOS-configs/nixpkgs;
+  forkNixpkgsPath = ./nixpkgs;
   callPackage = lib.callPackageWith (pkgs // builtins.removeAttrs pkgs.xorg [ "callPackage" "newScope" "overrideScope" "packages" ]);
 
 in with pkgs; {

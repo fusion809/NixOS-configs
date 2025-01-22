@@ -157,7 +157,7 @@
   };
   # List packages installed in system profile. To search, run:
   # $ nix search wget
-  nixpkgs.overlays = import /home/fusion809/NixOS-configs/overlays.nix;
+  nixpkgs.overlays = import ./overlays.nix;
 
   environment.systemPackages = (with pkgs; [
 	fastfetch
