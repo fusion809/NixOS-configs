@@ -144,7 +144,7 @@
   # Use Vim instead
   programs.vim.enable = true;
   programs.vim.defaultEditor = true;
-  programs.vim.package = pkgs.vim-full;
+  programs.vim.package = pkgs.vim_configurable;
 
   # Allow unfree packages
   nixpkgs.config = {
@@ -178,6 +178,25 @@
 	git
 	xclip
         #openra-git
+        vimPlugins.vim-nix
+        vimPlugins.vim-nixhash
+        ((vim_configurable.override {  }).customize{
+      name = "vim";
+      # Install plugins for example for syntax highlighting of nix files
+      vimrcConfig.packages.myplugins = with pkgs.vimPlugins; {
+        start = [ vim-nix vim-nixhash ];
+        opt = [];
+      };
+      vimrcConfig.customRC = ''
+        " your custom vimrc
+        set nocompatible
+        set backspace=indent,eol,start
+        " Turn on syntax highlighting by default
+        syntax on
+        " ...
+      '';
+    }
+  )
     ]) ++ (with pkgs.nixos-artwork.wallpapers; [
 		binary-black
 		catppuccin-mocha
