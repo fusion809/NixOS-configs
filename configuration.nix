@@ -13,8 +13,8 @@
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
   boot.loader.grub.useOSProber = true;
-
-  networking.hostName = "nixos"; # Define your hostname.
+  
+  networking.hostName = "nixos-vbox"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary
@@ -160,65 +160,60 @@
   nixpkgs.overlays = import ./overlays.nix;
 
   environment.systemPackages = (with pkgs; [
-	fastfetch
-	hyfetch
         keychain
+        parted
         wget
-	gnome-tweaks
+	#gnome-tweaks
         whitesur-gtk-theme
         whitesur-cursors
         whitesur-icon-theme
         gnome-terminal
-	deepin.deepin-wallpapers
-        budgie-backgrounds
 	pantheon.elementary-wallpapers
-        unzip
         #runescape
-	cosmic-wallpapers
 	git
 	xclip
         #openra-git
-        vimPlugins.vim-nix
-        vimPlugins.vim-nixhash
-        ((vim_configurable.override {  }).customize{
-      name = "vim";
+        #vimPlugins.vim-nix
+        #vimPlugins.vim-nixhash
+        #((vim_configurable.override {  }).customize{
+      #name = "vim";
       # Install plugins for example for syntax highlighting of nix files
-      vimrcConfig.packages.myplugins = with pkgs.vimPlugins; {
-        start = [ vim-nix vim-nixhash ];
-        opt = [];
-      };
-      vimrcConfig.customRC = ''
-        " your custom vimrc
-        set nocompatible
-        set backspace=indent,eol,start
-        " Turn on syntax highlighting by default
-        syntax on
-        " ...
-      '';
-    }
-  )
-    ]) ++ (with pkgs.nixos-artwork.wallpapers; [
-		binary-black
-		catppuccin-mocha
-		catppuccin-macchiato
-		catppuccin-latte
-		catppuccin-frappe
-		moonscape
-		nineish
-		nineish-dark-gray
-		nineish-solarized-dark
-		nineish-solarized-light
-		simple-blue
-		simple-dark-gray
-		simple-dark-gray-bootloader
-		simple-dark-gray-bottom
-		simple-light-gray
-		simple-red
-		stripes-logo
-		stripes
-		waterfall
-		watersplash
-	]);
+      #vimrcConfig.packages.myplugins = with pkgs.vimPlugins; {
+      #  start = [ vim-nix vim-nixhash ];
+      #  opt = [];
+      #};
+      #vimrcConfig.customRC = ''
+      #  " your custom vimrc
+      #  set nocompatible
+      #  set backspace=indent,eol,start
+      #  " Turn on syntax highlighting by default
+      #  syntax on
+      #  " ...
+      #'';
+    #}
+  #)
+    ]);# ++ (with pkgs.nixos-artwork.wallpapers; [
+#		binary-black
+#		catppuccin-mocha
+#		catppuccin-macchiato
+#		catppuccin-latte
+#		catppuccin-frappe
+#		moonscape
+#		nineish
+#		nineish-dark-gray
+#		nineish-solarized-dark
+#		nineish-solarized-light
+#		simple-blue
+#		simple-dark-gray
+#		simple-dark-gray-bootloader
+#		simple-dark-gray-bottom
+#		simple-light-gray
+#		simple-red
+#		stripes-logo
+#		stripes
+#		waterfall
+#		watersplash
+#	]);
 
   environment.pathsToLink = ["/share/backgrounds/nixos"];
   programs.zsh.enable = true;
