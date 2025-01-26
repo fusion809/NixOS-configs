@@ -12,7 +12,7 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-label/nixos-unstable";
+    { device = "/dev/disk/by-label/nixos-unstable-r";
       fsType = "ext4";
     };
 
