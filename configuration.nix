@@ -54,38 +54,38 @@
   services.xserver.displayManager.gdm.wayland = false; # Make it use X11 by default
   services.gnome.gnome-browser-connector.enable = true;
   environment.gnome.excludePackages = (with pkgs; [
-  	epiphany
-        geary
-	totem
-        gnome-maps
-        yelp
-        gnome-logs
-	gnome-calculator
-	gnome-calendar
-	gnome-clocks
-	gnome-contacts
-	gnome-disk-utility
-	gnome-music
-	gnome-system-monitor
-	gnome-tour
-	gnome-weather
-	evince
-	gnome-connections
-	snapshot
-	gnome-characters
-	baobab
-	loupe
-	simple-scan
-	file-roller
-	rygel
-	gnome-bluetooth
-	gnome-color-manager
-	gnome-console
-	gnome-font-viewer
-	gnome-online-accounts
-	gnome-remote-desktop
-	gnome-user-share
-	seahorse
+    epiphany
+    geary
+    totem
+    gnome-maps
+    yelp
+    gnome-logs
+    gnome-calculator
+    gnome-calendar
+    gnome-clocks
+    gnome-contacts
+    gnome-disk-utility
+    gnome-music
+    gnome-system-monitor
+    gnome-tour
+    gnome-weather
+    evince
+    gnome-connections
+    snapshot
+    gnome-characters
+    baobab
+    loupe
+    simple-scan
+    file-roller
+    rygel
+    gnome-bluetooth
+    gnome-color-manager
+    gnome-console
+    gnome-font-viewer
+    gnome-online-accounts
+    gnome-remote-desktop
+    gnome-user-share
+    seahorse
   ]);
 
   # Configure keymap in X11
@@ -163,15 +163,15 @@
         keychain
         parted
         wget
-	#gnome-tweaks
+        #gnome-tweaks
         whitesur-gtk-theme
         whitesur-cursors
         whitesur-icon-theme
         gnome-terminal
-	pantheon.elementary-wallpapers
+        pantheon.elementary-wallpapers
         #runescape
-	git
-	xclip
+        git
+        xclip
         #openra-git
         #vimPlugins.vim-nix
         #vimPlugins.vim-nixhash
