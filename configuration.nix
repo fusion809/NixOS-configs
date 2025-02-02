@@ -7,8 +7,15 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      <home-manager/nixos>
     ];
 
+  home-manager.users.fusion809 = {
+        imports =
+          [
+            ./home.nix
+          ];
+  };
   # Bootloader.
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
@@ -160,6 +167,8 @@
   nixpkgs.overlays = import ./overlays.nix;
 
   environment.systemPackages = (with pkgs; [
+        #foot, only useful on Wayland sessions
+        home-manager
         keychain
         parted
         wget
