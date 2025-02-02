@@ -176,13 +176,18 @@ function hmr {
  gtk.cursorTheme.name = "WhiteSur-cursors";
 # dconf.settings = {
 #   "org/gnome/desktop/background" = {
-#     picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo of Valley.jpg";
+#     picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
 #   };
 # };
   dconf.settings = {
     "org/gnome/desktop/background" = {
       color-shading-type = "solid";
-        picture-uri = "file://run/current-system/sw/share/backgrounds/Photo of Valley.jpg";
+      picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
+      picture-uri-dark = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
+      };
+      "org/gnome/shell" = {
+        enabled-extensions =
+          "['dash-to-dock@micxgx.gmail.com', 'show-desktop-button@amivaleo', 'user-theme@gnome-shell-extensions.gcampax.github.com']";
         };
-    };
+  };
 }

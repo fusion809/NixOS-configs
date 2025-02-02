@@ -172,7 +172,7 @@
         keychain
         parted
         wget
-        #gnome-tweaks
+        gnome-tweaks
         whitesur-gtk-theme
         whitesur-cursors
         whitesur-icon-theme
@@ -181,6 +181,8 @@
         #runescape
         git
         xclip
+        gnomeExtensions.show-desktop-button
+        gnomeExtensions.dash-to-dock
         #openra-git
         #vimPlugins.vim-nix
         #vimPlugins.vim-nixhash
