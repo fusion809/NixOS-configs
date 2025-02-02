@@ -172,7 +172,7 @@
         keychain
         parted
         wget
-        gnome-tweaks
+        #gnome-tweaks
         whitesur-gtk-theme
         whitesur-cursors
         whitesur-icon-theme
