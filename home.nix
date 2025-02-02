@@ -174,15 +174,15 @@ function hmr {
  gtk.theme.name = "WhiteSur-Dark-solid";
  gtk.iconTheme.name = "WhiteSur-Dark";
  gtk.cursorTheme.name = "WhiteSur-cursors";
- #dconf.settings = {
- #  "org/gnome/desktop/background" = {
- #    picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo of Valley.jpg";
- #  };
- #};
- # dconf.settings = {
-  #  "org/gnome/desktop/background" = {
-  #    color-shading-type = "solid";
-  #      picture-uri = "file://run/current-system/sw/share/backgrounds/Photo of Valley.jpg";
-  #      };
-  #  };
+# dconf.settings = {
+#   "org/gnome/desktop/background" = {
+#     picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo of Valley.jpg";
+#   };
+# };
+  dconf.settings = {
+    "org/gnome/desktop/background" = {
+      color-shading-type = "solid";
+        picture-uri = "file://run/current-system/sw/share/backgrounds/Photo of Valley.jpg";
+        };
+    };
 }
