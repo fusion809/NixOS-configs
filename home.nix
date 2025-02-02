@@ -17,23 +17,9 @@
 
   # The home.packages option allows you to install Nix packages into your
   # environment.
-  home.packages = [
-    # # Adds the 'hello' command to your environment. It prints a friendly
-    # # "Hello, world!" when run.
-    # pkgs.hello
-
-    # # It is sometimes useful to fine-tune packages, for example, by applying
-    # # overrides. You can do that directly here, just don't forget the
-    # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
-    # # fonts?
-    # (pkgs.nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
-
-    # # You can also create simple shell scripts directly inside your
-    # # configuration. For example, this adds a command 'my-hello' to your
-    # # environment:
-    # (pkgs.writeShellScriptBin "my-hello" ''
-    #   echo "Hello, ${config.home.username}!"
-    # '')
+  home.packages = with pkgs; [
+    #gnomeExtensions.show-desktop-button
+    #gnomeExtensions.dash-to-dock
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
@@ -170,24 +156,36 @@ function hmr {
 
    ";
  };
- programs.gnome-shell.theme.name = "WhiteSur-Dark-solid";
- gtk.theme.name = "WhiteSur-Dark-solid";
- gtk.iconTheme.name = "WhiteSur-Dark";
- gtk.cursorTheme.name = "WhiteSur-cursors";
-# dconf.settings = {
-#   "org/gnome/desktop/background" = {
-#     picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
-#   };
-# };
-  dconf.settings = {
+ dconf = {
+   enable = true;
+   settings = {
     "org/gnome/desktop/background" = {
       color-shading-type = "solid";
       picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
       picture-uri-dark = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
       };
       "org/gnome/shell" = {
-        enabled-extensions =
-          "['dash-to-dock@micxgx.gmail.com', 'show-desktop-button@amivaleo', 'user-theme@gnome-shell-extensions.gcampax.github.com']";
-        };
+        enabled-extensions = [
+          "dash-to-dock@micxgx.gmail.com"
+          "show-desktop-button@amivaleo"
+          "user-theme@gnome-shell-extensions.gcampax.github.com"
+        ];
+        favorite-apps = [
+          "org.gnome.Nautilus.desktop"
+          "firefox.desktop"
+          "org.gnome.Terminal.desktop"
+          "org.gnome.TextEditor.desktop"
+          "gvim.desktop"
+          "org.gnome.Extensions.desktop"
+          "org.gnome.Settings.desktop"
+          "org.gnome.tweaks.desktop"
+          "nixos-manual.desktop"
+        ];
+      };
+    };
   };
+  programs.gnome-shell.theme.name = "WhiteSur-Dark-solid";
+  gtk.theme.name = "WhiteSur-Dark-solid";
+  gtk.iconTheme.name = "WhiteSur-Dark";
+  gtk.cursorTheme.name = "WhiteSur-cursors";
 }
