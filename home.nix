@@ -170,6 +170,9 @@ function hmr {
       icon-theme = "WhiteSur-dark";
       cursor-theme = "WhiteSur-cursors";
     };
+    "org/gnome/desktop/wm" = {
+      preferences = "close,maximize,minimize:menu";
+    };
     "org/gnome/shell" = {
       enabled-extensions = [
         "dash-to-dock@micxgx.gmail.com"
