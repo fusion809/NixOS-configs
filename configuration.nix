@@ -20,7 +20,9 @@
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
   boot.loader.grub.useOSProber = true;
-  
+  # Documentation
+  documentation.nixos.enable = false;
+
   networking.hostName = "nixos-vbox"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
@@ -73,6 +75,8 @@
     gnome-contacts
     gnome-disk-utility
     gnome-music
+    gnome-text-editor
+    gnome-control-center
     gnome-system-monitor
     gnome-tour
     gnome-weather

@@ -67,6 +67,7 @@
   programs.bash = {
     enable = true;
     bashrcExtra = "
+export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
 function vbash {
         vim $HOME/.bashrc
 }
@@ -102,22 +103,6 @@ function rebuild {
 }
 
 alias nixrb=rebuild
-    ";
-  };
-  programs.zsh = {
-    enable = true;
-    initExtra = "
-source $HOME/NixOS-configs/hnixos.zsh-theme
-source $HOME/.bashrc
-
-function vzsh {
-        vim $HOME/.zshrc
-}
-
-function szsh {
-	source $HOME/.zshrc
-}
-
 function clipf {
 	xclip -sel clip < $1
 }
@@ -150,10 +135,24 @@ function cdnc {
 	cd $HOME/NixOS-configs/$1
 }
 
-function hmr {
-        home-manager switch
+function vhom {
+  vim $HOME/NixOS-configs/home.nix
+}
+  ";
+  };
+  programs.zsh = {
+    enable = true;
+    initExtra = "
+source $HOME/NixOS-configs/hnixos.zsh-theme
+source $HOME/.bashrc
+
+function vzsh {
+        vim $HOME/.zshrc
 }
 
+function szsh {
+	source $HOME/.zshrc
+}
    ";
  };
  dconf = {
@@ -183,12 +182,9 @@ function hmr {
         "org.gnome.Nautilus.desktop"
         "firefox.desktop"
         "org.gnome.Terminal.desktop"
-        "org.gnome.TextEditor.desktop"
+        "vim.desktop"
         "gvim.desktop"
         "org.gnome.Extensions.desktop"
-        "org.gnome.Settings.desktop"
-        "org.gnome.tweaks.desktop"
-        "nixos-manual.desktop"
       ];
     };
     "org/gnome/shell/extensions/user-theme" = {
