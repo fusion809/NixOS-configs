@@ -165,7 +165,7 @@ function cdnc {
 }
 
 function hmr {
-        home switch
+        home-manager switch
 }
 
    ";
