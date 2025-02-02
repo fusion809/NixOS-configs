@@ -163,29 +163,55 @@ function hmr {
       color-shading-type = "solid";
       picture-uri = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
       picture-uri-dark = "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
-      };
-      "org/gnome/shell" = {
-        enabled-extensions = [
-          "dash-to-dock@micxgx.gmail.com"
-          "show-desktop-button@amivaleo"
-          "user-theme@gnome-shell-extensions.gcampax.github.com"
-        ];
-        favorite-apps = [
-          "org.gnome.Nautilus.desktop"
-          "firefox.desktop"
-          "org.gnome.Terminal.desktop"
-          "org.gnome.TextEditor.desktop"
-          "gvim.desktop"
-          "org.gnome.Extensions.desktop"
-          "org.gnome.Settings.desktop"
-          "org.gnome.tweaks.desktop"
-          "nixos-manual.desktop"
-        ];
-      };
+    };
+    "org/gnome/desktop/interface" = {
+      color-scheme = "prefer-dark";
+      gtk-theme = "WhiteSur-Dark-solid";
+      icon-theme = "WhiteSur-dark";
+      cursor-theme = "WhiteSur-cursors";
+    };
+    "org/gnome/shell" = {
+      enabled-extensions = [
+        "dash-to-dock@micxgx.gmail.com"
+        "show-desktop-button@amivaleo"
+        "user-theme@gnome-shell-extensions.gcampax.github.com"
+      ];
+      favorite-apps = [
+        "org.gnome.Nautilus.desktop"
+        "firefox.desktop"
+        "org.gnome.Terminal.desktop"
+        "org.gnome.TextEditor.desktop"
+        "gvim.desktop"
+        "org.gnome.Extensions.desktop"
+        "org.gnome.Settings.desktop"
+        "org.gnome.tweaks.desktop"
+        "nixos-manual.desktop"
+      ];
+    };
+    "org/gnome/shell/extensions/user-theme" = {
+      name = "WhiteSur-Dark-solid";
+    };
+    "org/gnome/shell/extensions/dash-to-dock" = {
+        height-fraction = 1.00;
+        show-apps-at-top = true;
+        isolate-workspaces = true;
+    };
+    "org/gnome/shell/extensions/show-desktop-button" = {
+      indicator-position = "LEFT";
     };
   };
+};
   programs.gnome-shell.theme.name = "WhiteSur-Dark-solid";
-  gtk.theme.name = "WhiteSur-Dark-solid";
-  gtk.iconTheme.name = "WhiteSur-Dark";
-  gtk.cursorTheme.name = "WhiteSur-cursors";
+  gtk = {
+    enable = true;
+    theme = {
+      name = "WhiteSur-Dark-solid";
+    };
+    iconTheme = {
+      name = "WhiteSur-dark";
+    };
+    cursorTheme = {
+      name = "WhiteSur-cursors";
+    };
+  };
 }
