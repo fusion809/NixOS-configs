@@ -10,12 +10,18 @@ mount $root /mnt
 mkdir -p /mnt/etc/nixos
 cp *.nix /mnt/etc/nixos
 VERSION=$(cat configuration.nix | grep "system.stateVersion" | cut -d '"' -f 2)
+if [[ $VERSION == "unstable" ]]; then
+	HOMEVER="master"
+else
+	HOMEVER="release-${VERSION}"
+fi
 nix-channel --remove nixos
 nix-channel --add https://nixos.org/channels/nixos-${VERSION} nixos
-nix-channel --add https://github.com/nix-community/home-manager/archive/release-${VERSION}.tar.gz home-manager
+nix-channel --add https://github.com/nix-community/home-manager/archive/$HOMEVER.tar.gz home-manager
 nix-channel --update
 nixos-install
 cp -r ../NixOS-configs /mnt/home/fusion809
 nixos-enter -c "chown fusion809 /home/fusion809/NixOS-configs; chown fusion809 -R /home/fusion809/NixOS-configs"
+nixos-enter -c "nix-channel --add https://github.com/nix-community/home-manager/archive/$HOMEVER.tar.gz home-manager" 
 cp -r .root-bashrc /mnt/root/.bashrc
 cp -r .root-zshrc /mnt/root/.zshrc
