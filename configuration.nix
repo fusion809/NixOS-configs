@@ -7,13 +7,22 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      <home-manager/nixos>
     ];
 
+  home-manager.users.fusion809 = {
+        imports =
+          [
+            ./home.nix
+          ];
+  };
   # Bootloader.
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
   boot.loader.grub.useOSProber = true;
-  
+  # Documentation
+  documentation.nixos.enable = false;
+
   networking.hostName = "nixos-vbox"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
@@ -66,6 +75,8 @@
     gnome-contacts
     gnome-disk-utility
     gnome-music
+    gnome-text-editor
+    gnome-control-center
     gnome-system-monitor
     gnome-tour
     gnome-weather
@@ -160,6 +171,8 @@
   nixpkgs.overlays = import ./overlays.nix;
 
   environment.systemPackages = (with pkgs; [
+        #foot, only useful on Wayland sessions
+        home-manager
         keychain
         parted
         wget
@@ -172,6 +185,8 @@
         #runescape
         git
         xclip
+        gnomeExtensions.show-desktop-button
+        gnomeExtensions.dash-to-dock
         #openra-git
         #vimPlugins.vim-nix
         #vimPlugins.vim-nixhash
