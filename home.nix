@@ -139,7 +139,7 @@ function push {
 }
 
 function gitsw {
-  repo=$(git remote -v | grep fetch | grep origin | sed 's/.*github.com\///g' | cut -d ' ' -f 1)
+  repo=$(git remote -v | grep fetch | grep origin | sed 's|.*github.com[/:]||g' | cut -d ' ' -f 1)
   git remote rm origin
   git remote add origin git@github.com:$repo
 }

@@ -24,5 +24,8 @@ cp -r ../NixOS-configs /mnt/home/fusion809
 nixos-enter -c "chown fusion809 /home/fusion809/NixOS-configs; chown fusion809 -R /home/fusion809/NixOS-configs"
 nixos-enter -c "nix-channel --add https://github.com/nix-community/home-manager/archive/$HOMEVER.tar.gz home-manager" 
 nixos-enter -c "nix-channel --update"
-cp -r .root-bashrc /mnt/root/.bashrc
-cp -r .root-zshrc /mnt/root/.zshrc
+rm /mnt/etc/nixos/*
+nixos-enter -c "ln -sf /home/fusion809/NixOS-configs/*.nix /etc/nixos"
+nixos-enter -c "ln -sf /home/fusion809/NixOS-configs/.root-bashrc /root/.bashrc"
+nixos-enter -c "ln -sf /home/fusion809/NixOS-configs/.root-zshrc /root/.zshrc"
+
