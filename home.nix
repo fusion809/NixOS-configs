@@ -69,70 +69,77 @@
     bashrcExtra = "
 export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
 function vbash {
-        vim $HOME/.bashrc
+  vim $HOME/.bashrc
 }
 
 function sbash {
-	source $HOME/.bashrc
+  source $HOME/.bashrc
 }
 
 function vcf {
-	sudo vim /etc/nixos/configuration.nix
+  sudo vim /etc/nixos/configuration.nix
 }
 
 function nixcg {
-	sudo nix-collect-garbage -d
+  sudo nix-collect-garbage -d
 }
 
 function nixcu {
-	sudo nix-channel --update
+  sudo nix-channel --update
 }
 
 function nixrsu {
-	sudo nixos-rebuild switch --upgrade
+  sudo nixos-rebuild switch --upgrade
 }
 
 function update {
-	nixcu
-	nixrsu
-	nixcg
+  nixcu
+  nixrsu
+  nixcg
 }
 
 function rebuild {
-	sudo nixos-rebuild switch
+  sudo nixos-rebuild switch
 }
 
 alias nixrb=rebuild
 function clipf {
-	xclip -sel clip < $1
+  xclip -sel clip < $1
 }
 
+if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then
+  mkdir -p $HOME/.ssh
+  ssh-keygen -t rsa -b 4096 -C 'brentonhorne77@gmail.com'
+  clipf $HOME/.ssh/id_rsa.pub
+  echo 'GitHub SSH key generated and is now in your clipboard. Go to https://github.com/settings/ssh to register it to your account!'
+fi
+
 function rainbowfastfetch {
-	hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
+  hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
 }
 
 export NIXPKGS_ALLOW_INSECURE=1
 
 function sclipf {
-	sudo xclip -sel clip < $1
+  sudo xclip -sel clip < $1
 }
 
 function git-branch {
   if ! [[ -n \"$1\" ]]; then
-        git rev-parse --abbrev-ref HEAD
+    git rev-parse --abbrev-ref HEAD
   else
-        git -C \"$1\" rev-parse --abbrev-ref HEAD
+    git -C \"$1\" rev-parse --abbrev-ref HEAD
   fi
 }
 
 function push {
-	git add --all
-	git commit -m \"$@\"
-	git push origin $(git-branch)
+  git add --all
+  git commit -m \"$@\"
+  git push origin $(git-branch)
 }
 
 function cdnc {
-	cd $HOME/NixOS-configs/$1
+  cd $HOME/NixOS-configs/$1
 }
 
 function vhom {
@@ -147,11 +154,11 @@ source $HOME/NixOS-configs/hnixos.zsh-theme
 source $HOME/.bashrc
 
 function vzsh {
-        vim $HOME/.zshrc
+  vim $HOME/.zshrc
 }
 
 function szsh {
-	source $HOME/.zshrc
+  source $HOME/.zshrc
 }
    ";
  };
