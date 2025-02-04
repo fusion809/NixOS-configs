@@ -205,7 +205,9 @@ function szsh {
     "org/gnome/shell/extensions/dash-to-dock" = {
         height-fraction = 1.00;
         show-apps-at-top = true;
+        custom-theme-shrink = true;
         isolate-workspaces = true;
+        apply-custom-theme = true;
     };
     "org/gnome/shell/extensions/show-desktop-button" = {
       indicator-position = "LEFT";
