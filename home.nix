@@ -157,6 +157,9 @@ function vhom {
     enable = true;
     initExtra = "
 source $HOME/NixOS-configs/hnixos.zsh-theme
+function shopt {
+#  echo \"shopt called with arguments: $@\"
+}
 source $HOME/.bashrc
 
 function vzsh {
