@@ -232,6 +232,9 @@
 
   environment.pathsToLink = ["/share/backgrounds/nixos"];
   programs.zsh.enable = true;
+  programs.zsh.shellInit = "
+export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
+  ";
   programs.zsh.ohMyZsh.enable = true;
   programs.zsh.autosuggestions.enable = true;
   programs.zsh.syntaxHighlighting.enable = true;

@@ -67,7 +67,6 @@
   programs.bash = {
     enable = true;
     bashrcExtra = "
-export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
 function vbash {
   vim $HOME/.bashrc
 }
