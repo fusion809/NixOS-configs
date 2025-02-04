@@ -26,6 +26,4 @@ nixos-enter -c "nix-channel --add https://github.com/nix-community/home-manager/
 nixos-enter -c "nix-channel --update"
 rm /mnt/etc/nixos/*
 nixos-enter -c "ln -sf /home/fusion809/NixOS-configs/*.nix /etc/nixos"
-nixos-enter -c "ln -sf /home/fusion809/NixOS-configs/.root-bashrc /root/.bashrc"
-nixos-enter -c "ln -sf /home/fusion809/NixOS-configs/.root-zshrc /root/.zshrc"
 
