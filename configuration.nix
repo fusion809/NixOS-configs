@@ -231,7 +231,68 @@
 #	]);
 
   environment.pathsToLink = ["/share/backgrounds/nixos"];
+  programs.bash.shellInit = "
+export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
+if [[ \"$EUID\" -eq 0 ]]; then
+  function rebuild {
+    nixos-rebuild switch
+  }
+
+  alias nixrb=rebuild
+
+  function nixcg {
+    nix-collect-garbage -d
+  }
+
+  function update {
+    nix-channel --update
+    rebuild
+  }
+  
+  function vcf {
+    vim /etc/nixos/configuration.nix
+  }
+
+  function clipf {
+    xclip -sel clip < $1
+  }
+
+  function rainbowfastfetch {
+    hyfetch -p rainbow -b fastfetch --args=\"--localip-show-ipv4 false\"
+  }
+
+  function gaymenfastfetch {
+    hyfetch -p gay-men -b fastfetch --args=\"--localip-show-ipv4 false\"
+  }
+
+  function rffetch {
+    cd ~/
+    rainbowfastfetch
+  }
+
+  function gmffetch {
+    cd ~/
+    gaymenfastfetch
+  }
+fi
+
+function vzsh {
+  vim $HOME/.zshrc
+}
+
+function szsh {
+  source $HOME/.zshrc
+}
+
+function vbash {
+  vim $HOME/.bashrc
+}
+";
   programs.zsh.enable = true;
+  programs.zsh.shellInit = "
+source /etc/profile
+source /home/fusion809/NixOS-configs/hnixos.zsh-theme
+  ";
   programs.zsh.ohMyZsh.enable = true;
   programs.zsh.autosuggestions.enable = true;
   programs.zsh.syntaxHighlighting.enable = true;
