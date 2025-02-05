@@ -92,6 +92,10 @@ function nixrsu {
   sudo nixos-rebuild switch --upgrade
 }
 
+function nixstrep {
+  sudo nix-store --repair --verify --check-contents
+}
+
 function git-branch {
   if ! [[ -n \"$1\" ]]; then
     git rev-parse --abbrev-ref HEAD

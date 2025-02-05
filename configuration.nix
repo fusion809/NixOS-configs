@@ -255,6 +255,10 @@ if [[ \"$EUID\" -eq 0 ]]; then
 
   alias nixrb=rebuild
 
+  function nixstrep {
+    nix-store --repair --verify --check-contents
+  }
+  
   function nixcg {
     nix-collect-garbage -d
   }
