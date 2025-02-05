@@ -88,14 +88,6 @@ function nixcu {
   sudo nix-channel --update
 }
 
-function nixrsu {
-  sudo nixos-rebuild switch --upgrade
-}
-
-function nixstrep {
-  sudo nix-store --repair --verify --check-contents
-}
-
 function git-branch {
   if ! [[ -n \"$1\" ]]; then
     git rev-parse --abbrev-ref HEAD
@@ -104,17 +96,29 @@ function git-branch {
   fi
 }
 
-function update {
+function nixrsu {
   if [[ $(git-branch $HOME/NixOS-configs) != $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2) ]]; then
     cdnc
     git checkout $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2)
   fi
+  sudo nixos-rebuild switch --upgrade
+}
+
+function nixstrep {
+  sudo nix-store --repair --verify --check-contents
+}
+
+function update {
   nixcu
   nixrsu
   nixcg
 }
 
 function rebuild {
+  if [[ $(git-branch $HOME/NixOS-configs) != $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2) ]]; then
+    cdnc
+    git checkout $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2)
+  fi
   sudo nixos-rebuild switch
 }
 
