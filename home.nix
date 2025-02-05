@@ -92,7 +92,19 @@ function nixrsu {
   sudo nixos-rebuild switch --upgrade
 }
 
+function git-branch {
+  if ! [[ -n \"$1\" ]]; then
+    git rev-parse --abbrev-ref HEAD
+  else
+    git -C \"$1\" rev-parse --abbrev-ref HEAD
+  fi
+}
+
 function update {
+  if [[ $(git-branch $HOME/NixOS-configs) != $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2) ]]; then
+    cdnc
+    git checkout $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2)
+  fi
   nixcu
   nixrsu
   nixcg
@@ -122,14 +134,6 @@ export NIXPKGS_ALLOW_INSECURE=1
 
 function sclipf {
   sudo xclip -sel clip < $1
-}
-
-function git-branch {
-  if ! [[ -n \"$1\" ]]; then
-    git rev-parse --abbrev-ref HEAD
-  else
-    git -C \"$1\" rev-parse --abbrev-ref HEAD
-  fi
 }
 
 function push {
