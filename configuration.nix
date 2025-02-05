@@ -3,6 +3,7 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 { config, pkgs, ... }:
+
 {
   imports =
     [ # Include the results of the hardware scan.
@@ -16,6 +17,20 @@
             ./home.nix
           ];
   };
+  boot.kernelPackages =
+    let
+      # or however you want to get a Nixpkgs from when 7.0.22 was the Virtualbox version
+      oldPkgs =
+       builtins.fetchTarball {
+          url = "https://github.com/NixOS/nixpkgs/archive/882842d2a908700540d206baa79efb922ac1c33d.tar.gz";
+      };
+    in
+    # change linuxPackages to a different kernel package set if desired
+    pkgs.linuxPackages.extend (final: prev: {
+      virtualboxGuestAdditions = final.callPackage
+        "${oldPkgs}/pkgs/applications/virtualization/virtualbox/guest-additions"
+        { };
+    });
   # Bootloader.
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";

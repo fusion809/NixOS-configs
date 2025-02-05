@@ -185,6 +185,9 @@ function szsh {
       icon-theme = "WhiteSur-dark";
       cursor-theme = "WhiteSur-cursors";
     };
+    "org/gnome/desktop/lockdown" = {
+      disable-lock-screen = true;
+    };
     "org/gnome/desktop/wm/preferences" = {
       button-layout = "close,maximize,minimize:menu";
     };
