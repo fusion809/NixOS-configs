@@ -171,6 +171,7 @@ function vhom {
   programs.zsh = {
     enable = true;
     initExtra = "
+sed -i '/^:/!d' $HOME/.zsh_history
 source $HOME/NixOS-configs/hnixos.zsh-theme
 function shopt {
   #echo \"shopt called with arguments: $@\"

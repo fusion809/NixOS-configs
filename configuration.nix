@@ -339,6 +339,7 @@ function vbash {
 ";
   programs.zsh.enable = true;
   programs.zsh.shellInit = "
+sed -i '/^:/!d' $HOME/.zsh_history
 source /etc/profile
 source /home/fusion809/NixOS-configs/hnixos.zsh-theme
   ";
