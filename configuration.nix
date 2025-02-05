@@ -249,7 +249,27 @@
   programs.bash.shellInit = "
 export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
 if [[ \"$EUID\" -eq 0 ]]; then
+  function git-branch {
+    if ! [[ -n \"$1\" ]]; then
+      git rev-parse --abbrev-ref HEAD
+    else
+      git -C \"$1\" rev-parse --abbrev-ref HEAD
+    fi
+  }
+
+  function cdnc {
+    cd /home/fusion809/NixOS-configs $1
+  }
+
+  function nixver {
+    nix-channel --list | grep nixos | cut -d '-' -f 2
+  }
+  
   function rebuild {
+    if [[ $(git-branch /home/fusion809/NixOS-configs) != $(nixver) ]]; then
+      cdnc
+      git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
+    fi
     nixos-rebuild switch
   }
 
@@ -263,9 +283,19 @@ if [[ \"$EUID\" -eq 0 ]]; then
     nix-collect-garbage -d
   }
 
+  function nixrsu {
+    if [[ $(git-branch /home/fusion809/NixOS-configs) != $(nixver) ]]; then
+      cdnc
+      git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
+    fi
+
+    nixos-rebuild switch --upgrade
+  }
+
   function update {
     nix-channel --update
-    rebuild
+    nixrsu
+    nixcg
   }
   
   function vcf {
