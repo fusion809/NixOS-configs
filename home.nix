@@ -123,6 +123,10 @@ function sclipf {
   sudo xclip -sel clip < $1
 }
 
+function nixstrep {
+  sudo nix-store --repair --verify --check-contents
+}
+
 function git-branch {
   if ! [[ -n \"$1\" ]]; then
     git rev-parse --abbrev-ref HEAD
