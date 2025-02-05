@@ -87,7 +87,19 @@ function nixcu {
   sudo nix-channel --update
 }
 
+function git-branch {
+  if ! [[ -n \"$1\" ]]; then
+    git rev-parse --abbrev-ref HEAD
+  else
+    git -C \"$1\" rev-parse --abbrev-ref HEAD
+  fi
+}
+
 function nixrsu {
+  if [[ $(git-branch $HOME/NixOS-configs) != $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2) ]]; then
+    cdnc
+    git checkout $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2)
+  fi
   sudo nixos-rebuild switch --upgrade
 }
 
@@ -98,6 +110,10 @@ function update {
 }
 
 function rebuild {
+  if [[ $(git-branch $HOME/NixOS-configs) != $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2) ]]; then
+    cdnc
+    git checkout $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2)
+  fi
   sudo nixos-rebuild switch
 }
 
@@ -125,14 +141,6 @@ function sclipf {
 
 function nixstrep {
   sudo nix-store --repair --verify --check-contents
-}
-
-function git-branch {
-  if ! [[ -n \"$1\" ]]; then
-    git rev-parse --abbrev-ref HEAD
-  else
-    git -C \"$1\" rev-parse --abbrev-ref HEAD
-  fi
 }
 
 function push {
