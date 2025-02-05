@@ -96,10 +96,14 @@ function git-branch {
   fi
 }
 
+function nixver {
+  sudo nix-channel --list | grep nixos | cut -d '-' -f 2
+}
+
 function nixrsu {
-  if [[ $(git-branch $HOME/NixOS-configs) != $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2) ]]; then
+  if [[ $(git-branch $HOME/NixOS-configs) != $(nixver) ]]; then
     cdnc
-    git checkout $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2)
+    git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   fi
   sudo nixos-rebuild switch --upgrade
 }
@@ -115,9 +119,9 @@ function update {
 }
 
 function rebuild {
-  if [[ $(git-branch $HOME/NixOS-configs) != $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2) ]]; then
+  if [[ $(git-branch $HOME/NixOS-configs) != $(nixver) ]]; then
     cdnc
-    git checkout $(sudo nix-channel --list | grep nixos | cut -d '-' -f 2)
+    git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   fi
   sudo nixos-rebuild switch
 }
