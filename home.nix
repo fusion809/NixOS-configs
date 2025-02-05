@@ -187,6 +187,9 @@ function szsh {
     "org/gnome/desktop/lockdown" = {
       disable-lock-screen = true;
     };
+    "org/gnome/desktop/screensaver" = {
+      lock-enabled = false;
+    };
     "org/gnome/desktop/wm/preferences" = {
       button-layout = "close,maximize,minimize:menu";
     };
