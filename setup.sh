@@ -9,7 +9,7 @@ mkfs.ext4 -L $root_label $root
 mount $root /mnt
 mkdir -p /mnt/etc/nixos
 cp *.nix /mnt/etc/nixos
-VERSION=$(cat configuration.nix | grep "system.stateVersion" | cut -d '"' -f 2)
+VERSION=$(cat .git/HEAD | cut -d '/' -f 3)
 if [[ $VERSION == "unstable" ]]; then
 	HOMEVER="master"
 else
