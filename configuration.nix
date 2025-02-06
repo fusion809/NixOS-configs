@@ -20,9 +20,10 @@
   boot.kernelPackages =
     let
       # or however you want to get a Nixpkgs from when 7.0.22 was the Virtualbox version
+      rev = "882842d2a908700540d206baa79efb922ac1c33d";
       oldPkgs =
        builtins.fetchTarball {
-          url = "https://github.com/NixOS/nixpkgs/archive/882842d2a908700540d206baa79efb922ac1c33d.tar.gz";
+          url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
       };
     in
     # change linuxPackages to a different kernel package set if desired
