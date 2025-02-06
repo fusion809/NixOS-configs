@@ -78,40 +78,41 @@
   services.xserver.displayManager.gdm.wayland = false; # Make it use X11 by default
   services.gnome.gnome-browser-connector.enable = true;
   environment.gnome.excludePackages = (with pkgs; [
+    baobab
     epiphany
+    evince
+    file-roller
     geary
-    totem
-    gnome-maps
-    yelp
-    gnome-logs
+    gnome-bluetooth
     gnome-calculator
     gnome-calendar
-    gnome-clocks
-    gnome-contacts
-    gnome-disk-utility
-    gnome-music
-    gnome-text-editor
-    gnome-control-center
-    gnome-system-monitor
-    gnome-tour
-    gnome-weather
-    evince
-    gnome-connections
-    snapshot
     gnome-characters
-    baobab
-    loupe
-    simple-scan
-    file-roller
-    rygel
-    gnome-bluetooth
+    gnome-clocks
     gnome-color-manager
+    gnome-connections
     gnome-console
+    gnome-contacts
+    gnome-control-center
+    gnome-disk-utility
     gnome-font-viewer
+    gnome-logs
+    gnome-maps
+    gnome-music
     gnome-online-accounts
     gnome-remote-desktop
+    gnome-system-monitor
+    gnome-text-editor
+    gnome-tour
     gnome-user-share
+    gnome-weather
+    loupe
+    rygel
     seahorse
+    simple-scan
+    snapshot
+    totem
+    xterm
+    yelp
   ]);
 
   # Configure keymap in X11
@@ -187,22 +188,15 @@
 
   environment.systemPackages = (with pkgs; [
         #foot, only useful on Wayland sessions
-        home-manager
-        keychain
-        parted
-        wget
-        #gnome-tweaks
-        whitesur-gtk-theme
-        whitesur-cursors
-        whitesur-icon-theme
-        gnome-terminal
-        pantheon.elementary-wallpapers
-        #runescape
         git
-        xclip
         gnomeExtensions.show-desktop-button
         gnomeExtensions.dash-to-dock
+        gnome-terminal
+        home-manager
+        keychain
         #openra-git
+        pantheon.elementary-wallpapers
+        #runescape
         #vimPlugins.vim-nix
         #vimPlugins.vim-nixhash
         #((vim_configurable.override {  }).customize{
@@ -222,6 +216,11 @@
       #'';
     #}
   #)
+        wget
+        whitesur-gtk-theme
+        whitesur-cursors
+        whitesur-icon-theme
+        xclip
     ]);# ++ (with pkgs.nixos-artwork.wallpapers; [
 #		binary-black
 #		catppuccin-mocha
