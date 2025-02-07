@@ -153,6 +153,12 @@ function push {
   git push origin $(git-branch)
 }
 
+function pushf {
+  git add --all
+  git commit -m \"$@\"
+  git push origin $(git-branch) -f
+}
+
 function gitsw {
   repo=$(git remote -v | grep fetch | grep origin | sed 's|.*github.com[/:]||g' | cut -d ' ' -f 1)
   git remote rm origin
@@ -165,6 +171,10 @@ function cdnc {
 
 function vhom {
   vim $HOME/NixOS-configs/home.nix
+}
+
+function vrm {
+  vim $HOME/NixOS-configs/README.md
 }
   ";
   };
