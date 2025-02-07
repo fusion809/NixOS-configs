@@ -194,6 +194,7 @@
         gnome-terminal
         home-manager
         keychain
+        #marvin
         #openra-git
         pantheon.elementary-wallpapers
         #runescape
