@@ -1,0 +1,68 @@
+{
+  lib,
+  stdenv,
+  fetchurl,
+  dpkg,
+  makeWrapper,
+  coreutils,
+  gawk,
+  gnugrep,
+  gnused,
+  openjdk17,
+}:
+
+stdenv.mkDerivation rec {
+  pname = "marvin";
+  version = "24.3.126";
+
+  src = fetchurl {
+    name = "marvin-${version}.deb";
+    url = "https://download.chemaxon.com/download?dl=%2Fdata%2Fdownload%2Fmarvinpro%2F${version}%2Fmarvinws_linux_${version}.deb";
+    hash = "sha256-zE/9EaOsNJwzE4Doasm9N8QG4t7wDOxqpV/Nhc4p7Ws=";
+  };
+
+  nativeBuildInputs = [
+    dpkg
+    makeWrapper
+  ];
+
+  unpackPhase = ''
+    dpkg-deb -x $src opt
+  '';
+
+  installPhase = ''
+    wrapBin() {
+      makeWrapper $1 $out/bin/$(basename $1) \
+        --set INSTALL4J_JAVA_HOME "${openjdk17}" \
+        --prefix PATH : ${
+          lib.makeBinPath [
+            coreutils
+            gawk
+            gnugrep
+            gnused
+          ]
+        }
+    }
+    cp -r opt $out
+    mkdir -p $out/bin $out/share/pixmaps $out/share/applications
+    wrapBin $out/opt/chemaxon/marvinws/marvinws
+    ${lib.concatStrings (
+      map
+        (name: ''
+          substitute ${./. + "/${name}.desktop"} $out/share/applications/${name}.desktop --subst-var out
+        '')
+        [
+          "marvin"
+        ]
+    )}
+  '';
+
+  meta = with lib; {
+    description = "Chemical modelling, analysis and structure drawing program";
+    homepage = "https://chemaxon.com/products/marvin";
+    maintainers = with maintainers; [ fusion809 ];
+    license = licenses.unfree;
+    platforms = platforms.linux;
+  };
+}
+
