@@ -21,4 +21,5 @@ in with pkgs; {
   openraPackages = import (forkNixpkgsPath + /openra/default.nix) {inherit pkgs; }; # Import as a set
   openra-git = openraPackages.engines.git; # Access the git engine directly
   runescape = callPackage (forkNixpkgsPath + /runescape/package.nix) {}; 
+  whitesur-icon-theme = callPackage (forkNixpkgsPath + /whitesur-icon-theme/package.nix) {};
 }) ]
