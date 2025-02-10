@@ -36,6 +36,8 @@
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
   boot.loader.grub.useOSProber = true;
+  #boot.loader.grub.theme = pkgs.sleek-grub-theme; # Commented out because this causes an issue in VBox that prevents 
+  # us from proceeding past the GRUB screen
   # Documentation
   documentation.nixos.enable = false;
 
