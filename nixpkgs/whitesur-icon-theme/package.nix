@@ -37,9 +37,9 @@ lib.checkListOfEnum "${pname}: theme variants"
     src = fetchFromGitHub {
       owner = "vinceliuice";
       repo = pname;
-      rev = version;
+      rev = "v${version}";
       #hash = "sha256-/cW/ymT9MjB07Sw7ifpr6x8oaaeI4PSyaOdLci7AncY=";
-      hash = "sha256-O9ieq49ZoxgdR/82lXg+gBCDntwtVA9Hwtgwy3Wc4M0=";
+      hash = "sha256-spTmS9Cn/HAnbgf6HppwME63cxWEbcKwWYMMj8ajFyY=";
     };
 
     nativeBuildInputs = [
@@ -70,9 +70,9 @@ lib.checkListOfEnum "${pname}: theme variants"
 
       jdupes --link-soft --recurse $out/share
       basepath=$out/share/icons
-      cd $basepath
-      find . -xtype l -delete
-      cd -
+#      cd $basepath
+#      find . -xtype l -delete
+#      cd -
       runHook postInstall
     '';
 
