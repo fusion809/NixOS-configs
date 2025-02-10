@@ -69,9 +69,10 @@ lib.checkListOfEnum "${pname}: theme variants"
         ${lib.optionalString blackPanelIcons "--black"}
 
       jdupes --link-soft --recurse $out/share
-      basepath=$out/share/icons/WhiteSur
+      basepath=$out/share/icons
       cd $basepath
-      find -L . -name . -o -type d -prune -o -type l -exec rm {} +
+      find . -xtype l -delete
+      cd -
       runHook postInstall
     '';
 
