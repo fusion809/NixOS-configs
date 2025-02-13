@@ -295,7 +295,6 @@ if [[ \"$EUID\" -eq 0 ]]; then
   }
 
   function update {
-    nix-channel --update
     nixrsu
     nixcg
   }

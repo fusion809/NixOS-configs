@@ -84,10 +84,6 @@ function nixcg {
   sudo nix-collect-garbage -d
 }
 
-function nixcu {
-  sudo nix-channel --update
-}
-
 function git-branch {
   if ! [[ -n \"$1\" ]]; then
     git rev-parse --abbrev-ref HEAD
@@ -113,7 +109,6 @@ function nixstrep {
 }
 
 function update {
-  nixcu
   nixrsu
   nixcg
 }
