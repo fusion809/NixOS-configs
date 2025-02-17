@@ -258,4 +258,30 @@ function szsh {
       name = "WhiteSur-cursors";
     };
   };
+  xsession.windowManager.i3.enable = true;
+  xsession.windowManager.i3.config = {
+    assigns = {
+      "1: web" = [{ class = "^Firefox$"; } ];
+      "0: terminal" = [ { class = "^URxvt$"; } ];
+    };
+    bars = [
+      {
+        position = "bottom";
+        fonts = { 
+          names = [ "liberation sans" ];
+          size = 20.0;
+        };
+        
+        statusCommand = "${pkgs.i3pystatus}/bin/i3pystatus -c /home/fusion809/NixOS-configs/i3status.py";
+      }
+    ];
+
+    menu = "${pkgs.rofi}/bin/rofi";
+    startup = [
+      { command = "feh --bg-scale /run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg"; always = true; }
+      { command = "urxvt"; always = true; }
+    ];
+    terminal = "urxvt";
+
+  };
 }

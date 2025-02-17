@@ -76,43 +76,43 @@
   services.xserver.displayManager.gdm.enable = true;
   services.xserver.desktopManager.gnome.enable = true;
   services.xserver.displayManager.gdm.wayland = false; # Make it use X11 by default
-  services.gnome.gnome-browser-connector.enable = true;
+  #services.gnome.gnome-browser-connector.enable = true;
   environment.gnome.excludePackages = (with pkgs; [
-    baobab
-    epiphany
-    evince
-    file-roller
-    geary
-    gnome-bluetooth
-    gnome-calculator
-    gnome-calendar
-    gnome-characters
-    gnome-clocks
-    gnome-color-manager
-    gnome-connections
-    gnome-console
-    gnome-contacts
-    gnome-control-center
-    gnome-disk-utility
-    gnome-font-viewer
-    gnome-logs
-    gnome-maps
-    gnome-music
-    gnome-online-accounts
-    gnome-remote-desktop
-    gnome-system-monitor
-    gnome-text-editor
-    gnome-tour
-    gnome-user-share
-    gnome-weather
-    loupe
-    rygel
-    seahorse
-    simple-scan
-    snapshot
-    totem
-    xterm
-    yelp
+  baobab
+  epiphany
+  evince
+  file-roller
+  geary
+  gnome-bluetooth
+  gnome-calculator
+  gnome-calendar
+  gnome-characters
+  gnome-clocks
+  gnome-color-manager
+  gnome-connections
+  gnome-console
+  gnome-contacts
+  gnome-control-center
+  gnome-disk-utility
+  gnome-font-viewer
+  gnome-logs
+  gnome-maps
+  gnome-music
+  gnome-online-accounts
+  gnome-remote-desktop
+  gnome-system-monitor
+  gnome-text-editor
+  gnome-tour
+  gnome-user-share
+  gnome-weather
+  loupe
+  rygel
+  seahorse
+  simple-scan
+  snapshot
+  totem
+  xterm
+  yelp
   ]);
 
   # Configure keymap in X11
@@ -150,7 +150,7 @@
     description = "Brenton Horne";
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [
-    #  thunderbird
+    thunderbird
     ];
   };
 
@@ -194,6 +194,13 @@
         gnome-terminal
         home-manager
         keychain
+        i3pystatus
+        python312Packages.netifaces
+        python312Packages.colour
+        rofi
+        feh
+        rxvt-unicode
+        liberation_ttf
         #openra-git
         pantheon.elementary-wallpapers
         #runescape
@@ -203,16 +210,16 @@
       #name = "vim";
       # Install plugins for example for syntax highlighting of nix files
       #vimrcConfig.packages.myplugins = with pkgs.vimPlugins; {
-      #  start = [ vim-nix vim-nixhash ];
-      #  opt = [];
+      start = [ vim-nix vim-nixhash ];
+      opt = [];
       #};
       #vimrcConfig.customRC = ''
-      #  " your custom vimrc
-      #  set nocompatible
-      #  set backspace=indent,eol,start
-      #  " Turn on syntax highlighting by default
-      #  syntax on
-      #  " ...
+      " your custom vimrc
+      set nocompatible
+      set backspace=indent,eol,start
+      " Turn on syntax highlighting by default
+      syntax on
+      " ...
       #'';
     #}
   #)
@@ -355,8 +362,8 @@ source /home/fusion809/NixOS-configs/hnixos.zsh-theme
   # started in user sessions.
   # programs.mtr.enable = true;
   # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
+  # enable = true;
+  # enableSSHSupport = true;
   # };
 
   # List services that you want to enable:
