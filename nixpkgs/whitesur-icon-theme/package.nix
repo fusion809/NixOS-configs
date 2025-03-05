@@ -37,9 +37,10 @@ lib.checkListOfEnum "${pname}: theme variants"
     src = fetchFromGitHub {
       owner = "vinceliuice";
       repo = pname;
-      rev = version;
-      #hash = "sha256-/cW/ymT9MjB07Sw7ifpr6x8oaaeI4PSyaOdLci7AncY=";
-      hash = "sha256-O9ieq49ZoxgdR/82lXg+gBCDntwtVA9Hwtgwy3Wc4M0=";
+      rev = "v${version}";
+      #hash = "sha256-/cW/ymT9MjB07Sw7ifpr6x8oaaeI4PSyaOdLci7AncY="; # old v2025-02-10
+      #2025-02-10 hash = "sha256-O9ieq49ZoxgdR/82lXg+gBCDntwtVA9Hwtgwy3Wc4M0=";
+      hash = "sha256-spTmS9Cn/HAnbgf6HppwME63cxWEbcKwWYMMj8ajFyY="; #v2025-02-10
     };
 
     nativeBuildInputs = [
