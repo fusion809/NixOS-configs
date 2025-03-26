@@ -295,6 +295,7 @@ if [[ \"$EUID\" -eq 0 ]]; then
   }
 
   function update {
+    nix-store --repair --verify --check-contents
     nixrsu
     nixcg
   }

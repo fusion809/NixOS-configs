@@ -109,6 +109,7 @@ function nixstrep {
 }
 
 function update {
+  nixstrep
   nixrsu
   nixcg
 }
