@@ -176,7 +176,7 @@ function vrm {
   };
   programs.zsh = {
     enable = true;
-    initExtra = "
+    initContent = "
 sed -i '/^:/!d' $HOME/.zsh_history
 source $HOME/NixOS-configs/hnixos.zsh-theme
 function shopt {
