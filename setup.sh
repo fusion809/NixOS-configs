@@ -9,6 +9,7 @@ mkfs.ext4 -L $root_label $root
 mount $root /mnt
 mkdir -p /mnt/etc/nixos
 cp *.nix /mnt/etc/nixos
+cp -r nixpkgs /mnt/etc/nixos
 VERSION=$(cat .git/HEAD | cut -d '/' -f 3 | head -n 1)
 if [[ $VERSION == "unstable" ]]; then
 	HOMEVER="master"
@@ -28,4 +29,5 @@ nixos-enter -c "nix-channel --update"
 rm /mnt/etc/nixos/*
 nixos-enter -c "ln -sf /home/fusion809/NixOS-configs/*.nix /etc/nixos"
 nixos-enter -c "nix-collect-garbage -d"
+
 
