@@ -104,7 +104,7 @@ function nixrsu {
 }
 
 function update {
-  sudo nix-store --repair --verrify --check-contents
+  sudo nix-store --repair --verify --check-contents
   nixrsu
   nixcg
 }
