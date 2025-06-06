@@ -101,7 +101,7 @@ function nixrsu {
     cdnc
     git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   fi
-  sudo nixos-rebuild switch --upgrade
+  sudo nixos-rebuild switch --upgrade-all
 }
 
 function nixstrep {
@@ -177,7 +177,7 @@ function vrm {
   };
   programs.zsh = {
     enable = true;
-    initExtra = "
+    initContent = "
 sed -i '/^:/!d' $HOME/.zsh_history
 source $HOME/NixOS-configs/hnixos.zsh-theme
 function shopt {
