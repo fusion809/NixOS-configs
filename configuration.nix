@@ -191,6 +191,7 @@
 
   environment.systemPackages = (with pkgs; [
         #foot, only useful on Wayland sessions
+        parted
         git
         gnomeExtensions.show-desktop-button
         gnomeExtensions.dash-to-dock
