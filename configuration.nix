@@ -3,42 +3,27 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 { config, pkgs, ... }:
+
 {
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       <home-manager/nixos>
     ];
-
-  home-manager.users.fusion809 = {
+home-manager.users.fusion809 = {
         imports =
           [
             ./home.nix
           ];
   };
-  boot.kernelPackages =
-    let
-      # or however you want to get a Nixpkgs from when 7.0.22 was the Virtualbox version
-      rev = "882842d2a908700540d206baa79efb922ac1c33d";
-      oldPkgs =
-       builtins.fetchTarball {
-          url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
-      };
-    in
-    # change linuxPackages to a different kernel package set if desired
-    pkgs.linuxPackages.extend (final: prev: {
-      virtualboxGuestAdditions = final.callPackage
-        "${oldPkgs}/pkgs/applications/virtualization/virtualbox/guest-additions"
-        { };
-    });
   # Bootloader.
-  boot.loader.grub.enable = true;
-  boot.loader.grub.device = "/dev/sda";
-  boot.loader.grub.useOSProber = true;
-  # Documentation
-  documentation.nixos.enable = false;
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "nixos-vbox"; # Define your hostname.
+  # Use latest kernel.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary
@@ -52,7 +37,7 @@
   time.timeZone = "Australia/Brisbane";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_AU.UTF-8";
+  i18n.defaultLocale = "en_GB.UTF-8";
 
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_AU.UTF-8";
@@ -68,52 +53,10 @@
 
   # Enable the X11 windowing system.
   services.xserver.enable = true;
-  services.xserver.excludePackages = with pkgs; [
-	xterm
-  ];
 
   # Enable the GNOME Desktop Environment.
   services.xserver.displayManager.gdm.enable = true;
   services.xserver.desktopManager.gnome.enable = true;
-  services.xserver.displayManager.gdm.wayland = false; # Make it use X11 by default
-  services.gnome.gnome-browser-connector.enable = true;
-  environment.gnome.excludePackages = (with pkgs; [
-    baobab
-    epiphany
-    evince
-    file-roller
-    geary
-    gnome-bluetooth
-    gnome-calculator
-    gnome-calendar
-    gnome-characters
-    gnome-clocks
-    gnome-color-manager
-    gnome-connections
-    gnome-console
-    gnome-contacts
-    gnome-control-center
-    gnome-disk-utility
-    gnome-font-viewer
-    gnome-logs
-    gnome-maps
-    gnome-music
-    gnome-online-accounts
-    gnome-remote-desktop
-    gnome-system-monitor
-    gnome-text-editor
-    gnome-tour
-    gnome-user-share
-    gnome-weather
-    loupe
-    rygel
-    seahorse
-    simple-scan
-    snapshot
-    totem
-    xterm
-    yelp
-  ]);
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -122,12 +65,11 @@
   };
 
   # Enable CUPS to print documents.
-  services.printing.enable = false;
+  services.printing.enable = true;
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
-  security.sudo.wheelNeedsPassword = false;
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -147,13 +89,12 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.fusion809 = {
     isNormalUser = true;
-    description = "Brenton Horne";
-    extraGroups = [ "networkmanager" "wheel" ];
+    description = "Brenton";
+    extraGroups = [ "networkmanager" "vboxvideo" "wheel" ];
     packages = with pkgs; [
     #  thunderbird
     ];
   };
-
   # Enable automatic login for the user.
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "fusion809";
@@ -164,89 +105,61 @@
 
   # Install firefox.
   programs.firefox.enable = true;
-
-  # Omit nano
-  programs.nano.enable = false;
-
-  # Use Vim instead
   programs.vim.enable = true;
   programs.vim.defaultEditor = true;
   programs.vim.package = pkgs.vim_configurable;
 
   # Allow unfree packages
-  nixpkgs.config = {
-    allowUnfree = true;
-    permittedInsecurePackages = [
-    # "openssl-1.1.1w" Used by RuneScape
-      "dotnet-runtime-6.0.36"
-      "dotnet-sdk-6.0.428"
-    ];
-  };
+  nixpkgs.config.allowUnfree = true;
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
+  environment.systemPackages = with pkgs; [
+    #vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    wget
+    git
+    xclip
+    gnomeExtensions.show-desktop-button
+    gnomeExtensions.dash-to-dock
+    home-manager
+    keychain
+    pantheon.elementary-wallpapers
+    whitesur-gtk-theme
+    whitesur-cursors
+    whitesur-icon-theme
+    gtk2
+    kitty
+    wofi
+    rofi-wayland
+    font-awesome
+    bluez
+    gnome-terminal
+    rofi-bluetooth
+    bluez-tools
+    google-chrome
+    pciutils
+    gnome-tweaks
+    brave
+    tor-browser
+    runescape
+    flatpak
+  ];
+  services.flatpak.enable = true;
+  nixpkgs.config.permittedInsecurePackages = [
+                "openssl-1.1.1w"
+              ];
   nixpkgs.overlays = import ./overlays.nix;
-
-  environment.systemPackages = (with pkgs; [
-        #foot, only useful on Wayland sessions
-        git
-        gnomeExtensions.show-desktop-button
-        gnomeExtensions.dash-to-dock
-        gnome-terminal
-        home-manager
-        keychain
-        #openra-git
-        pantheon.elementary-wallpapers
-        #runescape
-        #vimPlugins.vim-nix
-        #vimPlugins.vim-nixhash
-        #((vim_configurable.override {  }).customize{
-      #name = "vim";
-      # Install plugins for example for syntax highlighting of nix files
-      #vimrcConfig.packages.myplugins = with pkgs.vimPlugins; {
-      #  start = [ vim-nix vim-nixhash ];
-      #  opt = [];
-      #};
-      #vimrcConfig.customRC = ''
-      #  " your custom vimrc
-      #  set nocompatible
-      #  set backspace=indent,eol,start
-      #  " Turn on syntax highlighting by default
-      #  syntax on
-      #  " ...
-      #'';
-    #}
-  #)
-        wget
-        whitesur-gtk-theme
-        whitesur-cursors
-        whitesur-icon-theme
-        xclip
-    ]);# ++ (with pkgs.nixos-artwork.wallpapers; [
-#		binary-black
-#		catppuccin-mocha
-#		catppuccin-macchiato
-#		catppuccin-latte
-#		catppuccin-frappe
-#		moonscape
-#		nineish
-#		nineish-dark-gray
-#		nineish-solarized-dark
-#		nineish-solarized-light
-#		simple-blue
-#		simple-dark-gray
-#		simple-dark-gray-bootloader
-#		simple-dark-gray-bottom
-#		simple-light-gray
-#		simple-red
-#		stripes-logo
-#		stripes
-#		waterfall
-#		watersplash
-#	]);
-
-  environment.pathsToLink = ["/share/backgrounds/nixos"];
-
-  programs.bash.shellInit = "
+  programs.steam.enable = true;
+  virtualisation.virtualbox.host.enable = true;
+  users.extraGroups.vboxusers.members = ["fusion809"];
+  # Some programs need SUID wrappers, can be configured further or are
+  # started in user sessions.
+  # programs.mtr.enable = true;
+  # programs.gnupg.agent = {
+  #   enable = true;
+  #   enableSSHSupport = true;
+  # };
+programs.bash.shellInit = "
 export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
 if [[ \"$EUID\" -eq 0 ]]; then
   function git-branch {
@@ -343,6 +256,9 @@ sed -i '/^:/!d' $HOME/.zsh_history
 source /etc/profile
 source /home/fusion809/NixOS-configs/hnixos.zsh-theme
   ";
+  programs.hyprland.enable = true;
+  programs.waybar.enable = true;
+  security.sudo.wheelNeedsPassword = false;
   programs.zsh.ohMyZsh.enable = true;
   programs.zsh.autosuggestions.enable = true;
   programs.zsh.syntaxHighlighting.enable = true;
@@ -352,14 +268,6 @@ source /home/fusion809/NixOS-configs/hnixos.zsh-theme
 	"vi-mode"
   ];
   users.defaultUserShell = pkgs.zsh;
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
@@ -377,10 +285,8 @@ source /home/fusion809/NixOS-configs/hnixos.zsh-theme
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "24.11"; # Did you read the comment?
-  virtualisation.virtualbox.guest.enable = true;
-  virtualisation.virtualbox.guest.dragAndDrop = true;
+  system.stateVersion = "25.05"; # Did you read the comment?
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 }
+
 

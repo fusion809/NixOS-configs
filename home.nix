@@ -13,7 +13,7 @@
   # You should not change this value, even if you update Home Manager. If you do
   # want to update the value, then make sure to first check the Home Manager
   # release notes.
-  home.stateVersion = "24.11"; # Please read the comment before changing.
+  home.stateVersion = "25.05"; # Please read the comment before changing.
 
   # The home.packages option allows you to install Nix packages into your
   # environment.
@@ -79,6 +79,21 @@ function vcf {
   sudo vim /etc/nixos/configuration.nix
 }
 
+function vhc {
+  vim $HOME/.config/hypr/hyprland.conf
+}
+
+function vwc {
+  vim $HOME/.config/waybar/config.jsonc
+}
+
+if [[ -v $HYPRLAND_INSTANCE_SIGNATURE ]]; then
+  if `bt-device -l | grep -i \"00:A4:1C:F5:00:63\"` &> /dev/null; then
+    bluetoothctl scan on
+    bluetoothctl pair 00:A4:1C:F5:00:63
+    bluetoothctl connect 00:A4:1C:F5:00:63
+  fi
+fi
 function nixcg {
   sudo nix-collect-garbage -d
 }
@@ -176,7 +191,7 @@ function vrm {
   };
   programs.zsh = {
     enable = true;
-    initContent = "
+    initExtra = "
 sed -i '/^:/!d' $HOME/.zsh_history
 source $HOME/NixOS-configs/hnixos.zsh-theme
 function shopt {
@@ -221,14 +236,17 @@ function szsh {
         "dash-to-dock@micxgx.gmail.com"
         "show-desktop-button@amivaleo"
         "user-theme@gnome-shell-extensions.gcampax.github.com"
+        "gsconnect@andyholmes.github.io"
       ];
       favorite-apps = [
         "org.gnome.Nautilus.desktop"
         "firefox.desktop"
+        "com.brave.Browser"
         "org.gnome.Terminal.desktop"
         "vim.desktop"
         "gvim.desktop"
         "org.gnome.Extensions.desktop"
+        "steam.desktop"
       ];
     };
     "org/gnome/shell/extensions/user-theme" = {
