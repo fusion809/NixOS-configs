@@ -21,6 +21,11 @@ home-manager.users.fusion809 = {
   boot.loader.grub.device = "nodev";
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.useOSProber = true;
+  boot.loader.grub.default = 5;
+  boot.loader.grub.timeout = -1;
+  systemd.services.dev-tpmrm0.enable = false;
+  systemd.services.vboxnet0.enable = false;
+
   boot.loader.efi.canTouchEfiVariables = true;
 
   # Use latest kernel.
@@ -146,6 +151,8 @@ home-manager.users.fusion809 = {
     tor-browser
     runescape
     flatpak
+    kdePackages.kdeconnect-kde
+    blueman
   ];
   services.flatpak.enable = true;
   nixpkgs.config.permittedInsecurePackages = [
