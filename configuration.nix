@@ -21,9 +21,11 @@ home-manager.users.fusion809 = {
   boot.loader.grub.device = "nodev";
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.useOSProber = true;
-  boot.loader.grub.default = 5;
-  boot.loader.grub.timeout = -1;
+  boot.loader.grub.default = 1;
+  boot.loader.grub.timeout = 5;
   systemd.services.dev-tpmrm0.enable = false;
+  systemd.tpm2.enable = false;
+  boot.initrd.systemd.tpm2.enable = false;
   systemd.services.vboxnet0.enable = false;
 
   boot.loader.efi.canTouchEfiVariables = true;
@@ -148,6 +150,7 @@ home-manager.users.fusion809 = {
     pciutils
     gnome-tweaks
     brave
+    gimp
     tor-browser
     runescape
     flatpak
@@ -159,8 +162,15 @@ home-manager.users.fusion809 = {
                 "openssl-1.1.1w"
               ];
   nixpkgs.overlays = import ./overlays.nix;
-  programs.steam.enable = true;
+  programs.steam = {
+  enable = true;
+  remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+  dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
+  localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
+};
   virtualisation.virtualbox.host.enable = true;
+  virtualisation.virtualbox.host.enableKvm = true;
+  virtualisation.virtualbox.host.addNetworkInterface = false;
   users.extraGroups.vboxusers.members = ["fusion809"];
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

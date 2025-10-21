@@ -111,10 +111,10 @@ function nixver {
 }
 
 function nixrsu {
-  if [[ $(git-branch $HOME/NixOS-configs) != $(nixver) ]]; then
-    cdnc
-    git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
-  fi
+  #if [[ $(git-branch $HOME/NixOS-configs) != $(nixver) ]]; then
+  #  cdnc
+  #  git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
+  #fi
   sudo nixos-rebuild switch --upgrade
 }
 
