@@ -171,6 +171,7 @@ home-manager.users.fusion809 = {
   virtualisation.virtualbox.host.enable = true;
   virtualisation.virtualbox.host.enableKvm = true;
   virtualisation.virtualbox.host.addNetworkInterface = false;
+  virtualisation.virtualbox.host.enableExtensionPack = true;
   users.extraGroups.vboxusers.members = ["fusion809"];
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
