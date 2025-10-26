@@ -100,7 +100,7 @@ home-manager.users.fusion809 = {
   users.users.fusion809 = {
     isNormalUser = true;
     description = "Brenton";
-    extraGroups = [ "networkmanager" "vboxvideo" "wheel" "vboxusers" "kvm" "input" "docker" ];
+    extraGroups = [ "networkmanager" "vboxvideo" "wheel" "vboxusers" "input" "docker" ];
     packages = with pkgs; [
     #  thunderbird
     ];
@@ -185,8 +185,8 @@ hardware.graphics.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia.open = false;  # see the note above
   virtualisation.virtualbox.host.enable = true;
-  #virtualisation.virtualbox.host.enableKvm = true;
-  #virtualisation.virtualbox.host.addNetworkInterface = false;
+  virtualisation.virtualbox.host.enableKvm = true;
+  virtualisation.virtualbox.host.addNetworkInterface = false;
   virtualisation.virtualbox.host.enableExtensionPack = true;
   #users.extraGroups.vboxusers.members = ["fusion809"];
   # Some programs need SUID wrappers, can be configured further or are
