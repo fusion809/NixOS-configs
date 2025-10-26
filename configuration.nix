@@ -26,7 +26,7 @@ home-manager.users.fusion809 = {
   systemd.services.dev-tpmrm0.enable = false;
   systemd.tpm2.enable = false;
   boot.initrd.systemd.tpm2.enable = false;
-  systemd.services.vboxnet0.enable = false;
+  #systemd.services.vboxnet0.enable = false;
 
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -100,7 +100,7 @@ home-manager.users.fusion809 = {
   users.users.fusion809 = {
     isNormalUser = true;
     description = "Brenton";
-    extraGroups = [ "networkmanager" "vboxvideo" "wheel" ];
+    extraGroups = [ "networkmanager" "vboxvideo" "wheel" "vboxusers" "kvm" "input" "docker" ];
     packages = with pkgs; [
     #  thunderbird
     ];
@@ -120,47 +120,59 @@ home-manager.users.fusion809 = {
   programs.vim.package = pkgs.vim_configurable;
 
   # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    allowUnfree = true;
+    permittedInsecurePackages = [
+                "openssl-1.1.1w"
+    ];
+    packageOverrides = pkgs: {
+      unstable = import <unstable> {
+        config = config.nixpkgs.config;
+      };
+    };
+  };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    #vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    wget
-    git
-    xclip
-    gnomeExtensions.show-desktop-button
-    gnomeExtensions.dash-to-dock
-    home-manager
-    keychain
-    pantheon.elementary-wallpapers
-    whitesur-gtk-theme
-    whitesur-cursors
-    whitesur-icon-theme
-    gtk2
-    kitty
-    wofi
-    rofi-wayland
-    font-awesome
-    bluez
-    gnome-terminal
-    rofi-bluetooth
-    bluez-tools
-    google-chrome
-    pciutils
-    gnome-tweaks
-    brave
-    gimp
-    tor-browser
-    runescape
-    flatpak
-    kdePackages.kdeconnect-kde
-    blueman
-  ];
+    	#vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    	wget
+        pastebinit
+    	git
+    	xclip
+    	gnomeExtensions.show-desktop-button
+        gnomeExtensions.dash-to-dock
+        home-manager
+        keychain
+        pantheon.elementary-wallpapers
+        whitesur-gtk-theme
+        whitesur-cursors
+        whitesur-icon-theme
+        gtk2
+        kitty
+        wofi
+        rofi-wayland
+        font-awesome
+        bluez
+        gnome-terminal
+        rofi-bluetooth
+        bluez-tools
+        google-chrome
+        pciutils
+        gnome-tweaks
+        brave
+        gimp
+        tor-browser
+        runescape
+        flatpak
+        kdePackages.kdeconnect-kde
+        blueman
+	unstable.winboat
+        docker
+        docker-compose
+	steam-run
+    ];
   services.flatpak.enable = true;
-  nixpkgs.config.permittedInsecurePackages = [
-                "openssl-1.1.1w"
-              ];
   nixpkgs.overlays = import ./overlays.nix;
   programs.steam = {
   enable = true;
@@ -168,11 +180,15 @@ home-manager.users.fusion809 = {
   dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
   localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
 };
+  hardware.steam-hardware.enable = true;
+hardware.graphics.enable = true;
+  services.xserver.videoDrivers = [ "nvidia" ];
+  hardware.nvidia.open = false;  # see the note above
   virtualisation.virtualbox.host.enable = true;
-  virtualisation.virtualbox.host.enableKvm = true;
-  virtualisation.virtualbox.host.addNetworkInterface = false;
+  #virtualisation.virtualbox.host.enableKvm = true;
+  #virtualisation.virtualbox.host.addNetworkInterface = false;
   virtualisation.virtualbox.host.enableExtensionPack = true;
-  users.extraGroups.vboxusers.members = ["fusion809"];
+  #users.extraGroups.vboxusers.members = ["fusion809"];
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;

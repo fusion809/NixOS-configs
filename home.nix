@@ -262,6 +262,12 @@ function szsh {
     "org/gnome/shell/extensions/show-desktop-button" = {
       indicator-position = "LEFT";
     };
+    "org/gnome/settings-daemon/plugins/power" = {
+      sleep-inactive-ac-type = "nothing";
+    };
+    "org/gnome/desktop/session" = {
+      idle-delay = 0;
+    };
   };
 };
   programs.gnome-shell.theme.name = "WhiteSur-Dark-solid";
