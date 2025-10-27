@@ -15,6 +15,14 @@
   # release notes.
   home.stateVersion = "25.05"; # Please read the comment before changing.
 
+  #wayland.windowManager.hyprland = {
+  #  enable = true;
+    # ...
+  #  plugins = [
+  #    inputs.hyprland-plugins.packages.${pkgs.system}.hyprbars
+      # ...
+  #  ];
+  #};
   # The home.packages option allows you to install Nix packages into your
   # environment.
   home.packages = with pkgs; [
@@ -206,10 +214,30 @@ function vzsh {
 function szsh {
   source $HOME/.zshrc
 }
+#sudo virsh net-define $HOME/NixOS-configs/virbr0.xml
+#sudo virsh net-start virbr0
+#ip link add virbr0 type bridge
+#ip address ad dev virbr0 10.25.0.1/24
+#ip link set dev virbr0 up
+function cdhc {
+cd $HOME/GitHub/mine/config/hyprland-configs
+}
+
+function vhc {
+vim $HOME/.config/hypr/hyprland.conf
+}
+
+function vwc {
+vim $HOME/.config/waybar/config.jsonc
+}
+
+function vst {
+vim $HOME/GitHub/mine/config/hyprland-configs/style.css
+}
    ";
  };
  dconf = {
-   enable = true;
+   enable = false;
    settings = {
     "org/gnome/desktop/background" = {
       color-shading-type = "solid";
@@ -268,6 +296,11 @@ function szsh {
     "org/gnome/desktop/session" = {
       idle-delay = 0;
     };
+    "org/virt-manager/virt-manager/connections" = {
+    autoconnect = ["qemu:///system"];
+    uris = ["qemu:///system"];
+  };
+
   };
 };
   programs.gnome-shell.theme.name = "WhiteSur-Dark-solid";

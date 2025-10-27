@@ -22,7 +22,7 @@ home-manager.users.fusion809 = {
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.useOSProber = true;
   boot.loader.grub.default = 1;
-  boot.loader.grub.timeout = 5;
+  boot.loader.grub.timeout = -1;
   systemd.services.dev-tpmrm0.enable = false;
   systemd.tpm2.enable = false;
   boot.initrd.systemd.tpm2.enable = false;
@@ -64,9 +64,9 @@ home-manager.users.fusion809 = {
   # Enable the X11 windowing system.
   services.xserver.enable = true;
 
-  # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
+  # Disnable the GNOME Desktop Environment.
+  services.xserver.displayManager.sddm.enable = true;
+  services.xserver.desktopManager.gnome.enable = false;
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -100,7 +100,7 @@ home-manager.users.fusion809 = {
   users.users.fusion809 = {
     isNormalUser = true;
     description = "Brenton";
-    extraGroups = [ "networkmanager" "vboxvideo" "wheel" "vboxusers" "input" "docker" ];
+    extraGroups = [ "networkmanager" "vboxvideo" "wheel" "vboxusers" "input" "docker" "libvirtd" ];
     packages = with pkgs; [
     #  thunderbird
     ];
@@ -140,8 +140,8 @@ home-manager.users.fusion809 = {
         pastebinit
     	git
     	xclip
-    	gnomeExtensions.show-desktop-button
-        gnomeExtensions.dash-to-dock
+        #gnomeExtensions.show-desktop-button
+        #gnomeExtensions.dash-to-dock
         home-manager
         keychain
         pantheon.elementary-wallpapers
@@ -150,14 +150,28 @@ home-manager.users.fusion809 = {
         whitesur-icon-theme
         gtk2
         kitty
-        wofi
+        rofi
         rofi-wayland
         font-awesome
         bluez
-        gnome-terminal
+        #gnome-terminal
+        alacritty
+        kitty
+        nautilus
+        wttrbar
+        wl-clipboard
+        cmake
+        gnumake
+        cpio
+        pkg-config
+        git
+        #marked
+        hyfetch
+        gtop
         rofi-bluetooth
         bluez-tools
         google-chrome
+        swaybg
         pciutils
         gnome-tweaks
         brave
@@ -166,13 +180,14 @@ home-manager.users.fusion809 = {
         runescape
         flatpak
         kdePackages.kdeconnect-kde
-        blueman
 	unstable.winboat
         docker
         docker-compose
 	steam-run
+	dnsmasq
     ];
   services.flatpak.enable = true;
+  services.blueman.enable = true;
   nixpkgs.overlays = import ./overlays.nix;
   programs.steam = {
   enable = true;
@@ -181,6 +196,7 @@ home-manager.users.fusion809 = {
   localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
 };
   hardware.steam-hardware.enable = true;
+  hardware.bluetooth.enable = true;
 hardware.graphics.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia.open = false;  # see the note above
@@ -188,6 +204,24 @@ hardware.graphics.enable = true;
   virtualisation.virtualbox.host.enableKvm = true;
   virtualisation.virtualbox.host.addNetworkInterface = false;
   virtualisation.virtualbox.host.enableExtensionPack = true;
+  virtualisation.libvirtd = {
+  enable = true;
+  qemu = {
+    package = pkgs.qemu_kvm;
+    runAsRoot = true;
+    swtpm.enable = true;
+    ovmf = { # not needed in NixOS 25.11 since https://github.com/NixOS/nixpkgs/pull/421549
+      enable = true;
+      packages = [(pkgs.OVMF.override {
+        secureBoot = true;
+        tpmSupport = true;
+      }).fd];
+    };
+  };
+};
+virtualisation.spiceUSBRedirection.enable = true;
+
+programs.virt-manager.enable = true;
   #users.extraGroups.vboxusers.members = ["fusion809"];
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -315,8 +349,8 @@ source /home/fusion809/NixOS-configs/hnixos.zsh-theme
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
-
-  # This value determines the NixOS release from which the default
+#fonts.packages = [ ... ] ++ builtins.filter lib.attrsets.isDerivation (builtins.attrValues pkgs.nerd-fonts);  
+# This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It‘s perfectly fine and recommended to leave
   # this value at the release version of the first install of this system.
@@ -324,6 +358,7 @@ source /home/fusion809/NixOS-configs/hnixos.zsh-theme
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.05"; # Did you read the comment?
 
+  nix.settings.experimental-features = ["nix-command" "flakes"];
 }
 
 
