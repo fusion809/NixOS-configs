@@ -9,12 +9,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1&ref={version}";
+    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=v0.49.0";
     # where {version} is the hyprland release version
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
 
     hy3 = {
-      url = "github:outfoxxed/hy3?ref=hl{version}"; # where {version} is the hyprland release version
+      url = "github:outfoxxed/hy3?ref=hl0.49.0"; # where {version} is the hyprland release version
       # or "github:outfoxxed/hy3" to follow the development branch.
       # (you may encounter issues if you dont do the same for hyprland)
       inputs.hyprland.follows = "hyprland";
