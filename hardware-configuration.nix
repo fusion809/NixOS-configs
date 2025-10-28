@@ -11,6 +11,7 @@
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "vboxdrv" "vboxnetadp" "vboxnet"];
+  boot.kernelParams = ["split_lock_detect=off"];
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
