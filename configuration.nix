@@ -99,7 +99,7 @@ home-manager.users.fusion809 = {
   users.users.fusion809 = {
     isNormalUser = true;
     description = "Brenton";
-    extraGroups = [ "networkmanager" "vboxvideo" "wheel" "vboxusers" "input" "docker" "libvirtd" ];
+    extraGroups = [ "networkmanager" "wheel" "input" "docker" "libvirtd" ];
     packages = with pkgs; [
     #  thunderbird
     ];
