@@ -43,6 +43,9 @@
     #   org.gradle.console=verbose
     #   org.gradle.daemon.idletimeout=3600000
     # '';
+    ".config/hypr/hyprland.conf" = {
+      source = /home/fusion809/GitHub/mine/config/hyprland-configs/hyprland.conf;
+    };
   };
 
   # Home Manager can also manage your environment variables through
@@ -195,6 +198,10 @@ function vhom {
 function vrm {
   vim $HOME/NixOS-configs/README.md
 }
+
+if ! `mountpoint -q /arch`; then
+  sudo mount /dev/disk/by-label/arch /arch
+fi
   ";
   };
   programs.zsh = {
@@ -224,7 +231,7 @@ cd $HOME/GitHub/mine/config/hyprland-configs
 }
 
 function vhc {
-vim $HOME/.config/hypr/hyprland.conf
+vim $HOME/GitHub/mine/config/hyprland-configs/hyprland.conf
 }
 
 function vwc {

@@ -32,7 +32,6 @@ home-manager.users.fusion809 = {
 
   # Use latest kernel.
   boot.kernelPackages = pkgs.linuxPackages_latest;
-
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
@@ -137,6 +136,10 @@ home-manager.users.fusion809 = {
   environment.systemPackages = with pkgs; [
     	#vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
         grimblast
+        gnome-text-editor
+        hyprlandPlugins.hy3
+        lm_sensors
+        jq
     	wget
         pastebinit
     	git
@@ -185,6 +188,7 @@ home-manager.users.fusion809 = {
         docker
         docker-compose
 	steam-run
+        mako
 	dnsmasq
     ];
   services.flatpak.enable = true;
@@ -201,10 +205,10 @@ home-manager.users.fusion809 = {
 hardware.graphics.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia.open = false;  # see the note above
-  virtualisation.virtualbox.host.enable = true;
-  virtualisation.virtualbox.host.enableKvm = true;
-  virtualisation.virtualbox.host.addNetworkInterface = false;
-  virtualisation.virtualbox.host.enableExtensionPack = true;
+  #virtualisation.virtualbox.host.enable = true;
+  #virtualisation.virtualbox.host.enableKvm = true;
+  #virtualisation.virtualbox.host.addNetworkInterface = false;
+  #virtualisation.virtualbox.host.enableExtensionPack = true;
   virtualisation.libvirtd = {
   enable = true;
   qemu = {
