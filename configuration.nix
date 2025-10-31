@@ -62,6 +62,8 @@
     julia
     R
     octave
+    sage
+    python313Packages.jupyterlab
     # Required for a clipboard
     wl-clip-persist
     wl-clipboard
