@@ -241,6 +241,14 @@ vim $HOME/.config/waybar/config.jsonc
 function vst {
 vim $HOME/GitHub/mine/config/hyprland-configs/style.css
 }
+
+function cdpi {
+cd $HOME/Pictures
+}
+
+function cdap {
+cd $HOME/.local/share/applications
+}
    ";
  };
  dconf = {
