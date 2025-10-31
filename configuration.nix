@@ -90,7 +90,10 @@
     docker-compose
     gimp
     google-chrome
+    onlyoffice-desktopeditors
     steam-run
+    texliveFull
+    texstudio
     vlc
     vscode
     unstable.winboat
