@@ -45,10 +45,21 @@
     # Core apps for Hyprland
     gnome-text-editor
     nautilus
-    kdePackages.ffmpegthumbs
     ffmpegthumbnailer
     alacritty
     kitty
+    # Games
+    superTux
+    superTuxKart
+    aisleriot
+    gnome-chess
+    gnuchess
+    # Chemistry software
+    marvin
+    # Maths software
+    julia
+    R
+    octave
     # Required for a clipboard
     wl-clip-persist
     wl-clipboard
