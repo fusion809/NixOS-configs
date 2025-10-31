@@ -108,7 +108,6 @@
       nerd-fonts.hurmit
       nerd-fonts.hasklug
     ];
-    fontconfig.useEmbeddedBitmaps = true;
   };
   hardware = {
     steam-hardware.enable = true;
