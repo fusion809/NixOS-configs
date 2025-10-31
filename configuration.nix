@@ -10,232 +10,140 @@
       ./hardware-configuration.nix
       <home-manager/nixos>
     ];
-home-manager.users.fusion809 = {
+  # Bootloader.
+  boot = {
+    initrd.systemd.tpm2.enable = false;
+    kernelPackages = pkgs.linuxPackages_latest;
+    loader = {
+      timeout = 5;
+      grub = {
+        enable = true;
+        device = "nodev";
+        efiSupport = true;
+        useOSProber = true;
+        default = 1;
+      };
+      efi.canTouchEfiVariables = true;
+    };
+  };
+
+# List packages installed in system profile. To search, run:
+  # $ nix search wget
+  environment.systemPackages = with pkgs; [
+    home-manager
+    grimblast              # Screenshots under Hyprland
+    hyprlandPlugins.hy3    # Tabbing under Hyprland
+    swaynotificationcenter # Required for notifications
+    # Theming
+    pantheon.elementary-wallpapers
+    whitesur-gtk-theme
+    whitesur-cursors
+    whitesur-icon-theme
+    # Required by Waybar widgets
+    lm_sensors
+    wttrbar
+    # Core apps for Hyprland
+    gnome-text-editor
+    nautilus
+    kdePackages.ffmpegthumbs
+    ffmpegthumbnailer
+    alacritty
+    kitty
+    # Required for a clipboard
+    wl-clip-persist
+    wl-clipboard
+    # Application menu for Hyprland
+    rofi-wayland
+    # Assorted Hyprland utilities
+    swaybg
+    # Command-line utilities
+    dnsmasq
+    jq
+    git
+    keychain
+    hyfetch
+    gtop
+    pciutils
+    wget
+    # Bluetooth
+    bluez
+    bluez-tools
+    # Assorted other apps    
+    brave
+    docker
+    docker-compose
+    gimp
+    google-chrome
+    steam-run
+    vlc
+    vscode
+    unstable.winboat
+    # Other packages
+    gtk2
+    font-awesome
+  ];
+  fonts = {
+    packages = with pkgs; [ 
+      nerd-fonts.jetbrains-mono 
+      nerd-fonts.roboto-mono
+      nerd-fonts.ubuntu 
+    ];
+  };
+  hardware = {
+    steam-hardware.enable = true;
+    bluetooth.enable = true;
+    graphics.enable = true;
+    nvidia.open = false;  # Should only be true for newer cards
+  };
+  # Set up home manager
+  home-manager.users.fusion809 = {
         imports =
           [
             ./home.nix
           ];
   };
-  # Bootloader.
-  boot.loader.grub.enable = true;
-  boot.loader.grub.device = "nodev";
-  boot.loader.grub.efiSupport = true;
-  boot.loader.grub.useOSProber = true;
-  boot.loader.grub.default = 1;
-  boot.loader.grub.timeout = -1;
-  systemd.services.dev-tpmrm0.enable = false;
-  systemd.tpm2.enable = false;
-  boot.initrd.systemd.tpm2.enable = false;
-  #systemd.services.vboxnet0.enable = false;
-
-  boot.loader.efi.canTouchEfiVariables = true;
-
-  # Use latest kernel.
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  networking.hostName = "nixos"; # Define your hostname.
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-  # Enable networking
-  networking.networkmanager.enable = true;
-
-  # Set your time zone.
-  time.timeZone = "Australia/Brisbane";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_GB.UTF-8";
-
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "en_AU.UTF-8";
-    LC_IDENTIFICATION = "en_AU.UTF-8";
-    LC_MEASUREMENT = "en_AU.UTF-8";
-    LC_MONETARY = "en_AU.UTF-8";
-    LC_NAME = "en_AU.UTF-8";
-    LC_NUMERIC = "en_AU.UTF-8";
-    LC_PAPER = "en_AU.UTF-8";
-    LC_TELEPHONE = "en_AU.UTF-8";
-    LC_TIME = "en_AU.UTF-8";
+  i18n = {
+    defaultLocale = "en_GB.UTF-8";
+    extraLocaleSettings = {
+      LC_ADDRESS = "en_AU.UTF-8";
+      LC_IDENTIFICATION = "en_AU.UTF-8";
+      LC_MEASUREMENT = "en_AU.UTF-8";
+      LC_MONETARY = "en_AU.UTF-8";
+      LC_NAME = "en_AU.UTF-8";
+      LC_NUMERIC = "en_AU.UTF-8";
+      LC_PAPER = "en_AU.UTF-8";
+      LC_TELEPHONE = "en_AU.UTF-8";
+      LC_TIME = "en_AU.UTF-8";
+    };
   };
 
-  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Disnable the GNOME Desktop Environment.
-  services.xserver.displayManager.sddm.enable = true;
-  services.xserver.desktopManager.gnome.enable = false;
-
-  # Configure keymap in X11
-  services.xserver.xkb = {
-    layout = "us";
-    variant = "";
+  # Enable networking
+  networking = {
+    hostName = "nixos"; # Define your hostname.
+    # Enable networking
+    networkmanager.enable = true;
   };
-
-  # Enable CUPS to print documents.
-  services.printing.enable = true;
-
-  # Enable sound with pipewire.
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    # If you want to use JACK applications, uncomment this
-    #jack.enable = true;
-
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
-  };
-
-  # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.fusion809 = {
-    isNormalUser = true;
-    description = "Brenton";
-    extraGroups = [ "networkmanager" "wheel" "input" "docker" "libvirtd" ];
-    packages = with pkgs; [
-    #  thunderbird
-    ];
-  };
-  # Enable automatic login for the user.
-  services.displayManager.autoLogin.enable = true;
-  services.displayManager.autoLogin.user = "fusion809";
-
-  # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
-  systemd.services."getty@tty1".enable = false;
-  systemd.services."autovt@tty1".enable = false;
-
-  # Install firefox.
-  programs.firefox.enable = true;
-  programs.vim.enable = true;
-  programs.vim.defaultEditor = true;
-  programs.vim.package = pkgs.vim_configurable;
-
+  nix.settings.experimental-features = ["nix-command" "flakes"];
   # Allow unfree packages
-  nixpkgs.config = {
-    allowUnfree = true;
-    permittedInsecurePackages = [
-                "openssl-1.1.1w"
-    ];
-    packageOverrides = pkgs: {
-      unstable = import <unstable> {
-        config = config.nixpkgs.config;
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      permittedInsecurePackages = [
+                  "openssl-1.1.1w"
+      ];
+      packageOverrides = pkgs: {
+        unstable = import <unstable> {
+          config = config.nixpkgs.config;
+        };
       };
     };
+    overlays = import ./overlays.nix;
   };
-
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    	#vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-        grimblast
-        gnome-text-editor
-        hyprlandPlugins.hy3
-        lm_sensors
-        jq
-    	wget
-        pastebinit
-    	git
-    	xclip
-        #gnomeExtensions.show-desktop-button
-        #gnomeExtensions.dash-to-dock
-        home-manager
-        keychain
-        pantheon.elementary-wallpapers
-        whitesur-gtk-theme
-        whitesur-cursors
-        whitesur-icon-theme
-        gtk2
-        kitty
-        rofi
-        rofi-wayland
-        font-awesome
-        bluez
-        #gnome-terminal
-        alacritty
-        kitty
-        nautilus
-        wttrbar
-        wl-clipboard
-        cmake
-        gnumake
-        cpio
-        pkg-config
-        git
-        #marked
-        hyfetch
-        gtop
-        rofi-bluetooth
-        bluez-tools
-        google-chrome
-        swaybg
-        pciutils
-        gnome-tweaks
-        brave
-        gimp
-        tor-browser
-        runescape
-        flatpak
-        kdePackages.kdeconnect-kde
-	unstable.winboat
-        docker
-        docker-compose
-	steam-run
-        mako
-	dnsmasq
-    ];
-  services.flatpak.enable = true;
-  services.blueman.enable = true;
-  nixpkgs.overlays = import ./overlays.nix;
-  programs.steam = {
-  enable = true;
-  remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
-  dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
-  localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
-};
-  hardware.steam-hardware.enable = true;
-  hardware.bluetooth.enable = true;
-hardware.graphics.enable = true;
-  services.xserver.videoDrivers = [ "nvidia" ];
-  hardware.nvidia.open = false;  # see the note above
-  #virtualisation.virtualbox.host.enable = true;
-  #virtualisation.virtualbox.host.enableKvm = true;
-  #virtualisation.virtualbox.host.addNetworkInterface = false;
-  #virtualisation.virtualbox.host.enableExtensionPack = true;
-  virtualisation.libvirtd = {
-  enable = true;
-  qemu = {
-    package = pkgs.qemu_kvm;
-    runAsRoot = true;
-    swtpm.enable = true;
-    ovmf = { # not needed in NixOS 25.11 since https://github.com/NixOS/nixpkgs/pull/421549
-      enable = true;
-      packages = [(pkgs.OVMF.override {
-        secureBoot = true;
-        tpmSupport = true;
-      }).fd];
-    };
-  };
-};
-virtualisation.spiceUSBRedirection.enable = true;
-
-programs.virt-manager.enable = true;
-  #users.extraGroups.vboxusers.members = ["fusion809"];
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-programs.bash.shellInit = "
+  # Install firefox.
+  programs = {
+    bash.shellInit = "
 export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
 if [[ \"$EUID\" -eq 0 ]]; then
   function git-branch {
@@ -326,44 +234,152 @@ function vbash {
   vim $HOME/.bashrc
 }
 ";
-  programs.zsh.enable = true;
-  programs.zsh.shellInit = "
+    firefox = {
+      enable = false;
+    };
+    hyprland.enable = true;
+    steam = {
+      enable = true;
+      remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+      dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
+      localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
+    };
+    vim = {
+      enable = true;
+      defaultEditor = true;
+      package = pkgs.vim_configurable;
+    };
+    virt-manager.enable = true;
+    waybar.enable = true;
+    zsh = {
+      autosuggestions.enable = true;
+      enable = true;
+      enableCompletion = true;
+      ohMyZsh = {
+        enable = true;
+        plugins = [
+          "safe-paste"
+          "vi-mode"
+        ];
+      };
+      shellInit = "
 sed -i '/^:/!d' $HOME/.zsh_history
 source /etc/profile
 source /home/fusion809/NixOS-configs/hnixos.zsh-theme
   ";
-  programs.hyprland.enable = true;
-  programs.waybar.enable = true;
-  security.sudo.wheelNeedsPassword = false;
-  programs.zsh.ohMyZsh.enable = true;
-  programs.zsh.autosuggestions.enable = true;
-  programs.zsh.syntaxHighlighting.enable = true;
-  programs.zsh.enableCompletion = true;
-  programs.zsh.ohMyZsh.plugins = [
-	"safe-paste"
-	"vi-mode"
-  ];
-  users.defaultUserShell = pkgs.zsh;
-  # List services that you want to enable:
+      syntaxHighlighting.enable = true; 
+    };
+  };
+  # Enable sound with pipewire.
+  security = {
+    rtkit.enable = true;
+    sudo.wheelNeedsPassword = false;
+  };
+  services = {
+    blueman = {
+      enable = true;
+    };
+    displayManager = {
+      autoLogin = {
+        enable = true;
+        user = "fusion809";
+      };
+    };
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+      # If you want to use JACK applications, uncomment this
+      #jack.enable = true;
 
-  # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
-
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
-fonts.packages = [ pkgs.nerd-fonts.jetbrains-mono ];
-# This value determines the NixOS release from which the default
+      # use the example session manager (no others are packaged yet so this is enabled by default,
+      # no need to redefine it in your config for now)
+      #media-session.enable = true;
+    };
+    pulseaudio = {
+      enable = false;
+    };
+    printing = {
+      enable = false;
+    };
+    xserver = {
+      enable = true;
+      videoDrivers = [ "nvidia" ];
+      xkb = {
+        layout = "us";
+        variant = "";
+      };
+    };
+  };
+  # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It‘s perfectly fine and recommended to leave
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.05"; # Did you read the comment?
+  # Set up systemd services
+  systemd = {
+    # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
+    services = {
+      "getty@tty1".enable = false;
+      "autovt@tty1".enable = false;
+      dev-tpmrm0.enable = false;
+    };
+    tpm2.enable = false;
+    user.services.swaync = {
+      description = "Sway Notification Center";
+      wantedBy = [ "graphical-session.target" ];
+      partOf = [ "graphical-session.target" ];
+      after = [ "graphical-session.target" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.swaynotificationcenter}/bin/swaync";
+        Restart = "always";
+        RestartSec = 3;
+      };
+    };
+  };
 
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+  # Set your time zone.
+  time.timeZone = "Australia/Brisbane";
+  # Enable touchpad support (enabled default in most desktopManager).
+  # services.xserver.libinput.enable = true;
+
+  # Define a user account. Don't forget to set a password with ‘passwd’.
+  users = {
+    defaultUserShell = pkgs.zsh;
+    users.fusion809 = {
+      isNormalUser = true;
+      description = "Brenton";
+      extraGroups = [ "networkmanager" "wheel" "input" "docker" "libvirtd" ];
+      packages = with pkgs; [
+      #  thunderbird
+      ];
+    };
+  };
+  #virtualisation.virtualbox.host.enable = true;
+  #virtualisation.virtualbox.host.enableKvm = true;
+  #virtualisation.virtualbox.host.addNetworkInterface = false;
+  #virtualisation.virtualbox.host.enableExtensionPack = true;
+  virtualisation = {
+    libvirtd = {
+      enable = true;
+      qemu = {
+        package = pkgs.qemu_kvm;
+        runAsRoot = true;
+        swtpm.enable = true;
+        ovmf = { # not needed in NixOS 25.11 since https://github.com/NixOS/nixpkgs/pull/421549
+          enable = true;
+          packages = [(pkgs.OVMF.override {
+            secureBoot = true;
+            tpmSupport = true;
+          }).fd];
+        };
+      };
+    };
+    spiceUSBRedirection.enable = true;
+  };
 }
 
 
