@@ -85,6 +85,7 @@
     bluez-tools
     # Assorted other apps    
     brave
+    discord
     docker
     docker-compose
     gimp
