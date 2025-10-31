@@ -55,7 +55,9 @@
     gnome-chess
     gnuchess
     # Chemistry software
+    jmol
     marvin
+    pymol
     # Maths software
     julia
     R
