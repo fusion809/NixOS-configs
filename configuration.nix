@@ -104,8 +104,9 @@
   fonts = {
     packages = with pkgs; [ 
       nerd-fonts.jetbrains-mono 
-      nerd-fonts.roboto-mono
-      nerd-fonts.ubuntu 
+      nerd-fonts.noto
+      nerd-fonts.hurmit
+      nerd-fonts.hasklug
     ];
   };
   hardware = {
