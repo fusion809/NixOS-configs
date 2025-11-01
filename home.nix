@@ -137,10 +137,13 @@ function nixrsu {
   #fi
   sudo nix-channel --update
   umount_arch
-  sudo nixos-rebuild switch --flake .#nixos --impure
+  sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
   mount_arch
 }
 
+function nixfrb {
+  sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake .#nixos --impure
+}
 function update {
   sudo nix-store --repair --verify --check-contents
   nixrsu
