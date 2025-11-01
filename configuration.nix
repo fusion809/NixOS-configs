@@ -73,6 +73,7 @@
     swaybg
     # Command-line utilities
     dnsmasq
+    fastfetch
     jq
     git
     keychain
