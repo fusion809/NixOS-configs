@@ -135,8 +135,9 @@ function nixrsu {
   #  cdnc
   #  git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   #fi
+  sudo nix-channel --update
   umount_arch
-  sudo nixos-rebuild switch --upgrade
+  sudo nixos-rebuild switch --flake .#nixos --impure
   mount_arch
 }
 
@@ -211,6 +212,14 @@ function vrm {
   vim $HOME/NixOS-configs/README.md
 }
 mount_arch
+
+function vsnc {
+  code $HOME/NixOS-configs
+}
+
+function vshc {
+  code $HOME/GitHub/mine/config/hyprland-configs
+}
   ";
   	};
   	git = {
