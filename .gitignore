@@ -1,3 +1,4 @@
 .*.swp
 default.xml
 result
+*.lock
