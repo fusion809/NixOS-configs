@@ -117,12 +117,27 @@ function nixver {
   sudo nix-channel --list | grep nixos | cut -d '-' -f 2
 }
 
+function umount_arch {
+  if `mountpoint -q /arch/boot`; then
+    sudo umount /arch/boot -l
+    sudo umount /arch -l
+  fi
+}
+
+function mount_arch {
+  if ! `mountpoint -q /arch`; then
+    sudo mount /dev/disk/by-label/arch /arch
+    sudo mount /dev/disk/by-label/ARCHEFI /arch/boot
+  fi
+}
 function nixrsu {
   #if [[ $(git-branch $HOME/NixOS-configs) != $(nixver) ]]; then
   #  cdnc
   #  git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   #fi
+  umount_arch
   sudo nixos-rebuild switch --upgrade
+  mount_arch
 }
 
 function update {
@@ -195,11 +210,7 @@ alias vhx=vhom
 function vrm {
   vim $HOME/NixOS-configs/README.md
 }
-
-if ! `mountpoint -q /arch`; then
-  sudo mount /dev/disk/by-label/arch /arch
-  sudo mount /dev/disk/by-label/ARCHEFI /arch/boot
-fi
+mount_arch
   ";
   	};
   	git = {
