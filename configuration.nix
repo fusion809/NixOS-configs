@@ -15,7 +15,7 @@
     initrd.systemd.tpm2.enable = false;
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
-      timeout = 5;
+      timeout = 0;
       grub = {
         enable = true;
         device = "nodev";

@@ -201,6 +201,7 @@ function vrm {
 
 if ! `mountpoint -q /arch`; then
   sudo mount /dev/disk/by-label/arch /arch
+  sudo mount /dev/disk/by-label/ARCHEFI /arch/boot
 fi
   ";
   };
@@ -248,6 +249,10 @@ cd $HOME/Pictures
 
 function cdap {
 cd $HOME/.local/share/applications
+}
+
+function cdphd {
+cd /arch$HOME/PhD/$1
 }
    ";
  };
