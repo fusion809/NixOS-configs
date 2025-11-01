@@ -1,5 +1,5 @@
 {
-  description = "NixOS configuration with distrohoop";
+  description = "Distrohoop packaging";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
