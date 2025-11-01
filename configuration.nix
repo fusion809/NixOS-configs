@@ -300,6 +300,7 @@ source /home/fusion809/NixOS-configs/hnixos.zsh-theme
       enable = true;
     };
     displayManager = {
+      sddm.enable = true;
       autoLogin = {
         enable = true;
         user = "fusion809";
