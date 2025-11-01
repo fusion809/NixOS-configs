@@ -73,6 +73,7 @@
     swaybg
     # Command-line utilities
     dnsmasq
+    distrohoop
     fastfetch
     jq
     git
