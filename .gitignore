@@ -1,4 +1,4 @@
 .*.swp
 default.xml
 result
-*.lock
+flake.lock
