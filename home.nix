@@ -43,9 +43,9 @@
     #   org.gradle.console=verbose
     #   org.gradle.daemon.idletimeout=3600000
     # '';
-    ".config/hypr/hyprland.conf" = {
-      source = /home/fusion809/GitHub/mine/config/hyprland-configs/hyprland.conf;
-    };
+  #  ".config/hypr/hyprland.conf" = {
+  #    source = /home/fusion809/GitHub/mine/config/hyprland-configs/hyprland.conf;
+  #  };
   };
 
   # Home Manager can also manage your environment variables through
@@ -254,10 +254,16 @@ function szsh {
 #ip link add virbr0 type bridge
 #ip address ad dev virbr0 10.25.0.1/24
 #ip link set dev virbr0 up
+function cdgm {
+cd $HOME/GitHub/mine
+}
 function cdhc {
-cd $HOME/GitHub/mine/config/hyprland-configs
+cdgm config/hyprland-configs
 }
 
+function cdim {
+cd /arch$HOME/GitHub/mine/websites/images
+}
 function vhc {
 vim $HOME/GitHub/mine/config/hyprland-configs/hyprland.conf
 }

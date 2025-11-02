@@ -80,6 +80,7 @@
     keychain
     hyfetch
     gtop
+    optipng
     pciutils
     wget
     # Bluetooth
