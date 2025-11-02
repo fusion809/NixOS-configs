@@ -284,6 +284,13 @@ function cdpi {
 cd $HOME/Pictures
 }
 
+function cdvi {
+cd /arch$HOME/'VirtualBox VMs'/iso
+}
+
+function cdvm {
+cd $HOME/VirtMachines/$1
+}
 function cdap {
 cd $HOME/.local/share/applications
 }
