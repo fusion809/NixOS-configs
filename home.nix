@@ -214,7 +214,11 @@ function vhom {
 
 alias vhx=vhom
 function vrm {
-  vim $HOME/NixOS-configs/README.md
+  if [[ -f README.md ]]; then
+    vim README.md
+  else
+    vim $HOME/NixOS-configs/README.md
+  fi
 }
 mount_arch
 
