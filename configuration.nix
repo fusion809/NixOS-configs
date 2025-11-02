@@ -178,7 +178,7 @@ if [[ \"$EUID\" -eq 0 ]]; then
   }
 
   function cdnc {
-    cd /home/fusion809/NixOS-configs $1
+    cd $HOME/GitHub/mine/config/NixOS-configs $1
   }
 
   function nixver {
@@ -186,7 +186,7 @@ if [[ \"$EUID\" -eq 0 ]]; then
   }
   
   function rebuild {
-    if [[ $(git-branch /home/fusion809/NixOS-configs) != $(nixver) ]]; then
+    if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
       cdnc
       git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
     fi
@@ -204,7 +204,7 @@ if [[ \"$EUID\" -eq 0 ]]; then
   }
 
   function nixrsu {
-    if [[ $(git-branch /home/fusion809/NixOS-configs) != $(nixver) ]]; then
+    if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
       cdnc
       git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
     fi
@@ -288,7 +288,7 @@ function vbash {
       shellInit = "
 sed -i '/^:/!d' $HOME/.zsh_history
 source /etc/profile
-source /home/fusion809/NixOS-configs/hnixos.zsh-theme
+source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
   ";
       syntaxHighlighting.enable = true; 
     };

@@ -131,7 +131,7 @@ function mount_arch {
   fi
 }
 function nixrsu {
-  #if [[ $(git-branch $HOME/NixOS-configs) != $(nixver) ]]; then
+  #if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
   #  cdnc
   #  git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   #fi
@@ -151,7 +151,7 @@ function update {
 }
 
 function rebuild {
-  if [[ $(git-branch $HOME/NixOS-configs) != $(nixver) ]]; then
+  if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
     cdnc
     git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   fi
@@ -205,11 +205,11 @@ function gitsw {
 }
 
 function cdnc {
-  cd $HOME/NixOS-configs/$1
+  cd $HOME/GitHub/mine/config/NixOS-configs/$1
 }
 
 function vhom {
-  vim $HOME/NixOS-configs/home.nix
+  vim $HOME/GitHub/mine/config/NixOS-configs/home.nix
 }
 
 alias vhx=vhom
@@ -217,13 +217,13 @@ function vrm {
   if [[ -f README.md ]]; then
     vim README.md
   else
-    vim $HOME/NixOS-configs/README.md
+    vim $HOME/GitHub/mine/config/NixOS-configs/README.md
   fi
 }
 mount_arch
 
 function vsnc {
-  code $HOME/NixOS-configs
+  code $HOME/GitHub/mine/config/NixOS-configs
 }
 
 function vshc {
@@ -240,7 +240,7 @@ function vshc {
 		enable = true;
                 initExtra = "
 sed -i '/^:/!d' $HOME/.zsh_history
-source $HOME/NixOS-configs/hnixos.zsh-theme
+source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
 function shopt {
   #echo \"shopt called with arguments: $@\"
 }
@@ -253,7 +253,7 @@ function vzsh {
 function szsh {
   source $HOME/.zshrc
 }
-#sudo virsh net-define $HOME/NixOS-configs/virbr0.xml
+#sudo virsh net-define $HOME/GitHub/mine/config/NixOS-configs/virbr0.xml
 #sudo virsh net-start virbr0
 #ip link add virbr0 type bridge
 #ip address ad dev virbr0 10.25.0.1/24
