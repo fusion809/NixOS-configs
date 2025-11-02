@@ -97,6 +97,7 @@
     steam-run
     texliveFull
     texstudio
+    virt-viewer
     vlc
     vscode
     unstable.winboat
