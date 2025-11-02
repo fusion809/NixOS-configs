@@ -40,6 +40,67 @@ buildDotnetModule rec {
   # Microsoft.NET.Publish.targets(248,5): error MSB3021: Unable to copy file "[...]/Newtonsoft.Json.dll" to "[...]/Newtonsoft.Json.dll". Access to the path '[...]Newtonsoft.Json.dll' is denied. [/build/source/OpenRA.Mods.Cnc/OpenRA.Mods.Cnc.csproj]
   enableParallelBuilding = false;
 
+  # Override configureNuget to use a local fallback folder and avoid symlink races
+  configureNuget = ''
+    runHook preConfigureNuget
+    
+    # Use build-local directories for both the package cache and fallback folder
+    export NUGET_PACKAGES="$PWD/.nuget/packages"
+    export DOTNET_NUGET_FALLBACK_FOLDER="$PWD/.nuget/fallback"
+    
+    mkdir -p "$NUGET_PACKAGES" "$DOTNET_NUGET_FALLBACK_FOLDER"
+    
+    # Generate the NuGet.Config with our custom folders
+    cat <<EOF > "$TMPDIR/NuGet.Config"
+    <?xml version="1.0" encoding="utf-8"?>
+    <configuration>
+      <config>
+        <add key="globalPackagesFolder" value="$NUGET_PACKAGES" />
+        <add key="fallbackPackagesFolder" value="$DOTNET_NUGET_FALLBACK_FOLDER" />
+      </config>
+      <packageSources>
+        <clear />
+        <add key="_nix" value="$NUGET_PACKAGES" />
+      </packageSources>
+      <fallbackPackageFolders>
+        <clear />
+        <add key="dotnet-fallback" value="$DOTNET_NUGET_FALLBACK_FOLDER" />
+      </fallbackPackageFolders>
+      <packageSourceMapping>
+        <packageSource key="_nix">
+          <package pattern="*" />
+        </packageSource>
+      </packageSourceMapping>
+    </configuration>
+    EOF
+    
+    # Copy packages to our local package directory
+    echo "Copying packages to $NUGET_PACKAGES..."
+    for dep in $nugetDeps; do
+      pkgdir="$(dirname $dep)"
+      pkg="$(basename $dep)"
+      for f in "$pkgdir/source/$pkg"/*; do
+        pkgid="$(basename "$f" .nupkg)"
+        pkgpath="$(echo "$pkgid" | tr '[:upper:]' '[:lower:]')"
+        if [ ! -e "$NUGET_PACKAGES/$pkgid" ]; then
+          echo "Installing package: $pkgid"
+          mkdir -p "$NUGET_PACKAGES/$pkgid"
+          unzip -o -d "$NUGET_PACKAGES/$pkgid" "$f"
+          # Create a lowercase symlink for compatibility
+          if [ "$pkgid" != "$pkgpath" ]; then
+            ln -sf "$NUGET_PACKAGES/$pkgid" "$NUGET_PACKAGES/$pkgpath"
+          fi
+        fi
+      done
+    done
+    
+    # Debug: List all extracted packages
+    echo "Available packages in $NUGET_PACKAGES:"
+    ls -la "$NUGET_PACKAGES"
+    
+    runHook postConfigureNuget
+  '';
+
   preBuild = ''
     make VERSION=${engine.build}-${version} version
   '';

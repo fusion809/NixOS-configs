@@ -1,5 +1,15 @@
 [
   {
+    "pname": "microsoft.netcore.app.runtime.linux-x64",
+    "version": "8.0.21",
+    "hash": "sha256-dQGOIBNjSWqRmmdEhLDB3IufEWSLWifP4Q3bSOslW1w="
+  },
+  {
+    "pname": "microsoft.aspnetcore.app.runtime.linux-x64",
+    "version": "8.0.21",
+    "hash": "sha256-0lunLvLvju7q9eqZY+cKUYbV422tmZdg4UpVK26lCxQ="
+  },
+  {
     "pname": "DiscordRichPresence",
     "version": "1.2.1.24",
     "hash": "sha256-oRNrlF1/yK0QvrW2+48RsmSg9h9/pDIfA56/bpoHXFU="
@@ -30,7 +40,7 @@
     "hash": "sha256-lGjifppD0OBMBp28pjUfPipaeXg739n8cPhtHWoo5RE="
   },
   {
-    "pname": "Microsoft.Extensions.DependencyModel",
+    "pname": "microsoft.extensions.dependencymodel",
     "version": "9.0.0",
     "hash": "sha256-xirwlMWM0hBqgTneQOGkZ8l45mHT08XuSSRIbprgq94="
   },
@@ -45,7 +55,7 @@
     "hash": "sha256-s+DC16qROB2OymDuQgCWrFC3QAXpfYOf1dGn4nPNNHc="
   },
   {
-    "pname": "Microsoft.NETCore.App.Ref",
+    "pname": "microsoft.netcore.app.ref",
     "version": "8.0.21",
     "hash": "sha256-99s11fNVkexmp4gYlmMRGS5Ql7/WGT6fYKfzdpciub8="
   },
@@ -155,27 +165,27 @@
     "hash": "sha256-1DKSHcK+KcBiqVyuJH4SlVybcJ/TR4I9Ad/WihbFOHo="
   },
   {
-    "pname": "OpenRA-Eluant",
+    "pname": "openra-eluant",
     "version": "1.0.22",
     "hash": "sha256-V5AelmuyrPzLVWx0PguFUvKljBMy0X7WJ7HMs0/Jiow="
   },
   {
-    "pname": "OpenRA-Freetype6",
+    "pname": "openra-freetype6",
     "version": "1.0.11",
     "hash": "sha256-IUfupIBlP0gp3O+zQqXzTR26aGjMKOYdMVEKOdmtYb0="
   },
   {
-    "pname": "OpenRA-FuzzyLogicLibrary",
+    "pname": "openra-fuzzylogiclibrary",
     "version": "1.0.1",
     "hash": "sha256-NW5e5ywU8XUtVezB4lHQPc4mAK1zb3wnpSvrkAhawE4="
   },
   {
-    "pname": "OpenRA-OpenAL-CS",
+    "pname": "openra-openal-cs",
     "version": "1.0.22",
     "hash": "sha256-LeBJX8ImpZCgJMAXz14qjgcl65dRU+yKokQHXVXDfRU="
   },
   {
-    "pname": "OpenRA-SDL2-CS",
+    "pname": "openra-sdl2-cs",
     "version": "1.0.42",
     "hash": "sha256-9O+Bg7EW+zDvgnebCz1qpoyXjnRjwrKDkonkOitez0E="
   },
@@ -190,12 +200,12 @@
     "hash": "sha256-pJx8BQ9KTR8coXSubUvotmMM0YaczLMh3NJsdOGJHjg="
   },
   {
-    "pname": "Roslynator.Analyzers",
+    "pname": "roslynator.analyzers",
     "version": "4.13.0",
     "hash": "sha256-ogNCpTOysyxrhl8JmD5yX5ofu/F0t/qeVuxRgXk3+fI="
   },
   {
-    "pname": "Roslynator.Formatting.Analyzers",
+    "pname": "roslynator.formatting.analyzers",
     "version": "4.13.0",
     "hash": "sha256-tAPQYSjG8GX/4gLsLptpl1YFyWA4CkmpeXesvb1dDDo="
   },
@@ -205,12 +215,12 @@
     "hash": "sha256-/giVqikworG2XKqfN9uLyjUSXr35zBuZ2FX2r8X/WUY="
   },
   {
-    "pname": "StyleCop.Analyzers",
+    "pname": "stylecop.analyzers",
     "version": "1.2.0-beta.556",
     "hash": "sha256-97YYQcr5vZxTvi36608eUkA1wb6xllZQ7UcXbjrYIfU="
   },
   {
-    "pname": "StyleCop.Analyzers.Unstable",
+    "pname": "stylecop.analyzers.unstable",
     "version": "1.2.0.556",
     "hash": "sha256-aVop7a9r+X2RsZETgngBm3qQPEIiPBWgHzicGSTEymc="
   },
