@@ -44,26 +44,30 @@ function user {
 
 export OPS=$(operating_system)
 
-if `echo ${OPS} | "openSUSE\|NixOS\|Linux Mint" &>/dev/null`; then
+if [[ $OPS == "openSUSE"* ]] || [[ $OPS == "Linux Mint"* ]]; then
 	PROMPT='$fg_bold[green][$fg_bold[yellow]%D{%l:%M:%S%p, %a %d %b %y}$fg_bold[green]|$fg_bold[cyan]${OPS}$fg_bold[green]] $(user) %{$fg_bold[cyan]%}%(!.%1~.%~) $(git_prompt_info)
 % $(prompt_char)%{$reset_color%} '
-elif [[ ${OPS} == "CentOS" ]]; then
-	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %A, %d %B %Y}|$fg_bold[cyan]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
+elif [[ $OPS == "NixOS"* ]]; then
+	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %a %d %b %y}|$fg_bold[blue]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
 % $(prompt_char)%{$reset_color%} '
-elif [[ ${OPS} == "FreeBSD" ]] || [[ ${OPS} == "Scientific Linux" ]] || [[ ${OPS} == "Ubuntu" ]] ; then
-	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %A, %d %B %Y}|$fg_bold[red]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
+elif [[ ${OPS} == "CentOS"* ]]; then
+	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %a, %d %b %Y}|$fg_bold[cyan]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
 % $(prompt_char)%{$reset_color%} '
-elif [[ ${OPS} == "Arch Linux" ]] || [[ ${OPS} == "Fedora" ]] || [[ ${OPS} == "Mageia" ]]; then
-	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %A, %d %B %Y}|$fg_bold[blue]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
+elif [[ ${OPS} == "FreeBSD"* ]] || [[ ${OPS} == "Scientific Linux"* ]] || [[ ${OPS} == "Ubuntu"* ]] ; then
+	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %a, %d %b %Y}|$fg_bold[red]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
 % $(prompt_char)%{$reset_color%} '
-elif [[ ${OPS} == "Gentoo Linux" ]]; then
-	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %A, %d %B %Y}|$fg_bold[purple]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
+elif [[ ${OPS} == "Arch Linux"* ]] || [[ ${OPS} == "Fedora"* ]] || [[ ${OPS} == "Mageia"* ]]; then
+	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %a, %d %b %Y}|$fg_bold[blue]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
 % $(prompt_char)%{$reset_color%} '
-elif [[ ${OPS} == "Void" ]]; then
-	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %A, %d %B %Y}|$fg_bold[white]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
+elif [[ ${OPS} == "Gentoo Linux"* ]]; then
+	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %a, %d %b %Y}|$fg_bold[purple]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
+% $(prompt_char)%{$reset_color%} '
+elif [[ ${OPS} == "Void"* ]]; then
+	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %a, %d %b %Y}|$fg_bold[white]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
 % $(prompt_char)%{$reset_color%} '
 elif [[ $(uname) == "Linux" ]]; then
-	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %A, %d %B %Y}|$fg_bold[yellow]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
+	echo "Linux selected"
+	PROMPT='$fg_bold[yellow][%D{%l:%M:%S%p, %a, %d %b %Y}|$fg_bold[yellow]${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)
 % $(prompt_char)%{$reset_color%} '
 fi
 
