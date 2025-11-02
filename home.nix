@@ -155,7 +155,9 @@ function rebuild {
     cdnc
     git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
   fi
+  umount_arch
   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+  mount_arch
 }
 
 alias nixrb=rebuild
