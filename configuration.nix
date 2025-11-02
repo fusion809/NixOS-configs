@@ -160,6 +160,8 @@
       allowUnfree = true;
       permittedInsecurePackages = [
                   "openssl-1.1.1w"
+                  "dotnet-runtime-6.0.36"
+                  "dotnet-sdk-6.0.428"
       ];
       packageOverrides = pkgs: {
         unstable = import <unstable> {
