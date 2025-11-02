@@ -47,7 +47,7 @@
     nautilus
     ffmpegthumbnailer
     alacritty
-    kitty
+    unstable.kitty
     # Games
     superTux
     superTuxKart
@@ -73,7 +73,7 @@
     swaybg
     # Command-line utilities
     dnsmasq
-    distrohoop
+    #distrohoop
     fastfetch
     jq
     git
