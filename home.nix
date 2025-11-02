@@ -255,7 +255,7 @@ function szsh {
 #ip address ad dev virbr0 10.25.0.1/24
 #ip link set dev virbr0 up
 function cdgm {
-cd $HOME/GitHub/mine
+cd $HOME/GitHub/mine/$1
 }
 function cdhc {
 cdgm config/hyprland-configs
