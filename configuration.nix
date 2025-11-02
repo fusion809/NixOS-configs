@@ -49,6 +49,7 @@
     alacritty
     unstable.kitty
     # Games
+    openra-git
     superTux
     superTuxKart
     aisleriot
@@ -80,6 +81,9 @@
     keychain
     hyfetch
     gtop
+    nix-prefetch-git
+    dotnetCorePackages.sdk_8_0_3xx
+    nuget-to-json
     optipng
     pciutils
     wget
@@ -167,6 +171,10 @@
   };
   # Install firefox.
   programs = {
+    appimage = {
+      enable = true;
+      binfmt = true;
+    };
     bash.shellInit = "
 export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
 if [[ \"$EUID\" -eq 0 ]]; then
@@ -388,6 +396,9 @@ source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
   #virtualisation.virtualbox.host.addNetworkInterface = false;
   #virtualisation.virtualbox.host.enableExtensionPack = true;
   virtualisation = {
+    docker = {
+      enable = true;
+    };
     libvirtd = {
       enable = true;
       qemu = {
