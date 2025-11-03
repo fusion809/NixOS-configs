@@ -298,6 +298,13 @@ cd $HOME/.local/share/applications
 function cdphd {
 cd /arch$HOME/PhD/$1
 }
+# First argument is the repository, e.g. nixpkgs, second is the package regex
+function nixs {
+nix search $1 $2
+}
+function rollback {
+sudo nixos-rebuild --rollback switch
+}
 ";
 };
  };

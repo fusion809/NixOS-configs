@@ -285,7 +285,7 @@ function vbash {
     vim = {
       enable = true;
       defaultEditor = true;
-      package = pkgs.vim_configurable;
+      package = pkgs.unstable.vim-full;
     };
     virt-manager.enable = true;
     waybar.enable = true;
