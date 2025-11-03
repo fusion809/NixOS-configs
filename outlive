@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+virsh start ReactOS2
+virt-viewer ReactOS2
