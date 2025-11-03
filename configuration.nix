@@ -167,6 +167,10 @@
         unstable = import <unstable> {
           config = config.nixpkgs.config;
         };
+        staging-next = import (builtins.fetchTarball {
+          url = "https://github.com/NixOS/nixpkgs/archive/staging-next.tar.gz";
+        })
+        { };
       };
     };
     overlays = import ./overlays.nix;
