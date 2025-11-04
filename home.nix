@@ -275,61 +275,57 @@ function vzsh {
 function szsh {
   source $HOME/.zshrc
 }
-#sudo virsh net-define $HOME/GitHub/mine/config/NixOS-configs/virbr0.xml
-#sudo virsh net-start virbr0
-#ip link add virbr0 type bridge
-#ip address ad dev virbr0 10.25.0.1/24
-#ip link set dev virbr0 up
+
 function cdgm {
-cd $HOME/GitHub/mine/$1
+  cd $HOME/GitHub/mine/$1
 }
 function cdhc {
-cdgm config/hyprland-configs
+  cdgm config/hyprland-configs
 }
 
 function cdim {
-cd /arch$HOME/GitHub/mine/websites/images
+  cd /arch$HOME/GitHub/mine/websites/images
 }
 function vhc {
-vim $HOME/GitHub/mine/config/hyprland-configs/hyprland.conf
+  vim $HOME/GitHub/mine/config/hyprland-configs/hyprland.conf
 }
 
 function vwc {
-vim $HOME/.config/waybar/config.jsonc
+  vim $HOME/.config/waybar/config.jsonc
 }
 
 function vst {
-vim $HOME/GitHub/mine/config/hyprland-configs/style.css
+  vim $HOME/GitHub/mine/config/hyprland-configs/style.css
 }
 
 function cdpi {
-cd $HOME/Pictures
+  cd $HOME/Pictures
 }
 
 function cdvi {
-cd /arch$HOME/'VirtualBox VMs'/iso
+  cd /arch$HOME/'VirtualBox VMs'/iso
 }
 
 function cdvm {
-cd $HOME/VirtMachines/$1
+  cd $HOME/VirtMachines/$1
 }
 function cdap {
-cd $HOME/.local/share/applications
+  cd $HOME/.local/share/applications
 }
 
 function cdphd {
-cd /arch$HOME/PhD/$1
+  cd /arch$HOME/PhD/$1
 }
 # First argument is the repository, e.g. nixpkgs, second is the package regex
 function nixs {
-nix search $1 $2
+  nix search $1 $2
 }
 function rollback {
-sudo nixos-rebuild --rollback switch
+  sudo nixos-rebuild --rollback switch
 }
 
 function aroot {
-sudo /home/fusion809/.local/bin/arch-chroot /arch /bin/zsh
+  sudo $HOME/.local/bin/arch-chroot /arch /bin/zsh -c \"/bin/su - fusion809\"
 }
 ";
 };
