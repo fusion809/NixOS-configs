@@ -327,6 +327,10 @@ nix search $1 $2
 function rollback {
 sudo nixos-rebuild --rollback switch
 }
+
+function aroot {
+sudo /home/fusion809/.local/bin/arch-chroot /arch /bin/zsh
+}
 ";
 };
  };
