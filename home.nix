@@ -236,7 +236,7 @@ latestHash=$(git log | head -n 1 | cut -d ' ' -f 2)
 popd -q
 packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
 if [[ $latestHash != $packagedHash ]]; then
-  echo "OpenRA git package is out of date. openraup will update it."
+  echo \"OpenRA git package is out of date. openraup will update it.\"
 fi
 
 function openraup {
