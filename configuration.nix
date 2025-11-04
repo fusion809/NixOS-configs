@@ -83,10 +83,12 @@
     gtop
     nix-prefetch-git
     dotnetCorePackages.sdk_8_0_3xx
+    libnotify
     nuget-to-json
     optipng
     pciutils
     wget
+    zenity
     # Bluetooth
     bluez
     bluez-tools

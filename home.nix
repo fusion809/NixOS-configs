@@ -327,6 +327,17 @@ function rollback {
 function aroot {
   sudo $HOME/.local/bin/arch-chroot /arch /bin/zsh -c \"/bin/su - fusion809\"
 }
+function notif {
+	lenOfStr=$(echo \"$1\" | awk -F \":\" '{print NF-1}')
+	while :
+	do
+		if ( [[ $lenOfStr == 1 ]] && [[ $(date +\"%H:%M\") == \"$1\" ]] ); then
+			zenity --error --title=\"$2\" --text \"$2\" && return
+		elif ( [[ $lenOfStr == 2 ]] && [[ $(date +\"$H:$M:$S\") == \"$1\" ]] ); then
+			zenity --error --title=\"$2\" --text \"$2\" && return
+		fi
+	done
+}
 ";
 };
  };
