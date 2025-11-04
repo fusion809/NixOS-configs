@@ -30,6 +30,7 @@
 # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    tcsh
     home-manager
     grimblast              # Screenshots under Hyprland
     hyprlandPlugins.hy3    # Tabbing under Hyprland
@@ -62,6 +63,11 @@
     jmol
     marvin
     pymol
+    molsketch
+    molden
+    unstable.avogadro2
+    python313Packages.nglview
+    openbabel
     # Maths software
     julia
     R
@@ -283,6 +289,73 @@ function vbash {
     hyprland = {
       enable = true;
       package = pkgs.unstable.hyprland;
+    };
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [
+        alsa-lib
+        audit
+        cairo
+        libtiff
+        e2fsprogs
+        expat
+        fontconfig
+        freetype
+        gd
+        glib
+        glibc
+        keyutils
+        krb5
+        libdrm
+        libgcc
+        #libstdcxx
+        bc
+        bzip2
+        xorg.libICE
+        #libice
+        libjpeg_turbo
+        libnsl
+        libpcap
+        libpng
+        libselinux
+        libsepol
+        xorg.libSM
+        #libsm
+        #libx11
+        xorg.libX11
+        #libxau
+        xorg.libXau
+        #libxdamage
+        xorg.libXdamage
+        zlib
+        tcsh
+        pam_krb5
+        pam_p11
+        #libxxf86vm
+        xorg.libXxf86vm
+        #libxtst
+        xorg.libXtst
+        #libxt
+        xorg.libXt
+        #libxrender
+        xorg.libXrender
+        #libxpm
+        xorg.libXpm
+        #libxmu
+        xorg.libXmu
+        #libxinerama
+        xorg.libXinerama
+        #libxi
+        xorg.libXi
+        #libxfixes
+        xorg.libXfixes
+        #libxext
+        xorg.libXext
+        #libxdmcp
+        xorg.libXdmcp
+      #  tests.pkg-config.defaultPkgConfigPackages.libpcre2-16
+        libGLU
+      ];
     };
     steam = {
       enable = true;
