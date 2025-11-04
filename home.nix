@@ -232,10 +232,10 @@ function vshc {
 
 pushd -q $HOME/GitHub/others/OpenRA
 git pull origin bleed -q
-latestHash=$(git log | head -n 1 | cut -d ' ' -f 2)
+latestRev=$(git log | head -n 1 | cut -d ' ' -f 2)
 popd -q
-packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
-if [[ $latestHash != $packagedHash ]]; then
+packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
+if [[ $latestRev != $packagedRev ]]; then
   echo \"OpenRA git package is out of date. openraup will update it.\"
 fi
 
