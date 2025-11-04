@@ -53,6 +53,9 @@
     superTux
     superTuxKart
     aisleriot
+    gnome-mahjongg
+    zeroad
+    space-cadet-pinball
     gnome-chess
     gnuchess
     # Chemistry software
@@ -279,7 +282,7 @@ function vbash {
     };
     hyprland = {
       enable = true;
-      #package = pkgs.unstable.hyprland;
+      package = pkgs.unstable.hyprland;
     };
     steam = {
       enable = true;
