@@ -33,7 +33,7 @@
     tcsh
     home-manager
     grimblast              # Screenshots under Hyprland
-    hyprlandPlugins.hy3    # Tabbing under Hyprland
+    unstable.hyprlandPlugins.hy3    # Tabbing under Hyprland
     swaynotificationcenter # Required for notifications
     # Theming
     pantheon.elementary-wallpapers
@@ -366,7 +366,7 @@ function vbash {
     vim = {
       enable = true;
       defaultEditor = true;
-      package = pkgs.unstable.vim-full;
+      package = pkgs.staging-next.vim-full;
     };
     virt-manager.enable = true;
     waybar.enable = true;
