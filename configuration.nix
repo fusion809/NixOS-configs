@@ -46,6 +46,8 @@
     # Core apps for Hyprland
     gnome-text-editor
     nautilus
+    libmtp
+    gnome.gvfs
     ffmpegthumbnailer
     alacritty
     unstable.kitty
@@ -404,6 +406,9 @@ source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
         enable = true;
         user = "fusion809";
       };
+    };
+    gvfs = {
+      enable = true;
     };
     pipewire = {
       enable = true;
