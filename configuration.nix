@@ -30,97 +30,118 @@
 # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    tcsh
-    home-manager
-    grimblast              # Screenshots under Hyprland
-    unstable.hyprlandPlugins.hy3    # Tabbing under Hyprland
-    swaynotificationcenter # Required for notifications
-    # Theming
-    pantheon.elementary-wallpapers
-    whitesur-gtk-theme
-    whitesur-cursors
-    whitesur-icon-theme
-    # Required by Waybar widgets
-    lm_sensors
-    wttrbar
-    # Core apps for Hyprland
-    gnome-text-editor
-    nautilus
-    libmtp
-    gnome.gvfs
-    ffmpegthumbnailer
-    alacritty
-    unstable.kitty
-    # Games
-    openra-git
-    superTux
-    superTuxKart
-    aisleriot
-    gnome-mahjongg
-    zeroad
-    space-cadet-pinball
-    gnome-chess
-    gnuchess
+    ###############################################################
+    # Assorted apps
+    ###############################################################   
+    brave
+    discord
+    gimp
+    google-chrome
+    vlc
+    vscode
+    ###############################################################
+    # Assorted packages
+    ###############################################################
+    font-awesome
+    ###############################################################
+    # Bluetooth
+    ###############################################################
+    bluez
+    bluez-tools
+    ###############################################################
     # Chemistry software
+    ###############################################################
+    unstable.avogadro2    # unstable to silence outdated popup msg.
+    ## DS Visualizer
+    # tcsh
     jmol
     marvin
     pymol
     molsketch
-    molden
-    unstable.avogadro2
-    python313Packages.nglview
     openbabel
-    # Maths software
-    julia
-    R
-    octave
-    sage
-    python313Packages.jupyterlab
-    # Required for a clipboard
-    wl-clip-persist
-    wl-clipboard
-    # Application menu for Hyprland
-    rofi-wayland
-    # Assorted Hyprland utilities
-    swaybg
+    ###############################################################
     # Command-line utilities
+    ###############################################################
     dnsmasq
-    #distrohoop
     fastfetch
-    jq
     git
+    gtop
+    jq
     keychain
     hyfetch
-    gtop
-    nix-prefetch-git
-    dotnetCorePackages.sdk_8_0_3xx
     libnotify
-    nuget-to-json
     optipng
     pciutils
     wget
     zenity
-    # Bluetooth
-    bluez
-    bluez-tools
-    # Assorted other apps    
-    brave
-    discord
-    docker
-    docker-compose
-    gimp
-    google-chrome
+    ###############################################################
+    # Hyprland essentials
+    ###############################################################
+    grimblast                       # Screenshots under Hyprland
+    unstable.hyprlandPlugins.hy3    # Tabbing under Hyprland
+    swaynotificationcenter          # Required for notifications
+    ## Core apps
+    alacritty
+    ffmpegthumbnailer
+    gnome.gvfs
+    gnome-text-editor
+    unstable.kitty
+    libmtp
+    nautilus
+    ## Required by Waybar widgets
+    lm_sensors
+    wttrbar
+    ## Required for a clipboard
+    wl-clip-persist
+    wl-clipboard
+    ## Other utilities
+    rofi-wayland
+    swaybg
+    ###############################################################
+    # Games
+    ###############################################################
+    aisleriot
+    gnome-chess
+    gnome-mahjongg
+    gnuchess
+    openra-git
+    space-cadet-pinball
+    superTux
+    superTuxKart    
+    zeroad
+    ###############################################################
+    # Maths software
+    ###############################################################
+    julia
+    python313Packages.jupyterlab
+    octave
+    R
+    sage
+    ###############################################################
+    # NixOS utilities
+    ###############################################################
+    home-manager
+    nix-prefetch-git
+    ###############################################################
+    # Office software
+    ###############################################################
     onlyoffice-desktopeditors
-    steam-run
     texliveFull
     texstudio
+    ###############################################################
+    # Theming
+    ###############################################################
+    pantheon.elementary-wallpapers
+    whitesur-gtk-theme
+    whitesur-cursors
+    whitesur-icon-theme
+    ###############################################################
+    # Virtualization
+    ###############################################################
+    docker
+    docker-compose
     virt-viewer
-    vlc
-    vscode
     unstable.winboat
-    # Other packages
-    gtk2
-    font-awesome
   ];
   fonts = {
     packages = with pkgs; [ 
