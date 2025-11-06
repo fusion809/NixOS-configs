@@ -121,52 +121,48 @@ function umount_arch {
   if `mountpoint -q /arch/boot`; then
     sudo umount /arch/boot -l
     sudo umount /arch -l
+    touch ~/.cache/umount_arch
   fi
 }
 
 function mount_arch {
-  if ! `mountpoint -q /arch`; then
+  if ! `mountpoint -q /arch` && ! [[ -f $HOME/.cache/umount_arch ]]; then
     sudo mount /dev/disk/by-label/arch /arch
     sudo mount /dev/disk/by-label/ARCHEFI /arch/boot
+  elif [[ -f $HOME/.cache/umount_arch ]]; then
+    echo '$HOME/.cache/umount_arch exists, so a Nix rebuild is likely happening...'
   fi
 }
-function nixrsu {
-  #if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
-  #  cdnc
-  #  git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
-  #fi
-  sudo nix-channel --update
+
+function rebuild {
   umount_arch
   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+  rm -f $HOME/.cache/umount_arch
   mount_arch
+}
+
+alias nixrb=rebuild
+function nixrsu {
+  sudo nix-channel --update
+  nixrb
 }
 
 function nixfrb {
   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake .#nixos --impure
 }
+
 function update {
   sudo nix-store --repair --verify --check-contents
   nixrsu
   nixcg
 }
 
-function rebuild {
-  if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
-    cdnc
-    git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
-  fi
-  umount_arch
-  sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
-  mount_arch
-}
-
-alias nixrb=rebuild
 function clipf {
-        if `ps ax | grep wayland &> /dev/null`; then
-		wl-copy < $1
+  if `ps ax | grep wayland &> /dev/null`; then
+    wl-copy < $1
 	else
-    		xclip -sel clip < $1
-        fi
+  	xclip -sel clip < $1
+  fi
 }
 
 if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then
