@@ -73,6 +73,7 @@
     keychain
     hyfetch
     libnotify
+    nh
     optipng
     pciutils
     tcsh
