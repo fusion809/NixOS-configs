@@ -162,7 +162,11 @@ function rebuild {
 
 alias nixrb=rebuild
 function clipf {
-  xclip -sel clip < $1
+        if `ps ax | grep wayland &> /dev/null`; then
+		wl-copy < $1
+	else
+    		xclip -sel clip < $1
+        fi
 }
 
 if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then

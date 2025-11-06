@@ -53,6 +53,9 @@
     ###############################################################
     unstable.avogadro2    # unstable to silence outdated popup msg.
     ## DS Visualizer
+    kdePackages.qtwayland
+    qt5.qtwayland
+    deepin.qt5platform-plugins
     # tcsh
     jmol
     marvin
@@ -72,13 +75,14 @@
     libnotify
     optipng
     pciutils
+    tcsh
     wget
     zenity
     ###############################################################
     # Hyprland essentials
     ###############################################################
     grimblast                       # Screenshots under Hyprland
-    unstable.hyprlandPlugins.hy3    # Tabbing under Hyprland
+    hyprlandPlugins.hy3             # Tabbing under Hyprland
     swaynotificationcenter          # Required for notifications
     ## Core apps
     alacritty
@@ -104,6 +108,7 @@
     gnome-chess
     gnome-mahjongg
     gnuchess
+    kdePackages.kmines
     openra-git
     space-cadet-pinball
     superTux
@@ -311,7 +316,7 @@ function vbash {
     };
     hyprland = {
       enable = true;
-      package = pkgs.unstable.hyprland;
+      package = pkgs.hyprland; # Used to use unstable, but that lead to RS3 bugs
     };
     nix-ld = {
       enable = true;
@@ -376,8 +381,18 @@ function vbash {
         xorg.libXext
         #libxdmcp
         xorg.libXdmcp
-      #  tests.pkg-config.defaultPkgConfigPackages.libpcre2-16
+        #tests.pkg-config.defaultPkgConfigPackages.libpcre2-16
         libGLU
+        qt5.qtwayland
+        deepin.qt5platform-plugins
+        #deepin.qt5platform-plugins
+        egl-wayland
+        #gtk4-layer-shell # Seems irrelevant to error but on Arch
+        libsForQt5.kwin
+        libsForQt5.kwayland
+        kdePackages.qtwayland
+        kdePackages.kwayland
+        kdePackages.wayqt
       ];
     };
     steam = {
