@@ -260,7 +260,7 @@ function openraup {
   	};
 	zsh = {
 		enable = true;
-                initExtra = "
+                initContent = "
 sed -i '/^:/!d' $HOME/.zsh_history
 source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
 function shopt {
