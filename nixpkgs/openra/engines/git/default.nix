@@ -2,8 +2,8 @@
 
 buildOpenRAEngine {
   build = "git";
-  rev = "a62b085f1d95c856f1be6e4240ea193c4fdadd34";
-  hash = "sha256-IqA90UGCttEkfa0GEQvcSqQ8gAl2q3wd/HyyYFOfjB8=";
+  rev = "3f19c813920363f9bb45b344b313d8819c2cb52f";
+  hash = "sha256-NENad/SUwt4ZkZt/OVVzxwQt3ro/7Zak3anu5Ko0YD4=";
   deps = ./deps.json;
   dotnet-sdk = dotnetCorePackages.sdk_8_0-bin;
 }

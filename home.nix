@@ -258,6 +258,12 @@ function openraup {
     		userName = "fusion809";
    	  	userEmail = "brentonhorne77@gmail.com";
   	};
+        #vim = {
+        #        enable = true;
+        #        plugins = with pkgs.vimPlugins; [
+        #          vim-wayland-clipboard
+        #        ];
+        #}; # Doesn't do anything
 	zsh = {
 		enable = true;
                 initContent = "
