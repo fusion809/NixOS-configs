@@ -37,6 +37,7 @@
     discord
     gimp
     google-chrome
+    unstable.lite-xl
     vlc
     unstable.vscode
     ###############################################################
@@ -83,7 +84,8 @@
     # Hyprland essentials
     ###############################################################
     grimblast                       # Screenshots under Hyprland
-    hyprlandPlugins.hy3             # Tabbing under Hyprland
+    unstable.wayland
+    unstable.hyprlandPlugins.hy3             # Tabbing under Hyprland
     swaynotificationcenter          # Required for notifications
     ## Core apps
     alacritty
@@ -99,6 +101,7 @@
     ## Required for a clipboard
     wl-clip-persist
     wl-clipboard
+    cliphist
     ## Other utilities
     rofi-wayland
     swaybg
@@ -317,7 +320,7 @@ function vbash {
     };
     hyprland = {
       enable = true;
-      package = pkgs.hyprland; # Used to use unstable, but that lead to RS3 bugs
+      package = pkgs.unstable.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
     };
     nix-ld = {
       enable = true;
@@ -480,7 +483,15 @@ source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "25.05"; # Did you read the comment?
+  system = {
+    autoUpgrade = {
+      enable = true;
+      dates = "daily";       # Following 2 are the default, so could be removed
+      #, included for docs
+      operation = "switch";
+    };
+    stateVersion = "25.05"; # Did you read the comment?
+  };
   # Set up systemd services
   systemd = {
     # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
