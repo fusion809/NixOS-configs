@@ -37,7 +37,6 @@
     discord
     gimp
     google-chrome
-    #unstable.lite-xl
     vlc
     unstable.vscode
     ###############################################################
@@ -91,7 +90,7 @@
     alacritty
     ffmpegthumbnailer
     gnome.gvfs
-    gnome-text-editor
+    xfce.mousepad
     unstable.kitty
     libmtp
     nautilus
