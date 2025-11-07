@@ -13,7 +13,7 @@ engine:
 
 let
   pname = "openra-${engine.build}";
-  version = if lib.hasAttr "rev" engine then engine.rev else engine.version;
+  version = engine.version;
   dotnet-sdk = engine.dotnet-sdk;
 in
 buildDotnetModule {

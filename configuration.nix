@@ -37,7 +37,7 @@
     discord
     gimp
     google-chrome
-    unstable.lite-xl
+    #unstable.lite-xl
     vlc
     unstable.vscode
     ###############################################################
