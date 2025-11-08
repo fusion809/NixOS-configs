@@ -37,6 +37,7 @@
     discord
     gimp
     google-chrome
+    inkscape
     vlc
     unstable.vscode
     ###############################################################
