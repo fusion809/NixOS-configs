@@ -485,7 +485,9 @@ source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
   system = {
     autoUpgrade = {
       enable = true;
-      dates = "4h"; # See systemd.time(7) for acceptable date formats
+      dates = "04:00"; # See HH:MM is the acceptable format it seems, the docs
+      # suggest systemd.time(7) gives the format but many of its suggestions 
+      # like 4h, 4 h, 4hr, failed
       operation = "switch";
     };
     stateVersion = "25.05"; # Did you read the comment?
