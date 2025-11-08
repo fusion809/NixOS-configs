@@ -272,6 +272,8 @@ function openraup {
 	zsh = {
 		enable = true;
                 initContent = "
+export HISTSIZE=10000000
+export SAVEHIST=10000000
 sed -i '/^:/!d' $HOME/.zsh_history
 source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
 function shopt {
