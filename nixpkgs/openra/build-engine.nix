@@ -54,7 +54,7 @@ buildDotnetModule {
   enableParallelBuilding = false;
 
   preBuild = ''
-    make VERSION=${engine.build}-${version} version
+    make VERSION=${version} version
   '';
 
   postInstall = ''
