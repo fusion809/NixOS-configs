@@ -252,8 +252,7 @@ function openraup {
   packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '\"' -f 2)
   packagedVer=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '\"' -f 2)
   latestVer=\"$upno.git.$uphash\"
-  sed -i -e \"s|$packagedHash|$latestHash|g\" \
-         -e \"s|$packagedVer|$latestVer|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
+  sed -i -e \"s|$packagedHash|$latestHash|g\" -e \"s|$packagedVer|$latestVer|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
   
   nixrb
 }
