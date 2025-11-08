@@ -485,8 +485,7 @@ source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
   system = {
     autoUpgrade = {
       enable = true;
-      dates = "daily";       # Following 2 are the default, so could be removed
-      #, included for docs
+      dates = "4h"; # See systemd.time(7) for acceptable date formats
       operation = "switch";
     };
     stateVersion = "25.05"; # Did you read the comment?
