@@ -15,14 +15,6 @@
   # release notes.
   home.stateVersion = "25.05"; # Please read the comment before changing.
 
-  #wayland.windowManager.hyprland = {
-  #  enable = true;
-    # ...
-  #  plugins = [
-  #    inputs.hyprland-plugins.packages.${pkgs.system}.hyprbars
-      # ...
-  #  ];
-  #};
   # The home.packages option allows you to install Nix packages into your
   # environment.
   home.packages = with pkgs; [
@@ -350,6 +342,16 @@ function notif {
 			zenity --error --title=\"$2\" --text \"$2\" && return
 		fi
 	done
+}
+
+function ved {
+	cdphd Rcode/RQ5
+	vim Edits_to_parameters_$(date +\"%Y-%m-%d\").txt
+}
+
+function ged {
+	cdphd Rcode/RQ5
+	grep --include=\"Edits_to_parameters*.txt\" -R \"$1\" | sort
 }
 ";
 };

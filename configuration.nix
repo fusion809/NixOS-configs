@@ -85,7 +85,7 @@
     ###############################################################
     grimblast                       # Screenshots under Hyprland
     unstable.wayland
-    unstable.hyprlandPlugins.hy3             # Tabbing under Hyprland
+    hyprlandPlugins.hy3             # Tabbing under Hyprland
     swaynotificationcenter          # Required for notifications
     ## Core apps
     alacritty
@@ -320,7 +320,7 @@ function vbash {
     };
     hyprland = {
       enable = true;
-      package = pkgs.unstable.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
+      package = pkgs.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
     };
     nix-ld = {
       enable = true;
