@@ -320,7 +320,7 @@ function vbash {
     };
     hyprland = {
       enable = true;
-      package = pkgs.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
+      package = pkgs.unstable.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
     };
     nix-ld = {
       enable = true;
@@ -426,7 +426,7 @@ function vbash {
       shellInit = "
 sed -i '/^:/!d' $HOME/.zsh_history
 source /etc/profile
-source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
+source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
   ";
       syntaxHighlighting.enable = true; 
     };
