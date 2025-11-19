@@ -40,6 +40,7 @@
     inkscape
     vlc
     unstable.vscode
+    antigravity-pr.antigravity
     ###############################################################
     # Assorted packages
     ###############################################################
@@ -212,8 +213,14 @@
         };
         staging-next = import (builtins.fetchTarball {
           url = "https://github.com/NixOS/nixpkgs/archive/staging-next.tar.gz";
-        })
-        { };
+        }) {
+          config = config.nixpkgs.config;
+        };
+        antigravity-pr = import (builtins.fetchTarball {
+          url = "https://github.com/NixOS/nixpkgs/archive/28e859cf32aff1abe82537841c163034ab0fc84c.tar.gz";
+        }) { 
+          config = config.nixpkgs.config;
+        };
       };
     };
     overlays = import ./overlays.nix;
