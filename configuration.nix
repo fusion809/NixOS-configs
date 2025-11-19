@@ -41,6 +41,7 @@
     vlc
     unstable.vscode
     antigravity-pr.antigravity
+    nixfmt-classic
     ###############################################################
     # Assorted packages
     ###############################################################
@@ -151,7 +152,7 @@
     docker
     docker-compose
     virt-viewer
-    unstable.winboat
+    (unstable.winboat.override {nodejs_24 = pkgs.nodejs_24;})
   ];
   fonts = {
     packages = with pkgs; [ 
