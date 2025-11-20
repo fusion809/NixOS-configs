@@ -222,9 +222,16 @@ function vshc {
   code $HOME/GitHub/mine/config/hyprland-configs
 }
 
+function comno {
+	git rev-list --count HEAD
+}
+
+function revision {
+	git log | head -n 1 | cut -d ' ' -f 2
+}
 pushd -q $HOME/GitHub/others/OpenRA
 git pull origin bleed -q
-latestRev=$(git log | head -n 1 | cut -d ' ' -f 2)
+latestRev=$(revision)
 popd -q
 packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
 if [[ $latestRev != $packagedRev ]]; then
@@ -234,9 +241,9 @@ fi
 function openraup {
   pushd -q $HOME/GitHub/others/OpenRA
   git pull origin bleed -q
-  latestRev=$(git log | head -n 1 | cut -d ' ' -f 2)
-  upno=$(git rev-list --count HEAD)
-  uphash=$(git log | head -n 1 | cut -d ' ' -f 2 | head -c 7)
+  latestRev=$(revision)
+  upno=$(comno)
+  uphash=$(revision | head -c 7)
   popd -q
   packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
   sed -i -e \"s|$packagedRev|$latestRev|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
