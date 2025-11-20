@@ -5,11 +5,10 @@
 { config, pkgs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      <home-manager/nixos>
-    ];
+  imports = [ # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+    <home-manager/nixos>
+  ];
   # Bootloader.
   boot = {
     initrd.systemd.tpm2.enable = false;
@@ -27,7 +26,7 @@
     };
   };
 
-# List packages installed in system profile. To search, run:
+  # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
     ###############################################################
@@ -40,7 +39,7 @@
     inkscape
     vlc
     unstable.vscode
-    antigravity-pr.antigravity
+    master.antigravity
     nixfmt-classic
     ###############################################################
     # Assorted packages
@@ -54,7 +53,7 @@
     ###############################################################
     # Chemistry software
     ###############################################################
-    unstable.avogadro2    # unstable to silence outdated popup msg.
+    unstable.avogadro2 # unstable to silence outdated popup msg.
     ## DS Visualizer
     kdePackages.qtwayland
     qt5.qtwayland
@@ -85,10 +84,10 @@
     ###############################################################
     # Hyprland essentials
     ###############################################################
-    grimblast                       # Screenshots under Hyprland
-    unstable.wayland
-    hyprlandPlugins.hy3             # Tabbing under Hyprland
-    swaynotificationcenter          # Required for notifications
+    grimblast # Screenshots under Hyprland
+    wayland
+    hyprlandPlugins.hy3 # Tabbing under Hyprland
+    swaynotificationcenter # Required for notifications
     ## Core apps
     alacritty
     ffmpegthumbnailer
@@ -118,7 +117,7 @@
     openra-git
     space-cadet-pinball
     superTux
-    superTuxKart    
+    superTuxKart
     zeroad
     ###############################################################
     # Maths software
@@ -152,11 +151,11 @@
     docker
     docker-compose
     virt-viewer
-    (unstable.winboat.override {nodejs_24 = pkgs.nodejs_24;})
+    (unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
   ];
   fonts = {
-    packages = with pkgs; [ 
-      nerd-fonts.jetbrains-mono 
+    packages = with pkgs; [
+      nerd-fonts.jetbrains-mono
       nerd-fonts.noto
       nerd-fonts.hurmit
       nerd-fonts.hasklug
@@ -166,15 +165,10 @@
     steam-hardware.enable = true;
     bluetooth.enable = true;
     graphics.enable = true;
-    nvidia.open = false;  # Should only be true for newer cards
+    nvidia.open = false; # Should only be true for newer cards
   };
   # Set up home manager
-  home-manager.users.fusion809 = {
-        imports =
-          [
-            ./home.nix
-          ];
-  };
+  home-manager.users.fusion809 = { imports = [ ./home.nix ]; };
 
   # Select internationalisation properties.
   i18n = {
@@ -198,30 +192,22 @@
     # Enable networking
     networkmanager.enable = true;
   };
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
   # Allow unfree packages
   nixpkgs = {
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [
-                  "openssl-1.1.1w"
-                  "dotnet-runtime-6.0.36"
-                  "dotnet-sdk-6.0.428"
-      ];
+      permittedInsecurePackages =
+        [ "openssl-1.1.1w" "dotnet-runtime-6.0.36" "dotnet-sdk-6.0.428" ];
       packageOverrides = pkgs: {
-        unstable = import <unstable> {
-          config = config.nixpkgs.config;
-        };
+        unstable = import <unstable> { config = config.nixpkgs.config; };
         staging-next = import (builtins.fetchTarball {
           url = "https://github.com/NixOS/nixpkgs/archive/staging-next.tar.gz";
-        }) {
-          config = config.nixpkgs.config;
-        };
-        antigravity-pr = import (builtins.fetchTarball {
-          url = "https://github.com/NixOS/nixpkgs/archive/28e859cf32aff1abe82537841c163034ab0fc84c.tar.gz";
-        }) { 
-          config = config.nixpkgs.config;
-        };
+        }) { config = config.nixpkgs.config; };
+        master = import (builtins.fetchTarball {
+          url = "https://github.com/NixOS/nixpkgs/archive/master.tar.gz";
+          sha256 = "0b5xfswr6b8aryg0nwc03akczicn8lp7svbym2g4p2d9pzpw7316";
+        }) { config = config.nixpkgs.config; };
       };
     };
     overlays = import ./overlays.nix;
@@ -232,103 +218,103 @@
       enable = true;
       binfmt = true;
     };
-    bash.shellInit = "
-export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
-if [[ \"$EUID\" -eq 0 ]]; then
-  function git-branch {
-    if ! [[ -n \"$1\" ]]; then
-      git rev-parse --abbrev-ref HEAD
-    else
-      git -C \"$1\" rev-parse --abbrev-ref HEAD
-    fi
-  }
+    bash.shellInit = ''
 
-  function cdnc {
-    cd $HOME/GitHub/mine/config/NixOS-configs $1
-  }
+      export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
+      if [[ "$EUID" -eq 0 ]]; then
+        function git-branch {
+          if ! [[ -n "$1" ]]; then
+            git rev-parse --abbrev-ref HEAD
+          else
+            git -C "$1" rev-parse --abbrev-ref HEAD
+          fi
+        }
 
-  function nixver {
-    nix-channel --list | grep nixos | cut -d '-' -f 2
-  }
-  
-  function rebuild {
-    if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
-      cdnc
-      git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
-    fi
-    nixos-rebuild switch
-  }
+        function cdnc {
+          cd $HOME/GitHub/mine/config/NixOS-configs $1
+        }
 
-  alias nixrb=rebuild
+        function nixver {
+          nix-channel --list | grep nixos | cut -d '-' -f 2
+        }
+        
+        function rebuild {
+          if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
+            cdnc
+            git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
+          fi
+          nixos-rebuild switch
+        }
 
-  function nixstrep {
-    nix-store --repair --verify --check-contents
-  }
-  
-  function nixcg {
-    nix-collect-garbage -d
-  }
+        alias nixrb=rebuild
 
-  function nixrsu {
-    if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
-      cdnc
-      git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
-    fi
+        function nixstrep {
+          nix-store --repair --verify --check-contents
+        }
+        
+        function nixcg {
+          nix-collect-garbage -d
+        }
 
-    nixos-rebuild switch --upgrade
-  }
+        function nixrsu {
+          if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
+            cdnc
+            git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
+          fi
 
-  function update {
-    nix-store --repair --verify --check-contents
-    nixrsu
-    nixcg
-  }
-  
-  function vcf {
-    vim /etc/nixos/configuration.nix
-  }
+          nixos-rebuild switch --upgrade
+        }
 
-  function clipf {
-    xclip -sel clip < $1
-  }
+        function update {
+          nix-store --repair --verify --check-contents
+          nixrsu
+          nixcg
+        }
+        
+        function vcf {
+          vim /etc/nixos/configuration.nix
+        }
 
-  function rainbowfastfetch {
-    hyfetch -p rainbow -b fastfetch --args=\"--localip-show-ipv4 false\"
-  }
+        function clipf {
+          xclip -sel clip < $1
+        }
 
-  function gaymenfastfetch {
-    hyfetch -p gay-men -b fastfetch --args=\"--localip-show-ipv4 false\"
-  }
+        function rainbowfastfetch {
+          hyfetch -p rainbow -b fastfetch --args="--localip-show-ipv4 false"
+        }
 
-  function rffetch {
-    cd ~/
-    rainbowfastfetch
-  }
+        function gaymenfastfetch {
+          hyfetch -p gay-men -b fastfetch --args="--localip-show-ipv4 false"
+        }
 
-  function gmffetch {
-    cd ~/
-    gaymenfastfetch
-  }
-fi
+        function rffetch {
+          cd ~/
+          rainbowfastfetch
+        }
 
-function vzsh {
-  vim $HOME/.zshrc
-}
+        function gmffetch {
+          cd ~/
+          gaymenfastfetch
+        }
+      fi
 
-function szsh {
-  source $HOME/.zshrc
-}
+      function vzsh {
+        vim $HOME/.zshrc
+      }
 
-function vbash {
-  vim $HOME/.bashrc
-}
-";
-    firefox = {
-      enable = false;
-    };
+      function szsh {
+        source $HOME/.zshrc
+      }
+
+      function vbash {
+        vim $HOME/.bashrc
+      }
+    '';
+    firefox = { enable = false; };
     hyprland = {
       enable = true;
-      package = pkgs.unstable.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
+      #package = pkgs.unstable.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
+      package = pkgs.hyprland;
     };
     nix-ld = {
       enable = true;
@@ -409,9 +395,12 @@ function vbash {
     };
     steam = {
       enable = true;
-      remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
-      dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
-      localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
+      remotePlay.openFirewall =
+        true; # Open ports in the firewall for Steam Remote Play
+      dedicatedServer.openFirewall =
+        true; # Open ports in the firewall for Source Dedicated Server
+      localNetworkGameTransfers.openFirewall =
+        true; # Open ports in the firewall for Steam Local Network Game Transfers
     };
     vim = {
       enable = true;
@@ -426,17 +415,11 @@ function vbash {
       enableCompletion = true;
       ohMyZsh = {
         enable = true;
-        plugins = [
-          "safe-paste"
-          "vi-mode"
-        ];
+        plugins = [ "safe-paste" "vi-mode" ];
       };
-      shellInit = "
-sed -i '/^:/!d' $HOME/.zsh_history
-source /etc/profile
-source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
-  ";
-      syntaxHighlighting.enable = true; 
+      shellInit =
+        "\nsed -i '/^:/!d' $HOME/.zsh_history\nsource /etc/profile\nsource /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme\n  ";
+      syntaxHighlighting.enable = true;
     };
   };
   # Enable sound with pipewire.
@@ -445,9 +428,7 @@ source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
     sudo.wheelNeedsPassword = false;
   };
   services = {
-    blueman = {
-      enable = true;
-    };
+    blueman = { enable = true; };
     displayManager = {
       sddm.enable = true;
       autoLogin = {
@@ -455,9 +436,7 @@ source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
         user = "fusion809";
       };
     };
-    gvfs = {
-      enable = true;
-    };
+    gvfs = { enable = true; };
     pipewire = {
       enable = true;
       alsa.enable = true;
@@ -470,12 +449,8 @@ source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
       # no need to redefine it in your config for now)
       #media-session.enable = true;
     };
-    pulseaudio = {
-      enable = false;
-    };
-    printing = {
-      enable = false;
-    };
+    pulseaudio = { enable = false; };
+    printing = { enable = false; };
     xserver = {
       enable = true;
       videoDrivers = [ "nvidia" ];
@@ -535,9 +510,10 @@ source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
       isNormalUser = true;
       description = "Brenton";
       extraGroups = [ "networkmanager" "wheel" "input" "docker" "libvirtd" ];
-      packages = with pkgs; [
-      #  thunderbird
-      ];
+      packages = with pkgs;
+        [
+          #  thunderbird
+        ];
     };
   };
   #virtualisation.virtualbox.host.enable = true;
@@ -545,26 +521,26 @@ source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
   #virtualisation.virtualbox.host.addNetworkInterface = false;
   #virtualisation.virtualbox.host.enableExtensionPack = true;
   virtualisation = {
-    docker = {
-      enable = true;
-    };
+    docker = { enable = true; };
     libvirtd = {
       enable = true;
       qemu = {
         package = pkgs.qemu_kvm;
         runAsRoot = true;
         swtpm.enable = true;
-        ovmf = { # not needed in NixOS 25.11 since https://github.com/NixOS/nixpkgs/pull/421549
-          enable = true;
-          packages = [(pkgs.OVMF.override {
-            secureBoot = true;
-            tpmSupport = true;
-          }).fd];
-        };
+        ovmf =
+          { # not needed in NixOS 25.11 since https://github.com/NixOS/nixpkgs/pull/421549
+            enable = true;
+            packages = [
+              (pkgs.OVMF.override {
+                secureBoot = true;
+                tpmSupport = true;
+              }).fd
+            ];
+          };
       };
     };
     spiceUSBRedirection.enable = true;
   };
 }
-
 
