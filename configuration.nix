@@ -206,7 +206,7 @@
         }) { config = config.nixpkgs.config; };
         master = import (builtins.fetchTarball {
           url = "https://github.com/NixOS/nixpkgs/archive/master.tar.gz";
-          sha256 = "0b5xfswr6b8aryg0nwc03akczicn8lp7svbym2g4p2d9pzpw7316";
+          sha256 = "04dpwdasjijzn34bp4krjfr5yjqg21i0nf3888ifzc38rkb51pkd";
         }) { config = config.nixpkgs.config; };
       };
     };
