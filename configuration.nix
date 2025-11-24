@@ -2,12 +2,12 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, inputs, ... }:
 
 {
   imports = [ # Include the results of the hardware scan.
     ./hardware-configuration.nix
-    <home-manager/nixos>
+
   ];
   # Bootloader.
   boot = {
@@ -44,7 +44,7 @@
     ###############################################################
     # Assorted packages
     ###############################################################
-    font-awesome
+    #font-awesome
     ###############################################################
     # Bluetooth
     ###############################################################
@@ -57,7 +57,6 @@
     ## DS Visualizer
     kdePackages.qtwayland
     qt5.qtwayland
-    deepin.qt5platform-plugins
     # tcsh
     jmol
     marvin
@@ -118,7 +117,7 @@
     space-cadet-pinball
     superTux
     superTuxKart
-    zeroad
+    #zeroad
     ###############################################################
     # Maths software
     ###############################################################
@@ -135,6 +134,7 @@
     ###############################################################
     # Office software
     ###############################################################
+    kdePackages.okular
     onlyoffice-desktopeditors
     texliveFull
     texstudio
@@ -159,16 +159,17 @@
       nerd-fonts.noto
       nerd-fonts.hurmit
       nerd-fonts.hasklug
+      nerd-fonts.symbols-only
+      font-awesome
     ];
   };
   hardware = {
     steam-hardware.enable = true;
+    graphics.enable32Bit = true;
     bluetooth.enable = true;
     graphics.enable = true;
     nvidia.open = false; # Should only be true for newer cards
   };
-  # Set up home manager
-  home-manager.users.fusion809 = { imports = [ ./home.nix ]; };
 
   # Select internationalisation properties.
   i18n = {
@@ -197,17 +198,24 @@
   nixpkgs = {
     config = {
       allowUnfree = true;
-      permittedInsecurePackages =
-        [ "openssl-1.1.1w" "dotnet-runtime-6.0.36" "dotnet-sdk-6.0.428" ];
+      permittedInsecurePackages = [ "openssl-1.1.1w" ];
       packageOverrides = pkgs: {
-        unstable = import <unstable> { config = config.nixpkgs.config; };
-        staging-next = import (builtins.fetchTarball {
-          url = "https://github.com/NixOS/nixpkgs/archive/staging-next.tar.gz";
-        }) { config = config.nixpkgs.config; };
+        unstable = import inputs.nixpkgs-unstable {
+          config = config.nixpkgs.config;
+          system = "x86_64-linux";
+        };
+        staging-next = import inputs.staging-next {
+          config = config.nixpkgs.config;
+          system = "x86_64-linux";
+        };
         master = import (builtins.fetchTarball {
-          url = "https://github.com/NixOS/nixpkgs/archive/master.tar.gz";
-          sha256 = "04dpwdasjijzn34bp4krjfr5yjqg21i0nf3888ifzc38rkb51pkd";
-        }) { config = config.nixpkgs.config; };
+          url =
+            "https://github.com/NixOS/nixpkgs/archive/8d82e2594eaeadd7cf4de05c19c41506c07f527b.tar.gz";
+          sha256 = "11vf2dvhykcb6xl4dlb50xk23w61krc2mvzcwzbiwqcjdaqpwf8c";
+        }) {
+          config = config.nixpkgs.config;
+          system = "x86_64-linux";
+        };
       };
     };
     overlays = import ./overlays.nix;
@@ -313,8 +321,9 @@
     firefox = { enable = false; };
     hyprland = {
       enable = true;
-      #package = pkgs.unstable.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
-      package = pkgs.hyprland;
+      package =
+        inputs.hyprland.packages.${pkgs.system}.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
+      #package = pkgs.hyprland;
     };
     nix-ld = {
       enable = true;
@@ -382,15 +391,13 @@
         #tests.pkg-config.defaultPkgConfigPackages.libpcre2-16
         libGLU
         qt5.qtwayland
-        deepin.qt5platform-plugins
-        #deepin.qt5platform-plugins
+        xwayland
         egl-wayland
         #gtk4-layer-shell # Seems irrelevant to error but on Arch
-        libsForQt5.kwin
-        libsForQt5.kwayland
+
         kdePackages.qtwayland
         kdePackages.kwayland
-        kdePackages.wayqt
+
       ];
     };
     steam = {
@@ -528,16 +535,6 @@
         package = pkgs.qemu_kvm;
         runAsRoot = true;
         swtpm.enable = true;
-        ovmf =
-          { # not needed in NixOS 25.11 since https://github.com/NixOS/nixpkgs/pull/421549
-            enable = true;
-            packages = [
-              (pkgs.OVMF.override {
-                secureBoot = true;
-                tpmSupport = true;
-              }).fd
-            ];
-          };
       };
     };
     spiceUSBRedirection.enable = true;
