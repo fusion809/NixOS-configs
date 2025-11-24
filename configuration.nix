@@ -393,8 +393,6 @@
         qt5.qtwayland
         xwayland
         egl-wayland
-        #gtk4-layer-shell # Seems irrelevant to error but on Arch
-
         kdePackages.qtwayland
         kdePackages.kwayland
 
