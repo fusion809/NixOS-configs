@@ -152,6 +152,10 @@
     docker-compose
     virt-viewer
     (unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
+    ###############################################################
+    # Discovery Studio FHS environment
+    ###############################################################
+    (import ./ds-fhs-env.nix { inherit pkgs; })
   ];
   fonts = {
     packages = with pkgs; [
