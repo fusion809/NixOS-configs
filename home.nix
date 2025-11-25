@@ -67,7 +67,198 @@
     bash = {
       enable = true;
       bashrcExtra =
-        "\nfunction vbash {\n  vim $HOME/.bashrc\n}\n\nfunction sbash {\n  source $HOME/.bashrc\n}\n\nfunction vcf {\n  sudo vim /etc/nixos/configuration.nix\n}\n\nfunction vhc {\n  vim $HOME/.config/hypr/hyprland.conf\n}\n\nfunction vwc {\n  vim $HOME/.config/waybar/config.jsonc\n}\n\nif [[ -v $HYPRLAND_INSTANCE_SIGNATURE ]]; then\n  if `bt-device -l | grep -i \"00:A4:1C:F5:00:63\"` &> /dev/null; then\n    bluetoothctl scan on\n    bluetoothctl pair 00:A4:1C:F5:00:63\n    bluetoothctl connect 00:A4:1C:F5:00:63\n  fi\nfi\nfunction nixcg {\n  sudo nix-collect-garbage -d\n}\n\nfunction git-branch {\n  if ! [[ -n \"$1\" ]]; then\n    git rev-parse --abbrev-ref HEAD\n  else\n    git -C \"$1\" rev-parse --abbrev-ref HEAD\n  fi\n}\n\nfunction nixver {\n  sudo nix-channel --list | grep nixos | cut -d '-' -f 2\n}\n\nfunction umount_arch {\n  if `mountpoint -q /arch/boot`; then\n    sudo umount /arch/boot -l\n    sudo umount /arch -l\n    touch ~/.cache/umount_arch\n  fi\n}\n\nfunction mount_arch {\n  if ! `mountpoint -q /arch` && ! [[ -f $HOME/.cache/umount_arch ]]; then\n    sudo mount /dev/disk/by-label/arch /arch\n    sudo mount /dev/disk/by-label/ARCHEFI /arch/boot\n  elif [[ -f $HOME/.cache/umount_arch ]]; then\n    echo '$HOME/.cache/umount_arch exists, so a Nix rebuild is likely happening...'\n  fi\n}\n\nfunction rebuild {\n  umount_arch\n  sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix\n  rm -f $HOME/.cache/umount_arch\n  mount_arch\n}\n\nalias nixrb=rebuild\nfunction nixrsu {\n  sudo nix-channel --update\n  nixrb\n}\n\nfunction nixfrb {\n  sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $HOME/GitHub/mine/config/NixOS-configs/#nixos --impure\n}\n\nfunction update {\n  sudo nix-store --repair --verify --check-contents\n  nixrsu\n  nixcg\n}\n\nfunction clipf {\n  if `ps ax | grep wayland &> /dev/null`; then\n    wl-copy < $1\n	else\n  	xclip -sel clip < $1\n  fi\n}\n\nif ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then\n  mkdir -p $HOME/.ssh\n  ssh-keygen -t rsa -b 4096 -C 'brentonhorne77@gmail.com'\n  clipf $HOME/.ssh/id_rsa.pub\n  echo 'GitHub SSH key generated and is now in your clipboard. Go to https://github.com/settings/ssh to register it to your account!'\nfi\n\nfunction rainbowfastfetch {\n  hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'\n}\n\nexport NIXPKGS_ALLOW_INSECURE=1\n\nfunction sclipf {\n  sudo xclip -sel clip < $1\n}\n\nfunction nixstrep {\n  sudo nix-store --repair --verify --check-contents\n}\n\nfunction push {\n  git add --all\n  git commit -m \"$@\"\n  git push origin $(git-branch)\n}\n\nfunction pushf {\n  git add --all\n  git commit -m \"$@\"\n  git push origin $(git-branch) -f\n}\n\nfunction gitsw {\n  repo=$(git remote -v | grep fetch | grep origin | sed 's|.*github.com[/:]||g' | cut -d ' ' -f 1)\n  git remote rm origin\n  git remote add origin git@github.com:$repo\n}\n\nfunction cdnc {\n  cd $HOME/GitHub/mine/config/NixOS-configs/$1\n}\n\nfunction vhom {\n  vim $HOME/GitHub/mine/config/NixOS-configs/home.nix\n}\n\nalias vhx=vhom\nfunction vrm {\n  if [[ -f README.md ]]; then\n    vim README.md\n  else\n    vim $HOME/GitHub/mine/config/NixOS-configs/README.md\n  fi\n}\nmount_arch\n\nfunction vsnc {\n  code $HOME/GitHub/mine/config/NixOS-configs\n}\n\nfunction vshc {\n  code $HOME/GitHub/mine/config/hyprland-configs\n}\n\nfunction comno {\n	git rev-list --count HEAD\n}\n\nfunction revision {\n	git log | head -n 1 | cut -d ' ' -f 2\n}\npushd -q $HOME/GitHub/others/OpenRA\ngit pull origin bleed -q\nlatestRev=$(revision)\npopd -q\npackagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)\nif [[ $latestRev != $packagedRev ]]; then\n  echo \"OpenRA git package is out of date. openraup will update it.\"\nfi\n\nfunction openraup {\n  pushd -q $HOME/GitHub/others/OpenRA\n  git pull origin bleed -q\n  latestRev=$(revision)\n  upno=$(comno)\n  uphash=$(revision | head -c 7)\n  popd -q\n  packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)\n  sed -i -e \"s|$packagedRev|$latestRev|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix\n  latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '\"hash\"' | cut -d '\"' -f 4)\n  packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '\"' -f 2)\n  packagedVer=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '\"' -f 2)\n  latestVer=\"$upno.git.$uphash\"\n  sed -i -e \"s|$packagedHash|$latestHash|g\" -e \"s|$packagedVer|$latestVer|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix\n  \n  nixrb\n}\n  ";
+        "
+        function vbash {
+          vim $HOME/.bashrc
+        }
+
+        function sbash {
+          source $HOME/.bashrc
+        }
+
+        function vcf {
+          sudo vim /etc/nixos/configuration.nix
+        }
+
+        function vhc {
+          vim $HOME/.config/hypr/hyprland.conf
+        }
+
+        function vwc {
+          vim $HOME/.config/waybar/config.jsonc
+        }
+
+        if [[ -v $HYPRLAND_INSTANCE_SIGNATURE ]]; then
+          if `bt-device -l | grep -i \"00:A4:1C:F5:00:63\"` &> /dev/null; then
+            bluetoothctl scan on
+            bluetoothctl pair 00:A4:1C:F5:00:63
+            bluetoothctl connect 00:A4:1C:F5:00:63
+          fi
+        fi
+
+        function nixcg {
+          sudo nix-collect-garbage -d
+        }
+
+        function git-branch {
+          if ! [[ -n \"$1\" ]]; then
+            git rev-parse --abbrev-ref HEAD
+          else
+            git -C \"$1\" rev-parse --abbrev-ref HEAD
+          fi
+        }
+
+        function nixver {
+          sudo nix-channel --list | grep nixos | cut -d '-' -f 2
+        }
+
+        function umount_arch {
+          if `mountpoint -q /arch/boot`; then
+            sudo umount /arch/boot -l
+            sudo umount /arch -l
+            touch ~/.cache/umount_arch
+          fi
+        }
+
+        function mount_arch {
+          if ! `mountpoint -q /arch` && ! [[ -f $HOME/.cache/umount_arch ]]; then
+            sudo mount /dev/disk/by-label/arch /arch
+            sudo mount /dev/disk/by-label/ARCHEFI /arch/boot
+          elif [[ -f $HOME/.cache/umount_arch ]]; then
+            echo '$HOME/.cache/umount_arch exists, so a Nix rebuild is likely happening...'
+          fi
+        }
+
+        function rebuild {
+          umount_arch
+          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+          rm -f $HOME/.cache/umount_arch
+          mount_arch
+        }
+
+        alias nixrb=rebuild
+        function nixrsu {
+          sudo nix-channel --update
+          nixrb
+        }
+
+        function nixfrb {
+          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $HOME/GitHub/mine/config/NixOS-configs/#nixos --impure
+        }
+
+        function update {
+          sudo nix-store --repair --verify --check-contents
+          nixrsu
+          nixcg
+        }
+
+        function clipf {
+          if `ps ax | grep wayland &> /dev/null`; then
+            wl-copy < $1
+		else
+          xclip -sel clip < $1
+        fi
+      }
+
+      if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then
+        mkdir -p $HOME/.ssh
+        ssh-keygen -t rsa -b 4096 -C 'brentonhorne77@gmail.com'
+        clipf $HOME/.ssh/id_rsa.pub
+        echo 'GitHub SSH key generated and is now in your clipboard. Go to https://github.com/settings/ssh to register it to your account!'
+      fi
+
+      function rainbowfastfetch {
+        hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
+      }
+
+      export NIXPKGS_ALLOW_INSECURE=1
+
+      function sclipf {
+        sudo xclip -sel clip < $1
+      }
+
+      function nixstrep {
+        sudo nix-store --repair --verify --check-contents
+      }
+
+      function push {
+        git add --all
+        git commit -m \"$@\"
+  git push origin $(git-branch)
+      }
+
+      function pushf {
+        git add --all
+  git commit -m \"$@\"
+  git push origin $(git-branch) -f
+}
+
+function gitsw {
+  repo=$(git remote -v | grep fetch | grep origin | sed 's|.*github.com[/:]||g' | cut -d ' ' -f 1)
+  git remote rm origin
+  git remote add origin git@github.com:$repo
+}
+
+function cdnc {
+  cd $HOME/GitHub/mine/config/NixOS-configs/$1
+}
+
+function vhom {
+  vim $HOME/GitHub/mine/config/NixOS-configs/home.nix
+}
+
+alias vhx=vhom
+function vrm {
+  if [[ -f README.md ]]; then
+    vim README.md
+  else
+    vim $HOME/GitHub/mine/config/NixOS-configs/README.md
+  fi
+}
+mount_arch
+
+function vsnc {
+  code $HOME/GitHub/mine/config/NixOS-configs
+}
+
+function vshc {
+  code $HOME/GitHub/mine/config/hyprland-configs
+}
+
+function comno {
+	git rev-list --count HEAD
+}
+
+function revision {
+	git log | head -n 1 | cut -d ' ' -f 2
+}
+pushd -q $HOME/GitHub/others/OpenRA
+git pull origin bleed -q
+latestRev=$(revision)
+popd -q
+packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
+if [[ $latestRev != $packagedRev ]]; then
+  echo \"OpenRA git package is out of date. openraup will update it.\"
+fi
+
+function openraup {
+  pushd -q $HOME/GitHub/others/OpenRA
+  git pull origin bleed -q
+  latestRev=$(revision)
+  upno=$(comno)
+  uphash=$(revision | head -c 7)
+  popd -q
+  packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
+  sed -i -e \"s|$packagedRev|$latestRev|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
+  latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '\"hash\"' | cut -d '\"' -f 4)
+  packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '\"' -f 2)
+  packagedVer=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '\"' -f 2)
+  latestVer=\"$upno.git.$uphash\"
+  sed -i -e \"s|$packagedHash|$latestHash|g\" -e \"s|$packagedVer|$latestVer|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
+  
+  nixrb
+}
+  ";
     };
     git = {
       enable = true;
