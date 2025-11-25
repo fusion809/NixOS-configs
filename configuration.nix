@@ -35,6 +35,7 @@
     master.antigravity
     brave
     discord
+    element-desktop
     gimp
     google-chrome
     inkscape
