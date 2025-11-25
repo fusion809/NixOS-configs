@@ -32,15 +32,16 @@
     ###############################################################
     # Assorted apps
     ###############################################################   
+    master.antigravity
     brave
     discord
     gimp
     google-chrome
     inkscape
+    nixfmt-classic # Needed for Nix IDE extension of vscode/antigravity
+    pinta
     vlc
     unstable.vscode
-    master.antigravity
-    nixfmt-classic
     ###############################################################
     # Assorted packages
     ###############################################################
@@ -54,20 +55,18 @@
     # Chemistry software
     ###############################################################
     unstable.avogadro2 # unstable to silence outdated popup msg.
-    ## DS Visualizer
-    kdePackages.qtwayland
-    qt5.qtwayland
-    # tcsh
+    (import ./ds-fhs-env.nix { inherit pkgs; }) # DSV
     jmol
     marvin
-    pymol
     molsketch
     openbabel
+    pymol
     ###############################################################
     # Command-line utilities
     ###############################################################
     dnsmasq
     fastfetch
+    ffmpeg-full
     git
     gtop
     jq
@@ -77,32 +76,32 @@
     nh
     optipng
     pciutils
-    tcsh
     wget
     zenity
+    winetricks
+    wineWowPackages.stable
+    yt-dlp
     ###############################################################
     # Hyprland essentials
     ###############################################################
     grimblast # Screenshots under Hyprland
-    wayland
     hyprlandPlugins.hy3 # Tabbing under Hyprland
     swaynotificationcenter # Required for notifications
     ## Core apps
     alacritty
+    eog # For viewing images
     ffmpegthumbnailer
     gnome.gvfs
-    xfce.mousepad
     unstable.kitty
     libmtp
     nautilus
-    eog # For viewing images
     ## Required by Waybar widgets
     lm_sensors
     wttrbar
     ## Required for a clipboard
+    cliphist
     wl-clip-persist
     wl-clipboard
-    cliphist
     ## Other utilities
     rofi-wayland
     swaybg
@@ -131,7 +130,6 @@
     # NixOS utilities
     ###############################################################
     home-manager
-    xorriso # Can be used to get files from host to guest
     nix-prefetch-git
     ###############################################################
     # Office software
@@ -152,12 +150,9 @@
     ###############################################################
     docker
     docker-compose
+    xorriso # Can be used to get files from host to guest
     virt-viewer
     (unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
-    ###############################################################
-    # Discovery Studio FHS environment
-    ###############################################################
-    (import ./ds-fhs-env.nix { inherit pkgs; })
   ];
   fonts = {
     packages = with pkgs; [
@@ -331,6 +326,9 @@
         inputs.hyprland.packages.${pkgs.system}.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
       #package = pkgs.hyprland;
     };
+    nano = {
+      enable = false;
+    };
     steam = {
       enable = true;
       remotePlay.openFirewall =
@@ -339,6 +337,12 @@
         true; # Open ports in the firewall for Source Dedicated Server
       localNetworkGameTransfers.openFirewall =
         true; # Open ports in the firewall for Steam Local Network Game Transfers
+
+      # Enable GameScope session for better Wayland support
+      gamescopeSession.enable = true;
+
+      # Add extra compatibility packages for Nvidia + Wayland
+      extraCompatPackages = with pkgs; [ proton-ge-bin ];
     };
     vim = {
       enable = true;
