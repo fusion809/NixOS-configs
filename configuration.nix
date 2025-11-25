@@ -75,7 +75,9 @@
     libnotify
     nh
     optipng
+    p7zip
     pciutils
+    unzip
     wget
     zenity
     winetricks
@@ -326,9 +328,7 @@
         inputs.hyprland.packages.${pkgs.system}.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
       #package = pkgs.hyprland;
     };
-    nano = {
-      enable = false;
-    };
+    nano = { enable = false; };
     steam = {
       enable = true;
       remotePlay.openFirewall =
@@ -409,13 +409,6 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system = {
-    autoUpgrade = {
-      enable = true;
-      dates = "04:00"; # See HH:MM is the acceptable format it seems, the docs
-      # suggest systemd.time(7) gives the format but many of its suggestions 
-      # like 4h, 4 h, 4hr, failed
-      operation = "switch";
-    };
     stateVersion = "25.05"; # Did you read the comment?
   };
   # Set up systemd services
