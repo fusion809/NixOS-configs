@@ -18,7 +18,6 @@ pkgs.buildFHSEnv {
       findutils
       which
       file
-      gdb
 
       # Shell
       bash
@@ -57,6 +56,7 @@ pkgs.buildFHSEnv {
       libdrm
       qt5.qtbase # already present, but also add:
       qt5.qtx11extras
+      qt5.qtwebengine # Explicitly add WebEngine
       # libglvnd-glx  # removed – not a separate package in nixpkgs
       xorg.libxshmfence
       xorg.libXrandr
@@ -72,6 +72,7 @@ pkgs.buildFHSEnv {
       cairo
       expat
       dbus
+      systemd # Provides libudev.so.0
 
       # Network libraries
       curl
@@ -110,6 +111,30 @@ pkgs.buildFHSEnv {
       nss
       cups
       zstd
+
+      # Graphics & Hardware
+      numactl
+      glxinfo
+      vulkan-loader
+      libglvnd
+
+      # Additional libraries for Discovery Studio
+      gcc-unwrapped.lib # Provides libstdc++.so.6, libgcc_s.so.1, etc.
+      boost
+      xercesc
+      libxslt
+
+      # Additional debugging and support libraries
+      libunwind
+      libatomic_ops
+
+      # XDG utilities for file associations
+      xdg-utils
+      shared-mime-info
+
+      # Additional libraries for WebEngine and graphics
+      pango
+      gdk-pixbuf
     ];
 
   # -----------------------------------------------------------------
@@ -122,16 +147,33 @@ pkgs.buildFHSEnv {
   }];
 
   profile = ''
-    export LD_LIBRARY_PATH=$out/lib:$out/lib/libxcrypt-legacy:$HOME/BIOVIA/DiscoveryStudio2025/lib:/usr/lib:/usr/lib64:$LD_LIBRARY_PATH
-    export QT_QPA_PLATFORM_PLUGIN_PATH=$out/lib/qt5/plugins
-    export QT_PLUGIN_PATH=$out/lib/qt5/plugins
+    # Prioritize bundled libraries (Qt, etc.) over system ones to avoid ABI conflicts
+    export LD_LIBRARY_PATH=$HOME/BIOVIA/DiscoveryStudio2025/lib:$out/lib:$out/lib64:/lib:/lib64:/usr/lib:/usr/lib64:$LD_LIBRARY_PATH
+
+    # Point Qt to the bundled plugins
+    export QT_PLUGIN_PATH=$HOME/BIOVIA/DiscoveryStudio2025/lib
+    unset QT_QPA_PLATFORM_PLUGIN_PATH
+
     # Force X11 backend (more stable for proprietary apps)
     export QT_QPA_PLATFORM=xcb
     export XDG_SESSION_TYPE=x11
-    # Fallback to software rendering if GPU access fails
-    export LIBGL_ALWAYS_SOFTWARE=1
 
-    # Discovery Studio helpers
+    # Graphics Configuration
+    # Try to use hardware rendering by default
+    export LIBGL_ALWAYS_SOFTWARE=0
+
+    # Disable indirect rendering (unless needed for forwarding) to prefer direct hardware access
+    export LIBGL_ALWAYS_INDIRECT=0
+
+    # Qt/WebEngine Flags
+    export QTWEBENGINE_DISABLE_SANDBOX=1
+    # Removed --use-software-gl-implementation to try hardware first
+    export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu-compositing --disable-web-security --disable-extensions --disable-plugins --disable-client-side-phishing-detection"
+
+    export QT_XCB_GL_INTEGRATION=xcb_glx
+    export QTWEBENGINE_PROCESS_MODEL=SingleProcess
+
+    # Discovery Studio helpers
     export BIOVIA_HOME=$HOME/BIOVIA/DiscoveryStudio2025
     export BIOVIA_LIC_PACK_DIR=$HOME/BIOVIA/BIOVIA_LicensePack
   '';

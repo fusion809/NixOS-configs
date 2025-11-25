@@ -95,6 +95,7 @@
     unstable.kitty
     libmtp
     nautilus
+    eog # For viewing images
     ## Required by Waybar widgets
     lm_sensors
     wttrbar
@@ -130,6 +131,7 @@
     # NixOS utilities
     ###############################################################
     home-manager
+    xorriso # Can be used to get files from host to guest
     nix-prefetch-git
     ###############################################################
     # Office software
@@ -328,79 +330,6 @@
       package =
         inputs.hyprland.packages.${pkgs.system}.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
       #package = pkgs.hyprland;
-    };
-    nix-ld = {
-      enable = true;
-      libraries = with pkgs; [
-        alsa-lib
-        audit
-        cairo
-        libtiff
-        e2fsprogs
-        expat
-        fontconfig
-        freetype
-        gd
-        glib
-        glibc
-        keyutils
-        krb5
-        libdrm
-        libgcc
-        #libstdcxx
-        bc
-        bzip2
-        xorg.libICE
-        #libice
-        libjpeg_turbo
-        libnsl
-        libpcap
-        libpng
-        libselinux
-        libsepol
-        xorg.libSM
-        #libsm
-        #libx11
-        xorg.libX11
-        #libxau
-        xorg.libXau
-        #libxdamage
-        xorg.libXdamage
-        zlib
-        tcsh
-        pam_krb5
-        pam_p11
-        #libxxf86vm
-        xorg.libXxf86vm
-        #libxtst
-        xorg.libXtst
-        #libxt
-        xorg.libXt
-        #libxrender
-        xorg.libXrender
-        #libxpm
-        xorg.libXpm
-        #libxmu
-        xorg.libXmu
-        #libxinerama
-        xorg.libXinerama
-        #libxi
-        xorg.libXi
-        #libxfixes
-        xorg.libXfixes
-        #libxext
-        xorg.libXext
-        #libxdmcp
-        xorg.libXdmcp
-        #tests.pkg-config.defaultPkgConfigPackages.libpcre2-16
-        libGLU
-        qt5.qtwayland
-        xwayland
-        egl-wayland
-        kdePackages.qtwayland
-        kdePackages.kwayland
-
-      ];
     };
     steam = {
       enable = true;

@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=BIOVIA Discovery Studio Visualizer 2025
+Icon=DSV
+Exec=ds-fhs-env -c '$HOME/BIOVIA/DiscoveryStudio2025/bin/DiscoveryStudio2025'
+Type=Application
