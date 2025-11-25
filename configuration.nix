@@ -348,7 +348,7 @@
     vim = {
       enable = true;
       defaultEditor = true;
-      package = pkgs.staging-next.vim-full;
+      package = pkgs.staging-next.vim;
     };
     virt-manager.enable = true;
     waybar.enable = true;
