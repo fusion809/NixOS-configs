@@ -226,13 +226,13 @@
 
         function push {
           git add --all
-          git commit -m \"$@\"
+          git commit -m "$@"
           git push origin $(git-branch)
         }
 
         function pushf {
           git add --all
-          git commit -m \"$@\"
+          git commit -m "$@"
           git push origin $(git-branch) -f
         }
 
