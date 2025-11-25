@@ -66,8 +66,43 @@
     home-manager.enable = true;
     bash = {
       enable = true;
-      bashrcExtra =
-        "
+      bashrcExtra = ''
+        function cdc {
+          cd $HOME/Chem/$1
+        }
+
+        function cddc {
+          cd $HOME/Documents/$1
+        }
+
+        function cddo {
+          cd $HOME/Downloads/$1
+        }
+
+        function cdg {
+          cd $HOME/GitHub/$1
+        }
+
+        function cdgo {
+          cdg others/$1
+        }
+
+        function cdm {
+          cd $HOME/Music/$1
+        }
+
+        function cdp {
+          cd $HOME/Pictures/$1
+        }
+
+        function cdv {
+          cd $HOME/Videos/$1
+        }
+
+        function cdvm {
+          cd $HOME/VirtMachines/$1
+        }
+
         function vbash {
           vim $HOME/.bashrc
         }
@@ -129,6 +164,14 @@
           fi
         }
 
+        function mount_data {
+          if ! `mountpoint -q /data`; then
+            sudo mount '/dev/disk/by-label/Data\x20partition' /data
+          fi
+        }
+
+        mount_data
+
         function rebuild {
           umount_arch
           sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
@@ -155,110 +198,109 @@
         function clipf {
           if `ps ax | grep wayland &> /dev/null`; then
             wl-copy < $1
-		else
-          xclip -sel clip < $1
+          else
+            xclip -sel clip < $1
+          fi
+        }
+
+        if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then
+          mkdir -p $HOME/.ssh
+          ssh-keygen -t rsa -b 4096 -C 'brentonhorne77@gmail.com'
+          clipf $HOME/.ssh/id_rsa.pub
+          echo 'GitHub SSH key generated and is now in your clipboard. Go to https://github.com/settings/ssh to register it to your account!'
         fi
-      }
 
-      if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then
-        mkdir -p $HOME/.ssh
-        ssh-keygen -t rsa -b 4096 -C 'brentonhorne77@gmail.com'
-        clipf $HOME/.ssh/id_rsa.pub
-        echo 'GitHub SSH key generated and is now in your clipboard. Go to https://github.com/settings/ssh to register it to your account!'
-      fi
+        function rainbowfastfetch {
+          hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
+        }
 
-      function rainbowfastfetch {
-        hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
-      }
+        export NIXPKGS_ALLOW_INSECURE=1
 
-      export NIXPKGS_ALLOW_INSECURE=1
+        function sclipf {
+          sudo xclip -sel clip < $1
+        }
 
-      function sclipf {
-        sudo xclip -sel clip < $1
-      }
+        function nixstrep {
+          sudo nix-store --repair --verify --check-contents
+        }
 
-      function nixstrep {
-        sudo nix-store --repair --verify --check-contents
-      }
+        function push {
+          git add --all
+          git commit -m \"$@\"
+          git push origin $(git-branch)
+        }
 
-      function push {
-        git add --all
-        git commit -m \"$@\"
-  git push origin $(git-branch)
-      }
+        function pushf {
+          git add --all
+          git commit -m \"$@\"
+          git push origin $(git-branch) -f
+        }
 
-      function pushf {
-        git add --all
-  git commit -m \"$@\"
-  git push origin $(git-branch) -f
-}
+        function gitsw {
+          repo=$(git remote -v | grep fetch | grep origin | sed 's|.*github.com[/:]||g' | cut -d ' ' -f 1)
+          git remote rm origin
+          git remote add origin git@github.com:$repo
+        }
 
-function gitsw {
-  repo=$(git remote -v | grep fetch | grep origin | sed 's|.*github.com[/:]||g' | cut -d ' ' -f 1)
-  git remote rm origin
-  git remote add origin git@github.com:$repo
-}
+        function cdnc {
+          cd $HOME/GitHub/mine/config/NixOS-configs/$1
+        }
 
-function cdnc {
-  cd $HOME/GitHub/mine/config/NixOS-configs/$1
-}
+        function vhom {
+          vim $HOME/GitHub/mine/config/NixOS-configs/home.nix
+        }
 
-function vhom {
-  vim $HOME/GitHub/mine/config/NixOS-configs/home.nix
-}
+        alias vhx=vhom
+        function vrm {
+          if [[ -f README.md ]]; then
+            vim README.md
+          else
+            vim $HOME/GitHub/mine/config/NixOS-configs/README.md
+          fi
+        }
+        mount_arch
 
-alias vhx=vhom
-function vrm {
-  if [[ -f README.md ]]; then
-    vim README.md
-  else
-    vim $HOME/GitHub/mine/config/NixOS-configs/README.md
-  fi
-}
-mount_arch
+        function vsnc {
+          code $HOME/GitHub/mine/config/NixOS-configs
+        }
 
-function vsnc {
-  code $HOME/GitHub/mine/config/NixOS-configs
-}
+        function vshc {
+          code $HOME/GitHub/mine/config/hyprland-configs
+        }
 
-function vshc {
-  code $HOME/GitHub/mine/config/hyprland-configs
-}
+        function comno {
+        	git rev-list --count HEAD
+        }
 
-function comno {
-	git rev-list --count HEAD
-}
+        function revision {
+        	git log | head -n 1 | cut -d ' ' -f 2
+        }
+        pushd -q $HOME/GitHub/others/OpenRA
+        git pull origin bleed -q
+        latestRev=$(revision)
+        popd -q
+        packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
+        if [[ $latestRev != $packagedRev ]]; then
+          echo \"OpenRA git package is out of date. openraup will update it.\"
+        fi
 
-function revision {
-	git log | head -n 1 | cut -d ' ' -f 2
-}
-pushd -q $HOME/GitHub/others/OpenRA
-git pull origin bleed -q
-latestRev=$(revision)
-popd -q
-packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
-if [[ $latestRev != $packagedRev ]]; then
-  echo \"OpenRA git package is out of date. openraup will update it.\"
-fi
-
-function openraup {
-  pushd -q $HOME/GitHub/others/OpenRA
-  git pull origin bleed -q
-  latestRev=$(revision)
-  upno=$(comno)
-  uphash=$(revision | head -c 7)
-  popd -q
-  packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
-  sed -i -e \"s|$packagedRev|$latestRev|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
-  latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '\"hash\"' | cut -d '\"' -f 4)
-  packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '\"' -f 2)
-  packagedVer=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '\"' -f 2)
-  latestVer=\"$upno.git.$uphash\"
-  sed -i -e \"s|$packagedHash|$latestHash|g\" -e \"s|$packagedVer|$latestVer|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
-  
-  nixrb
-}
-  ";
+        function openraup {
+          pushd -q $HOME/GitHub/others/OpenRA
+          git pull origin bleed -q
+          latestRev=$(revision)
+          upno=$(comno)
+          uphash=$(revision | head -c 7)
+          popd -q
+          packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '\"' -f 2)
+          sed -i -e \"s|$packagedRev|$latestRev|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
+          latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '\"hash\"' | cut -d '\"' -f 4)
+          packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '\"' -f 2)
+          packagedVer=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '\"' -f 2)
+          latestVer=\"$upno.git.$uphash\"
+          sed -i -e \"s|$packagedHash|$latestHash|g\" -e \"s|$packagedVer|$latestVer|g\" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix        
+          nixrb
+        }
+      '';
     };
     git = {
       enable = true;
