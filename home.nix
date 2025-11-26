@@ -67,6 +67,7 @@
     bash = {
       enable = true;
       bashrcExtra = ''
+        export NIXCFG=$HOME/GitHub/mine/config/NixOS-configs
         function cdc {
           cd $HOME/Chem/$1
         }
@@ -186,7 +187,9 @@
         }
 
         function nixfrb {
-          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $HOME/GitHub/mine/config/NixOS-configs/#nixos
+          umount_arch
+          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $NIXCFG/#nixos
+          mount_arch
         }
 
         function update {
@@ -243,11 +246,11 @@
         }
 
         function cdnc {
-          cd $HOME/GitHub/mine/config/NixOS-configs/$1
+          cd $NIXCFG/$1
         }
 
         function vhom {
-          vim $HOME/GitHub/mine/config/NixOS-configs/home.nix
+          vim $NIXCFG/home.nix
         }
 
         alias vhx=vhom
@@ -255,13 +258,13 @@
           if [[ -f README.md ]]; then
             vim README.md
           else
-            vim $HOME/GitHub/mine/config/NixOS-configs/README.md
+            vim $NIXCFG/README.md
           fi
         }
         mount_arch
 
         function vsnc {
-          code $HOME/GitHub/mine/config/NixOS-configs
+          code $NIXCFG
         }
 
         function vshc {
@@ -279,7 +282,7 @@
         git pull origin bleed -q
         latestRev=$(revision)
         popd -q
-        packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
+        packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
         if [[ $latestRev != $packagedRev ]]; then
           echo "OpenRA git package is out of date. openraup will update it."
         fi
@@ -291,24 +294,42 @@
           upno=$(comno)
           uphash=$(revision | head -c 7)
           popd -q
-          packagedRev=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
-          sed -i -e "s|$packagedRev|$latestRev|g" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix
+          packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
+          sed -i -e "s|$packagedRev|$latestRev|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
           latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '"hash"' | cut -d '"' -f 4)
-          packagedHash=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '"' -f 2)
-          packagedVer=$(cat $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '"' -f 2)
+          packagedHash=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '"' -f 2)
+          packagedVer=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '"' -f 2)
           latestVer="$upno.git.$uphash"
-          sed -i -e "s|$packagedHash|$latestHash|g" -e "s|$packagedVer|$latestVer|g" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix        
+          sed -i -e "s|$packagedHash|$latestHash|g" -e "s|$packagedVer|$latestVer|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix        
           nixrb
         }
 
-        function update_to_25.11 {
-          cdnc
-          git checkout 25.11
-          nix flake update
-          sudo nix-channel --add https://nixos.org/channels/nixos-25.11 nixos
-          sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-25.11.tar.gz home-manager
-          sudo nix-channel --update
-          nixfrb
+        function upgrade {
+          echo "Checking for NixOS updates..."
+          latVer=$(wget -cqO- https://nixos.org/download/ | grep -i "nixos-[0-9]*\.[0-9]*" | head -n 1 | sed 's|.*https://channels.nixos.org/||g' | cut -d '/' -f 1)
+          echo "The latest release of NixOS is ''${latVer/nixos-/}..."
+          instVer=$(sudo nix-channel --list | grep "^nixos " | cut -d '/' -f 5)
+          echo "The installed release of NixOS is ''${instVer/nixos-/}..."
+          if [[ $latVer != $instVer ]]; then
+            echo "NixOS is out of date. Upgrading..."
+            if `git -C $NIXCFG branch | grep $latVer &> /dev/null`; then
+              git -C $NIXCFG checkout $latVer
+            else
+              git -C $NIXCFG checkout -b $latVer
+              sed -i -e "s|$instVer|$latVer|g" $NIXCFG/flake.nix || echo "Failed to update flake.nix." && return
+              nix flake update $NIXCFG || echo "Failed to update flake." && return
+              push "Initial commit of new branch"
+            fi
+            echo "Updating channels..."
+            sudo nix-channel --add https://nixos.org/channels/nixos-$latVer nixos || echo "Failed to update nixos channel." && return
+            sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-$latVer.tar.gz home-manager || echo "Failed to update home-manager channel." && return
+            sudo nix-channel --update || echo "Failed to update channels." && return
+            echo "Upgrading to NixOS $latVer..."
+            nixfrb || echo "Failed to upgrade to NixOS $latVer." && return
+            echo "Upgrade complete."
+          else
+            echo "You're already running the latest version of NixOS."
+          fi
         }
       '';
     };
@@ -330,11 +351,11 @@
         export HISTSIZE=10000000
         export SAVEHIST=10000000
         sed -i '/^:/!d' $HOME/.zsh_history
-        source $HOME/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
+        source $HOME/.bashrc
+        source $NIXCFG/hnixos.zsh-theme
         function shopt {
           #echo "shopt called with arguments: $@"
         }
-        source $HOME/.bashrc
 
         function vzsh {
           vim $HOME/.zshrc
