@@ -183,7 +183,7 @@
         alias nixrb=rebuild
         function nixfrb {
           umount_arch
-          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $NIXCFG/#nixos --impure
+          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $NIXCFG/#nixos
           mount_arch
         }
 
