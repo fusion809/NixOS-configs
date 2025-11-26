@@ -331,6 +331,23 @@
             echo "You're already running the latest version of NixOS."
           fi
         }
+
+        # Auto-check for upgrades every 12 hours
+        if [[ -f $HOME/.cache/last_upgrade_check ]]; then
+          last_check=$(cat $HOME/.cache/last_upgrade_check)
+          current_time=$(date +%s)
+          time_diff=$((current_time - last_check))
+          # 12 hours = 43200 seconds
+          if [[ $time_diff -ge 43200 ]]; then
+            upgrade
+            date +%s > $HOME/.cache/last_upgrade_check
+          fi
+        else
+          # First time, create the file and run upgrade
+          mkdir -p $HOME/.cache
+          date +%s > $HOME/.cache/last_upgrade_check
+          upgrade
+        fi
       '';
     };
     git = {
