@@ -34,21 +34,5 @@
       whitesur-icon-theme =
         callPackage (forkNixpkgsPath + /whitesur-icon-theme/package.nix) { };
       marvin = callPackage (forkNixpkgsPath + /marvin/package.nix) { };
-
-      vscode-generic = builtins.fetchurl
-        "https://raw.githubusercontent.com/NixOS/nixpkgs/master/pkgs/applications/editors/vscode/generic.nix";
-
-      antigravity-master = let
-        base =
-          "https://raw.githubusercontent.com/NixOS/nixpkgs/master/pkgs/by-name/an/antigravity";
-        pkg = builtins.fetchurl "${base}/package.nix";
-        info = builtins.fetchurl "${base}/information.json";
-        update = builtins.fetchurl "${base}/update.js";
-      in callPackage (runCommand "antigravity-package.nix" { } ''
-        cp ${pkg} $out
-        substituteInPlace $out \
-          --replace "./information.json" "${info}" \
-          --replace "./update.js" "${update}"
-      '') { };
     })
 ]

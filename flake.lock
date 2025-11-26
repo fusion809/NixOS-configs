@@ -440,36 +440,52 @@
         "type": "github"
       }
     },
+    "nixpkgs-master": {
+      "locked": {
+        "lastModified": 1764167860,
+        "narHash": "sha256-TxlOzkDnkoduhPCrRdVT40FCQAnaqHbrAfQauIRyKg0=",
+        "ref": "master",
+        "rev": "5c4cdf664fd5ba8757da45986993cc9ab80cd41a",
+        "revCount": 902878,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      },
+      "original": {
+        "ref": "master",
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      }
+    },
     "nixpkgs-unstable": {
       "locked": {
         "lastModified": 1763966396,
         "narHash": "sha256-6eeL1YPcY1MV3DDStIDIdy/zZCDKgHdkCmsrLJFiZf0=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
+        "ref": "nixos-unstable",
         "rev": "5ae3b07d8d6527c42f17c876e404993199144b6a",
-        "type": "github"
+        "revCount": 901419,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
       },
       "original": {
-        "owner": "NixOS",
         "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
       }
     },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1763948260,
         "narHash": "sha256-dY9qLD0H0zOUgU3vWacPY6Qc421BeQAfm8kBuBtPVE0=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
+        "ref": "nixos-25.05",
         "rev": "1c8ba8d3f7634acac4a2094eef7c32ad9106532c",
-        "type": "github"
+        "revCount": 813095,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
       },
       "original": {
-        "owner": "NixOS",
         "ref": "nixos-25.05",
-        "repo": "nixpkgs",
-        "type": "github"
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
       }
     },
     "pre-commit-hooks": {
@@ -501,6 +517,7 @@
         "hy3": "hy3",
         "hyprland": "hyprland",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "staging-next": "staging-next"
       }
@@ -509,16 +526,16 @@
       "locked": {
         "lastModified": 1764158845,
         "narHash": "sha256-DGlmFnF1KtEWEXcYCwmIDxbaMv3PDbjP/JR+cRJzxkc=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
+        "ref": "staging-next",
         "rev": "2105b304dab41e65cd8db01b17f6c61c4ed70bf5",
-        "type": "github"
+        "revCount": 902796,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
       },
       "original": {
-        "owner": "NixOS",
         "ref": "staging-next",
-        "repo": "nixpkgs",
-        "type": "github"
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
       }
     },
     "systems": {

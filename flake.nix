@@ -2,15 +2,18 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
+    nixpkgs-unstable.url =
+      "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
+    nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    staging-next.url = "github:NixOS/nixpkgs/staging-next";
+    staging-next.url =
+      "git+https://github.com/NixOS/nixpkgs.git?ref=staging-next";
 
     # use the github shorthand with the tag; this resolves Git refs more reliably
     hyprland.url = "github:hyprwm/Hyprland/v0.52.1?submodules=1";
