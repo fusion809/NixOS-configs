@@ -306,6 +306,7 @@
           git checkout 25.11
           nix flake update
           sudo nix-channel --add https://nixos.org/channels/nixos-25.11 nixos
+          sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-25.11.tar.gz home-manager
           sudo nix-channel --update
           nixfrb
         }
