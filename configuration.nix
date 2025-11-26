@@ -32,7 +32,7 @@
     ###############################################################
     # Assorted apps
     ###############################################################   
-    master.antigravity
+    antigravity-master
     brave
     discord
     element-desktop
@@ -209,14 +209,6 @@
           system = "x86_64-linux";
         };
         staging-next = import inputs.staging-next {
-          config = config.nixpkgs.config;
-          system = "x86_64-linux";
-        };
-        master = import (builtins.fetchTarball {
-          url =
-            "https://github.com/NixOS/nixpkgs/archive/8d82e2594eaeadd7cf4de05c19c41506c07f527b.tar.gz";
-          sha256 = "11vf2dvhykcb6xl4dlb50xk23w61krc2mvzcwzbiwqcjdaqpwf8c";
-        }) {
           config = config.nixpkgs.config;
           system = "x86_64-linux";
         };

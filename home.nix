@@ -181,15 +181,16 @@
         }
 
         alias nixrb=rebuild
-        function nixrsu {
-          sudo nix-channel --update
-          nixrb
-        }
-
         function nixfrb {
           umount_arch
-          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $NIXCFG/#nixos
+          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $NIXCFG/#nixos --impure
           mount_arch
+        }
+
+        function nixrsu {
+          sudo nix-channel --update
+          nix flake update $NIXCFG
+          nixfrb
         }
 
         function update {
