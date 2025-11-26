@@ -186,7 +186,7 @@
         }
 
         function nixfrb {
-          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $HOME/GitHub/mine/config/NixOS-configs/#nixos --impure
+          sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $HOME/GitHub/mine/config/NixOS-configs/#nixos
         }
 
         function update {
@@ -299,6 +299,15 @@
           latestVer="$upno.git.$uphash"
           sed -i -e "s|$packagedHash|$latestHash|g" -e "s|$packagedVer|$latestVer|g" $HOME/GitHub/mine/config/NixOS-configs/nixpkgs/openra/engines/git/default.nix        
           nixrb
+        }
+
+        function update_to_25.11 {
+          cdnc
+          git checkout 25.11
+          nix flake update
+          sudo nix-channel --add https://nixos.org/channels/nixos-25.11 nixos
+          sudo nix-channel --update
+          nixfrb
         }
       '';
     };
