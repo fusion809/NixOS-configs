@@ -26,15 +26,11 @@ inputs:
       #  overlays = [ ];
       #};
 
-      # Use OpenRA bleed engine from nixpkgs-master, override source to track latest
-      openra-git = pkgs.master.openraPackages.engines.bleed.overrideAttrs
-        (oldAttrs: {
-          src = inputs.openra-src;
-          version = "${toString (inputs.openra-src.revCount or 0)}.git.${
-              inputs.openra-src.shortRev or "dirty"
-            }";
-        });
-      openra = pkgs.master.openra;
+      openraPackages = import (forkNixpkgsPath + /openra/default.nix) {
+        inherit pkgs;
+      }; # Import as a set
+      openra-git = openraPackages.engines.git; # Access the git engine directly
+      openra = openraPackages.engines.release;
       marvin = callPackage (forkNixpkgsPath + /marvin/package.nix) { };
 
       vim-latest = pkgs.master.vim.overrideAttrs (oldAttrs: {
