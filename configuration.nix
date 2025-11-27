@@ -128,6 +128,7 @@
     python313Packages.jupyterlab
     octave
     R
+    rstudio
     sage
     ###############################################################
     # NixOS utilities
