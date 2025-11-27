@@ -154,6 +154,7 @@
     ###############################################################
     docker
     docker-compose
+    OVMF
     xorriso # Can be used to get files from host to guest
     virt-viewer
     (unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
