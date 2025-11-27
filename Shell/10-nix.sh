@@ -67,9 +67,9 @@ function update {
 function upgrade {
   echo "Checking for NixOS updates..."
   latVer=$(wget -cqO- https://nixos.org/download/ | grep -i "nixos-[0-9]*\.[0-9]*" | head -n 1 | sed 's|.*https://channels.nixos.org/||g' | cut -d '/' -f 1)
-  echo "The latest release of NixOS is ''${latVer/nixos-/}..."
+  echo "The latest release of NixOS is ${latVer/nixos-/}..."
   instVer=$(sudo nix-channel --list | grep "^nixos " | cut -d '/' -f 5)
-  echo "The installed release of NixOS is ''${instVer/nixos-/}..."
+  echo "The installed release of NixOS is ${instVer/nixos-/}..."
   if [[ $latVer != $instVer ]]; then
     echo "NixOS is out of date. Upgrading..."
     if `git -C $NIXCFG branch | grep $latVer &> /dev/null`; then
