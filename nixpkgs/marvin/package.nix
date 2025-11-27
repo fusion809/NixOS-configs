@@ -1,30 +1,18 @@
-{
-  lib,
-  stdenv,
-  fetchurl,
-  dpkg,
-  makeWrapper,
-  coreutils,
-  gawk,
-  gnugrep,
-  gnused,
-  openjdk17,
-}:
+{ lib, stdenv, fetchurl, dpkg, makeWrapper, coreutils, gawk, gnugrep, gnused
+, openjdk17, }:
 
 stdenv.mkDerivation rec {
   pname = "marvin";
-  version = "25.3.4";
+  version = "25.3.5";
 
   src = fetchurl {
     name = "marvin-${version}.deb";
-    url = "http://dl.chemaxon.com/marvin/${version}/marvin_linux_${version}.deb";
-    hash = "sha256-m9L2yYknpxT+0oiIFoMn2xg7EL9GeL7ENXuA3kCri9M=";
+    url =
+      "http://dl.chemaxon.com/marvin/${version}/marvin_linux_${version}.deb";
+    hash = "sha256-OiTHMGKAuHadoKQMTTPRcYl/zKL+bc0ts/UNsJlHn0Q=";
   };
 
-  nativeBuildInputs = [
-    dpkg
-    makeWrapper
-  ];
+  nativeBuildInputs = [ dpkg makeWrapper ];
 
   unpackPhase = ''
     dpkg-deb -x $src opt
@@ -34,14 +22,7 @@ stdenv.mkDerivation rec {
     wrapBin() {
       makeWrapper $1 $out/bin/$(basename $1) \
         --set INSTALL4J_JAVA_HOME "${openjdk17}" \
-        --prefix PATH : ${
-          lib.makeBinPath [
-            coreutils
-            gawk
-            gnugrep
-            gnused
-          ]
-        }
+        --prefix PATH : ${lib.makeBinPath [ coreutils gawk gnugrep gnused ]}
     }
     cp -r opt $out
     mkdir -p $out/bin $out/share/pixmaps $out/share/applications
@@ -52,17 +33,11 @@ stdenv.mkDerivation rec {
     for name in cxcalc cxtrain evaluate molconvert mview msketch; do
       wrapBin $out/opt/chemaxon/marvinsuite/bin/$name
     done
-    ${lib.concatStrings (
-      map
-        (name: ''
-          substitute ${./. + "/${name}.desktop"} $out/share/applications/${name}.desktop --subst-var out
-        '')
-        [
-          "LicenseManager"
-          "MarvinSketch"
-          "MarvinView"
-        ]
-    )}
+    ${lib.concatStrings (map (name: ''
+      substitute ${
+        ./. + "/${name}.desktop"
+      } $out/share/applications/${name}.desktop --subst-var out
+    '') [ "LicenseManager" "MarvinSketch" "MarvinView" ])}
   '';
 
   meta = with lib; {
