@@ -20,6 +20,11 @@
       flake = false;
     };
 
+    openra-src = {
+      url = "git+https://github.com/OpenRA/OpenRA.git?ref=bleed";
+      flake = false;
+    };
+
     # use the github shorthand with the tag; this resolves Git refs more reliably
     hyprland.url = "github:hyprwm/Hyprland/v0.52.1?submodules=1";
     # where 0.52.1 is the hyprland release version

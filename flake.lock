@@ -442,11 +442,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1764167860,
-        "narHash": "sha256-TxlOzkDnkoduhPCrRdVT40FCQAnaqHbrAfQauIRyKg0=",
+        "lastModified": 1764221511,
+        "narHash": "sha256-2oYUSvW8ITS54osqQjYO8GkmZVKGXc7+FXmkvkENg/E=",
         "ref": "master",
-        "rev": "5c4cdf664fd5ba8757da45986993cc9ab80cd41a",
-        "revCount": 902878,
+        "rev": "3008387c34cc7206a731cf23d64f9e7d03a24d88",
+        "revCount": 903188,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -488,6 +488,23 @@
         "url": "https://github.com/NixOS/nixpkgs.git"
       }
     },
+    "openra-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1763998992,
+        "narHash": "sha256-XifwpAhyWv04qyEMzkj2UsW37RWUUoJYq5U17hzKvPA=",
+        "ref": "bleed",
+        "rev": "7e8f4a3479d704662a0f39a73476d2beb46004c1",
+        "revCount": 30617,
+        "type": "git",
+        "url": "https://github.com/OpenRA/OpenRA.git"
+      },
+      "original": {
+        "ref": "bleed",
+        "type": "git",
+        "url": "https://github.com/OpenRA/OpenRA.git"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -519,17 +536,18 @@
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "openra-src": "openra-src",
         "staging-next": "staging-next",
         "vim-src": "vim-src"
       }
     },
     "staging-next": {
       "locked": {
-        "lastModified": 1764158845,
-        "narHash": "sha256-DGlmFnF1KtEWEXcYCwmIDxbaMv3PDbjP/JR+cRJzxkc=",
+        "lastModified": 1764202634,
+        "narHash": "sha256-CQxzI6FyzTx8BklksFIeu64PbO722PCxgS/e7/3q280=",
         "ref": "staging-next",
-        "rev": "2105b304dab41e65cd8db01b17f6c61c4ed70bf5",
-        "revCount": 902796,
+        "rev": "8b6572316b68563e22b3bd6cc86421542794f793",
+        "revCount": 903136,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
