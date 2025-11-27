@@ -67,7 +67,7 @@
     bash = {
       enable = true;
       bashrcExtra = ''
-        source $HOME/GitHub/mine/config/NixOS-configs/shell_functions.sh
+        source $HOME/GitHub/mine/config/NixOS-configs/Shell/main.sh
       '';
     };
     git = {
@@ -93,89 +93,8 @@
         function shopt {
           #echo "shopt called with arguments: $@"
         }
-        source $HOME/GitHub/mine/config/NixOS-configs/shell_functions.sh
+        source $HOME/GitHub/mine/config/NixOS-configs/Shell/main.sh
         source $NIXCFG/hnixos.zsh-theme
-
-        function vzsh {
-          vim $HOME/.zshrc
-        }
-
-        function cdgm {
-          cd $HOME/GitHub/mine/$1
-        }
-        function cdhc {
-          cdgm config/hyprland-configs
-        }
-
-        function cdim {
-          cd /arch$HOME/GitHub/mine/websites/images
-        }
-        function vhc {
-          vim $HOME/GitHub/mine/config/hyprland-configs/hyprland.conf
-        }
-
-        function vwc {
-          vim $HOME/.config/waybar/config.jsonc
-        }
-
-        function vst {
-          vim $HOME/GitHub/mine/config/hyprland-configs/style.css
-        }
-
-        function cdpi {
-          cd $HOME/Pictures
-        }
-
-        function cdvi {
-          cd /arch$HOME/'VirtualBox VMs'/iso
-        }
-
-        function cdvm {
-          cd $HOME/VirtMachines/$1
-        }
-        function cdap {
-          cd $HOME/.local/share/applications
-        }
-
-        function cdphd {
-          cd /arch$HOME/PhD/$1
-        }
-        # First argument is the repository, e.g. nixpkgs, second is the package regex
-        function nixs {
-          nix search $1 $2
-        }
-        function rollback {
-          sudo nixos-rebuild --rollback switch
-        }
-
-        function aroot {
-          sudo $HOME/.local/bin/arch-chroot /arch /bin/zsh -c "/bin/su - fusion809"
-        }
-        function notif {
-        	lenOfStr=$(echo "$1" | awk -F ":" '{print NF-1}')
-        	while :
-        	do
-        		if ( [[ $lenOfStr == 1 ]] && [[ $(date +"%H:%M") == "$1" ]] ); then
-        			zenity --error --title="$2" --text "$2" && return
-        		elif ( [[ $lenOfStr == 2 ]] && [[ $(date +"$H:$M:$S") == "$1" ]] ); then
-        			zenity --error --title="$2" --text "$2" && return
-        		fi
-        	done
-        }
-
-        function ved {
-        	cdphd Rcode/RQ5
-        	vim Edits_to_parameters_$(date +"%Y-%m-%d").txt
-        }
-
-        function ged {
-        	cdphd Rcode/RQ5
-        	grep --include="Edits_to_parameters*.txt" -R "$1" | sort
-        }
-
-        function szsh {
-          source $HOME/.zshrc
-        }
       '';
     };
   };
