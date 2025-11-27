@@ -147,7 +147,7 @@
     pantheon.elementary-wallpapers
     whitesur-gtk-theme
     whitesur-cursors
-    whitesur-icon-theme
+    master.whitesur-icon-theme
     ###############################################################
     # Virtualization
     ###############################################################
