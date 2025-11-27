@@ -65,6 +65,7 @@ if [[ -v $HYPRLAND_INSTANCE_SIGNATURE ]]; then
 fi
 
 function nixcg {
+  sudo nix-store --add-root /nix/var/nix/gcroots/current-system --indirect -r $(readlink -f /run/current-system)
   sudo nix-collect-garbage -d
 }
 

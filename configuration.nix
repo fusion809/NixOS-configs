@@ -197,7 +197,11 @@
     # Enable networking
     networkmanager.enable = true;
   };
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    keep-outputs = true;
+    keep-derivations = true;
+  };
   # Allow unfree packages
   nixpkgs = {
     config = {
