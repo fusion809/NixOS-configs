@@ -30,7 +30,6 @@ inputs:
         inherit pkgs;
       }; # Import as a set
       openra-git = openraPackages.engines.git; # Access the git engine directly
-      openra = openraPackages.engines.release;
       marvin = callPackage (forkNixpkgsPath + /marvin/package.nix) { };
 
       vim-latest = pkgs.master.vim.overrideAttrs (oldAttrs: {
