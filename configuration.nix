@@ -80,10 +80,10 @@
     pciutils
     unzip
     wget
-    zenity
     winetricks
     wineWowPackages.stable
     yt-dlp
+    zenity
     ###############################################################
     # Hyprland essentials
     ###############################################################
@@ -95,7 +95,7 @@
     eog # For viewing images
     ffmpegthumbnailer
     gnome.gvfs
-    unstable.kitty
+    unstable.kitty # the stable package for 25.05 didn't have a scrollbar
     libmtp
     nautilus
     ## Required by Waybar widgets
