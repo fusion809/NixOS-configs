@@ -103,7 +103,7 @@ function mount_data {
   fi
 }
 
-#mount_data
+mount_data
 
 function rebuild {
   umount_arch
@@ -116,6 +116,7 @@ alias nixrb=rebuild
 function nixfrb {
   umount_arch
   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $NIXCFG/#nixos --impure
+  rm -rf $HOME/.cache/umount_arch
   mount_arch
 }
 

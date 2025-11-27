@@ -519,7 +519,8 @@
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "staging-next": "staging-next"
+        "staging-next": "staging-next",
+        "vim-src": "vim-src"
       }
     },
     "staging-next": {
@@ -551,6 +552,24 @@
         "owner": "nix-systems",
         "repo": "default-linux",
         "type": "github"
+      }
+    },
+    "vim-src": {
+      "flake": false,
+      "locked": {
+        "allRefs": true,
+        "lastModified": 1764190816,
+        "narHash": "sha256-bH+WZd6/eueekm04kucm/9b3YcU6QlGbPPsp40LIdog=",
+        "ref": "refs/heads/master",
+        "rev": "33fbfe003c17ad25bf3903aaa89a55fe372086ba",
+        "revCount": 22482,
+        "type": "git",
+        "url": "https://github.com/vim/vim.git"
+      },
+      "original": {
+        "allRefs": true,
+        "type": "git",
+        "url": "https://github.com/vim/vim.git"
       }
     },
     "xdph": {

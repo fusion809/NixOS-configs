@@ -218,7 +218,7 @@
         };
       };
     };
-    overlays = import ./overlays.nix;
+    overlays = import ./overlays.nix inputs;
   };
   # Install firefox.
   programs = {
@@ -342,7 +342,7 @@
     vim = {
       enable = true;
       defaultEditor = true;
-      package = pkgs.staging-next.vim;
+      package = pkgs.vim-latest;
     };
     virt-manager.enable = true;
     waybar.enable = true;

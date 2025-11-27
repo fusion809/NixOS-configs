@@ -15,6 +15,11 @@
     staging-next.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=staging-next";
 
+    vim-src = {
+      url = "git+https://github.com/vim/vim.git?allRefs=1";
+      flake = false;
+    };
+
     # use the github shorthand with the tag; this resolves Git refs more reliably
     hyprland.url = "github:hyprwm/Hyprland/v0.52.1?submodules=1";
     # where 0.52.1 is the hyprland release version

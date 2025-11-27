@@ -1,3 +1,4 @@
+inputs:
 [
   (self: super:
 
@@ -31,5 +32,10 @@
       openra-git = openraPackages.engines.git; # Access the git engine directly
       openra = openraPackages.engines.release;
       marvin = callPackage (forkNixpkgsPath + /marvin/package.nix) { };
+
+      vim-latest = pkgs.vim.overrideAttrs (oldAttrs: {
+        version = "latest";
+        src = inputs.vim-src;
+      });
     })
 ]
