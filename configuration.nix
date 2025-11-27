@@ -227,8 +227,6 @@
       binfmt = true;
     };
     bash.shellInit = ''
-
-      export PATH=$PATH:/run/current-system/sw/bin:/run/current-system/sw/sbin
       if [[ "$EUID" -eq 0 ]]; then
         function git-branch {
           if ! [[ -n "$1" ]]; then
@@ -243,7 +241,7 @@
         }
 
         function nixver {
-          nix-channel --list | grep nixos | cut -d '-' -f 2
+          nix-channel --list | grep "^nixos" | cut -d '-' -f 2
         }
         
         function rebuild {
@@ -356,8 +354,11 @@
         enable = true;
         plugins = [ "safe-paste" "vi-mode" ];
       };
-      shellInit =
-        "\nsed -i '/^:/!d' $HOME/.zsh_history\nsource /etc/profile\nsource /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme\n  ";
+      shellInit = ''
+        sed -i '/^:/!d' $HOME/.zsh_history
+        source /etc/profile
+        source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
+      '';
       syntaxHighlighting.enable = true;
     };
   };
