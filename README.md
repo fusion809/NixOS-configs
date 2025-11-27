@@ -7,4 +7,4 @@ To update the deps.json file for OpenRA git package, run:
 nix-build --arg pkgs '(import <nixpkgs> {})' -A engines.git
 ```
 
-in nixpkgs/openra. 
+in nixpkgs/openra. Or simply run `openraup`. 
