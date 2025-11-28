@@ -488,23 +488,6 @@
         "url": "https://github.com/NixOS/nixpkgs.git"
       }
     },
-    "openra-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1763998992,
-        "narHash": "sha256-XifwpAhyWv04qyEMzkj2UsW37RWUUoJYq5U17hzKvPA=",
-        "ref": "bleed",
-        "rev": "7e8f4a3479d704662a0f39a73476d2beb46004c1",
-        "revCount": 30617,
-        "type": "git",
-        "url": "https://github.com/OpenRA/OpenRA.git"
-      },
-      "original": {
-        "ref": "bleed",
-        "type": "git",
-        "url": "https://github.com/OpenRA/OpenRA.git"
-      }
-    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -536,7 +519,6 @@
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "openra-src": "openra-src",
         "staging-next": "staging-next",
         "vim-src": "vim-src"
       }

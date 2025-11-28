@@ -2,34 +2,11 @@
 
 {
   inputs = {
-    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
-    nixpkgs-unstable.url =
-      "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
-    nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
-
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    staging-next.url =
-      "git+https://github.com/NixOS/nixpkgs.git?ref=staging-next";
-
-    vim-src = {
-      url = "git+https://github.com/vim/vim.git?allRefs=1";
-      flake = false;
-    };
-
-    openra-src = {
-      url = "git+https://github.com/OpenRA/OpenRA.git?ref=bleed";
-      flake = false;
-    };
-
-    # use the github shorthand with the tag; this resolves Git refs more reliably
-    hyprland.url = "github:hyprwm/Hyprland/v0.52.1?submodules=1";
-    # where 0.52.1 is the hyprland release version
-    # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
-
+    # Hyprland
     hy3 = {
       url =
         "github:outfoxxed/hy3/hl0.52.0"; # where {version} is the hyprland release version
@@ -37,6 +14,23 @@
       # (you may encounter issues if you dont do the same for hyprland)
       inputs.hyprland.follows = "hyprland";
     };
+    # use the github shorthand with the tag; this resolves Git refs more reliably
+    hyprland.url = "github:hyprwm/Hyprland/v0.52.1?submodules=1";
+    # where 0.52.1 is the hyprland release version
+    # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
+    # nixpkgs
+    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
+    nixpkgs-unstable.url =
+      "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
+    staging-next.url =
+      "git+https://github.com/NixOS/nixpkgs.git?ref=staging-next";
+    nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
+    # Vim
+    vim-src = {
+      url = "git+https://github.com/vim/vim.git?allRefs=1";
+      flake = false;
+    };
+
   };
 
   outputs = { self, nixpkgs, home-manager, hyprland, hy3, ... }@inputs: {
