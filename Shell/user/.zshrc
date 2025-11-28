@@ -7,4 +7,4 @@ function shopt {
   #echo "shopt called with arguments: $@"
 }
 source $HOME/GitHub/mine/config/NixOS-configs/Shell/user/main.sh
-source $NIXCFG/hnixos.zsh-theme
+source $NIXCFG/Shell/hnixos.zsh-theme

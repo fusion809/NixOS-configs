@@ -1,5 +1,5 @@
 [Desktop Entry]
 Name=Outlive
-Exec=/home/fusion809/GitHub/mine/config/NixOS-configs/outlive
+Exec=/home/fusion809/GitHub/mine/config/NixOS-configs/Shell/outlive
 Icon=/home/fusion809/.local/share/icons/Outlive.png
 Type=Application
