@@ -12,10 +12,7 @@ function nixdg {
 }
 
 function nixfrb {
-  umount_arch
   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix --flake $NIXCFG/#nixos --impure
-  rm -f $HOME/.cache/umount_arch
-  mount_arch
 }
 
 function nixfu {
@@ -46,10 +43,7 @@ function nixver {
 }
 
 function rebuild {
-  umount_arch
   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
-  rm -f $HOME/.cache/umount_arch
-  mount_arch
 }
 
 alias nixrb=rebuild

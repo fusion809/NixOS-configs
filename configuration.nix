@@ -20,7 +20,26 @@
         device = "nodev";
         efiSupport = true;
         useOSProber = true;
-        default = 1;
+        default = 0;
+        extraEntries = ''
+          menuentry 'Arch Linux' --class arch --class gnu-linux --class gnu --class os $menuentry_id_option 'gnulinux-simple-1f93f091-b052-4802-a533-1a1977b99fdb' {
+            	load_video
+            	set gfxpayload=keep
+            	insmod gzio
+            	insmod part_gpt
+            	insmod fat
+            	set root='hd1,gpt1'
+            	if [ x$feature_platform_search_hint = xy ]; then
+            	  search --no-floppy --fs-uuid --set=root --hint-bios=hd1,gpt1 --hint-efi=hd1,gpt1 --hint-baremetal=ahci1,gpt1  2CB2-8CCD
+            	else
+            	  search --no-floppy --fs-uuid --set=root 2CB2-8CCD
+            	fi
+            	echo	'Loading Linux linux ...'
+            	linux	/vmlinuz-linux root=UUID=1f93f091-b052-4802-a533-1a1977b99fdb rw  loglevel=3 quiet
+            	echo	'Loading initial ramdisk ...'
+            	initrd	/initramfs-linux.img
+            }
+        '';
       };
       efi.canTouchEfiVariables = true;
     };
