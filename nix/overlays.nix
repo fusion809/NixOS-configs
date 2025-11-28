@@ -5,7 +5,7 @@ inputs:
     let
       pkgs = self;
       inherit (pkgs) lib;
-      forkNixpkgsPath = ./nixpkgs;
+      forkNixpkgsPath = ../nixpkgs;
       callPackage = lib.callPackageWith (pkgs
         // builtins.removeAttrs pkgs.xorg [
           "callPackage"

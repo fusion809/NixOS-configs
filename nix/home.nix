@@ -66,7 +66,7 @@
     home-manager.enable = true;
     bash = {
       enable = true;
-      bashrcExtra = builtins.readFile ./Shell/user/main.sh;
+      bashrcExtra = builtins.readFile ../Shell/user/main.sh;
     };
     git = {
       enable = true;
@@ -75,7 +75,7 @@
     };
     zsh = {
       enable = true;
-      initContent = builtins.readFile ./Shell/user/.zshrc;
+      initContent = builtins.readFile ../Shell/user/.zshrc;
     };
   };
   # This part is probably largely redundant, due to GNOME not being used, 

@@ -1,0 +1,99 @@
+# Edit this configuration file to define what should be installed on
+# your system.  Help is available in the configuration.nix(5) man page
+# and in the NixOS manual (accessible by running ‘nixos-help’).
+
+{ config, pkgs, inputs, ... }:
+
+{
+  imports = [ # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+
+  ];
+  # Bootloader.
+  boot = {
+    initrd.systemd.tpm2.enable = false;
+    kernelPackages = pkgs.linuxPackages_latest;
+    loader = {
+      timeout = -1;
+      grub = {
+        enable = true;
+        device = "nodev";
+        efiSupport = true;
+        useOSProber = false;
+        default = 0;
+        extraEntries = builtins.readFile ../grub-extra-entries.cfg;
+      };
+      efi.canTouchEfiVariables = true;
+    };
+  };
+
+  # List packages installed in system profile. To search, run:
+  # $ nix search wget
+  environment.systemPackages = import ./packages.nix { inherit pkgs; };
+  fonts = import ./fonts.nix { inherit pkgs; };
+  hardware = import ./hardware.nix { };
+
+  # Select internationalisation properties.
+  i18n = import ./i18n.nix { };
+
+  # Enable networking
+  networking = import ./networking.nix { };
+  nix = import ./nix.nix { };
+  # Allow unfree packages
+  nixpkgs = import ./nixpkgs.nix { inherit config inputs; };
+  # Install firefox.
+  programs = import ./programs.nix { inherit pkgs inputs; };
+  # Enable sound with pipewire.
+  security = {
+    rtkit.enable = true;
+    sudo.wheelNeedsPassword = false;
+  };
+  services = import ./services.nix { inherit pkgs; };
+  # This value determines the NixOS release from which the default
+  # settings for stateful data, like file locations and database versions
+  # on your system were taken. It‘s perfectly fine and recommended to leave
+  # this value at the release version of the first install of this system.
+  # Before changing this value read the documentation for this option
+  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
+  system = {
+    stateVersion = "25.05"; # Did you read the comment?
+  };
+  # Set up systemd services
+  systemd = import ./systemd.nix { inherit pkgs; };
+
+  # Set your time zone.
+  time.timeZone = "Australia/Brisbane";
+  # Enable touchpad support (enabled default in most desktopManager).
+  # services.xserver.libinput.enable = true;
+
+  # Define a user account. Don't forget to set a password with ‘passwd’.
+  users = {
+    defaultUserShell = pkgs.zsh;
+    users.fusion809 = {
+      isNormalUser = true;
+      description = "Brenton";
+      extraGroups = [ "networkmanager" "wheel" "input" "docker" "libvirtd" ];
+      packages = with pkgs;
+        [
+          #  thunderbird
+        ];
+    };
+  };
+  #virtualisation.virtualbox.host.enable = true;
+  #virtualisation.virtualbox.host.enableKvm = true;
+  #virtualisation.virtualbox.host.addNetworkInterface = false;
+  #virtualisation.virtualbox.host.enableExtensionPack = true;
+  virtualisation = {
+    docker = { enable = true; };
+    libvirtd = {
+      enable = true;
+      qemu = {
+        package = pkgs.qemu_kvm;
+        runAsRoot = true;
+        swtpm.enable = true;
+      };
+    };
+    spiceUSBRedirection.enable = true;
+  };
+}
+

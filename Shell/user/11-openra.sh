@@ -27,6 +27,5 @@ function openraup {
   packagedVer=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '"' -f 2)
   latestVer="$upno.git.$uphash"
   sed -i -e "s|$packagedHash|$latestHash|g" -e "s|$packagedVer|$latestVer|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
-  nix
   nixfrb
 }
