@@ -12,9 +12,11 @@ fi
 if [[ $HYPR_INST != $HYPR_TAG ]]; then
     echo "New version of Hyprland, $HYPR_TAG, is out..."
 fi
-# Update hy3 url
-sed -i "s|github:outfoxxed/hy3/.*\"|github:outfoxxed/hy3/$HY3_TAG\"|" "$FLAKE_FILE"
-# Update hyprland url
-sed -i "s|github:hyprwm/Hyprland/.*?|github:hyprwm/Hyprland/$HYPR_TAG?|" "$FLAKE_FILE"
-echo "Updated flake.nix to use Hyprland $HYPR_TAG and hy3 $HY3_TAG"
-echo "Run nixrsu to update your system to use this Hyprland release."
+if ( [[ $HY3_TAG != $HY3_INST ]] || [[ $HYPR_INST != $HYPR_TAG ]] ) ; then
+    # Update hy3 url
+    sed -i "s|github:outfoxxed/hy3/.*\"|github:outfoxxed/hy3/$HY3_TAG\"|" "$FLAKE_FILE"
+    # Update hyprland url
+    sed -i "s|github:hyprwm/Hyprland/.*?|github:hyprwm/Hyprland/$HYPR_TAG?|" "$FLAKE_FILE"
+    echo "Updated flake.nix to use Hyprland $HYPR_TAG and hy3 $HY3_TAG"
+    echo "Run nixrsu to update your system to use this Hyprland release."
+fi
