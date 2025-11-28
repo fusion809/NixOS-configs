@@ -10,13 +10,21 @@ function ssh_debian {
 }
 
 function cp_from_debian {
-    scp -O -r fusion809@192.168.122.244:/home/fusion809/$1 /arch$HOME/PhD/Rcode/
+    scp -O -r fusion809@192.168.122.244:$HOME/$1 /arch$HOME/PhD/Rcode/
 }
 
 function ssh_fedora {
     ssh fusion809@192.168.122.232
 }
 
+function cp_from_fedora {
+    scp -O -r fusion809@192.168.122.232:$HOME/$1 /arch$HOME/PhD/Rcode/
+}
+
 function ssh_ubuntu {
     ssh fusion809@192.168.122.151
+}
+
+function cp_from_ubuntu {
+    scp -O -r fusion809@192.168.122.151:$HOME/$1 /arch$HOME/PhD/Rcode/
 }

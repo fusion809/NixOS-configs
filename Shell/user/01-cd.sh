@@ -46,6 +46,10 @@ function cdp {
   cd $HOME/Pictures/$1
 }
 
+function cdps {
+  cdp "Screenshots/$1"
+}
+
 function cdphd {
   cd /arch$HOME/PhD/$1
 }
