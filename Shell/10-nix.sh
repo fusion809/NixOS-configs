@@ -19,7 +19,7 @@ function nixfrb {
 }
 
 function nixfu {
-    nix flake update $NIXCFG
+    nix flake update --flake $NIXCFG
 }
 
 # List generations of NixOS system
