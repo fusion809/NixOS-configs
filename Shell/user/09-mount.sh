@@ -24,3 +24,23 @@ function mount_data {
 }
 
 mount_data
+
+function mount_wind {
+  if ! [[ -d /wind ]]; then
+    sudo mkdir -p /wind
+  fi
+  
+  if ! `mountpoint -q /wind`; then
+    sudo mount /dev/disk/by-uuid/125C24165C23F361 /wind || echo "Unable to mount /wind."
+  fi
+}
+
+function mount_winc {
+  if ! [[ -d /winc ]]; then
+    sudo mkdir -p /winc
+  fi
+
+  if ! `mountpoint -q /winc`; then
+    sudo mount /dev/disk/by-uuid/0452BA4752BA3D6C /winc || echo "Unable to mount /winc."
+  fi
+}

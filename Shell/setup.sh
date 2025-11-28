@@ -10,21 +10,31 @@ export NIXCFG=$CFG/NixOS-configs
 export MNT_NIXCFG=/mnt$NIXCFG
 
 function check_and_get_repo {
-	if ( [[ -f ../.git/config ]] && `cat ../.git/config | grep url = git@github.com:fusion809/NixOS-configs &> /dev/null` ); then
-		echo "Seems we are in a copy of NixOS-configs..." && return
+	if [[ -f ../.git/config ]] && grep -q "url = git@github.com:fusion809/NixOS-configs" ../.git/config; then
+		echo "Seems we are in a copy of NixOS-configs..."
+		return
 	else
 		echo "We are not in a copy of the repo."
 		echo "Cloning..."
 		git clone https://github.com/fusion809/NixOS-configs
-		cd NixOS-configs/Shell
+		cd NixOS-configs/Shell || echo "Unable to cd into NixOS-configs/Shell." && exit 1
 	fi
 }
 function backup_home {
-	echo "Baking up home folder..."
-	mkdir /data
-	mount '/dev/disk/by-label/Data\x20partition' /data || echo "No data partition." && return
-	mount "${disk}2" /mnt || echo "Unable to mount ${disk}2." && return
-	cp -r /mnt$HOME /data/home-fusion809 || echo "Unable to copy home folder." && return
+	echo "Backing up home folder..."
+	mkdir -p /data
+	if ! mount '/dev/disk/by-label/Data\x20partition' /data; then
+		echo "No data partition."
+		return
+	fi
+	if ! mount "${disk}2" /mnt; then
+		echo "Unable to mount ${disk}2."
+		return
+	fi
+	if ! cp -r /mnt$HOME /data/home-fusion809; then
+		echo "Unable to copy home folder."
+		return
+	fi
 	umount /mnt -l
 }
 
@@ -64,8 +74,8 @@ function disk_uuid_path {
 	ls -ld /dev/disk/by-uuid/* | grep "$1" | cut -d ' ' -f 9
 }
 function update_hwcfg {
-	root=$(disk_uuid_path "${suffix}1")
-	boot=$(disk_uuid_path "${suffix}2")
+	root=$(disk_uuid_path "${suffix}2")
+	boot=$(disk_uuid_path "${suffix}1")
 	sed -i \
     -e "22s|device = \"/dev/disk/by-uuid/[0-9a-z-]*\";|device = \"$root\";|g" \
     -e "26s|device = \"/dev/disk/by-uuid/[0-9A-Z-]*\";|device = \"$boot\";|g" \
@@ -76,7 +86,8 @@ function install_nixos {
 	if [[ -d $MNT_NIXCFG ]]; then
 		rm -rf $MNT_NIXCFG
 	fi
-	cp -r ../../NixOS-configs $MNT_NIXCFG
+	# Copy from current directory's parent (assuming we're in NixOS-configs/Shell)
+	cp -r .. $MNT_NIXCFG
 	nixos-install --flake $MNT_NIXCFG/nix#nixos
 }
 
@@ -99,6 +110,10 @@ if [[ $EUID -eq 0 ]]; then
 	update_hwcfg
 	install_nixos
 	set_user_perms $MNT_NIXCFG
-	ln -sf $NIXCFG/desktop/*.desktop /home/fusion809/.local/share/applications/
+	# Create desktop applications directory if it doesn't exist
+	mkdir -p /mnt$HOME/.local/share/applications
+	if [[ -d $MNT_NIXCFG/desktop ]]; then
+		ln -sf $NIXCFG/desktop/*.desktop /mnt/home/fusion809/.local/share/applications/
+	fi
 	echo "Installation should be finished now."
 fi
