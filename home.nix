@@ -66,38 +66,20 @@
     home-manager.enable = true;
     bash = {
       enable = true;
-      bashrcExtra = ''
-        source $HOME/GitHub/mine/config/NixOS-configs/Shell/main.sh
-      '';
+      bashrcExtra = builtins.readFile ./Shell/user/main.sh;
     };
     git = {
       enable = true;
       userName = "fusion809";
       userEmail = "brentonhorne77@gmail.com";
     };
-    #vim = {
-    #        enable = true;
-    #        plugins = with pkgs.vimPlugins; [
-    #          vim-wayland-clipboard
-    #        ];
-    #}; # Doesn't do anything
     zsh = {
       enable = true;
-      initContent = ''
-        export PATH=$PATH:${pkgs.coreutils}/bin:${pkgs.util-linux}/bin:${pkgs.git}/bin:${pkgs.gnugrep}/bin:${pkgs.wget}/bin:/run/wrappers/bin
-        autoload -U colors && colors
-        export HISTSIZE=10000000
-        export SAVEHIST=10000000
-        ${pkgs.coreutils}/bin/cp $HOME/.zsh_history $HOME/.zsh_history.back$(${pkgs.coreutils}/bin/date +"%Y-%m-%d_%H-%M-%S")
-        ${pkgs.gnused}/bin/sed -i '/^:/!d' $HOME/.zsh_history
-        function shopt {
-          #echo "shopt called with arguments: $@"
-        }
-        source $HOME/GitHub/mine/config/NixOS-configs/Shell/main.sh
-        source $NIXCFG/hnixos.zsh-theme
-      '';
+      initContent = builtins.readFile ./Shell/user/.zshrc;
     };
   };
+  # This part is probably largely redundant, due to GNOME not being used, 
+  # but may affect theming in GTK+ apps. 
   dconf = {
     enable = false;
     settings = {
@@ -132,7 +114,6 @@
           "com.brave.Browser"
           "org.gnome.Terminal.desktop"
           "vim.desktop"
-          "gvim.desktop"
           "org.gnome.Extensions.desktop"
           "steam.desktop"
         ];

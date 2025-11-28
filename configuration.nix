@@ -19,27 +19,9 @@
         enable = true;
         device = "nodev";
         efiSupport = true;
-        useOSProber = true;
+        useOSProber = false;
         default = 0;
-        extraEntries = ''
-          menuentry 'Arch Linux' --class arch --class gnu-linux --class gnu --class os $menuentry_id_option 'gnulinux-simple-1f93f091-b052-4802-a533-1a1977b99fdb' {
-            	load_video
-            	set gfxpayload=keep
-            	insmod gzio
-            	insmod part_gpt
-            	insmod fat
-            	set root='hd1,gpt1'
-            	if [ x$feature_platform_search_hint = xy ]; then
-            	  search --no-floppy --fs-uuid --set=root --hint-bios=hd1,gpt1 --hint-efi=hd1,gpt1 --hint-baremetal=ahci1,gpt1  2CB2-8CCD
-            	else
-            	  search --no-floppy --fs-uuid --set=root 2CB2-8CCD
-            	fi
-            	echo	'Loading Linux linux ...'
-            	linux	/vmlinuz-linux root=UUID=1f93f091-b052-4802-a533-1a1977b99fdb rw  loglevel=3 quiet
-            	echo	'Loading initial ramdisk ...'
-            	initrd	/initramfs-linux.img
-            }
-        '';
+        extraEntries = builtins.readFile ./grub-extra-entries.cfg;
       };
       efi.canTouchEfiVariables = true;
     };
@@ -252,96 +234,7 @@
       enable = true;
       binfmt = true;
     };
-    bash.shellInit = ''
-      if [[ "$EUID" -eq 0 ]]; then
-        function git-branch {
-          if ! [[ -n "$1" ]]; then
-            git rev-parse --abbrev-ref HEAD
-          else
-            git -C "$1" rev-parse --abbrev-ref HEAD
-          fi
-        }
-
-        function cdnc {
-          cd $HOME/GitHub/mine/config/NixOS-configs $1
-        }
-
-        function nixver {
-          nix-channel --list | grep "^nixos" | cut -d '-' -f 2
-        }
-        
-        function rebuild {
-          if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
-            cdnc
-            git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
-          fi
-          nixos-rebuild switch
-        }
-
-        alias nixrb=rebuild
-
-        function nixstrep {
-          nix-store --repair --verify --check-contents
-        }
-        
-        function nixcg {
-          nix-collect-garbage -d
-        }
-
-        function nixrsu {
-          if [[ $(git-branch $HOME/GitHub/mine/config/NixOS-configs) != $(nixver) ]]; then
-            cdnc
-            git checkout $(nixver) || (printf 'git checkout has failed.' && return 1)
-          fi
-
-          nixos-rebuild switch --upgrade
-        }
-
-        function update {
-          nix-store --repair --verify --check-contents
-          nixrsu
-          nixcg
-        }
-        
-        function vcf {
-          vim /etc/nixos/configuration.nix
-        }
-
-        function clipf {
-          xclip -sel clip < $1
-        }
-
-        function rainbowfastfetch {
-          hyfetch -p rainbow -b fastfetch --args="--localip-show-ipv4 false"
-        }
-
-        function gaymenfastfetch {
-          hyfetch -p gay-men -b fastfetch --args="--localip-show-ipv4 false"
-        }
-
-        function rffetch {
-          cd ~/
-          rainbowfastfetch
-        }
-
-        function gmffetch {
-          cd ~/
-          gaymenfastfetch
-        }
-      fi
-
-      function vzsh {
-        vim $HOME/.zshrc
-      }
-
-      function szsh {
-        source $HOME/.zshrc
-      }
-
-      function vbash {
-        vim $HOME/.bashrc
-      }
-    '';
+    bash.shellInit = builtins.readFile ./Shell/root/main.sh;
     firefox = { enable = false; };
     hyprland = {
       enable = true;
@@ -380,11 +273,7 @@
         enable = true;
         plugins = [ "safe-paste" "vi-mode" ];
       };
-      shellInit = ''
-        sed -i '/^:/!d' $HOME/.zsh_history
-        source /etc/profile
-        source /home/fusion809/GitHub/mine/config/NixOS-configs/hnixos.zsh-theme
-      '';
+      shellInit = builtins.readFile ./Shell/root/.zshrc;
       syntaxHighlighting.enable = true;
     };
   };
