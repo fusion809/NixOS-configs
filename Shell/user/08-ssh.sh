@@ -6,7 +6,7 @@ if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then
 fi
 
 function ssh_debian {
-    ssh fusion809@192.168.122.244
+    TERM=xterm-256color ssh fusion809@192.168.122.244
 }
 
 function cp_from_debian {
@@ -14,7 +14,7 @@ function cp_from_debian {
 }
 
 function ssh_fedora {
-    ssh fusion809@192.168.122.232
+    TERM=xterm-256color ssh fusion809@192.168.122.232
 }
 
 function cp_from_fedora {
@@ -22,7 +22,7 @@ function cp_from_fedora {
 }
 
 function ssh_ubuntu {
-    ssh fusion809@192.168.122.151
+    TERM=xterm-256color ssh fusion809@192.168.122.151
 }
 
 function cp_from_ubuntu {
