@@ -129,6 +129,24 @@ function view_rocky {
     view_qemu_vm "Rocky Linux 10.1"
 }
 
+function start_rosa {
+    start_qemu_vm_root "ROSA Fresh GNOME 13.1" 30
+}
+
+function ssh_rosa {
+    start_rosa
+    TERM=xterm-256color ssh fusion809@192.168.122.165
+}
+
+function cp_from_rosa {
+    start_rosa
+    scp -O -r fusion809@192.168.122.165:$1 $2
+}
+
+function view_rosa {
+    view_qemu_vm "ROSA Fresh GNOME 13.1"
+}
+
 function start_mint {
     start_qemu_vm_root "Linux Mint 22.2 Cinnamon" 30
 }
