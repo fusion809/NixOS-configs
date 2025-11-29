@@ -5,7 +5,7 @@
     enable = true;
     binfmt = true;
   };
-  bash.shellInit = builtins.readFile ../Shell/root/main.sh;
+  bash.shellInit = builtins.readFile ../shell/root/main.sh;
   firefox = { enable = false; };
   hyprland = {
     enable = true;
@@ -44,7 +44,7 @@
       enable = true;
       plugins = [ "safe-paste" "vi-mode" ];
     };
-    shellInit = builtins.readFile ../Shell/root/.zshrc;
+    shellInit = builtins.readFile ../shell/root/.zshrc;
     syntaxHighlighting.enable = true;
   };
 }

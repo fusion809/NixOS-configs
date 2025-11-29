@@ -2,7 +2,7 @@
   home-manager.enable = true;
   bash = {
     enable = true;
-    bashrcExtra = builtins.readFile ../Shell/user/main.sh;
+    bashrcExtra = builtins.readFile ../shell/user/main.sh;
   };
   git = {
     enable = true;
@@ -12,6 +12,6 @@
   gnome-shell.theme.name = "WhiteSur-Dark-solid";
   zsh = {
     enable = true;
-    initContent = builtins.readFile ../Shell/user/.zshrc;
+    initContent = builtins.readFile ../shell/user/.zshrc;
   };
 }

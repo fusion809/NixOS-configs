@@ -42,7 +42,7 @@
     },
     "custom/temperature": {
         "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/temperature",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
         "on-click": "alacritty -e s-tui",
         "interval": 1
     },
@@ -85,9 +85,9 @@
         "menu-actions": {
             "nerdfonts": "xdg-open https://www.nerdfonts.com/cheat-sheet",
             "wiki": "xdg-open https://wiki.nixos.org",
-            "update": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/update",
-            "rebuild": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/rebuild",
-            "repair": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/repair",
+            "update": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
+            "rebuild": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/rebuild",
+            "repair": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/repair",
             "nixpkgs": "xdg-open https://search.nixos.org/packages",
             "options": "xdg-open https://search.nixos.org/options",
             "nixosconfigs": "antigravity $HOME/GitHub/mine/config/NixOS-configs",
@@ -100,20 +100,20 @@
     },
     "custom/updates": {
         "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/updates",
-        "on-click": "$HOME/Github/mine/config/NixOS-configs/Shell/hyprland/update"
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
+        "on-click": "$HOME/Github/mine/config/NixOS-configs/shell/hyprland/update"
     },
     "custom/wallpaper-no": {
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/no-wallpapers",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/no-wallpapers",
         "format": "󰸉 {}", // Nerd Font “wallpaper” icon
         "tooltip": true,
         "tooltip-format": "Wallpaper: number selected/total number",
         "interval": 1, // Don’t poll or update automatically
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/list-wallpapers"
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/list-wallpapers"
     },
     "custom/wallpaper-rm": {
         "format": "󰆴",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper-rm",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-rm",
         "tooltip": true,
         "tooltip-format": "Remove currently displayed wallpaper and move onto next wallpaper (Win+Shift+d)."
     },
@@ -121,25 +121,25 @@
         "format": "",
         "tooltip": true,
         "tooltip-format": "Previous wallpaper. Win+z achieves the same thing.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper systematic previous"
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic previous"
     },
     "custom/wallpaper-random": {
         "format": "",
         "tooltip": true,
         "tooltip-format": "Random wallpaper. Win+Shift+s achieves the same thing.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper random"
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper random"
     },
     "custom/wallpaper-next": {
         "format": "",
         "tooltip": true,
         "tooltip-format": "Next wallpaper. Win+w achieves the same thing.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper systematic next"
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic next"
     },
     "custom/wallpaper-no-specify": {
         "format": "",
         "tooltip": true,
         "tooltip-format": "Enter the number of the next wallpaper you want to see.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper-no-specify"
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-no-specify"
     },
     "custom/bluetooth-connect": {
         "format": "",
@@ -226,7 +226,7 @@
     },*/
     "custom/keyboard-layout": {
         "format": " {}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/keyboard-layout",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/keyboard-layout",
         "on-click": "hyprctl switchxkblayout current next",
         "tooltip": true,
         "interval": 1,

@@ -22,11 +22,8 @@
     "cpu",
     "gpu",
     "memory",
-//    "swap",
-//    "disk",
     "battery",
     "poweradapter",
-//    "locale",
     "break",
     "colors"
   ]

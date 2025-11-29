@@ -1,3 +1,0 @@
-#!/usr/bin/env zsh
-source $HOME/GitHub/mine/config/NixOS-configs/Shell/user/main.sh
-ssh_debian
