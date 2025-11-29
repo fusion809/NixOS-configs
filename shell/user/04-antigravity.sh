@@ -1,5 +1,5 @@
 function ashc {
-  antigravity $NIXCFG/hyprland
+  antigravity $NIXCFG/dotfiles
 }
 
 function asnc {

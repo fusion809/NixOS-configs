@@ -7,7 +7,7 @@ function vcf {
 }
 
 function vhc {
-  vim $NIXCFG/hyprland/hyprland.conf
+  vim $NIXCFG/dotfiles/hyprland.conf
 }
 
 function vrm {
@@ -19,11 +19,11 @@ function vrm {
 }
 
 function vst {
-  vim $NIXCFG/hyprland/style.css
+  vim $NIXCFG/dotfiles/style.css
 }
 
 function vwc {
-  vim $NIXCFG/hyprland/waybar-config.jsonc
+  vim $NIXCFG/dotfiles/waybar-config.jsonc
 }
 
 function vzsh {

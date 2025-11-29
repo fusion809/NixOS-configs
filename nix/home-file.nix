@@ -6,30 +6,30 @@
 
   # Hyprland
   ".config/hypr/hyprland.conf".source = config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/hyprland.conf;
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/hyprland.conf;
 
   # Waybar
   ".config/waybar/config.jsonc".source = config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/waybar-config.jsonc;
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-config.jsonc;
   ".config/waybar/style.css".source = config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/style.css;
-  ".config/waybar/arch_menu.xml".source = config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/arch_menu.xml;
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/style.css;
+  ".config/waybar/nixos_menu.xml".source = config.lib.file.mkOutOfStoreSymlink
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/nixos_menu.xml;
 
   # Kitty
   ".config/kitty/kitty.conf".source = config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/kitty.conf;
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/kitty.conf;
 
   # Alacritty
   ".config/alacritty/alacritty.toml".source =
     config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/alacritty.toml;
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/alacritty.toml;
 
   # Fastfetch
   ".config/fastfetch/config.jsonc".source = config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/fastfetch-config.jsonc;
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/fastfetch-config.jsonc;
 
   # SSH
   ".ssh/config".source = config.lib.file.mkOutOfStoreSymlink
-    /home/fusion809/GitHub/mine/config/NixOS-configs/config;
+    /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/config;
 }

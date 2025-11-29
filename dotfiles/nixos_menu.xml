@@ -38,11 +38,6 @@
         </object>
 	</child>
 	<child>
-        <object class="GtkMenuItem" id="hyprlandconfigs">
-			<property name="label"> Edit Hyprland configuration files (Win+Shift+h)</property>
-        </object>
-	</child>
-	<child>
         <object class="GtkMenuItem" id="nixosconfigs">
 			<property name="label"> Edit NixOS configuration files (Win+Shift+n)</property>
         </object>

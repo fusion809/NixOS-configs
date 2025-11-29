@@ -81,7 +81,7 @@
         "format": "",
         "tooltip": false,
         "menu": "on-click",
-        "menu-file": "$HOME/GitHub/mine/config/NixOS-configs/hyprland/nixos_menu.xml", // Menu file in resources folder
+        "menu-file": "$HOME/GitHub/mine/config/NixOS-configs/dotfiles/nixos_menu.xml", // Menu file in resources folder
         "menu-actions": {
             "nerdfonts": "xdg-open https://www.nerdfonts.com/cheat-sheet",
             "wiki": "xdg-open https://wiki.nixos.org",
