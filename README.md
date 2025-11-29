@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 29 October 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-11-02.png)
-**Figure 1: Hyprland NixOS configuration as of 2 November 2025.**
+![Hyprland on NixOS screenshot as of 29 November 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-11-29.png)
+**Figure 1: Hyprland NixOS configuration as of 29 November 2025.**
 
 These are my NixOS 25.05 configuration files for running on my MS-7B90 PC.
 
