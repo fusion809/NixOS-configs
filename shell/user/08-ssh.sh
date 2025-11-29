@@ -36,3 +36,11 @@ function ssh_guix {
 function cp_from_guix {
     scp -O -r fusion809@192.168.122.90:$1 $2
 }
+
+function ssh_rocky {
+    TERM=xterm-256color ssh fusion809@192.168.122.158
+}
+
+function cp_from_rocky {
+    scp -O -r fusion809@192.168.122.158:$1 $2
+}
