@@ -164,3 +164,47 @@ function cp_from_mint {
 function view_mint {
     view_qemu_vm "Linux Mint 22.2 Cinnamon"
 }
+
+function start_slackware {
+    start_qemu_vm_root "Slackware Linux 15.0" 30
+}
+
+function ssh_slackware {
+    start_slackware
+    TERM=xterm-256color ssh fusion809@192.168.122.106
+}
+
+function cp_from_slackware {
+    start_slackware
+    scp -O -r fusion809@192.168.122.106:$1 $2
+}
+
+function view_slackware {
+    view_qemu_vm "Slackware Linux 15.0"
+}
+
+function start_opensuse {
+    start_qemu_vm_root "openSUSE Tumbleweed" 30
+}
+
+function ssh_opensuse {
+    start_opensuse
+    TERM=xterm-256color ssh fusion809@192.168.122.63
+}
+
+function cp_from_opensuse {
+    start_slackware
+    scp -O -r fusion809@192.168.122.63:$1 $2
+}
+
+function view_opensuse {
+    view_qemu_vm "openSUSE Tumbleweed"
+}
+
+function start_reactos {
+    start_qemu_vm_root "ReactOS2"
+}
+
+function view_reactos {
+    view_qemu_vm "ReactOS2"
+}
