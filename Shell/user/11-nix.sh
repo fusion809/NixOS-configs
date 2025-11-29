@@ -12,9 +12,13 @@ function nixdg {
 }
 
 function nixfrb {
-  pushd -q $NIXCFG
-  git add --all
-  popd -q
+  if [[ $PWD != $NIXCFG ]]; then
+    pushd -q $NIXCFG
+    git add --all
+    popd -q
+  else
+    git add --all
+  fi
   sudo nixos-rebuild switch -I nixos-config=$NIXCFG/nix/configuration.nix --flake $NIXCFG/nix/#nixos --impure
 }
 
