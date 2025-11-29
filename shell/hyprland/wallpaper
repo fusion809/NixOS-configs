@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 # Cycles through wallpapers from multiple directories for Hyprpaper
 # Directories to search
 DIRS=(
