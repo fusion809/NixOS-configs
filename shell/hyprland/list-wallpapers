@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 find /usr/share/antergos/wallpapers \
      /usr/share/backgrounds \
      /usr/share/wallpapers \

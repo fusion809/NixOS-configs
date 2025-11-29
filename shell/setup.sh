@@ -1,4 +1,4 @@
-#!/run/current-system/sw/bin/bash
+#!/usr/bin/env zsh
 # Assuming we're installing to the whole specified disk.
 export disk="$1"
 echo "Disk is $disk..."

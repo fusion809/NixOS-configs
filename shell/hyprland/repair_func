@@ -1,2 +1,2 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 sudo nix-store --repair --verify --check-contents

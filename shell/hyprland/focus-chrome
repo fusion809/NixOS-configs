@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # Find the workspace where chrome is located
 ws=$(hyprctl clients -j | jq -r '.[] | select(.class=="google-chrome") | .workspace.id' | sort -n | tail -n 1)

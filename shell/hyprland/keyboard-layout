@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # This is courtesy of ChatGPT
 current_layout_name=$(hyprctl devices -j | jq -r '
   .keyboards[]

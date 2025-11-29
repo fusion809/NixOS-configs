@@ -1,2 +1,2 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/rebuild_func

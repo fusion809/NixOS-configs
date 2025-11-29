@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 rootant=$(find /arch/usr/share/antergos/wallpapers -name "*.*g" -type f | wc -l);
 root=$(find /arch/usr/share/{backgrounds,[wW]allpapers} -name "*.*g" -type f | wc -l) ; 
 root=$(($root+$rootant))

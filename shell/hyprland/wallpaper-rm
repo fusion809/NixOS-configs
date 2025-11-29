@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 WALL=$(cat /arch$HOME/.cache/wallpaper-name)
 sudo rm "$WALL"
 $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper reload

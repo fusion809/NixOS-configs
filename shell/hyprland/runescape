@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 if ! `ps ax | grep RuneScape.exe | grep -v grep &> /dev/null`; then
 	steam steam://rungameid/1343400
 else

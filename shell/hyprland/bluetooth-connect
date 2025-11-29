@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 bluetoothctl agent KeyboardOnly
 bluetoothctl agent on
 bluetoothctl power on

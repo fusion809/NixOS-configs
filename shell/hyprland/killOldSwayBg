@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # $PWD/wallpaper allows up to 2 swaybg processes to be running simultaneously.
 # This script kills the older process, if there are two. 
 function killOldSwayBg {

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # Find the workspace where nautilus is located
 ws=$(hyprctl clients -j | jq -r '.[] | select(.class=="org.gnome.Nautilus") | .workspace.id' | sort -n | tail -n 1)

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # Prompt user for tab number
 tabnum=$(rofi -dmenu -p "Focus tab number")

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 if ! `sudo virsh list --all | grep "Debian" | grep running &> /dev/null`; then
 	sudo virsh start "Debian 13"
 else

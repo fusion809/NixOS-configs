@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # Find the workspace where kitty/alacritty is located
 ws=$(hyprctl clients -j | jq -r '.[] | select(.class | test("^(Alacritty|kitty)$")) | .workspace.id' | sort -n | tail -n 1)

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 while ! sudo virsh list --name --state-running | grep -q "Debian"
 do
 	sleep 5;
