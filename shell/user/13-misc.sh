@@ -1,13 +1,13 @@
 function aroot {
-  sudo $HOME/.local/bin/arch-chroot /arch /bin/zsh -c "/bin/su - fusion809"
+	sudo $HOME/.local/bin/arch-chroot /arch /bin/zsh -c "/bin/su - fusion809"
 }
 
 function clipf {
-  if `ps ax | grep wayland &> /dev/null`; then
-    wl-copy < $1
-  else
-    xclip -sel clip < $1
-  fi
+	if `ps ax | grep wayland &> /dev/null`; then
+		wl-copy < $1
+	else
+		xclip -sel clip < $1
+	fi
 }
 
 function notif {
@@ -27,9 +27,9 @@ function octe {
 }
 
 function rainbowfastfetch {
-  hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
+	hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
 }
 
 function sclipf {
-  sudo xclip -sel clip < $1
+	sudo xclip -sel clip < $1
 }
