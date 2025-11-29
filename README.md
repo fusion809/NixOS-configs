@@ -162,7 +162,6 @@ The direction argument, which is only applicable if the first argument is algori
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>d</kbd>                      | Launch Duoingo app. |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>e</kbd>                      | Exit Hyprland. |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>f</kbd>                      | Open Facebook Chrome app. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>h</kbd>                      | Edit Hyprland configuration files. |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>i</kbd>                      | Open Instagram Chrome app. |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>j</kbd>                      | Move window left (not including tabbed windows). |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>k</kbd>                      | Move window down (not including tabbed windows). |
