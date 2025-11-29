@@ -1,0 +1,24 @@
+Host fedora-kvm
+    Hostname 192.168.122.232
+    User fusion809
+Host fusion809-vbox
+    Hostname 192.168.122.244
+    User fusion809
+Host ubuntu26.04-kvm
+    HostName 192.168.122.151
+    User fusion809
+Host guix-master-kvm
+	Hostname 192.168.122.90
+	User fusion809
+Host rocky10-kvm
+	Hostname 192.168.122.158
+	User fusion809
+Host linuxmint-kvm
+	Hostname 192.168.122.54
+	User fusion809
+Host slackware-kvm
+	Hostname 192.168.122.106
+	User fusion809 
+Host opensuse-kvm
+	Hostname 192.168.122.63
+	User fusion809

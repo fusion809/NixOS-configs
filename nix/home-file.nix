@@ -28,4 +28,8 @@
   # Fastfetch
   ".config/fastfetch/config.jsonc".source = config.lib.file.mkOutOfStoreSymlink
     /home/fusion809/GitHub/mine/config/NixOS-configs/hyprland/fastfetch-config.jsonc;
+
+  # SSH
+  ".ssh/config".source = config.lib.file.mkOutOfStoreSymlink
+    /home/fusion809/GitHub/mine/config/NixOS-configs/config;
 }
