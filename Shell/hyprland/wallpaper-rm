@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+WALL=$(cat /arch$HOME/.cache/wallpaper-name)
+sudo rm "$WALL"
+$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper reload
+echo $WALL >> /arch$HOME/.cache/deleted-wallpapers

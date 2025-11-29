@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+bluetoothctl agent KeyboardOnly
+bluetoothctl agent on
+bluetoothctl power on
+#bluetoothctl remove $1
+bluetoothctl scan on
+bluetoothctl pair $1
+bluetoothctl trust $1
+bluetoothctl connect $1

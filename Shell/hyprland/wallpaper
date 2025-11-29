@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Cycles through wallpapers from multiple directories for Hyprpaper
+# Directories to search
+DIRS=(
+    "/arch/usr/share/antergos/wallpapers"
+    "/arch/usr/share/backgrounds"
+    "/arch/usr/share/wallpapers"
+    "/arch$HOME/.local/share/wallpapers"
+    "/arch$HOME/.local/share/backgrounds"
+    "/arch$HOME/Pictures/Wallpapers"
+)
+
+echo "Setting = $1"
+# Collect all image paths (jpg, png, jpeg)
+WALLS=()
+
+for dir in "${DIRS[@]}"; do
+	echo "dir = $dir"
+echo "Found ${#WALLS[@]} wallpapers"
+    if [[ -d "$dir" ]]; then
+        while IFS= read -r -d '' file; do
+            WALLS+=("$file")
+        done < <(find "$dir" -type f -name "*.*g" -print0)
+    fi
+done
+echo "Found ${#WALLS[@]} wallpapers"
+# Exit if no wallpapers found
+if [[ ${#WALLS[@]} -eq 0 ]]; then
+    notify-send "Wallcycle" "No wallpapers found in configured directories."
+    exit 1
+fi
+no="${#WALLS[@]}"
+# File to remember last wallpaper
+STATE_FILE="/arch$HOME/.cache/swaybg-wallstate"
+if `echo "$1" | grep "[sS]ystematic" &> /dev/null`; then
+	# Get index of next wallpaper
+	if [[ -f "$STATE_FILE" ]]; then
+	    LAST_INDEX=$(<"$STATE_FILE")
+	else
+	    LAST_INDEX=-1
+	fi
+
+	if `echo "$2" | grep "[pP]revious" &> /dev/null`; then
+		NEXT_INDEX=$(( (LAST_INDEX - 1) % ${#WALLS[@]} ))
+	else
+		NEXT_INDEX=$(( (LAST_INDEX + 1) % ${#WALLS[@]} ))
+	fi
+	if (( $NEXT_INDEX < 0 )); then
+		NEXT_INDEX=$(($NEXT_INDEX+$no))
+	fi
+	echo "$NEXT_INDEX" > "$STATE_FILE"
+elif `echo "$1" | grep "[rR]andom" &> /dev/null `; then
+	NEXT_INDEX=$(( RANDOM % no ))
+	echo "$NEXT_INDEX" > "$STATE_FILE"
+elif `echo "$1" | grep "[rR]eload" &> /dev/null`; then
+	NEXT_INDEX=$(<"$STATE_FILE")
+elif `echo "$1" | grep "[0-9]" &> /dev/null`; then
+	if (( $1 < $no )); then
+		NEXT_INDEX="$1"
+	else
+		NEXT_INDEX=$(($1-$no))
+		zenity --info --text "You specified a number greater than the number of wallpapers available. So we are starting at the beginning again."
+	fi
+	echo "$NEXT_INDEX" > "$STATE_FILE"
+else
+	echo "Invalid argument given to wallpaper. Must be random, Random, systematic or Systematic!"
+	exit 1
+fi
+WALL="${WALLS[$NEXT_INDEX]}"
+touch /arch$HOME/.cache/wallpaper-name
+echo $WALL > /arch$HOME/.cache/wallpaper-name
+function killOldSwayBg {
+	noSwaybg=$(ps ax | grep swaybg | grep -v grep | wc -l)
+	swayBg=$(ps ax | grep swaybg | grep -v grep | head -n $(($noSwaybg-1)) | sed 's/[a-z].*//g' | tr '\n' ' ' | sed 's/\s*$//g' | sed 's/  / /g')
+	if ! [[ $swayBg =~ ^[[:space:]]*$ ]]; then
+		kill -9 $swayBg
+	else
+		echo "There are no old swaybg processes to kill"
+	fi
+}
+
+killOldSwayBg
+swaybg -i "$WALL" &

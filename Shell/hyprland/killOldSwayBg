@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# $PWD/wallpaper allows up to 2 swaybg processes to be running simultaneously.
+# This script kills the older process, if there are two. 
+function killOldSwayBg {
+	noSwaybg=$(ps ax | grep swaybg | grep -v grep | wc -l)
+	swayBg=$(ps ax | grep swaybg | grep -v grep | head -n $(($noSwaybg-1)) | sed 's/[a-z].*//g' | tr '\n' ' ' | sed 's/\s*$//g' | sed 's/  / /g')
+	if ! [[ $swayBg =~ ^[[:space:]]*$ ]]; then
+		kill -9 $swayBg
+	else
+		echo "There are no old swaybg processes to kill"
+	fi
+}
+
+while :;
+do
+	pid=$(pgrep -n swaybg)
+	if [[ $(ps -p "$pid" -o etimes=) > 20 ]]; then
+		killOldSwayBg
+	fi
+	sleep 300
+done

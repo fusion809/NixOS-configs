@@ -1,0 +1,13 @@
+[[keyboard.bindings]]
+key = "C"
+mods = "Control"
+action = "Copy"
+[[keyboard.bindings]]
+key = "V"
+mods = "Control"
+action = "Paste"
+[font]
+size = 12
+normal = {family = "JetBrainsMono Nerd Font"}
+bold = {family = "JetBrainsMono NF ExtraBold"}
+italic = {family = "JetBrainsMono NF"}

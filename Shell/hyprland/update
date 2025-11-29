@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+alacritty -e $HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/update_func

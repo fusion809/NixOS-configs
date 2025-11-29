@@ -1,0 +1,255 @@
+* {
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+  /* max-height: 20px; */
+  font-family: "JetBrainsMono Nerd Font", "Font Awesome 6 Free", "Symbols Nerd Font";
+  font-size: 13px;
+}
+
+window#waybar {
+  background-color: rgba(255, 255, 255, 0); /* #181825*/;
+  transition-property: background-color;
+  transition-duration: 0.5s;
+}
+
+window#waybar.hidden {
+  opacity: 0.5;
+}
+
+#workspaces {
+  background-color: #000000;
+  padding: 3px 3px;
+  margin: 6px 6px;
+  border-radius: 4px;
+}
+
+#workspaces button {
+  all: initial;
+  /* Remove GTK theme values (waybar #1351) */
+  min-width: 0;
+  /* Fix weird spacing in materia (waybar #450) */
+  box-shadow: inset 0 -3px transparent;
+  /* Use box-shadow instead of border so the text isn't offset */
+  padding: 0px 0px;
+  margin: 0px 0px;
+  border-radius: 0px;
+  background-color: #1e1e2e;
+  color: #cdd6f4;
+}
+
+#workspaces button.active {
+  color: #1e1e2e;
+  background-color: #dff6f4;
+}
+
+#workspaces button:hover {
+  box-shadow: inherit;
+  text-shadow: inherit;
+  color: #1e1e2e;
+  background-color: #cdd6f4;
+}
+
+#workspaces button.urgent {
+  background-color: #f38ba8;
+}
+
+#memory,
+#battery,
+#backlight,
+#wireplumber,
+#network,
+#disk,
+#clock {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  padding-right: 3px;
+  background-color: #1e1e2e;
+  color: #000000;
+}
+#custom-power {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  padding-right: 6px;
+  margin-right: 6px;
+  background-color: #ff0000;
+  color: white;
+}
+
+#disk {
+  background-color: #a5f55f;
+  color: black;
+}
+#tray {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  background-color: #994444;
+  color: #ffffff;
+}
+
+#custom-logo {
+  padding-right: 7px;
+  padding-left: 7px;
+  margin-left: 5px;
+  font-size: 15px;
+  border-radius: 8px 0px 0px 8px;
+  color: #1793d1;
+}
+
+#memory, #cpu, #window {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  padding-right: 6px;
+}
+
+#custom-nixosicon, #custom-updates, #custom-bluetooth-connect, #custom-weather, #custom-keyboard-layout {
+	border-radius: 4px;
+	margin: 6px 1px;
+	padding: 3px 3px;
+}
+
+#custom-keyboard-layout {
+	background-color: #006600;
+	color: #ffffff;
+}
+#custom-bluetooth-connect {
+	background-color: #aaf9f9;
+	color: #0000ff;
+}
+
+#custom-nixosicon {
+	background-color: #1e1e2e;
+	font-weight: bold;
+	color: rgba(50, 150, 255, 1.0);
+	padding-right: 6px;
+}
+
+#custom-updates {
+  font-weight: bold;
+  padding-right: 6px;
+  color: rgba(20, 20, 200, 1.0);
+  background-color: rgba(255, 150, 20, 1.0);
+}
+
+#custom-weather {
+	color: white;
+	background-color: #a900a9;
+}
+#memory, #cpu {
+  color: #000000;
+}
+
+#memory {
+  background-color: #ffff44;
+}
+
+#cpu {
+  background-color: #aaffff;
+}
+
+#window {
+	background-color: rgba(255, 255, 255, 0.8);
+	color: black;
+	font-weight: bold;
+	font-size: 20px;
+}
+#custom-notification, #custom-wallpaper-no, #custom-wallpaper-rm, #custom-wallpaper-previous, #custom-wallpaper-random, #custom-wallpaper-next, #custom-temperature, #custom-wallpaper-no-specify {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  color: #000000;
+}
+
+#custom-wallpaper-no {
+	  /*background-color: #ff66bb;*/
+	background-color: #00ffcc;
+}
+#custom-wallpaper-no-specify {
+	background-color: #114499;
+	color: #ffffff;
+}
+
+#custom-wallpaper-rm {
+	background-color: #aa0000;
+	color: #ffffff;
+}
+#custom-wallpaper-previous {
+	background-color: #99ffff;
+	padding-right: 6px;
+}
+#custom-wallpaper-random {
+	background-color: #ff9955;
+	padding-right: 6px;
+}
+#custom-wallpaper-next {
+	background-color: #99ff99;
+	padding-right: 6px;
+}
+
+#pulseaudio {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  padding-right: 3px;
+  background-color: #3f11a9;
+  color: #f0f0f0;
+}
+#battery {
+  background-color: #f38ba8;
+}
+
+#battery.warning,
+#battery.critical,
+#battery.urgent {
+  background-color: #ff0000;
+  color: #FFFF00;
+}
+
+#battery.charging {
+  background-color: #a6e3a1;
+  color: #181825;
+}
+
+#backlight {
+  background-color: #fab387;
+}
+
+#wireplumber {
+  background-color: #f9e2af;
+}
+
+#network {
+  background-color: #951559;
+  color: #ffffff;
+  padding-right: 4px;
+}
+
+#clock {
+  font-family: JetBrainsMono Nerd Font;
+  background-color: #1144aa;
+  /*font-weight: bold;*/
+  color: #ffffff;
+}
+
+
+tooltip {
+  border-radius: 8px;
+  padding: 15px;
+  color: #000000;
+  background-color: #ffffff;
+}
+
+tooltip label {
+  padding: 5px;
+  color: #000000;
+  background-color: #ffffff;
+}
+
+#custom-temperature {
+	background-color: #774444;
+	color: #ffffff;
+}

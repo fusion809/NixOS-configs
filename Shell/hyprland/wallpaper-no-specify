@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+user_input=$(rofi -dmenu -p "Enter wallpaper number")
+notify-send "Changing wallpaper to number $user_input..."
+$HOME/GitHub/mine/config/hyprland-configs/wallpaper $user_input

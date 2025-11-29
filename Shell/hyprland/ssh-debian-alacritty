@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+while ! sudo virsh list --name --state-running | grep -q "Debian"
+do
+	sleep 5;
+done
+alacritty --title "SSH Debian" -e ./ssh-debian

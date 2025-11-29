@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Prompt user for tab number
+tabnum=$(rofi -dmenu -p "Focus tab number")
+
+# Check and run
+if [[ $tabnum =~ ^[0-9]+$ ]]; then
+    hyprctl dispatch hy3:focustab index "$tabnum"
+else
+    notify-send "Invalid tab number: $tabnum"
+fi

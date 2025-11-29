@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Find the workspace where chrome is located
+ws=$(hyprctl clients -j | jq -r '.[] | select(.class=="google-chrome") | .workspace.id' | sort -n | tail -n 1)
+
+if [ -n "$ws" ]; then
+    # If found, switch to it
+    hyprctl dispatch workspace "$ws"
+fi

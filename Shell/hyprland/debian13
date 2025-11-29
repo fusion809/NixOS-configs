@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+if ! `sudo virsh list --all | grep "Debian" | grep running &> /dev/null`; then
+	sudo virsh start "Debian 13"
+else
+	echo "Debian 13 is already running..."
+fi
+if ! `hyprctl clients -j | grep "Debian 13 on QEMU/KVM" &> /dev/null`; then 
+	virt-viewer --connect qemu:///system "Debian 13"
+else
+	echo "The Debian 13 window is already open..."
+fi

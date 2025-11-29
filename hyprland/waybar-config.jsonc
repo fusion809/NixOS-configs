@@ -1,0 +1,236 @@
+// -*- mode: jsonc -*-
+// Font awesome is required for waybar's usual fonts
+{
+    // "layer": "top", // Waybar at top layer
+    // "position": "bottom", // Waybar position (top|bottom|left|right)
+    //"height": 30, // Waybar height (to be removed for auto height)
+    // "width": 1280, // Waybar width
+    "spacing": 4, // Gaps between modules (4px)
+    // Choose the order of the modules
+    "modules-left": [
+        "custom/nixosicon",
+        //"custom/updates",
+        "hyprland/workspaces",
+        //"hyprland/mode",
+        "custom/weather",
+        "custom/keyboard-layout",
+        "pulseaudio",
+        "custom/temperature",
+        "custom/wallpaper-no",
+        "custom/wallpaper-rm",
+        "custom/wallpaper-previous",
+        "custom/wallpaper-random",
+        "custom/wallpaper-next",
+        "custom/wallpaper-no-specify"
+    ],
+    "modules-center": [
+        "hyprland/window"
+    ],
+    "modules-right": [
+        "disk",
+        "network",
+        "cpu",
+        "memory",
+        "clock"
+    ],
+    "custom/weather": {
+        "format": "{}°",
+        "tooltip": true,
+        "interval": 600,
+        "exec": "wttrbar",
+        "return-type": "json"
+    },
+    "custom/temperature": {
+        "format": "{}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/temperature",
+        "on-click": "alacritty -e s-tui",
+        "interval": 1
+    },
+    "network": {
+        "interface": "enp24s0",
+        "format": " {bandwidthUpBits}  {bandwidthDownBits}",
+        "on-click": "alacritty -e gtop",
+        "interval": 1
+    },
+    // Modules configuration
+    "hyprland/workspaces": {
+        "on-scroll-up": "hyprctl dispatch workspace e+1",
+        "on-scroll-down": "hyprctl dispatch workspace e-1",
+        "all-outputs": true,
+        "on-click": "activate",
+        "format": "{name}:{icon}",
+        "format-icons": {
+            "1": " ",
+            "2": "󰹑 ",
+            "3": "󰂯 ",
+            "4": " ",
+            "5": "󰄻 ",
+            "6": " ",
+            "7": "󱉟/ ",
+            "8": "/󰕼 ",
+            "9": " ",
+            "10": " ",
+            "11": " ",
+            "12": " ",
+            "urgent": " ",
+            "focused": " ",
+            "default": " "
+        }
+    },
+    "custom/nixosicon": {
+        "format": "",
+        "tooltip": false,
+        "menu": "on-click",
+        "menu-file": "$HOME/GitHub/mine/config/NixOS-configs/hyprland/nixos_menu.xml", // Menu file in resources folder
+        "menu-actions": {
+            "nerdfonts": "xdg-open https://www.nerdfonts.com/cheat-sheet",
+            "wiki": "xdg-open https://wiki.nixos.org",
+            "update": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/update",
+            "rebuild": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/rebuild",
+            "repair": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/repair",
+            "nixpkgs": "xdg-open https://search.nixos.org/packages",
+            "options": "xdg-open https://search.nixos.org/options",
+            "nixosconfigs": "antigravity $HOME/GitHub/mine/config/NixOS-configs",
+            "hyprlandconfigs": "antigravity $HOME/GitHub/mine/config/hyprland-configs",
+            "shutdown": "sudo poweroff",
+            "reboot": "sudo reboot",
+            "logout": "hyprctl dispatch exit",
+            "suspend": "sudo systemctl suspend",
+            "hibernate": "sudo systemctl hibernate"
+        }
+    },
+    "custom/updates": {
+        "format": "{}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/updates",
+        "on-click": "$HOME/Github/mine/config/NixOS-configs/Shell/hyprland/update"
+    },
+    "custom/wallpaper-no": {
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/no-wallpapers",
+        "format": "󰸉 {}", // Nerd Font “wallpaper” icon
+        "tooltip": true,
+        "tooltip-format": "Wallpaper: number selected/total number",
+        "interval": 1, // Don’t poll or update automatically
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/list-wallpapers"
+    },
+    "custom/wallpaper-rm": {
+        "format": "󰆴",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper-rm",
+        "tooltip": true,
+        "tooltip-format": "Remove currently displayed wallpaper and move onto next wallpaper (Win+Shift+d)."
+    },
+    "custom/wallpaper-previous": {
+        "format": "",
+        "tooltip": true,
+        "tooltip-format": "Previous wallpaper. Win+z achieves the same thing.",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper systematic previous"
+    },
+    "custom/wallpaper-random": {
+        "format": "",
+        "tooltip": true,
+        "tooltip-format": "Random wallpaper. Win+Shift+s achieves the same thing.",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper random"
+    },
+    "custom/wallpaper-next": {
+        "format": "",
+        "tooltip": true,
+        "tooltip-format": "Next wallpaper. Win+w achieves the same thing.",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper systematic next"
+    },
+    "custom/wallpaper-no-specify": {
+        "format": "",
+        "tooltip": true,
+        "tooltip-format": "Enter the number of the next wallpaper you want to see.",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/wallpaper-no-specify"
+    },
+    "custom/bluetooth-connect": {
+        "format": "",
+        "on-click": "bluetooth-connect",
+        "tooltip": true,
+        "tooltip-format": "Connect to Bluetooth device"
+    },
+    "keyboard-state": {
+        "numlock": true,
+        "capslock": true,
+        "format": "{name} {icon}",
+        "format-icons": {
+            "locked": "",
+            "unlocked": ""
+        }
+    },
+    "disk": {
+        "format": "/ {used}/{total}",
+        "path": "/", // Or the path to the desired mount point, e.g., "/home"
+        "interval": 1,
+        "on-click": "alacritty -e gtop"
+    },
+    "clock": {
+        "timezone": "Australia/Brisbane",
+        "tooltip-format": "<big>{:%r %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
+        "format": "{:%r %a %d/%m/%y}",
+        "interval": 1
+    },
+    "cpu": {
+        "format": "{usage}% ",
+        "tooltip": false,
+        "on-click": "alacritty -e gtop"
+    },
+    "memory": {
+        "format": "{}% ",
+        "on-click": "alacritty -e gtop"
+    },
+    "power-profiles-daemon": {
+        "format": "{icon}",
+        "tooltip-format": "Power profile: {profile}\nDriver: {driver}",
+        "tooltip": true,
+        "format-icons": {
+            "default": "",
+            "performance": "",
+            "balanced": "",
+            "power-saver": ""
+        }
+    },
+    "pulseaudio": {
+        // "scroll-step": 1, // %, can be a float
+        "format": "{volume}% {icon}",
+        "format-bluetooth": "{volume}% {icon}",
+        "format-bluetooth-muted": " {icon}",
+        "format-muted": " ",
+        "format-source": "",
+        //"format-source": "{volume}% ",
+        "format-source-muted": "",
+        "format-icons": {
+            "headphone": "",
+            "hands-free": "",
+            "headset": "",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": [
+                "",
+                "",
+                ""
+            ]
+        },
+        "on-click": "pavucontrol"
+    },
+    /*"custom/media": {
+        "format": "{icon} {text}",
+        "return-type": "json",
+        "max-length": 40,
+        "format-icons": {
+            "spotify": "",
+            "default": "🎜"
+        },
+        "escape": true,
+        "exec": "$HOME/.config/waybar/mediaplayer.py 2> /dev/null" // Script in resources folder
+        // "exec": "$HOME/.config/waybar/mediaplayer.py --player spotify 2> /dev/null" // Filter player based on name
+    },*/
+    "custom/keyboard-layout": {
+        "format": " {}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/Shell/hyprland/keyboard-layout",
+        "on-click": "hyprctl switchxkblayout current next",
+        "tooltip": true,
+        "interval": 1,
+        "tooltip-format": "Keyboard layout; click or press Win+Space to change it."
+    }
+}

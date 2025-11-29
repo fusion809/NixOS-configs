@@ -25,23 +25,7 @@
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
   # plain files is through 'home.file'.
-  home.file = {
-    ".local/share/hyprland/plugins/hy3.so".source =
-      "${pkgs.hyprlandPlugins.hy3}/lib/libhy3.so";
-    # # Building this configuration will create a copy of 'dotfiles/screenrc' in
-    # # the Nix store. Activating the configuration will then make '~/.screenrc' a
-    # # symlink to the Nix store copy.
-    # ".screenrc".source = dotfiles/screenrc;
-
-    # # You can also set the file content immediately.
-    # ".gradle/gradle.properties".text = ''
-    #   org.gradle.console=verbose
-    #   org.gradle.daemon.idletimeout=3600000
-    # '';
-    #  ".config/hypr/hyprland.conf" = {
-    #    source = /home/fusion809/GitHub/mine/config/hyprland-configs/hyprland.conf;
-    #  };
-  };
+  home.file = import ./home-file.nix { inherit pkgs config; };
 
   # Home Manager can also manage your environment variables through
   # 'home.sessionVariables'. These will be explicitly sourced when using a
@@ -62,91 +46,9 @@
   home.sessionVariables = { EDITOR = "vim"; };
 
   # Let Home Manager install and manage itself.
-  programs = {
-    home-manager.enable = true;
-    bash = {
-      enable = true;
-      bashrcExtra = builtins.readFile ../Shell/user/main.sh;
-    };
-    git = {
-      enable = true;
-      userName = "fusion809";
-      userEmail = "brentonhorne77@gmail.com";
-    };
-    zsh = {
-      enable = true;
-      initContent = builtins.readFile ../Shell/user/.zshrc;
-    };
-  };
+  programs = import ./home-programs.nix { };
   # This part is probably largely redundant, due to GNOME not being used, 
   # but may affect theming in GTK+ apps. 
-  dconf = {
-    enable = false;
-    settings = {
-      "org/gnome/desktop/background" = {
-        color-shading-type = "solid";
-        picture-uri =
-          "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
-        picture-uri-dark =
-          "file:///run/current-system/sw/share/backgrounds/Photo%20of%20Valley.jpg";
-      };
-      "org/gnome/desktop/interface" = {
-        color-scheme = "prefer-dark";
-        gtk-theme = "WhiteSur-Dark-solid";
-        icon-theme = "WhiteSur-dark";
-        cursor-theme = "WhiteSur-cursors";
-      };
-      "org/gnome/desktop/lockdown" = { disable-lock-screen = true; };
-      "org/gnome/desktop/screensaver" = { lock-enabled = false; };
-      "org/gnome/desktop/wm/preferences" = {
-        button-layout = "close,maximize,minimize:menu";
-      };
-      "org/gnome/shell" = {
-        enabled-extensions = [
-          "dash-to-dock@micxgx.gmail.com"
-          "show-desktop-button@amivaleo"
-          "user-theme@gnome-shell-extensions.gcampax.github.com"
-          "gsconnect@andyholmes.github.io"
-        ];
-        favorite-apps = [
-          "org.gnome.Nautilus.desktop"
-          "firefox.desktop"
-          "com.brave.Browser"
-          "org.gnome.Terminal.desktop"
-          "vim.desktop"
-          "org.gnome.Extensions.desktop"
-          "steam.desktop"
-        ];
-      };
-      "org/gnome/shell/extensions/user-theme" = {
-        name = "WhiteSur-Dark-solid";
-      };
-      "org/gnome/shell/extensions/dash-to-dock" = {
-        height-fraction = 1.0;
-        show-apps-at-top = true;
-        custom-theme-shrink = true;
-        isolate-workspaces = true;
-        apply-custom-theme = true;
-      };
-      "org/gnome/shell/extensions/show-desktop-button" = {
-        indicator-position = "LEFT";
-      };
-      "org/gnome/settings-daemon/plugins/power" = {
-        sleep-inactive-ac-type = "nothing";
-      };
-      "org/gnome/desktop/session" = { idle-delay = 0; };
-      "org/virt-manager/virt-manager/connections" = {
-        autoconnect = [ "qemu:///system" ];
-        uris = [ "qemu:///system" ];
-      };
-
-    };
-  };
-  programs.gnome-shell.theme.name = "WhiteSur-Dark-solid";
-  gtk = {
-    enable = true;
-    theme = { name = "WhiteSur-Dark-solid"; };
-    iconTheme = { name = "WhiteSur-dark"; };
-    cursorTheme = { name = "WhiteSur-cursors"; };
-  };
+  dconf = import ./home-dconf.nix { };
+  gtk = import ./home-gtk.nix { };
 }

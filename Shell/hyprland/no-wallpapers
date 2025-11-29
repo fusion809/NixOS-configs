@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+rootant=$(find /arch/usr/share/antergos/wallpapers -name "*.*g" -type f | wc -l);
+root=$(find /arch/usr/share/{backgrounds,[wW]allpapers} -name "*.*g" -type f | wc -l) ; 
+root=$(($root+$rootant))
+userls=$(find /arch$HOME/.local/share/{backgrounds,wallpapers} -name "*.*g" -type f | wc -l);
+userpi=$(find /arch$HOME/Pictures/Wallpapers -name "*.*g" -type f | wc -l);
+user=$(($userpi+$userls))
+no=$(($root+$user-1))
+if (( $no < 0 )); then
+	no=0
+fi
+#curr=$(cat $HOME/.cache/swaybg-wallstate)
+# Define the two possible files
+f1="/arch$HOME/.cache/swaybg-wallstate"
+f2="/arch$HOME/.cache/swaybg-wallstate-random"
+
+# Find the most recently modified of the two
+latest=$(ls -t "$f1" "$f2" 2>/dev/null | head -n1)
+width="${#no}"
+# If one exists, read its contents into curr
+if [ -n "$latest" ]; then
+    curr=$(<"$latest")
+else
+    curr=""
+fi
+padded=$(printf "%0${width}d" "$curr")
+echo "$padded/$no"

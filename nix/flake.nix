@@ -47,12 +47,14 @@
         ./configuration.nix
         home-manager.nixosModules.home-manager
         {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.users.fusion809 = import ./home.nix;
-
-          # Pass inputs to home-manager modules
-          home-manager.extraSpecialArgs = { inherit inputs; };
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            users.fusion809 = import ./home.nix;
+            backupFileExtension = "backup";
+            # Pass inputs to home-manager modules
+            extraSpecialArgs = { inherit inputs; };
+          };
         }
         {
           nixpkgs.overlays = [
