@@ -22,3 +22,9 @@ Host slackware-kvm
 Host opensuse-kvm
 	Hostname 192.168.122.63
 	User fusion809
+Host fusion809-ghostbsd
+	Hostname 192.168.122.97
+	User fusion809
+Host chimera-kvm
+	Hostname 192.168.122.162
+	User fusion809

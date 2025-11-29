@@ -196,7 +196,7 @@ function ssh_opensuse {
 }
 
 function cp_from_opensuse {
-    start_slackware
+    start_opensuse
     scp -O -r fusion809@192.168.122.63:$1 $2
 }
 
@@ -210,4 +210,22 @@ function start_reactos {
 
 function view_reactos {
     view_qemu_vm "ReactOS2"
+}
+
+function start_chimera {
+    start_qemu_vm_root "Chimera Linux" 30
+}
+
+function ssh_chimera {
+    start_chimera
+    TERM=xterm-256color ssh fusion809@192.168.122.162
+}
+
+function cp_from_chimera {
+    start_chimera
+    scp -O -r fusion809@192.168.122.162:$1 $2
+}
+
+function view_chimera {
+    view_qemu_vm "Chimera Linux"
 }
