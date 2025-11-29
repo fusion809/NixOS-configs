@@ -9,9 +9,8 @@
       enable = true;
       device = "nodev";
       efiSupport = true;
-      useOSProber = false;
+      useOSProber = true;
       default = 0;
-      extraEntries = builtins.readFile ../grub-extra-entries.cfg;
     };
     efi.canTouchEfiVariables = true;
   };
