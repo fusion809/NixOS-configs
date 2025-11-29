@@ -8,6 +8,7 @@ fi
 function start_qemu_vm_root {
     if ! `sudo virsh list --all | grep "$1" | grep running &> /dev/null`; then
         sudo virsh start "$1"
+        sleep 30 # Wait for VM to start
     fi
 }
 
@@ -78,4 +79,18 @@ function ssh_rocky {
 function cp_from_rocky {
     start_rocky
     scp -O -r fusion809@192.168.122.158:$1 $2
+}
+
+function start_mint {
+    start_qemu_vm_root "Linux Mint 22.2 Cinnamon"
+}
+
+function ssh_mint {
+    start_mint
+    TERM=xterm-256color ssh fusion809@192.168.122.54
+}
+
+function cp_from_mint {
+    start_mint
+    scp -O -r fusion809@192.168.122.54:$1 $2
 }
