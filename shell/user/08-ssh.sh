@@ -18,7 +18,7 @@ function ssh_fedora {
 }
 
 function cp_from_fedora {
-    scp -O -r fusion809@192.168.122.232:$HOME/$1 /arch$HOME/PhD/Rcode/
+    scp -O -r fusion809@192.168.122.232:$1 $2
 }
 
 function ssh_ubuntu {
@@ -26,5 +26,13 @@ function ssh_ubuntu {
 }
 
 function cp_from_ubuntu {
-    scp -O -r fusion809@192.168.122.151:$HOME/$1 /arch$HOME/PhD/Rcode/
+    scp -O -r fusion809@192.168.122.151:$1 $2
+}
+
+function ssh_guix {
+    TERM=xterm-256color ssh fusion809@192.168.122.90
+}
+
+function cp_from_guix {
+    scp -O -r fusion809@192.168.122.90:$1 $2
 }
