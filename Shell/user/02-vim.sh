@@ -3,19 +3,13 @@ function vbash {
 }
 
 function vcf {
-  sudo vim /etc/nixos/configuration.nix
+  vim $NIXCFG/nix
 }
 
 function vhc {
-  vim $HCFG/hyprland.conf
+  vim $NIXCFG/hyprland/hyprland.conf
 }
 
-
-function vhom {
-  vim $NIXCFG/home.nix
-}
-
-alias vhx=vhom
 function vrm {
   if [[ -f README.md ]]; then
     vim README.md
@@ -25,11 +19,11 @@ function vrm {
 }
 
 function vst {
-  vim $HCFG/style.css
+  vim $NIXCFG/hyprland/style.css
 }
 
 function vwc {
-  vim $HCFG/waybar-config.jsonc
+  vim $NIXCFG/hyprland/waybar-config.jsonc
 }
 
 function vzsh {

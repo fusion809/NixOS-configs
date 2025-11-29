@@ -1,5 +1,5 @@
 function vshc {
-  code $HCFG
+  code $NIXCFG
 }
 
 function vsnc {

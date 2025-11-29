@@ -1,5 +1,5 @@
 function ashc {
-  antigravity $HCFG
+  antigravity $NIXCFG/hyprland
 }
 
 function asnc {
