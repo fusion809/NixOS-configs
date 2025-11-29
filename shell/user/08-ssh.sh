@@ -25,13 +25,16 @@ function start_qemu_vm_user {
 
 function view_qemu_vm {
     root_vm=$(sudo virsh list --all | grep "$1")
+    echo "root_vm = $root_vm"
     user_vm=$(virsh list --all | grep "$1")
-    if `echo $root_vm &> /dev/null`; then
+    echo "user_vm = $user_vm"
+    if [[ -n "${root_vm// /}" ]]; then
+        echo "Assuming root vm..."
         if ! `echo $root_vm | grep running &> /dev/null`; then
             start_qemu_vm_root "$1"
         fi
         virt-viewer --connect qemu:///system "$1"
-    elif `echo $user_vm &> /dev/null`; then
+    elif [[ -n "${user_vm// /}" ]]; then
         if ! `echo $user_vm | grep running &> /dev/null`; then
             start_qemu_vm_user "$1"
         fi
