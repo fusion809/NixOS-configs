@@ -11,6 +11,7 @@
       efiSupport = true;
       useOSProber = true;
       default = 0;
+      extraEntries = builtins.readFile ../grub-extra-entries.cfg;
     };
     efi.canTouchEfiVariables = true;
   };
