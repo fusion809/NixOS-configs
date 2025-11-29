@@ -19,11 +19,11 @@ function nixfrb {
   else
     git add --all
   fi
-  sudo nixos-rebuild switch -I nixos-config=$NIXCFG/nix/configuration.nix --flake $NIXCFG/nix/#nixos --impure
+  sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure
 }
 
 function nixfu {
-    nix flake update --flake $NIXCFG/nix
+    nix flake update --flake "$NIXCFG/nix"
 }
 
 # List generations of NixOS system
@@ -50,7 +50,7 @@ function nixver {
 }
 
 function rebuild {
-  sudo nixos-rebuild switch -I nixos-config=$NIXCFG/nix/configuration.nix
+  sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix"
 }
 
 alias nixrb=rebuild

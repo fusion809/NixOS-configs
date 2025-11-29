@@ -3,7 +3,7 @@ function nixver {
 }
   
 function rebuild {
-    nixos-rebuild switch -I nixos-config=$NIXCFG/nix/configuration.nix --flake $NIXPKGS/nix/#nixos
+    nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXPKGS/nix/#nixos"
 }
 
 alias nixrb=rebuild
@@ -17,7 +17,7 @@ function nixcg {
 }
 
 function nixrsu {
-    nix flake update --flake $NIXCFG/nix
+    nix flake update --flake "$NIXCFG/nix"
 }
 
 function update {
