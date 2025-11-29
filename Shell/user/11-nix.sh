@@ -12,6 +12,9 @@ function nixdg {
 }
 
 function nixfrb {
+  pushd -q $NIXCFG
+  git add --all
+  popd -q
   sudo nixos-rebuild switch -I nixos-config=$NIXCFG/nix/configuration.nix --flake $NIXCFG/nix/#nixos --impure
 }
 

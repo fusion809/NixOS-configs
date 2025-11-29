@@ -10,22 +10,7 @@
 
   ];
   # Bootloader.
-  boot = {
-    initrd.systemd.tpm2.enable = false;
-    kernelPackages = pkgs.linuxPackages_latest;
-    loader = {
-      timeout = -1;
-      grub = {
-        enable = true;
-        device = "nodev";
-        efiSupport = true;
-        useOSProber = false;
-        default = 0;
-        extraEntries = builtins.readFile ../grub-extra-entries.cfg;
-      };
-      efi.canTouchEfiVariables = true;
-    };
-  };
+  boot = import ./boot.nix { inherit pkgs; };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -44,10 +29,7 @@
   # Install firefox.
   programs = import ./programs.nix { inherit pkgs inputs; };
   # Enable sound with pipewire.
-  security = {
-    rtkit.enable = true;
-    sudo.wheelNeedsPassword = false;
-  };
+  security = import ./security.nix { };
   services = import ./services.nix { inherit pkgs; };
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
@@ -55,9 +37,7 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system = {
-    stateVersion = "25.05"; # Did you read the comment?
-  };
+  system.stateVersion = "25.05";
   # Set up systemd services
   systemd = import ./systemd.nix { inherit pkgs; };
 
@@ -67,33 +47,11 @@
   # services.xserver.libinput.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
-  users = {
-    defaultUserShell = pkgs.zsh;
-    users.fusion809 = {
-      isNormalUser = true;
-      description = "Brenton";
-      extraGroups = [ "networkmanager" "wheel" "input" "docker" "libvirtd" ];
-      packages = with pkgs;
-        [
-          #  thunderbird
-        ];
-    };
-  };
+  users = import ./users.nix { inherit pkgs; };
   #virtualisation.virtualbox.host.enable = true;
   #virtualisation.virtualbox.host.enableKvm = true;
   #virtualisation.virtualbox.host.addNetworkInterface = false;
   #virtualisation.virtualbox.host.enableExtensionPack = true;
-  virtualisation = {
-    docker = { enable = true; };
-    libvirtd = {
-      enable = true;
-      qemu = {
-        package = pkgs.qemu_kvm;
-        runAsRoot = true;
-        swtpm.enable = true;
-      };
-    };
-    spiceUSBRedirection.enable = true;
-  };
+  virtualisation = import ./virtualisation.nix { inherit pkgs; };
 }
 

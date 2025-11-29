@@ -12,7 +12,7 @@ fi
 if [[ $HYPR_INST != $HYPR_TAG ]]; then
     echo "New version of Hyprland, $HYPR_TAG, is out..."
 fi
-if ( [[ $HY3_TAG != $HY3_INST ]] || [[ $HYPR_INST != $HYPR_TAG ]] ) ; then
+if ( ( [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ) || ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ -n $HYPR_TAG ]] ) ) ; then
     # Update hy3 url
     sed -i \
     -e "s|github:outfoxxed/hy3/$HY3_INST|github:outfoxxed/hy3/$HY3_TAG|" \
