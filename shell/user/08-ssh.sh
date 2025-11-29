@@ -8,13 +8,41 @@ fi
 function start_qemu_vm_root {
     if ! `sudo virsh list --all | grep "$1" | grep running &> /dev/null`; then
         sudo virsh start "$1"
-        sleep 30 # Wait for VM to start
+        if [[ -n $2 ]]; then
+            sleep $2 # Wait for VM to start
+        fi
+    fi
+}
+
+function start_qemu_vm_user {
+    if ! `virsh list --all | grep "$1" | grep running &> /dev/null`; then
+        virsh start "$1"
+        if [[ -n $2 ]]; then
+            sleep $2 # Wait for VM to start
+        fi
+    fi
+}
+
+function view_qemu_vm {
+    root_vm=$(sudo virsh list --all | grep "$1")
+    user_vm=$(virsh list --all | grep "$1")
+    if `echo $root_vm &> /dev/null`; then
+        if ! `echo $root_vm | grep running &> /dev/null`; then
+            start_qemu_vm_root "$1"
+        fi
+        virt-viewer --connect qemu:///system "$1"
+    elif `echo $user_vm &> /dev/null`; then
+        if ! `echo $user_vm | grep running &> /dev/null`; then
+            start_qemu_vm_user "$1"
+        fi
+        virt-viewer "$1"
     fi
 }
 
 function start_debian {
-    start_qemu_vm_root "Debian 13"
+    start_qemu_vm_root "Debian 13" 30
 }
+
 function ssh_debian {
     start_debian
     TERM=xterm-256color ssh fusion809@192.168.122.244
@@ -25,8 +53,12 @@ function cp_from_debian {
     scp -O -r fusion809@192.168.122.244:$HOME/$1 /arch$HOME/PhD/Rcode/
 }
 
+function view_debian {
+    view_qemu_vm "Debian 13"
+}
+
 function start_fedora_rawhide {
-    start_qemu_vm_root "Fedora Rawhide"
+    start_qemu_vm_root "Fedora Rawhide" 30
 }
 
 function ssh_fedora {
@@ -39,8 +71,12 @@ function cp_from_fedora {
     scp -O -r fusion809@192.168.122.232:$1 $2
 }
 
+function view_fedora {
+    view_qemu_vm "Fedora Rawhide"
+}
+
 function start_ubuntu {
-    start_qemu_vm_root "Ubuntu 26.04"
+    start_qemu_vm_root "Ubuntu 26.04" 30
 }
 
 function ssh_ubuntu {
@@ -53,8 +89,12 @@ function cp_from_ubuntu {
     scp -O -r fusion809@192.168.122.151:$1 $2
 }
 
+function view_ubuntu {
+    view_qemu_vm "Ubuntu 26.04"
+}
+
 function start_guix {
-    start_qemu_vm_root "Guix System master"
+    start_qemu_vm_root "Guix System master" 30
 }
 
 function ssh_guix {
@@ -67,8 +107,12 @@ function cp_from_guix {
     scp -O -r fusion809@192.168.122.90:$1 $2
 }
 
+function view_guix {
+    view_qemu_vm "Guix System master"
+}
+
 function start_rocky {
-    start_qemu_vm_root "Rocky Linux 10.1"
+    start_qemu_vm_root "Rocky Linux 10.1" 30
 }
 
 function ssh_rocky {
@@ -81,8 +125,12 @@ function cp_from_rocky {
     scp -O -r fusion809@192.168.122.158:$1 $2
 }
 
+function view_rocky {
+    view_qemu_vm "Rocky Linux 10.1"
+}
+
 function start_mint {
-    start_qemu_vm_root "Linux Mint 22.2 Cinnamon"
+    start_qemu_vm_root "Linux Mint 22.2 Cinnamon" 30
 }
 
 function ssh_mint {
@@ -93,4 +141,8 @@ function ssh_mint {
 function cp_from_mint {
     start_mint
     scp -O -r fusion809@192.168.122.54:$1 $2
+}
+
+function view_mint {
+    view_qemu_vm "Linux Mint 22.2 Cinnamon"
 }
