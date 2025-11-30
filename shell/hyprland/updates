@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-cd $HOME/GitHub/mine/config/NixOS-configs
+cd $HOME/GitHub/mine/config/NixOS-configs/nix
 sudo nix flake update
 diffLen=$(git diff flake.lock | wc -l)
 if [[ "$diffLen" > 100 ]]; then

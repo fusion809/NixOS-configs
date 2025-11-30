@@ -2,7 +2,9 @@
 ![Hyprland on NixOS screenshot as of 29 November 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-11-29.png)
 **Figure 1: Hyprland NixOS configuration as of 29 November 2025.**
 
-These are my NixOS 25.05 configuration files for running on my MS-7B90 PC.
+These are my NixOS 25.05 configuration files for running on my MS-7B90 PC. Hyprland is my graphical user interface (GUI). 
+
+# OpenRA package
 
 To update the deps.json file for OpenRA git package, run:
 
@@ -14,7 +16,7 @@ in nixpkgs/openra. Or simply run `openraup`.
 
 # Waybar
 The waybar has the following components:
-* The NixOS menu which gives you options for opening up the NixOS packages search, NixOS options search, NixOS Wiki and Nerd font cheat sheet websites in the default browser, rebuilding and updating one's system, repairing the Nix store, and opening NixOS-configs and Hyprland-configs in default code editor.
+* The NixOS menu which gives you options for opening up the NixOS packages search, NixOS options search, NixOS Wiki, NixOS configs GitHub repo and Nerd font cheat sheet websites in the default browser, rebuilding and updating one's system, repairing the Nix store, and opening NixOS-configs in default code editor.
 * Workspaces.
 * Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 * Keyboard layout (just the two-letter initial though). 
