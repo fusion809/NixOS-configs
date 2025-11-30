@@ -28,3 +28,6 @@ Host fusion809-ghostbsd
 Host chimera-kvm
 	Hostname 192.168.122.162
 	User fusion809
+Host void-kvm
+	Hostname 192.168.122.29
+	User fusion809

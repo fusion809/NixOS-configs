@@ -229,3 +229,21 @@ function cp_from_chimera {
 function view_chimera {
     view_qemu_vm "Chimera Linux"
 }
+
+function start_void {
+    start_qemu_vm_root "Void Linux" 30
+}
+
+function ssh_void {
+    start_void
+    TERM=xterm-256color ssh fusion809@192.168.122.29
+}
+
+function cp_from_void {
+    start_void
+    scp -O -r fusion809@192.168.122.29:$1 $2
+}
+
+function view_void {
+    view_qemu_vm "Void Linux"
+}
