@@ -91,6 +91,7 @@
             "nixpkgs": "xdg-open https://search.nixos.org/packages",
             "options": "xdg-open https://search.nixos.org/options",
             "nixosconfigs": "antigravity $HOME/GitHub/mine/config/NixOS-configs",
+            "nixosconfigsrepo": "xdg-open https://github.com/fusion809/NixOS-configs",
             "shutdown": "sudo poweroff",
             "reboot": "sudo reboot",
             "logout": "hyprctl dispatch exit",

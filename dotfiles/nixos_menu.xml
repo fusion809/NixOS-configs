@@ -7,6 +7,11 @@
         </object>
 	</child>
 	<child>
+		<object class="GtkMenuItem" id="nixosconfigsrepo">
+			<property name="label">󰖬 NixOS configs repo (Win+Ctrl+w)</property>
+        </object>
+	</child>
+	<child>
 		<object class="GtkMenuItem" id="options">
 			<property name="label">󰘵 NixOS options search (Win+Ctrl+o)</property>
 		</object>
@@ -14,6 +19,11 @@
 	<child>
         <object class="GtkMenuItem" id="nixpkgs">
 			<property name="label">󰏖 NixOS packages search (Win+Ctrl+p)</property>
+        </object>
+	</child>
+	<child>
+		<object class="GtkMenuItem" id="wiki">
+			<property name="label">󰖬 NixOS Wiki (Win+Ctrl+w)</property>
         </object>
 	</child>
 	<child>
@@ -29,12 +39,6 @@
 	<child>
         <object class="GtkMenuItem" id="update">
 			<property name="label">󱣇 Update NixOS without store repair (Win+Ctrl+u)</property>
-        </object>
-	</child>
-
-	<child>
-		<object class="GtkMenuItem" id="wiki">
-			<property name="label">󰖬 NixOS Wiki (Win+Ctrl+w)</property>
         </object>
 	</child>
 	<child>
