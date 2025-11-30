@@ -1,3 +1,3 @@
 function cdnc {
-    cd $NIXPKGS/$1
+    cd $NIXCFG/$1
 }

@@ -1,11 +1,19 @@
-{ pkgs, inputs, ... }:
+{ pkgs, inputs, username, ... }:
+
+let
+  lib = import ./lib.nix { inherit username; };
+  nixcfgDir = lib.nixcfgDir;
+in
 
 {
   appimage = {
     enable = true;
     binfmt = true;
   };
-  bash.shellInit = builtins.readFile ../shell/root/main.sh;
+  bash.shellInit = ''
+      export USER="${username}"
+      export NIXCFG="${nixcfgDir}"
+    '' + builtins.readFile ../shell/root/main.sh;
   firefox = { enable = false; };
   hyprland = {
     enable = true;
@@ -44,7 +52,10 @@
       enable = true;
       plugins = [ "safe-paste" "vi-mode" ];
     };
-    shellInit = builtins.readFile ../shell/root/.zshrc;
+    shellInit = ''
+      export USER="${username}"
+      export NIXCFG="${nixcfgDir}"
+    '' + builtins.readFile ../shell/root/.zshrc;
     syntaxHighlighting.enable = true;
   };
 }

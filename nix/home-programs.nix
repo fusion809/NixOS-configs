@@ -1,17 +1,29 @@
-{ ... }: {
+{ username, ... }:
+
+let
+  lib = import ./lib.nix { inherit username; };
+  nixcfgDir = lib.nixcfgDir;
+in
+{
   home-manager.enable = true;
   bash = {
     enable = true;
-    bashrcExtra = builtins.readFile ../shell/user/main.sh;
+    bashrcExtra = ''
+      export USER="${username}"
+      export NIXCFG="${nixcfgDir}"
+    '' + builtins.readFile ../shell/user/main.sh;
   };
   git = {
     enable = true;
-    userName = "fusion809";
+    userName = username;
     userEmail = "brentonhorne77@gmail.com";
   };
   gnome-shell.theme.name = "WhiteSur-Dark-solid";
   zsh = {
     enable = true;
-    initContent = builtins.readFile ../shell/user/.zshrc;
+    initContent = ''
+      export USER="${username}"
+      export NIXCFG="${nixcfgDir}"
+    '' + builtins.readFile ../shell/user/.zshrc;
   };
 }

@@ -1,6 +1,9 @@
-{ config, pkgs, ... }:
+{ config, pkgs, username, ... }:
 
-let dotfilesDir = /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles;
+let
+  lib = import ./lib.nix { inherit username; };
+  nixcfgDir = lib.nixcfgDir;
+  dotfilesDir = "${nixcfgDir}/dotfiles";
 in {
   ".local/share/hyprland/plugins/hy3.so".source =
     "${pkgs.hyprlandPlugins.hy3}/lib/libhy3.so";
@@ -32,4 +35,20 @@ in {
   # SSH
   ".ssh/config".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/config";
+
+  # Desktop config files
+  ".local/share/applications/dsv.desktop".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/dsv.desktop";
+  ".local/share/applications/outlive.desktop".source =
+    pkgs.substitute {
+      src = builtins.toFile "outlive.desktop" (builtins.readFile "${dotfilesDir}/outlive.desktop");
+      substitutions = [
+        "--replace-quiet"
+        "nixcfgDir"
+        "${nixcfgDir}"
+        "--replace-quiet"
+        "username"
+        "${username}"
+      ];
+    };
 }

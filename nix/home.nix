@@ -1,10 +1,10 @@
-{ config, pkgs, ... }:
+{ config, pkgs, username, ... }:
 
 {
   # Home Manager needs a bit of information about you and the paths it should
   # manage.
-  home.username = "fusion809";
-  home.homeDirectory = "/home/fusion809";
+  home.username = username;
+  home.homeDirectory = "/home/${username}";
 
   # This value determines the Home Manager release that your configuration is
   # compatible with. This helps avoid breakage when a new Home Manager release
@@ -25,7 +25,7 @@
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
   # plain files is through 'home.file'.
-  home.file = import ./home-file.nix { inherit pkgs config; };
+  home.file = import ./home-file.nix { inherit pkgs config username; };
 
   # Home Manager can also manage your environment variables through
   # 'home.sessionVariables'. These will be explicitly sourced when using a
@@ -43,10 +43,14 @@
   #
   #  /etc/profiles/per-user/fusion809/etc/profile.d/hm-session-vars.sh
   #
-  home.sessionVariables = { EDITOR = "vim"; };
+  home.sessionVariables = { 
+    EDITOR = "vim";
+    USER = username;
+    NIXCFG = "/home/${username}/GitHub/mine/config/NixOS-configs";
+  };
 
   # Let Home Manager install and manage itself.
-  programs = import ./home-programs.nix { };
+  programs = import ./home-programs.nix { inherit username; };
   # This part is probably largely redundant, due to GNOME not being used, 
   # but may affect theming in GTK+ apps. 
   dconf = import ./home-dconf.nix { };

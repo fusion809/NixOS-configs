@@ -6,5 +6,5 @@ sed -i '/^:/!d' $HOME/.zsh_history
 function shopt {
   #echo "shopt called with arguments: $@"
 }
-source $HOME/GitHub/mine/config/NixOS-configs/shell/user/main.sh
+source $NIXCFG/shell/user/main.sh
 source $NIXCFG/shell/hnixos.zsh-theme

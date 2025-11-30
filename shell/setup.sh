@@ -4,19 +4,20 @@ export disk="$1"
 echo "Disk is $disk..."
 export suffix=$(echo $disk | sed 's|/dev/||g')
 echo "Suffix is $suffix..."
-export HOME=/home/fusion809
+export USER=$(cat ../nix/flake.nix | grep 'username =' | head -n 1 | cut -d '"' -f 2)
+export HOME=/home/$USER
 export CFG=$HOME/GitHub/mine/config
 export NIXCFG=$CFG/NixOS-configs
 export MNT_NIXCFG=/mnt$NIXCFG
 
 function check_and_get_repo {
-	if [[ -f ../.git/config ]] && grep -q "url = git@github.com:fusion809/NixOS-configs" ../.git/config; then
+	if [[ -f ../.git/config ]] && grep -q "url = git@github.com:$USER/NixOS-configs" ../.git/config; then
 		echo "Seems we are in a copy of NixOS-configs..."
 		return
 	else
 		echo "We are not in a copy of the repo."
 		echo "Cloning..."
-		git clone https://github.com/fusion809/NixOS-configs
+		git clone https://github.com/$USER/NixOS-configs
 		cd NixOS-configs/Shell || echo "Unable to cd into NixOS-configs/Shell." && exit 1
 	fi
 }
@@ -31,7 +32,7 @@ function backup_home {
 		echo "Unable to mount ${disk}2."
 		return
 	fi
-	if ! cp -r /mnt$HOME /data/home-fusion809; then
+	if ! cp -r /mnt$HOME /data/home-$USER; then
 		echo "Unable to copy home folder."
 		return
 	fi
@@ -56,7 +57,7 @@ function make_filesystems {
 }
 
 function set_user_perms {
-	chown fusion809:users "$1"
+	chown $USER:users "$1"
 	chmod 700 "$1"
 }
 
@@ -64,7 +65,7 @@ function setup_mounts_and_dirs {
 	mount "${disk}2" /mnt
 	mkdir -p /mnt/boot
 	mkdir /mnt/home
-	cp -r /data/home-fusion809 /mnt$HOME
+	cp -r /data/home-$USER /mnt$HOME
 	mkdir -p /mnt$CFG
 	set_user_perms /mnt$HOME
 	mount "${disk}1" /mnt/boot
@@ -113,7 +114,7 @@ if [[ $EUID -eq 0 ]]; then
 	# Create desktop applications directory if it doesn't exist
 	mkdir -p /mnt$HOME/.local/share/applications
 	if [[ -d $MNT_NIXCFG/desktop ]]; then
-		ln -sf $NIXCFG/desktop/*.desktop /mnt/home/fusion809/.local/share/applications/
+		ln -sf $NIXCFG/desktop/*.desktop /mnt/$HOME/.local/share/applications/
 	fi
 	echo "Installation should be finished now."
 fi

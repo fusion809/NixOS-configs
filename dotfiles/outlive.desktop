@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Outlive
+Exec=nixcfg/shell/outlive
+Icon=/home/username/.local/share/icons/Outlive.png
+Type=Application

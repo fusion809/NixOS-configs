@@ -66,12 +66,12 @@ function start_fedora_rawhide {
 
 function ssh_fedora {
     start_fedora_rawhide
-    TERM=xterm-256color ssh fusion809@192.168.122.232
+    TERM=xterm-256color ssh $USER@192.168.122.232
 }
 
 function cp_from_fedora {
     start_fedora_rawhide
-    scp -O -r fusion809@192.168.122.232:$1 $2
+    scp -O -r $USER@192.168.122.232:$1 $2
 }
 
 function view_fedora {
@@ -84,12 +84,12 @@ function start_ubuntu {
 
 function ssh_ubuntu {
     start_ubuntu
-    TERM=xterm-256color ssh fusion809@192.168.122.151
+    TERM=xterm-256color ssh $USER@192.168.122.151
 }
 
 function cp_from_ubuntu {
     start_ubuntu
-    scp -O -r fusion809@192.168.122.151:$1 $2
+    scp -O -r $USER@192.168.122.151:$1 $2
 }
 
 function view_ubuntu {
@@ -102,12 +102,12 @@ function start_guix {
 
 function ssh_guix {
     start_guix
-    TERM=xterm-256color ssh fusion809@192.168.122.90
+    TERM=xterm-256color ssh $USER@192.168.122.90
 }
 
 function cp_from_guix {
     start_guix
-    scp -O -r fusion809@192.168.122.90:$1 $2
+    scp -O -r $USER@192.168.122.90:$1 $2
 }
 
 function view_guix {

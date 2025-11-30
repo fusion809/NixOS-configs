@@ -33,39 +33,41 @@
 
   };
 
-  outputs = { self, nixpkgs, home-manager, hyprland, hy3, ... }@inputs: {
-    # expose the hy3 package from the hy3 input so it can be built directly
-    packages.x86_64-linux.hy3 = hy3.packages.x86_64-linux.hy3;
+  outputs = { self, nixpkgs, home-manager, hyprland, hy3, ... }@inputs:
+    let username = "fusion809";
+    in {
+      # expose the hy3 package from the hy3 input so it can be built directly
+      packages.x86_64-linux.hy3 = hy3.packages.x86_64-linux.hy3;
 
-    # also set the defaultPackage for this system to hy3 for convenience
-    defaultPackage.x86_64-linux = hy3.packages.x86_64-linux.hy3;
+      # also set the defaultPackage for this system to hy3 for convenience
+      defaultPackage.x86_64-linux = hy3.packages.x86_64-linux.hy3;
 
-    nixosConfigurations."nixos" = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      specialArgs = { inherit inputs; };
-      modules = [
-        ./configuration.nix
-        home-manager.nixosModules.home-manager
-        {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-            users.fusion809 = import ./home.nix;
-            backupFileExtension = "backup";
-            # Pass inputs to home-manager modules
-            extraSpecialArgs = { inherit inputs; };
-          };
-        }
-        {
-          nixpkgs.overlays = [
-            (final: prev: {
-              hyprlandPlugins = prev.hyprlandPlugins // {
-                hy3 = hy3.packages.x86_64-linux.hy3;
-              };
-            })
-          ];
-        }
-      ];
+      nixosConfigurations."nixos" = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = { inherit inputs username; };
+        modules = [
+          ./configuration.nix
+          home-manager.nixosModules.home-manager
+          {
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              users.${username} = import ./home.nix;
+              backupFileExtension = "backup";
+              # Pass inputs to home-manager modules
+              extraSpecialArgs = { inherit inputs username; };
+            };
+          }
+          {
+            nixpkgs.overlays = [
+              (final: prev: {
+                hyprlandPlugins = prev.hyprlandPlugins // {
+                  hy3 = hy3.packages.x86_64-linux.hy3;
+                };
+              })
+            ];
+          }
+        ];
+      };
     };
-  };
 }

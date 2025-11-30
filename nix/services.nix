@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 
 {
   blueman = { enable = true; };
@@ -6,7 +6,7 @@
     sddm.enable = true;
     autoLogin = {
       enable = true;
-      user = "fusion809";
+      user = username;
     };
   };
   gvfs = { enable = true; };

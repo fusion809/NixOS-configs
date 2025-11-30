@@ -1,6 +1,6 @@
-{ pkgs, ... }: {
+{ pkgs, username, ... }: {
   defaultUserShell = pkgs.zsh;
-  users.fusion809 = {
+  users.${username} = {
     isNormalUser = true;
     description = "Brenton";
     extraGroups = [ "networkmanager" "wheel" "input" "docker" "libvirtd" ];
