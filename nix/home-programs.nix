@@ -3,8 +3,7 @@
 let
   lib = import ./lib.nix { inherit username; };
   nixcfgDir = lib.nixcfgDir;
-in
-{
+in {
   home-manager.enable = true;
   bash = {
     enable = true;
@@ -15,8 +14,12 @@ in
   };
   git = {
     enable = true;
-    userName = username;
-    userEmail = "brentonhorne77@gmail.com";
+    settings = {
+      user = {
+        name = username;
+        email = "brentonhorne77@gmail.com";
+      };
+    };
   };
   gnome-shell.theme.name = "WhiteSur-Dark-solid";
   zsh = {

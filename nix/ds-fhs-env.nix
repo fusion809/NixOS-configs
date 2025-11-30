@@ -114,7 +114,7 @@ pkgs.buildFHSEnv {
 
       # Graphics & Hardware
       numactl
-      glxinfo
+      mesa-demos
       vulkan-loader
       libglvnd
 

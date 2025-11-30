@@ -76,7 +76,7 @@ function upgrade {
     echo "NixOS is out of date. Upgrading..."
     git -C $NIXCFG checkout -b ${latVer/nixos-/}
     sed -i -e "s|${instVer/nixos-/}|${latVer/nixos-/}|g" $NIXCFG/nix/flake.nix || echo "Failed to update flake.nix." && return
-    nix flake update $NIXCFG/nix || echo "Failed to update flake." && return
+    nix flake update --flake $NIXCFG/nix || echo "Failed to update flake." && return
     push "Initial commit of new branch"
     echo "Updating channels, not strictly necessary with flake setup..."
     sudo nix-channel --add https://nixos.org/channels/$latVer nixos

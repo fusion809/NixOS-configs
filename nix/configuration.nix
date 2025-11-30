@@ -38,6 +38,7 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system = import ./system.nix { inherit username; };
+
   # Set up systemd services
   systemd = import ./systemd.nix { inherit pkgs; };
 

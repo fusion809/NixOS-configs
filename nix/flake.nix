@@ -3,7 +3,7 @@
 {
   inputs = {
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # Hyprland
@@ -20,7 +20,7 @@
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     # nixpkgs
-    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
+    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.11";
     nixpkgs-unstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
     staging-next.url =
@@ -44,9 +44,9 @@
       defaultPackage.x86_64-linux = hy3.packages.x86_64-linux.hy3;
 
       nixosConfigurations."nixos" = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
         specialArgs = { inherit inputs username; };
         modules = [
+          { nixpkgs.hostPlatform = "x86_64-linux"; }
           ./configuration.nix
           home-manager.nixosModules.home-manager
           {
