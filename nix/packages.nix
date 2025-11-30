@@ -128,6 +128,7 @@ with pkgs; [
   ###############################################################
   docker
   docker-compose
+  freerdp
   OVMF
   xorriso # Can be used to get files from host to guest
   virt-viewer
