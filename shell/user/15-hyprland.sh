@@ -6,13 +6,13 @@ HYPR_INST=$(cat $FLAKE_FILE | grep "Hyprland/" | cut -d '"' -f 2 | cut -d '/' -f
 # Fetch latest hy3 release
 HY3_TAG=$(curl -s https://api.github.com/repos/outfoxxed/hy3/releases/latest | jq -r .tag_name)
 HY3_INST=$(cat $FLAKE_FILE | grep "hy3/" | cut -d '"' -f 2 | cut -d '/' -f 3)
-if ( [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
+if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
     echo "New version of hy3, $HY3_TAG, is out..."
 fi
 if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ -n $HYPR_TAG ]] ); then
     echo "New version of Hyprland, $HYPR_TAG, is out..."
 fi
-if ( ( [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ) || ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ -n $HYPR_TAG ]] ) ) ; then
+if ( ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ) || ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ -n $HYPR_TAG ]] ) ) ; then
     # Update hy3 url
     sed -i \
     -e "s|github:outfoxxed/hy3/$HY3_INST|github:outfoxxed/hy3/$HY3_TAG|" \
