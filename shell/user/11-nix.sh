@@ -67,26 +67,22 @@ function update {
 
 function upgrade {
   echo "Checking for NixOS updates..."
-  latVer=$(wget -cqO- https://nixos.org/download/ | grep -i "nixos-[0-9]*\.[0-9]*" | head -n 1 | sed 's|.*https://channels.nixos.org/||g' | cut -d '/' -f 1)
+  latVer=$(wget -cqO- https://nixos.org/download/ | grep -i "nixos-[0-9]*\.[0-9]*" | head -n 1 | sed 's|.*https://channels.nixos.org/||g' | cut -d '/' -f 1) 
   echo "The latest release of NixOS is ${latVer/nixos-/}..."
   instVer=$(sudo nix-channel --list | grep "^nixos " | cut -d '/' -f 5)
   echo "The installed release of NixOS is ${instVer/nixos-/}..."
+  echo "NIXCFG=$NIXCFG"
   if [[ $latVer != $instVer ]]; then
     echo "NixOS is out of date. Upgrading..."
-    if `git -C $NIXCFG branch | grep $latVer &> /dev/null`; then
-      git -C $NIXCFG checkout $latVer
-      nix flake update $NIXCFG || echo "Failed to update flake." && return
-    else
-      git -C $NIXCFG checkout -b $latVer
-      sed -i -e "s|$instVer|$latVer|g" $NIXCFG/flake.nix || echo "Failed to update flake.nix." && return
-      nix flake update $NIXCFG || echo "Failed to update flake." && return
-      push "Initial commit of new branch"
-    fi
+    git -C $NIXCFG checkout -b ${latVer/nixos-/}
+    sed -i -e "s|${instVer/nixos-/}|${latVer/nixos-/}|g" $NIXCFG/nix/flake.nix || echo "Failed to update flake.nix." && return
+    nix flake update $NIXCFG/nix || echo "Failed to update flake." && return
+    push "Initial commit of new branch"
     echo "Updating channels, not strictly necessary with flake setup..."
-    sudo nix-channel --add https://nixos.org/channels/nixos-$latVer nixos
-    sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-$latVer.tar.gz home-manager
-    echo "Upgrading to NixOS $latVer..."
-    nixfrb || echo "Failed to upgrade to NixOS $latVer." && return
+    sudo nix-channel --add https://nixos.org/channels/$latVer nixos
+    sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-${latVer/nixos-/}.tar.gz home-manager
+    echo "Upgrading to NixOS ${latVer/nixos-/}..."
+    nixfrb || echo "Failed to upgrade to NixOS ${latVer/nixos-/}." && return
     echo "Upgrade complete."
   else
     echo "You're already running the latest version of NixOS."
