@@ -18,6 +18,7 @@
     hyprland.url = "github:hyprwm/Hyprland/v0.52.1?submodules=1";
     # where 0.52.1 is the hyprland release version
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
+    hyprland.inputs.nixpkgs.follows = "nixpkgs";
     # nixpkgs
     nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
     nixpkgs-unstable.url =
