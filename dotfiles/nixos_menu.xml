@@ -8,7 +8,7 @@
 	</child>
 	<child>
 		<object class="GtkMenuItem" id="nixosconfigsrepo">
-			<property name="label">󰖬 NixOS configs repo (Win+Ctrl+w)</property>
+			<property name="label"> NixOS configs repo @ GitHub</property>
         </object>
 	</child>
 	<child>
