@@ -6,6 +6,11 @@ function cdc {
   cd $HOME/Chem/$1
 }
 
+function cdwindc {
+  mount_wind
+  cd /wind/Pictures/Chem/$1
+}
+
 function cddc {
   cd $HOME/Documents/$1
 }
