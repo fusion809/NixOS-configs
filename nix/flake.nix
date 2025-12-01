@@ -3,7 +3,8 @@
 {
   inputs = {
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url =
+        "git+https://github.com/nix-community/home-manager.git?ref=release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # Hyprland
