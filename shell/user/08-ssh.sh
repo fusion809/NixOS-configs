@@ -218,12 +218,12 @@ function start_chimera {
 
 function ssh_chimera {
     start_chimera
-    TERM=xterm-256color ssh fusion809@192.168.122.162
+    TERM=xterm-256color ssh fusion809@192.168.122.161
 }
 
 function cp_from_chimera {
     start_chimera
-    scp -O -r fusion809@192.168.122.162:$1 $2
+    scp -O -r fusion809@192.168.122.161:$1 $2
 }
 
 function view_chimera {
