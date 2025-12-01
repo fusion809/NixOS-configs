@@ -78,11 +78,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1764536451,
-        "narHash": "sha256-BgtcUkBfItu9/yU14IgUaj4rYOanTOUZjUfBP20/ZB4=",
+        "lastModified": 1764613336,
+        "narHash": "sha256-L979az28t/+SXvYw9qhOno5HLlDwkZOpz6LzCLnjmRM=",
         "ref": "release-25.11",
-        "rev": "3fdd076e08049a9c7a83149b270440d9787d2df5",
-        "revCount": 5823,
+        "rev": "f3902b5d8767985680875ad86d028371100faeb3",
+        "revCount": 5827,
         "type": "git",
         "url": "https://github.com/nix-community/home-manager.git"
       },
@@ -444,11 +444,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1764581923,
-        "narHash": "sha256-IDx3wERQ2Y94qhcvt7fMLW49XRiiN3rsb7Zu3RZH3wM=",
+        "lastModified": 1764622245,
+        "narHash": "sha256-SF6yWL7vmnt4SJZ1PmttHddt/11NltPWggcMlMYy72U=",
         "ref": "master",
-        "rev": "1123173232b3bdb80669b86377317f38541a16f2",
-        "revCount": 904857,
+        "rev": "5475d3690311aad99f05b24bd91ae43be21aa11b",
+        "revCount": 905162,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -511,11 +511,11 @@
     },
     "staging-next": {
       "locked": {
-        "lastModified": 1764569212,
-        "narHash": "sha256-MuoOTvNZA8xtIpSiVmHTjRTPPHZ+NDRwwPCxwa7ftS8=",
+        "lastModified": 1764612375,
+        "narHash": "sha256-uKY1g+jpB28LggygHb5fK1HUV7cOyt05qZBjb+nQgos=",
         "ref": "staging-next",
-        "rev": "8e9c0cbfc4a11ebe6fb61f4163bdddc231b0f208",
-        "revCount": 904862,
+        "rev": "3ace160e8e4463d543445a70010ac0afcf0b437f",
+        "revCount": 905117,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -544,11 +544,11 @@
       "flake": false,
       "locked": {
         "allRefs": true,
-        "lastModified": 1764517476,
-        "narHash": "sha256-qamLm9+DmF3RwSFz/+57p+Ca4jz/yBE8V2ErxFlhsjs=",
+        "lastModified": 1764619330,
+        "narHash": "sha256-fmp03UjyukUb/JIu790S08I+/btyEx/qzdwvzEwNTkA=",
         "ref": "refs/heads/master",
-        "rev": "a4c43a6cf54b1916339641439b74f05499a4d9dd",
-        "revCount": 22505,
+        "rev": "c3cfdefdeee3928671809a20f86ddc5d0fe4cc74",
+        "revCount": 22508,
         "type": "git",
         "url": "https://github.com/vim/vim.git"
       },
