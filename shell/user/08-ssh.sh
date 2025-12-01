@@ -247,3 +247,21 @@ function cp_from_void {
 function view_void {
     view_qemu_vm "Void Linux"
 }
+
+function start_rhino {
+    start_qemu_vm_root "Rhino Linux" 30
+}
+
+function ssh_rhino {
+    start_rhino
+    TERM=xterm-256color ssh fusion809@192.168.122.116
+}
+
+function cp_from_rhino {
+    start_rhino
+    scp -O -r fusion809@192.168.122.116:$1 $2
+}
+
+function view_rhino {
+    view_qemu_vm "Rhino Linux"
+}
