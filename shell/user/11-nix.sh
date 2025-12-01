@@ -69,18 +69,15 @@ function upgrade {
   echo "Checking for NixOS updates..."
   latVer=$(wget -cqO- https://nixos.org/download/ | grep -i "nixos-[0-9]*\.[0-9]*" | head -n 1 | sed 's|.*https://channels.nixos.org/||g' | cut -d '/' -f 1) 
   echo "The latest release of NixOS is ${latVer/nixos-/}..."
-  instVer=$(sudo nix-channel --list | grep "^nixos " | cut -d '/' -f 5)
-  echo "The installed release of NixOS is ${instVer/nixos-/}..."
+  instVer=$(cat /etc/os-release | grep "^VERSION_ID" | cut -d '"' -f 2)
+  echo "The installed release of NixOS is $instVer..."
   echo "NIXCFG=$NIXCFG"
   if [[ $latVer != $instVer ]]; then
     echo "NixOS is out of date. Upgrading..."
     git -C $NIXCFG checkout -b ${latVer/nixos-/}
-    sed -i -e "s|${instVer/nixos-/}|${latVer/nixos-/}|g" $NIXCFG/nix/flake.nix || echo "Failed to update flake.nix." && return
+    sed -i -e "s|$instVer|${latVer/nixos-/}|g" $NIXCFG/nix/flake.nix || echo "Failed to update flake.nix." && return
     nix flake update --flake $NIXCFG/nix || echo "Failed to update flake." && return
     push "Initial commit of new branch"
-    echo "Updating channels, not strictly necessary with flake setup..."
-    sudo nix-channel --add https://nixos.org/channels/$latVer nixos
-    sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-${latVer/nixos-/}.tar.gz home-manager
     echo "Upgrading to NixOS ${latVer/nixos-/}..."
     nixfrb || echo "Failed to upgrade to NixOS ${latVer/nixos-/}." && return
     echo "Upgrade complete."
