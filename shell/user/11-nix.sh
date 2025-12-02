@@ -42,7 +42,7 @@ function nixs {
 }
 
 function nixspc {
-  nixs ".*" | grep "^\*" | wc -l
+  nixs "$1" ".*" | grep "^\*" | wc -l
 }
 
 function nixstrep {
