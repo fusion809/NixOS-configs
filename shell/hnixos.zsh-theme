@@ -8,18 +8,13 @@ function operating_system {
 	OPS=$(uname)
 
 	if [[ $OPS == "Linux" ]]; then
-		 CAT=$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2)
+		CAT=$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g')
 
-		 if [[ $CAT == "Gentoo" ]]; then
-			  printf "Gentoo Linux"
-		 elif [[ $CAT == "CentOS Linux" ]]; then
-			  printf "CentOS"
-		 elif [[ $CAT == "void" ]]; then
-			  printf "Void"
-		 else
-			  # $CAT is right for Fedora and Linux Mint, at least
-			  printf "$CAT"
-		 fi
+		if [[ $CAT == "void" ]]; then
+			printf "Void"
+		else
+			printf "$CAT"
+		fi
 	else
 
 		 printf "$OPS"
