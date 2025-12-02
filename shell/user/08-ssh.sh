@@ -272,12 +272,12 @@ function start_gentoo {
 
 function ssh_gentoo {
     start_gentoo
-    TERM=xterm-256color ssh fusion809@192.168.122.146
+    TERM=xterm-256color ssh fusion809@192.168.122.147
 }
 
 function cp_from_gentoo {
     start_gentoo
-    scp -O -r fusion809@192.168.122.146:$1 $2
+    scp -O -r fusion809@192.168.122.147:$1 $2
 }
 
 function view_gentoo {
