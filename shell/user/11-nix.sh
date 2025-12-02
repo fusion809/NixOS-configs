@@ -23,7 +23,7 @@ function nixfrb {
 }
 
 function nixfu {
-    nix flake update --flake "$NIXCFG/nix"
+  nix flake update --flake "$NIXCFG/nix"
 }
 
 # List generations of NixOS system
@@ -33,7 +33,11 @@ function nixlg {
 
 function nixrsu {
   nixfu
-  nixfrb
+  if [[ $(git -C $NIXCFG diff nix/flake.lock | wc -l) > 0 ]]; then
+    nixfrb
+  else
+    echo "flake.lock has not been updated, so no updates available."
+  fi
 }
 
 # First argument is the repository, e.g. nixpkgs, second is the package regex
