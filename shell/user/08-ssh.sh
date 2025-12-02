@@ -265,3 +265,21 @@ function cp_from_rhino {
 function view_rhino {
     view_qemu_vm "Rhino Linux"
 }
+
+function start_gentoo {
+    start_qemu_vm_root "Gentoo Linux" 30
+}
+
+function ssh_gentoo {
+    start_gentoo
+    TERM=xterm-256color ssh fusion809@192.168.122.146
+}
+
+function cp_from_gentoo {
+    start_gentoo
+    scp -O -r fusion809@192.168.122.146:$1 $2
+}
+
+function view_gentoo {
+    view_qemu_vm "Gentoo Linux"
+}
