@@ -92,6 +92,7 @@ function upgrade {
   else
     echo "You're already running the latest version of NixOS."
   fi
+  date +%s > $HOME/.cache/last_upgrade_check
 }
 
 function nearEOL {
@@ -112,11 +113,9 @@ if [[ $- == *i* ]] && [[ -f $HOME/.cache/last_upgrade_check ]] && nearEOL; then
   time_diff=$((current_time - last_check))
   if [[ $time_diff -ge $((12*60*60)) ]]; then
     upgrade
-    date +%s > $HOME/.cache/last_upgrade_check
   fi
 elif [[ $- == *i* ]] && nearEOL; then
   # First time, create the file and run upgrade
   mkdir -p $HOME/.cache
-  date +%s > $HOME/.cache/last_upgrade_check
   upgrade
 fi
