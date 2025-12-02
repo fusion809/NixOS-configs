@@ -80,7 +80,7 @@ function upgrade {
   instVer=$(cat /etc/os-release | grep "^VERSION_ID" | cut -d '"' -f 2)
   echo "The installed release of NixOS is $instVer..."
   echo "NIXCFG=$NIXCFG"
-  if [[ $latVer != $instVer ]]; then
+  if [[ ${latVer/nixos-/} != $instVer ]]; then
     echo "NixOS is out of date. Upgrading..."
     git -C $NIXCFG checkout -b ${latVer/nixos-/}
     sed -i -e "s|$instVer|${latVer/nixos-/}|g" $NIXCFG/nix/flake.nix || echo "Failed to update flake.nix." && return
@@ -94,17 +94,27 @@ function upgrade {
   fi
 }
 
-# Auto-check for upgrades every 12 hours
-if [[ $- == *i* ]] && [[ -f $HOME/.cache/last_upgrade_check ]]; then
+function nearEOL {
+  eol_date=$(cat /etc/os-release | grep "^SUPPORT_END" | cut -d '"' -f 2)
+  eol_secs=$(date -d "$eol_date" +%s);
+  release_date=$(($eol_secs - 35*24*60*60)); # Let us estimated that within 35 days of the EOL date, we may wish to start checking for the new release.
+  if [[ $(date +%s) -ge $release_date ]]; then
+    true
+  else
+    false
+  fi
+}
+
+# Auto-check for upgrades every 12 hours once we're 35 days from the EOL of current release.
+if [[ $- == *i* ]] && [[ -f $HOME/.cache/last_upgrade_check ]] && nearEOL; then
   last_check=$(cat $HOME/.cache/last_upgrade_check)
   current_time=$(date +%s)
   time_diff=$((current_time - last_check))
-  # 12 hours = 43200 seconds
-  if [[ $time_diff -ge 43200 ]]; then
+  if [[ $time_diff -ge $((12*60*60)) ]]; then
     upgrade
     date +%s > $HOME/.cache/last_upgrade_check
   fi
-elif [[ $- == *i* ]]; then
+elif [[ $- == *i* ]] && nearEOL; then
   # First time, create the file and run upgrade
   mkdir -p $HOME/.cache
   date +%s > $HOME/.cache/last_upgrade_check
