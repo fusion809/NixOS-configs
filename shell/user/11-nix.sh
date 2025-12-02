@@ -38,7 +38,11 @@ function nixrsu {
 
 # First argument is the repository, e.g. nixpkgs, second is the package regex
 function nixs {
-  nix search $1 $2
+  nix search --quiet "git+https://github.com/NixOS/nixpkgs.git?ref=$1" $2
+}
+
+function nixspc {
+  nixs ".*" | grep "^\*" | wc -l
 }
 
 function nixstrep {
