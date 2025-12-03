@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 current_date=$(date +"%s")
-if [[ -f $HOME/.cache/last_update ]]; then
+if ! [[ -f $HOME/.cache/last_update ]]; then
 	touch $HOME/.cache/last_update
 fi
 latest_update=$(cat $HOME/.cache/last_update)
@@ -30,10 +30,10 @@ if [[ $current_date -ge $(($latest_update + 3600)) ]]; then
 	latestRev=$(revision $GHUBO/OpenRA)
 	packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
 	if [[ $latestRev != $packagedRev ]]; then
-	outputStr+=" 󱢇"
-	sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
+		outputStr+=" 󱢇"
+		sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
 	fi
-
+	echo "$current_date" > $HOME/.cache/last_update
 	echo "$outputStr" > $HOME/.cache/updates
 fi
-cat $HOME/.cache/updates
+echo "$(cat $HOME/.cache/updates)"
