@@ -507,24 +507,7 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "staging-next": "staging-next",
         "vim-src": "vim-src"
-      }
-    },
-    "staging-next": {
-      "locked": {
-        "lastModified": 1764742005,
-        "narHash": "sha256-ABnXxCP7TmdFzLEAEj/h+dbuNhKbd50MROuPInK2pwY=",
-        "ref": "staging-next",
-        "rev": "abd7271cf2bb697660df8c6382819b35b21ebd7a",
-        "revCount": 905860,
-        "type": "git",
-        "url": "https://github.com/NixOS/nixpkgs.git"
-      },
-      "original": {
-        "ref": "staging-next",
-        "type": "git",
-        "url": "https://github.com/NixOS/nixpkgs.git"
       }
     },
     "systems": {
