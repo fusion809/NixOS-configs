@@ -18,13 +18,13 @@ if [[ $current_date -ge $(($latest_update + 3600)) ]]; then
 	if [[ "$diffLen" -gt 0 ]]; then
 		outputStr+="󱄅"
 	fi
-	if [[ " $changed_nodes " == *" home-manager "* ]]; then
+	if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 		outputStr+="<sub>h</sub>"
 	fi
-	if [[ "${changed_nodes}" == "nixpkgs-master" ]]; then
+	if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 		outputStr+="<sub>m</sub>"
 	fi
-	if [[ " $changed_nodes " == *" nixpkgs "* ]]; then
+	if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 		outputStr+="<sub>s</sub>"
 	fi
 	if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
