@@ -283,3 +283,21 @@ function cp_from_gentoo {
 function view_gentoo {
     view_qemu_vm "Gentoo Linux"
 }
+
+function start_solus {
+    start_qemu_vm_root "Solus Budgie" 30
+}
+
+function ssh_solus {
+    start_solus
+    TERM=xterm-256color ssh fusion809@192.168.122.64
+}
+
+function cp_from_solus {
+    start_solus
+    scp -O -r fusion809@192.168.122.64:$1 $2
+}
+
+function view_solus {
+    view_qemu_vm "Solus Budgie"
+}

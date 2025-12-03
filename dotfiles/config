@@ -34,3 +34,9 @@ Host void-kvm
 Host gentoo-kvm
 	Hostname 192.168.122.146
 	User fusion809
+Host solus-kvm
+	Hostname 192.168.122.64
+	User fusion809
+Host rhino-kvm
+	Hostname 192.168.122.116
+	User fusion809
