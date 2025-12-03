@@ -1,4 +1,4 @@
 #!/usr/bin/env zsh
 source $HOME/.zshrc
-nixfrb
+hyprupdate
 echo "" > $HOME/.cache/updates

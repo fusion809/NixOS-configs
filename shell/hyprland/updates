@@ -5,7 +5,7 @@ if ! [[ -f $HOME/.cache/last_update ]]; then
 fi
 latest_update=$(cat $HOME/.cache/last_update)
 source "${0:a:h}/../user/main.sh" &> /tmp/main.log
-diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
+export diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
 if [[ $current_date -ge $(($latest_update + 3600)) ]]; then
 	nixfu &> /tmp/flake-update.log
 	# Get the list of changed nodes
@@ -31,12 +31,12 @@ if [[ $current_date -ge $(($latest_update + 3600)) ]]; then
 		outputStr+="<sub>u</sub>"
 	fi
 
-	if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
+	if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
 		outputStr+=" 󱇛"
 		sed -i -e "s|nixfrb|hyprupdate|g" $NIXCFG/shell/hyprland/update_func
 	fi
 
-	if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ -n $HYPR_TAG ]] ); then
+	if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] ); then
 		outputStr+=" "
 		sed -i -e "s|nixfrb|hyprupdate|g" $NIXCFG/shell/hyprland/update_func
 	fi
