@@ -21,5 +21,6 @@ function hyprupdate {
         -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
         echo "Updated flake.nix to use Hyprland $HYPR_TAG and hy3 $HY3_TAG"
         nixrsu
+        sed -i -e "s|hyprupdate|nixfrb|g" $NIXCFG/shell/hyprland/update_func
     fi
 }

@@ -24,4 +24,5 @@ function openraup {
   latestVer="$upno.git.$uphash"
   sed -i -e "s|$packagedHash|$latestHash|g" -e "s|$packagedVer|$latestVer|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
   nixfrb
+  sed -i -e "s|openraup|nixfrb|g" $NIXCFG/shell/hyprland/update_func
 }
