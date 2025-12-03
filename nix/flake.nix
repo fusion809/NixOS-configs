@@ -25,8 +25,8 @@
     nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.11";
     nixpkgs-unstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
-    staging-next.url =
-      "git+https://github.com/NixOS/nixpkgs.git?ref=staging-next";
+    # staging-next.url =
+    #   "git+https://github.com/NixOS/nixpkgs.git?ref=staging-next";
     nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
     # Vim
     vim-src = {
