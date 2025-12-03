@@ -1,7 +1,28 @@
 #!/usr/bin/env zsh
-cd $HOME/GitHub/mine/config/NixOS-configs/nix
-sudo nix flake update
-diffLen=$(git diff flake.lock | wc -l)
-if [[ "$diffLen" > 100 ]]; then
-	echo "󰚰"
+source "${0:a:h}/../user/main.sh" &> /tmp/main.log
+nix flake update --flake $NIXCFG/nix &> /tmp/flake-update.log
+diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
+outputStr=""
+if [[ "$diffLen" -gt 0 ]]; then
+	outputStr+="󱄅"
 fi
+
+if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
+	outputStr+="󱇛"
+fi
+
+if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ -n $HYPR_TAG ]] ); then
+	outputStr+=""
+fi
+if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
+	outputStr+=""
+fi
+
+git -C $GHUBO/OpenRA pull origin bleed -q
+latestRev=$(revision $GHUBO/OpenRA)
+packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
+if [[ $latestRev != $packagedRev ]]; then
+  outputStr+="󰉀"
+fi
+
+echo "$outputStr"

@@ -1,12 +1,4 @@
 #!/usr/bin/env zsh
-if `mountpoint -q /arch/boot`; then
-	sudo umount -l /arch/boot
-	sudo umount -l /arch
-	touch $HOME/.cache/umount_arch
-fi
 NIXCFG=$HOME/GitHub/mine/config/NixOS-configs/nix
-nix flake update --flake $NIXCFG
-sudo nixos-rebuild switch -I nixos-config=$NIXCFG/nix/configuration.nix --flake $NIXCFG/nix/#nixos
-rm $HOME/.cache/umount_arch
-sudo mount /dev/disk/by-label/arch /arch
-sudo mount /dev/disk/by-label/ARCHEFI /arch/boot
+nix flake update --flake $NIXCFG/flake.nix
+sudo nixos-rebuild switch -I nixos-config=$NIXCFG/configuration.nix --flake $NIXCFG/#nixos

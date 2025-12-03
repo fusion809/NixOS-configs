@@ -1,9 +1,7 @@
 
 function check_openra_update {
-  pushd -q $HOME/GitHub/others/OpenRA
-  git pull origin bleed -q
-  latestRev=$(revision)
-  popd -q
+  git -C $GHUBO/OpenRA pull origin bleed -q
+  latestRev=$(revision $GHUBO/OpenRA)
   packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
   if [[ $latestRev != $packagedRev ]]; then
     echo "OpenRA git package is out of date. openraup will update it."
@@ -14,12 +12,10 @@ if [[ $- == *i* ]]; then
 fi
 
 function openraup {
-  pushd -q $HOME/GitHub/others/OpenRA
-  git pull origin bleed -q
-  latestRev=$(revision)
-  upno=$(comno)
-  uphash=$(revision | head -c 7)
-  popd -q
+  git -C $GHUBO/OpenRA pull origin bleed -q
+  latestRev=$(revision $GHUBO/OpenRA)
+  upno=$(comno $GHUBO/OpenRA)
+  uphash=$(revision $GHUBO/OpenRA | head -c 7)
   packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
   sed -i -e "s|$packagedRev|$latestRev|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
   latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '"hash"' | cut -d '"' -f 4)

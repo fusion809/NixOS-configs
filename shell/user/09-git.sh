@@ -1,5 +1,9 @@
 function comno {
-	git rev-list --count HEAD
+  if [[ -n $1 ]]; then
+  	git -C $1 rev-list --count HEAD
+  else
+    git rev-list --count HEAD
+  fi
 }
 
 function git-branch {
@@ -29,5 +33,9 @@ function pushf {
 }
 
 function revision {
-	git log | head -n 1 | cut -d ' ' -f 2
+  if [[ -n $1 ]]; then
+	  git -C "$1" log | head -n 1 | cut -d ' ' -f 2
+  else
+    git log | head -n 1 | cut -d ' ' -f 2
+  fi
 }

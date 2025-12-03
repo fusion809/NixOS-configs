@@ -9,7 +9,7 @@
     // Choose the order of the modules
     "modules-left": [
         "custom/nixosicon",
-        //"custom/updates",
+        "custom/updates",
         "hyprland/workspaces",
         //"hyprland/mode",
         "custom/weather",
