@@ -8,23 +8,23 @@ if [[ "$diffLen" -gt 0 ]]; then
 fi
 
 if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
-	outputStr+="󱇛"
+	outputStr+=" 󱇛"
 	sed -i -e "s|nixfrb|hyprupdate|g" $NIXCFG/shell/hyprland/update_func
 fi
 
 if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ -n $HYPR_TAG ]] ); then
-	outputStr+=""
+	outputStr+=" "
 	sed -i -e "s|nixfrb|hyprupdate|g" $NIXCFG/shell/hyprland/update_func
 fi
 if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
-	outputStr+=""
+	outputStr+=" "
 fi
 
 git -C $GHUBO/OpenRA pull origin bleed -q
 latestRev=$(revision $GHUBO/OpenRA)
 packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
 if [[ $latestRev != $packagedRev ]]; then
-  outputStr+="󰉀"
+  outputStr+=" 󱢇"
   sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
 fi
 
