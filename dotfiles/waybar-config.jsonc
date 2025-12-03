@@ -102,7 +102,7 @@
     "custom/updates": {
         "format": "{}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
-        "on-click": "$HOME/Github/mine/config/NixOS-configs/shell/hyprland/update",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
         "interval": 3600
     },
     "custom/wallpaper-no": {
