@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 source "${0:a:h}/../user/main.sh" &> /tmp/main.log
-nix flake update --flake $NIXCFG/nix &> /tmp/flake-update.log
+nixfu &> /tmp/flake-update.log
 diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
 outputStr=""
 if [[ "$diffLen" -gt 0 ]]; then
