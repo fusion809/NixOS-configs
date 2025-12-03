@@ -4,13 +4,31 @@ if ! [[ -f $HOME/.cache/last_update ]]; then
 	touch $HOME/.cache/last_update
 fi
 latest_update=$(cat $HOME/.cache/last_update)
+source "${0:a:h}/../user/main.sh" &> /tmp/main.log
+diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
 if [[ $current_date -ge $(($latest_update + 3600)) ]]; then
-	source "${0:a:h}/../user/main.sh" &> /tmp/main.log
 	nixfu &> /tmp/flake-update.log
-	diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
+	# Get the list of changed nodes
+	changed_nodes=$(jq -n -r --slurpfile old <(git -C $NIXCFG show HEAD:nix/flake.lock) --slurpfile new $NIXCFG/nix/flake.lock '
+	  ($old[0].nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
+	  ($k1 - $k2) + ($k2 - $k1) +
+	  ([$k1[] | select($old[0].nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
+	')
 	outputStr=""
 	if [[ "$diffLen" -gt 0 ]]; then
 		outputStr+="󱄅"
+	fi
+	if [[ " $changed_nodes " == *" home-manager "* ]]; then
+		outputStr+="<sub>h</sub>"
+	fi
+	if [[ "${changed_nodes}" == "nixpkgs-master" ]]; then
+		outputStr+="<sub>m</sub>"
+	fi
+	if [[ " $changed_nodes " == *" nixpkgs "* ]]; then
+		outputStr+="<sub>s</sub>"
+	fi
+	if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
+		outputStr+="<sub>u</sub>"
 	fi
 
 	if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
@@ -35,5 +53,15 @@ if [[ $current_date -ge $(($latest_update + 3600)) ]]; then
 	fi
 	echo "$current_date" > $HOME/.cache/last_update
 	echo "$outputStr" > $HOME/.cache/updates
+else
+	if [[ "$diffLen" -gt 0 ]]; then
+		sed -i -e "s|󱄅||g" $HOME/.cache/updates
+	fi
 fi
 echo "$(cat $HOME/.cache/updates)"
+
+
+
+if [[ "$changed_nodes" == "nixpkgs-master" ]]; then
+    echo "Only nixpkgs-master updated"
+fi
