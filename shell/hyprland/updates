@@ -28,4 +28,5 @@ if [[ $latestRev != $packagedRev ]]; then
   sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
 fi
 
-echo "$outputStr"
+echo "$outputStr" > $HOME/.cache/updates
+cat $HOME/.cache/updates

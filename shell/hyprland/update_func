@@ -1,3 +1,4 @@
 #!/usr/bin/env zsh
 source $HOME/.zshrc
 nixfrb
+echo "" > $HOME/.cache/updates
