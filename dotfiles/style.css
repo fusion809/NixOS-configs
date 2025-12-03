@@ -8,7 +8,9 @@
 }
 
 window#waybar {
-  background-color: rgba(255, 255, 255, 0); /* #181825*/;
+  background-color: rgba(255, 255, 255, 0);
+  /* #181825*/
+  ;
   transition-property: background-color;
   transition-duration: 0.5s;
 }
@@ -68,6 +70,7 @@ window#waybar.hidden {
   background-color: #1e1e2e;
   color: #000000;
 }
+
 #custom-power {
   border-radius: 4px;
   margin: 6px 1px;
@@ -82,6 +85,7 @@ window#waybar.hidden {
   background-color: #a5f55f;
   color: black;
 }
+
 #tray {
   border-radius: 4px;
   margin: 6px 1px;
@@ -99,47 +103,56 @@ window#waybar.hidden {
   color: #1793d1;
 }
 
-#memory, #cpu, #window {
+#memory,
+#cpu,
+#window {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
   padding-right: 6px;
 }
 
-#custom-nixosicon, #custom-updates, #custom-bluetooth-connect, #custom-weather, #custom-keyboard-layout {
-	border-radius: 4px;
-	margin: 6px 1px;
-	padding: 3px 3px;
+#custom-nixosicon,
+#custom-updates,
+#custom-bluetooth-connect,
+#custom-weather,
+#custom-keyboard-layout {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
 }
 
 #custom-keyboard-layout {
-	background-color: #006600;
-	color: #ffffff;
+  background-color: #006600;
+  color: #ffffff;
 }
+
 #custom-bluetooth-connect {
-	background-color: #aaf9f9;
-	color: #0000ff;
+  background-color: #aaf9f9;
+  color: #0000ff;
 }
 
 #custom-nixosicon {
-	background-color: #1e1e2e;
-	font-weight: bold;
-	color: rgba(50, 150, 255, 1.0);
-	padding-right: 6px;
+  background-color: #1e1e2e;
+  font-weight: bold;
+  color: rgba(50, 150, 255, 1.0);
+  padding-right: 6px;
 }
 
 #custom-updates {
   font-weight: bold;
   padding-right: 6px;
-  color: rgba(20, 20, 200, 1.0);
-  background-color: rgba(255, 150, 20, 1.0);
+  color: rgba(10, 150, 200, 1.0);
+  background-color: rgba(200, 150, 150, 1.0);
 }
 
 #custom-weather {
-	color: white;
-	background-color: #a900a9;
+  color: white;
+  background-color: #a900a9;
 }
-#memory, #cpu {
+
+#memory,
+#cpu {
   color: #000000;
 }
 
@@ -152,12 +165,20 @@ window#waybar.hidden {
 }
 
 #window {
-	background-color: rgba(255, 255, 255, 0.8);
-	color: black;
-	font-weight: bold;
-	font-size: 20px;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: black;
+  font-weight: bold;
+  font-size: 20px;
 }
-#custom-notification, #custom-wallpaper-no, #custom-wallpaper-rm, #custom-wallpaper-previous, #custom-wallpaper-random, #custom-wallpaper-next, #custom-temperature, #custom-wallpaper-no-specify {
+
+#custom-notification,
+#custom-wallpaper-no,
+#custom-wallpaper-rm,
+#custom-wallpaper-previous,
+#custom-wallpaper-random,
+#custom-wallpaper-next,
+#custom-temperature,
+#custom-wallpaper-no-specify {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
@@ -165,29 +186,33 @@ window#waybar.hidden {
 }
 
 #custom-wallpaper-no {
-	  /*background-color: #ff66bb;*/
-	background-color: #00ffcc;
+  /*background-color: #ff66bb;*/
+  background-color: #00ffcc;
 }
+
 #custom-wallpaper-no-specify {
-	background-color: #114499;
-	color: #ffffff;
+  background-color: #114499;
+  color: #ffffff;
 }
 
 #custom-wallpaper-rm {
-	background-color: #aa0000;
-	color: #ffffff;
+  background-color: #aa0000;
+  color: #ffffff;
 }
+
 #custom-wallpaper-previous {
-	background-color: #99ffff;
-	padding-right: 6px;
+  background-color: #99ffff;
+  padding-right: 6px;
 }
+
 #custom-wallpaper-random {
-	background-color: #ff9955;
-	padding-right: 6px;
+  background-color: #ff9955;
+  padding-right: 6px;
 }
+
 #custom-wallpaper-next {
-	background-color: #99ff99;
-	padding-right: 6px;
+  background-color: #99ff99;
+  padding-right: 6px;
 }
 
 #pulseaudio {
@@ -198,6 +223,7 @@ window#waybar.hidden {
   background-color: #3f11a9;
   color: #f0f0f0;
 }
+
 #battery {
   background-color: #f38ba8;
 }
@@ -250,6 +276,6 @@ tooltip label {
 }
 
 #custom-temperature {
-	background-color: #774444;
-	color: #ffffff;
+  background-color: #774444;
+  color: #ffffff;
 }
