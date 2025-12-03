@@ -19,6 +19,8 @@ function nixfrb {
   else
     git add --all
   fi
+  echo "" > $HOME/.cache/updates
+  echo "$(date +'%s')" > $HOME/.cache/last_update
   sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure
 }
 
