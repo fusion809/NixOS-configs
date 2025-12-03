@@ -1,4 +1,3 @@
 #!/usr/bin/env zsh
-NIXCFG=$HOME/GitHub/mine/config/NixOS-configs/nix
-nix flake update --flake $NIXCFG/flake.nix
-sudo nixos-rebuild switch -I nixos-config=$NIXCFG/configuration.nix --flake $NIXCFG/#nixos
+source $HOME/.zshrc
+nixfrb

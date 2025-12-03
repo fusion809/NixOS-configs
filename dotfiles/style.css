@@ -142,8 +142,8 @@ window#waybar.hidden {
 #custom-updates {
   font-weight: bold;
   padding-right: 6px;
-  color: rgba(10, 150, 200, 1.0);
-  background-color: rgba(150, 100, 100, 1.0);
+  color: rgba(0, 150, 200, 1.0);
+  background-color: rgba(255, 200, 255, 1.0);
 }
 
 #custom-weather {
