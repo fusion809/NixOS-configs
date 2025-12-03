@@ -301,3 +301,21 @@ function cp_from_solus {
 function view_solus {
     view_qemu_vm "Solus Budgie"
 }
+
+function start_freebsd {
+    start_qemu_vm_root "FreeBSD 15.0" 30
+}
+
+function ssh_freebsd {
+    start_freebsd
+    TERM=xterm-256color ssh fusion809@192.168.122.192
+}
+
+function cp_from_freebsd {
+    start_freebsd
+    scp -O -r fusion809@192.168.122.192:$1 $2
+}
+
+function view_freebsd {
+    view_qemu_vm "FreeBSD 15.0"
+}

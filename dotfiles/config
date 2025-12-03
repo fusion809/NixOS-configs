@@ -40,3 +40,6 @@ Host solus-kvm
 Host rhino-kvm
 	Hostname 192.168.122.116
 	User fusion809
+Host freebsd-kvm
+	Hostname 192.168.122.192
+	User fusion809
