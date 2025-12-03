@@ -33,3 +33,7 @@ function rainbowfastfetch {
 function sclipf {
 	sudo xclip -sel clip < $1
 }
+
+function lastUpdate {
+	date -d "@$(cat $HOME/.cache/last_update)"
+}
