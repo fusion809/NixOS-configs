@@ -143,7 +143,7 @@ window#waybar.hidden {
   font-weight: bold;
   padding-right: 6px;
   color: rgba(0, 150, 200, 1.0);
-  background-color: rgba(255, 200, 255, 1.0);
+  background-color: rgba(10, 30, 10, 1.0);
 }
 
 #custom-weather {
