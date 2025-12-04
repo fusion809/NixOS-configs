@@ -1,4 +1,4 @@
-{ buildOpenRAEngine, dotnetCorePackages, runCommand }:
+{ buildOpenRAEngine, dotnetCorePackages }:
 
 let
   # Use local Git repo to avoid re-downloading
