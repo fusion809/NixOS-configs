@@ -3,10 +3,9 @@
 let
   lib = import ./lib.nix { inherit username; };
   nixcfgDir = lib.nixcfgDir;
-in
 
-{
-    activationScripts.rootBashrc = {
+in {
+  activationScripts.rootBashrc = {
     text = ''
       mkdir -p /root
       {
@@ -15,7 +14,22 @@ in
         cat ${../shell/root/main.sh}
       } > /root/.bashrc
     '';
-    deps = [];
+    deps = [ ];
   };
+
+  # Preserve OpenRA git cache from garbage collection
+  activationScripts.preserve-openra-git = {
+    text = ''
+      mkdir -p /nix/var/nix/gcroots/auto
+      ln -sfn ${
+        builtins.fetchGit {
+          url = "file:///home/fusion809/GitHub/others/OpenRA";
+          ref = "bleed";
+        }
+      } /nix/var/nix/gcroots/auto/openra-git-cache
+    '';
+    deps = [ ];
+  };
+
   stateVersion = "25.05";
 }
