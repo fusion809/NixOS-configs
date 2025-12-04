@@ -1,8 +1,7 @@
 # Update flake.nix
 export FLAKE_FILE="$NIXCFG/nix/flake.nix"
 # Fetch latest Hyprland release
-export HYPR_TAG=$(wget -cqO- https://github.com/hyprwm/Hyprland/tags | grep 'tag/v' | head -n 1 | cut -d '"' -f 6 
-| cut -d '/' -f 6)
+export HYPR_TAG=$(wget -cqO- https://github.com/hyprwm/Hyprland/tags | grep 'tag/v' | head -n 1 | cut -d '"' -f 6 | cut -d '/' -f 6)
 if [[ $HYPR_TAG != "null" ]]; then
     echo $HYPR_TAG > $HOME/.cache/hyprland_latest
 elif [[ -f $HOME/.cache/hyprland_latest ]]; then
@@ -10,8 +9,7 @@ elif [[ -f $HOME/.cache/hyprland_latest ]]; then
 fi
 export HYPR_INST=$(cat $FLAKE_FILE | grep "Hyprland?" | cut -d '"' -f 2 | cut -d '/' -f 7)
 # Fetch latest hy3 release
-export HY3_TAG=$(wget -cqO- https://github.com/outfoxxed/hy3/tags | grep 'tag/hl' | head -n 1 | cut -d '"' -f 6 
-| cut -d '/' -f 6)
+export HY3_TAG=$(wget -cqO- https://github.com/outfoxxed/hy3/tags | grep 'tag/hl' | head -n 1 | cut -d '"' -f 6 | cut -d '/' -f 6)
 if [[ $HY3_TAG != "null" ]]; then
     echo $HY3_TAG > $HOME/.cache/hy3_latest
 elif [[ -f $HOME/.cache/hy3_latest ]]; then
