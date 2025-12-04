@@ -21,9 +21,15 @@ function gitsw {
 }
 
 function push {
-  git add --all
-  git commit -m "$@"
-  git push origin $(git-branch)
+  if [[ -n $2 ]]; then
+    git -C $2 add --all
+    git -C $2 commit -m "$1"
+    git -C $2 push origin $(git-branch)
+  else
+    git add --all
+    git commit -m "$1"
+    git push origin $(git-branch)
+  fi
 }
 
 function pushf {

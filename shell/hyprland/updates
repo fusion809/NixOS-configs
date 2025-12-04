@@ -16,7 +16,7 @@ diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
 echo "DEBUG: diffLen=$diffLen" >> /tmp/updates.log
 if $git_clean && [[ $diffLen -gt 0 ]]; then
 	echo "DEBUG: Pushing changes..." >> /tmp/updates.log
-	push "updates: Updating flake.lock" >> /tmp/updates.log 2>&1
+	push "updates: Updating flake.lock" "$NIXCFG" >> /tmp/updates.log 2>&1
 	echo "DEBUG: Push exit code: $?" >> /tmp/updates.log
 fi
 # Get the list of changed nodes
