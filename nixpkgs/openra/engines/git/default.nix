@@ -1,4 +1,3 @@
-```nix
 { buildOpenRAEngine, dotnetCorePackages, runCommand }:
 
 let
@@ -12,7 +11,7 @@ let
   shortRev = builtins.substring 0 7 openraSrc.rev;
 
   # Calculate version from git commit count
-  versionInfo = runCommand "openra-version" {} ''
+  versionInfo = runCommand "openra-version" { } ''
     cd ${openraSrc}
     echo -n "$(git rev-list --count HEAD).git.${shortRev}" > $out
   '';
@@ -28,4 +27,3 @@ in buildOpenRAEngine {
   deps = ./deps.json;
   dotnet-sdk = dotnetCorePackages.sdk_8_0-bin;
 }
-```
