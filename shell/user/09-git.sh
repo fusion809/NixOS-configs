@@ -24,7 +24,7 @@ function push {
   if ! git rev-parse --git-dir > /dev/null 2>&1; then
     git -C "$NIXCFG" add --all
     git -C "$NIXCFG" commit -m "$@"
-    git -C "$NIXCFG" push origin $(git-branch)
+    git -C "$NIXCFG" push origin $(git-branch "$NIXCFG")
   else
     git add --all
     git commit -m "$@"
