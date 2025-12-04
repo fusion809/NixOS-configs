@@ -5,6 +5,9 @@ source "${0:a:h}/../user/main.sh" &> /tmp/main.log
 # Set up git SSH authentication
 export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes"
 
+# Capture files with uncommitted changes before script makes any modifications
+files_before=$(git -C $NIXCFG diff --name-only | sort)
+
 if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 	export git_clean=true
 else
@@ -159,6 +162,68 @@ echo $outputStr
 echo $(date +"%r %a %D") > $HOME/.cache/update
 echo $outputStr >> $HOME/.cache/update
 echo $pushStr >> $HOME/.cache/pushStr
+
 if [[ ${#pushStr} -gt 0 ]]; then
-	push "$pushStr"
+	# Get current list of modified files
+	files_after=$(git -C $NIXCFG diff --name-only | sort)
+	
+	# Files that were already modified before the script ran
+	# These are OK because they're not the script's responsibility
+	files_already_modified="$files_before"
+	
+	# Check each modified file
+	safe_to_push=true
+	
+	for file in $(echo "$files_after"); do
+		# Skip files that were already modified before the script ran
+		if echo "$files_already_modified" | grep -q "^${file}$"; then
+			echo "Skipping push: file '$file' was already modified before script ran"
+			safe_to_push=false
+			break
+		fi
+		
+		# flake.lock is always OK for the script to modify
+		if [[ "$file" == "nix/flake.lock" ]]; then
+			continue
+		fi
+		
+		# For flake.nix, check if changes are ONLY the hy3/hyprland URL updates
+		if [[ "$file" == "nix/flake.nix" ]]; then
+			# Get the diff for flake.nix
+			diff_output=$(git -C $NIXCFG diff nix/flake.nix)
+			
+			# Extract only the changed lines (lines starting with + or -)
+			# Exclude the +++ and --- header lines
+			changed_lines=$(echo "$diff_output" | grep -E '^[+-]' | grep -v -E '^(---|\+\+\+)')
+			
+			# Check if all changes match the expected patterns
+			# Expected patterns: lines with hy3 or Hyprland URLs with version tags
+			while IFS= read -r line; do
+				# Skip empty lines
+				[[ -z "$line" ]] && continue
+				
+				# Check if line is a hy3 or Hyprland URL change
+				if echo "$line" | grep -qE '(github.com/outfoxxed/hy3\?ref=refs/tags/|github.com/hyprwm/Hyprland\?submodules=1&ref=refs/tags/)'; then
+					continue
+				else
+					echo "Skipping push: flake.nix has unexpected changes:"
+					echo "$line"
+					safe_to_push=false
+					break
+				fi
+			done <<< "$changed_lines"
+			
+			[[ "$safe_to_push" == "false" ]] && break
+		else
+			# Any other file is unexpected
+			echo "Skipping push: unexpected file modified: $file"
+			safe_to_push=false
+			break
+		fi
+	done
+	
+	if [[ "$safe_to_push" == "true" ]]; then
+		# Only script-made changes exist, safe to push
+		push "$pushStr"
+	fi
 fi
