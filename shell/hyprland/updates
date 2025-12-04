@@ -7,9 +7,12 @@ if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 else
 	export git_clean=false
 fi
+echo "DEBUG: git_clean=$git_clean NIXCFG=$NIXCFG" >> /tmp/updates.log
 nixfu &> /tmp/flake-update.log
 diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
+echo "DEBUG: diffLen=$diffLen" >> /tmp/updates.log
 if $git_clean && [[ $diffLen -gt 0 ]]; then
+	echo "DEBUG: Pushing changes..." >> /tmp/updates.log
 	push "updates: Updating flake.lock"
 fi
 # Get the list of changed nodes
