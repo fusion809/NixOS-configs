@@ -2,7 +2,7 @@
 ![Hyprland on NixOS screenshot as of 29 November 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-11-29.png)
 **Figure 1: Hyprland NixOS configuration as of 29 November 2025.**
 
-These are my NixOS 25.05 configuration files for running on my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
+These are my NixOS 25.11 configuration files for running on my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
 
 # Package management commands
 `nixrsu` is the shell command that updates one's system. `update` will run `nixrsu`, also repair the Nix store if necessary (with the `nixstrep` command) and remove old configurations (using the `nixcg` command). `nixfrb` is used to build your system configuration. 
