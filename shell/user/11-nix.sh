@@ -18,6 +18,7 @@ function nixfrb {
     git add --all
   fi
   sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure
+  echo "" > $HOME/.cache/update
 }
 
 function nixfu {

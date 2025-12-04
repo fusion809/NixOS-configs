@@ -131,8 +131,15 @@ if [[ $latestRev != $packagedRev ]]; then
 	outputStr+=" 󱢇"
 	sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
 fi
-echo $outputStr
+if [[ $(cat $HOME/.cache/update | tail -n 1 | wc -l) -eq 0 ]]; then
+	echo $outputStr
+	echo $(date +"%r %a %D") > $HOME/.cache/update
+	echo $outputStr > $HOME/.cache/update
+else
+	cat $HOME/.cache/update | tail -n 1
+fi
+
 
 if $git_clean && [[ $diffLen -gt 0 ]]; then
-	push "updates: Updating flake.lock"
+	push "updates: Updating flake.lock" &> /tmp/update.log
 fi
