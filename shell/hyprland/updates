@@ -145,12 +145,9 @@ if [[ $latestRev != $packagedRev ]]; then
 	outputStr+=" 󱢇"
 	upno=$(comno $GHUBO/OpenRA)
 	uphash=$(echo $latestRev | head -c 7)
-	sed -i -e "s|$packagedRev|$latestRev|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
-	latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '"hash"' | cut -d '"' -f 4)
-	packagedHash=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '"' -f 2)
+	latestVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
 	packagedVer=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '"' -f 2)
 	latestVer="$upno.git.$uphash"
-	sed -i -e "s|$packagedHash|$latestHash|g" -e "s|$packagedVer|$latestVer|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
 	fi
