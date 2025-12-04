@@ -43,15 +43,16 @@ curr_u=$(jq -r '.nodes."nixpkgs-unstable".locked.rev' $NIXCFG/nix/flake.lock)
 curr_m=$(jq -r '.nodes."nixpkgs-master".locked.rev' $NIXCFG/nix/flake.lock)
 
 
+
 if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
-	# Get revisions
 	old_rev=$(jq -r '.nodes."nixpkgs-master".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
-	# Compare antigravity outPaths
-	expr_template='let pkgs = import (builtins.fetchGit { url = "https://github.com/NixOS/nixpkgs.git"; rev = "%s"; }) { config.allowUnfree = true; }; in pkgs.antigravity.outPath'
-
-	old_out=$(nix eval --impure --raw --expr "$(printf "$expr_template" "$old_rev")" 2>/dev/null)
-	new_out=$(nix eval --impure --raw --expr "$(printf "$expr_template" "$curr_m")" 2>/dev/null)
+	# Automatically extract master package names from packages.nix
+	master_pkgs=$(grep -o 'master\.[a-zA-Z0-9_-]*' $NIXCFG/nix/packages.nix | sed 's/master\.//' | sort -u | tr '\n' ' ')
+	
+	# Compare master packages
+	old_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare-master.nix { masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }" 2>/dev/null)
+	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare-master.nix { masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; }" 2>/dev/null)
 
 	if [[ "$old_out" != "$new_out" ]]; then
 		outputStr+="m"
