@@ -14,16 +14,16 @@ if [[ "$diffLen" -gt 0 ]]; then
 	outputStr+="󱄅"
 fi
 if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
-	outputStr+="<sub>h</sub>"
+	outputStr+="h"
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
-	outputStr+="<sub>m</sub>"
+	outputStr+="m"
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
-	outputStr+="<sub>s</sub>"
+	outputStr+="s"
 fi
 if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
-	outputStr+="<sub>u</sub>"
+	outputStr+="u"
 fi
 
 if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
@@ -46,7 +46,4 @@ if [[ $latestRev != $packagedRev ]]; then
 	outputStr+=" 󱢇"
 	sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
 fi
-
-if [[ "$changed_nodes" == "nixpkgs-master" ]]; then
-    echo "Only nixpkgs-master updated"
-fi
+echo $outputStr
