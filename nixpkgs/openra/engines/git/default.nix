@@ -10,13 +10,8 @@ let
 
   shortRev = builtins.substring 0 7 openraSrc.rev;
 
-  # Calculate version from git commit count
-  versionInfo = runCommand "openra-version" { } ''
-    cd ${openraSrc}
-    echo -n "$(git rev-list --count HEAD).git.${shortRev}" > $out
-  '';
-
-  version = builtins.readFile versionInfo;
+  # Calculate version from git metadata (revCount is provided by fetchGit)
+  version = "${toString openraSrc.revCount}.git.${shortRev}";
 
 in buildOpenRAEngine {
   build = "git";
