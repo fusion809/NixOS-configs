@@ -13,9 +13,7 @@ function nixdg {
 
 function nixfrb {
   if [[ $PWD != $NIXCFG ]]; then
-    pushd -q $NIXCFG
-    git add --all
-    popd -q
+    git -C $NIXCFG add --all
   else
     git add --all
   fi
