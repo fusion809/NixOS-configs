@@ -82,8 +82,8 @@ window#waybar.hidden {
 }
 
 #disk {
-  background-color: #a5f55f;
-  color: black;
+  background-color: #633226;
+  color: #ffffff;
 }
 
 #tray {
@@ -157,16 +157,18 @@ window#waybar.hidden {
 }
 
 #memory {
-  background-color: #ffff44;
+  background-color: #555511;
+  color: #ffffff;
 }
 
 #cpu {
-  background-color: #aaffff;
+  background-color: #006666;
+  color: #ffffff;
 }
 
 #window {
-  background-color: rgba(255, 255, 255, 0.8);
-  color: black;
+  background-color: rgba(10, 10, 10, 0.6);
+  color: #ffffff;
   font-weight: bold;
   font-size: 20px;
 }
@@ -187,31 +189,35 @@ window#waybar.hidden {
 
 #custom-wallpaper-no {
   /*background-color: #ff66bb;*/
-  background-color: #00ffcc;
+  color: #ffffff;
+  background-color: #004566;
 }
 
 #custom-wallpaper-no-specify {
-  background-color: #114499;
+  background-color: #003377;
   color: #ffffff;
 }
 
 #custom-wallpaper-rm {
-  background-color: #aa0000;
+  background-color: #550000;
   color: #ffffff;
 }
 
 #custom-wallpaper-previous {
-  background-color: #99ffff;
+  background-color: #005555;
+  color: #ffffff;
   padding-right: 6px;
 }
 
 #custom-wallpaper-random {
-  background-color: #ff9955;
+  background-color: #552255;
+  color: #ffffff;
   padding-right: 6px;
 }
 
 #custom-wallpaper-next {
-  background-color: #99ff99;
+  background-color: #004400;
+  color: #ffffff;
   padding-right: 6px;
 }
 
