@@ -131,13 +131,13 @@ if [[ $latestRev != $packagedRev ]]; then
 	outputStr+=" 󱢇"
 	sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
 fi
-if [[ $(cat $HOME/.cache/update | tail -n 1 | wc -l) -eq 0 ]]; then
-	echo $outputStr
-	echo $(date +"%r %a %D") > $HOME/.cache/update
-	echo $outputStr > $HOME/.cache/update
-else
-	cat $HOME/.cache/update | tail -n 1
+if [[ $(cat $HOME/.cache/update | tail -n 1 | wc -l) -eq 1 ]]; then
+	outputStr+=$(cat $HOME/.cache/update | tail -n 1)
 fi
+echo $outputStr
+echo $(date +"%r %a %D") > $HOME/.cache/update
+echo $outputStr > $HOME/.cache/update
+
 
 
 if $git_clean && [[ $diffLen -gt 0 ]]; then
