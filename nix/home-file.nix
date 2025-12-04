@@ -39,16 +39,16 @@ in {
   # Desktop config files
   ".local/share/applications/dsv.desktop".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/dsv.desktop";
-  ".local/share/applications/outlive.desktop".source =
-    pkgs.substitute {
-      src = builtins.toFile "outlive.desktop" (builtins.readFile "${dotfilesDir}/outlive.desktop");
-      substitutions = [
-        "--replace-quiet"
-        "nixcfgDir"
-        "${nixcfgDir}"
-        "--replace-quiet"
-        "username"
-        "${username}"
-      ];
-    };
+  ".local/share/applications/outlive.desktop".source = pkgs.substitute {
+    src = builtins.toFile "outlive.desktop"
+      (builtins.readFile "${dotfilesDir}/outlive.desktop");
+    substitutions = [
+      "--replace-quiet"
+      "nixcfg"
+      "${nixcfgDir}"
+      "--replace-quiet"
+      "username"
+      "${username}"
+    ];
+  };
 }
