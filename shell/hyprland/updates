@@ -1,22 +1,16 @@
 #!/usr/bin/env zsh
 current_date=$(date +"%s")
 source "${0:a:h}/../user/main.sh" &> /tmp/main.log
-if ! [[ -f $HOME/.cache/last_update ]]; then
-	touch $HOME/.cache/last_update
-fi
-latest_update=$(cat $HOME/.cache/last_update)
 
-if [[ $current_date -ge $(($latest_update + 3600)) ]]; then
-	if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
-		git_clean=true;
-	else
-		git_clean=false;
-	fi
-	nixfu &> /tmp/flake-update.log
-	diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
-	if $git_clean && [[ $diffLen -gt 0 ]]; then
-		push "Updating flake.lock"
-	fi
+if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
+	export git_clean=true
+else
+	export git_clean=false
+fi
+nixfu &> /tmp/flake-update.log
+diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
+if $git_clean && [[ $diffLen -gt 0 ]]; then
+	push "updates:Updating flake.lock"
 fi
 # Get the list of changed nodes
 changed_nodes=$(jq -n -r --slurpfile old <(git -C $NIXCFG show HEAD:nix/flake.lock) --slurpfile new $NIXCFG/nix/flake.lock '
