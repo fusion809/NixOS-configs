@@ -2,6 +2,9 @@
 current_date=$(date +"%s")
 source "${0:a:h}/../user/main.sh" &> /tmp/main.log
 
+# Set up git SSH authentication
+export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes"
+
 if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 	export git_clean=true
 else
@@ -13,7 +16,8 @@ diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
 echo "DEBUG: diffLen=$diffLen" >> /tmp/updates.log
 if $git_clean && [[ $diffLen -gt 0 ]]; then
 	echo "DEBUG: Pushing changes..." >> /tmp/updates.log
-	push "updates: Updating flake.lock"
+	push "updates: Updating flake.lock" >> /tmp/updates.log 2>&1
+	echo "DEBUG: Push exit code: $?" >> /tmp/updates.log
 fi
 # Get the list of changed nodes
 changed_nodes=$(jq -n -r --slurpfile old <(git -C $NIXCFG show HEAD:nix/flake.lock) --slurpfile new $NIXCFG/nix/flake.lock '
