@@ -140,13 +140,13 @@ fi
 
 git -C $GHUBO/OpenRA pull origin bleed -q
 latestRev=$(revision $GHUBO/OpenRA)
-packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
-if [[ $latestRev != $packagedRev ]]; then
+upno=$(comno $GHUBO/OpenRA)
+uphash=$(echo $latestRev | head -c 7)
+packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
+latestVer="$upno.git.$uphash"
+if [[ $latestVer != $packagedVer ]]; then
 	outputStr+=" 󱢇"
-	upno=$(comno $GHUBO/OpenRA)
-	uphash=$(echo $latestRev | head -c 7)
-	packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
-	latestVer="$upno.git.$uphash"
+	
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
 	fi
