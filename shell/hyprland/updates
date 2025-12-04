@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 current_date=$(date +"%s")
 source "${0:a:h}/../user/main.sh" &> /tmp/main.log
-export diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
+diffLen=$(git -C $NIXCFG diff nix/flake.lock | wc -l)
 nixfu &> /tmp/flake-update.log
 # Get the list of changed nodes
 changed_nodes=$(jq -n -r --slurpfile old <(git -C $NIXCFG show HEAD:nix/flake.lock) --slurpfile new $NIXCFG/nix/flake.lock '
