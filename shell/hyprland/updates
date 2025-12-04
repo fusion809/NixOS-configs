@@ -145,8 +145,7 @@ if [[ $latestRev != $packagedRev ]]; then
 	outputStr+=" 󱢇"
 	upno=$(comno $GHUBO/OpenRA)
 	uphash=$(echo $latestRev | head -c 7)
-	latestVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
-	packagedVer=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '"' -f 2)
+	packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
 	latestVer="$upno.git.$uphash"
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
