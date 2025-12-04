@@ -12,6 +12,10 @@ else
 fi
 nixfu &> /tmp/flake-update.log
 diffLen=$(git -C "$NIXCFG" diff nix/flake.lock | wc -l)
+pushStr=""
+if $git_clean && [[ $diffLen -gt 0 ]]; then
+	pushStr+="updates: Updating flake.lock"
+fi
 # Get the list of changed nodes
 changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.lock) --slurpfile new "$NIXCFG/nix/flake.lock" '
 	($old[0].nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
@@ -113,13 +117,23 @@ fi
 
 if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
 	outputStr+=" 󱇛"
-	sed -i -e "s|nixfrb|hyprupdate|g" $NIXCFG/shell/hyprland/update_func
+	sed -i \
+        -e "s|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_INST|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_TAG|" "$FLAKE_FILE"
+	if [[ ${#pushStr} -gt 0 ]]; then
+		pushStr+="; "
+	fi
+	pushStr+="hy3: $HY3_INST->$HY3_TAG"
 fi
 
 if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] ); then
 	outputStr+=" "
-	sed -i -e "s|nixfrb|hyprupdate|g" $NIXCFG/shell/hyprland/update_func
+	sed -i -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
+	if [[ ${#pushStr} -gt 0 ]]; then
+		pushStr+="; "
+	fi
+	pushStr+="hyprland: $HYPR_INST->$HYPR_TAG"
 fi
+
 if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
 	outputStr+=" "
 fi
@@ -129,7 +143,18 @@ latestRev=$(revision $GHUBO/OpenRA)
 packagedRev=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'rev' | cut -d '"' -f 2)
 if [[ $latestRev != $packagedRev ]]; then
 	outputStr+=" 󱢇"
-	sed -i -e "s|nixfrb|openraup|g" $NIXCFG/shell/hyprland/update_func
+	upno=$(comno $GHUBO/OpenRA)
+	uphash=$(echo $latestRev | head -c 7)
+	sed -i -e "s|$packagedRev|$latestRev|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
+	latestHash=$(nix-prefetch-git --url https://github.com/OpenRA/OpenRA --rev $latestRev 2>&1 | grep '"hash"' | cut -d '"' -f 4)
+	packagedHash=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'hash' | cut -d '"' -f 2)
+	packagedVer=$(cat $NIXCFG/nixpkgs/openra/engines/git/default.nix | grep 'version' | cut -d '"' -f 2)
+	latestVer="$upno.git.$uphash"
+	sed -i -e "s|$packagedHash|$latestHash|g" -e "s|$packagedVer|$latestVer|g" $NIXCFG/nixpkgs/openra/engines/git/default.nix
+	if [[ ${#pushStr} -gt 0 ]]; then
+		pushStr+="; "
+	fi
+	pushStr+="openra: $packagedVer->$latestVer"
 fi
 if [[ $(cat $HOME/.cache/update | tail -n 1 | wc -l) -eq 1 ]]; then
 	outputStr+=$(cat $HOME/.cache/update | tail -n 1)
@@ -137,9 +162,7 @@ fi
 echo $outputStr
 echo $(date +"%r %a %D") > $HOME/.cache/update
 echo $outputStr > $HOME/.cache/update
-
-
-
-if $git_clean && [[ $diffLen -gt 0 ]]; then
-	push "updates: Updating flake.lock" &> /tmp/update.log
+echo $pushStr > $HOME/.cache/pushStr
+if [[ ${#pushStr} -gt 0 ]]; then
+	push "$pushStr"
 fi
