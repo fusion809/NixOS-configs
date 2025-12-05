@@ -28,8 +28,10 @@ let
       masterPkgs = import masterSrc { config.allowUnfree = true; };
 
       # packageNames is passed as a space-separated string from the shell
-      namesList =
-        builtins.filter (x: x != "") (builtins.split " " packageNames);
+      # builtins.split returns both matched strings and separators (empty lists)
+      # so we need to filter for strings only
+      namesList = builtins.filter (x: builtins.isString x && x != "")
+        (builtins.split " " packageNames);
 
       # Get output paths for these packages
       outPaths = builtins.map (name: masterPkgs.${name}.outPath) namesList;
