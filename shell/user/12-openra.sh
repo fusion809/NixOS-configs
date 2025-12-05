@@ -4,7 +4,7 @@ export packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f
 
 function check_openra_update {
   if [[ $latestVer != $packagedVer ]]; then
-    echo "OpenRA git package is out of date. openraup will update it."
+    echo "OpenRA git package is out of date. nixfrb will update it."
   fi
 }
 if [[ $- == *i* ]]; then
