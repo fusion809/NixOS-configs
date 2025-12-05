@@ -8,7 +8,6 @@ These are my NixOS 25.11 configuration files for running on my MS-7B90 PC. Hyprl
 `nixrsu` is the shell command that updates one's system. `update` will run `nixrsu`, also repair the Nix store if necessary (with the `nixstrep` command) and remove old configurations (using the `nixcg` command). `nixfrb` is used to build your system configuration. 
 
 # OpenRA package
-
 To update the deps.json file for OpenRA git package, run:
 
 ```bash

@@ -82,7 +82,7 @@ window#waybar.hidden {
 }
 
 #disk {
-  background-color: #633226;
+  background-color: #742a40;
   color: #ffffff;
 }
 
@@ -157,7 +157,7 @@ window#waybar.hidden {
 }
 
 #memory {
-  background-color: #555511;
+  background-color: #7f6921;
   color: #ffffff;
 }
 
@@ -255,14 +255,14 @@ window#waybar.hidden {
 }
 
 #network {
-  background-color: #951559;
+  background-color: #3e2f64;
   color: #ffffff;
   padding-right: 4px;
 }
 
 #clock {
   font-family: JetBrainsMono Nerd Font;
-  background-color: #001236;
+  background-color: #4b002b;
   /*font-weight: bold;*/
   color: #ffffff;
 }
