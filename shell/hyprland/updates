@@ -144,7 +144,7 @@ if [[ $latestVer != $packagedVer ]]; then
 	pushStr+="openra: $packagedVer->$latestVer"
 fi
 if [[ $(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1 | wc -l) -eq 1 ]]; then
-	outputStr+=$(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1)
+	outputStr+=$(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | sed 's/󱢇//g' | tail -n 1)
 fi
 echo $outputStr
 echo $(date +"%r %a %D") > $HOME/.cache/update
