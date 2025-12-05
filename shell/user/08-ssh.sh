@@ -319,3 +319,21 @@ function cp_from_freebsd {
 function view_freebsd {
     view_qemu_vm "FreeBSD 15.0"
 }
+
+function start_deepin {
+    start_qemu_vm_root "Deepin 25.0.1" 30
+}
+
+function ssh_deepin {
+    start_deepin
+    TERM=xterm-256color ssh fusion809@192.168.122.23
+}
+
+function cp_from_deepin {
+    start_deepin
+    scp -O -r fusion809@192.168.122.23:$1 $2
+}
+
+function view_deepin {
+    view_qemu_vm "Deepin 25.0.1"
+}

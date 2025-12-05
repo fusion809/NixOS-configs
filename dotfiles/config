@@ -43,3 +43,6 @@ Host rhino-kvm
 Host freebsd-kvm
 	Hostname 192.168.122.192
 	User fusion809
+Host deepin-kvm
+	Hostname 192.168.122.23
+	User fusion809
