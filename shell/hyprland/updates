@@ -26,18 +26,6 @@ changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.
 	([$k1[] | select($old[0].nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
 ')
 outputStr=""
-if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
-	old_hm=$(jq -r '.nodes."home-manager".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
-	curr_hm=$(jq -r '.nodes."home-manager".locked.rev' $NIXCFG/nix/flake.lock)
-	
-	# Compare home-manager modules directory paths
-	old_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare-home.nix { hmRev = \"$old_hm\"; }" 2>/dev/null)
-	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare-home.nix { hmRev = \"$curr_hm\"; }" 2>/dev/null)
-	
-	if [[ "$old_out" != "$new_out" ]]; then
-		outputStr+="h"
-	fi
-fi
 # Function to check for package changes
 check_packages() {
 	local s_rev=$1
@@ -119,7 +107,7 @@ if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
 fi
 
 if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
-	outputStr+=" 󱇛"
+	outputStr+="󱇛"
 	sed -i \
         -e "s|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_INST|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_TAG|" "$FLAKE_FILE"
 	if [[ ${#pushStr} -gt 0 ]]; then
@@ -129,7 +117,7 @@ if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]
 fi
 
 if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] ); then
-	outputStr+=" "
+	outputStr+=""
 	sed -i -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
@@ -138,7 +126,7 @@ if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_T
 fi
 
 if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
-	outputStr+=" "
+	outputStr+=""
 fi
 
 git -C $GHUBO/OpenRA pull origin bleed -q
@@ -148,7 +136,7 @@ uphash=$(echo $latestRev | head -c 7)
 packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
 latestVer="$upno.git.$uphash"
 if [[ $latestVer != $packagedVer ]]; then
-	outputStr+=" 󱢇"
+	outputStr+="󱢇"
 	
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "

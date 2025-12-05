@@ -20,6 +20,7 @@ in nixpkgs/openra. Or simply run `openraup`.
 # Waybar
 The waybar has the following components:
 * The NixOS menu which gives you options for opening up the NixOS packages search, NixOS options search, NixOS Wiki, NixOS configs GitHub repo and Nerd font cheat sheet websites in the default browser, rebuilding and updating one's system, repairing the Nix store, and opening NixOS-configs in default code editor.
+* Updates available. "h" indicates updates to home-manager are available. "s" indicates that updates to nixpkgs (stable branch) are available. "u" indicates updates to nixpkgs-unstable are available. "m" indicates updates to nixpkgs-master are available. 󱇛 indicates that hy3 updates are available.  indicates that Hyprland updates are available.  indicates that Vim updates are available. 󱢇 indicates that OpenRA updates are available. 
 * Workspaces.
 * Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 * Keyboard layout (just the two-letter initial though). 
