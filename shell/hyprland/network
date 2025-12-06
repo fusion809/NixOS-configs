@@ -1,7 +1,8 @@
 #!/usr/bin/env zsh
 
 INTERFACE="enp24s0"
-STATE_FILE="/tmp/waybar_network_state"
+MODE="${1:-both}"
+STATE_FILE="/tmp/waybar_network_state_$MODE"
 
 # Get current stats
 rx_now=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
@@ -54,29 +55,41 @@ format_speed() {
 rx_fmt=$(format_speed $rx_speed)
 tx_fmt=$(format_speed $tx_speed)
 
-# Determine class based on download speed (rx_speed in bytes/sec)
-# 98.4 MB/s = ~103,000,000 bytes/sec
-# Critical: > 90 MB/s (94,371,840 bytes)
-# High: > 50 MB/s (52,428,800 bytes)
-# Medium: > 10 MB/s (10,485,760 bytes)
-# Low: > 1 MB/s (1,048,576 bytes)
-# Idle: < 1 MB/s
-
+# Determine class based on speed thresholds
 crit_speed=10485760
 high_speed=1048576
 medium_speed=104858
 low_speed=10486
-if ( (( rx_speed > crit_speed )) || (( tx_speed > crit_speed )) ); then
-    class="critical"
-elif ( (( rx_speed > high_speed )) || (( tx_speed > high_speed )) ); then
-    class="high"
-elif ( (( rx_speed > medium_speed )) || (( tx_speed > medium_speed )) ); then
-    class="medium"
-elif ( (( rx_speed > low_speed )) || (( tx_speed > low_speed )) ); then
-    class="low"
-else
-    class="idle"
-fi
 
-# Output JSON
-printf '{"text":" %s  %s","class":"%s"}' "$tx_fmt" "$rx_fmt" "$class"
+get_class() {
+    local speed=$1
+    if (( speed > crit_speed )); then
+        echo "critical"
+    elif (( speed > high_speed )); then
+        echo "high"
+    elif (( speed > medium_speed )); then
+        echo "medium"
+    elif (( speed > low_speed )); then
+        echo "low"
+    else
+        echo "idle"
+    fi
+}
+
+rx_class=$(get_class $rx_speed)
+tx_class=$(get_class $tx_speed)
+
+if [[ "$MODE" == "up" ]]; then
+    printf '{"text":" %s","class":"%s"}' "$tx_fmt" "$tx_class"
+elif [[ "$MODE" == "down" ]]; then
+    printf '{"text":" %s","class":"%s"}' "$rx_fmt" "$rx_class"
+else
+    # Legacy/Both mode - use max class? Or just rx class as primary?
+    # Original logic used max of both.
+    if (( rx_speed > tx_speed )); then
+        class=$rx_class
+    else
+        class=$tx_class
+    fi
+    printf '{"text":" %s  %s","class":"%s"}' "$tx_fmt" "$rx_fmt" "$class"
+fi

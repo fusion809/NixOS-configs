@@ -28,7 +28,8 @@
     ],
     "modules-right": [
         "custom/disk",
-        "custom/network",
+        "custom/network-up",
+        "custom/network-down",
         "custom/cpu",
         "custom/memory",
         "clock"
@@ -41,16 +42,23 @@
         "return-type": "json"
     },
     "custom/temperature": {
-        "format": "{}",
+        "format": "{}",
         "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
         "on-click": "alacritty -e s-tui",
         "interval": 1,
         "return-type": "json"
     },
-    "custom/network": {
+    "custom/network-up": {
         "format": "{}",
         "interval": 1,
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network",
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
+        "return-type": "json",
+        "on-click": "alacritty -e gtop"
+    },
+    "custom/network-down": {
+        "format": "{}",
+        "interval": 1,
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
         "return-type": "json",
         "on-click": "alacritty -e gtop"
     },
@@ -201,9 +209,9 @@
     },
     "pulseaudio": {
         // "scroll-step": 1, // %, can be a float
-        "format": "{volume}% {icon}",
-        "format-bluetooth": "{volume}% {icon}",
-        "format-bluetooth-muted": " {icon}",
+        "format": "{icon}{volume}%",
+        "format-bluetooth": "{icon}{volume}%",
+        "format-bluetooth-muted": "{icon}",
         "format-muted": " ",
         "format-source": "",
         //"format-source": "{volume}% ",

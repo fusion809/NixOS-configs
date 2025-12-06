@@ -331,7 +331,7 @@ window#waybar.hidden {
 #custom-wallpaper-no {
   /*background-color: #ff66bb;*/
   color: #ffffff;
-  background-color: #1E1E1E;
+  background-color: #795548;
 }
 
 #custom-wallpaper-no-specify {
@@ -395,7 +395,9 @@ window#waybar.hidden {
   background-color: #f9e2af;
 }
 
-#custom-network {
+#custom-network,
+#custom-network-up,
+#custom-network-down {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
@@ -405,27 +407,37 @@ window#waybar.hidden {
 }
 
 /* Network speed-based classes */
-#custom-network.idle {
+#custom-network.idle,
+#custom-network-up.idle,
+#custom-network-down.idle {
   background-color: #00796B;
   color: #ffffff;
 }
 
-#custom-network.low {
+#custom-network.low,
+#custom-network-up.low,
+#custom-network-down.low {
   background-color: #4CAF50;
   color: #000000;
 }
 
-#custom-network.medium {
+#custom-network.medium,
+#custom-network-up.medium,
+#custom-network-down.medium {
   background-color: #FF9800;
   color: #000000;
 }
 
-#custom-network.high {
+#custom-network.high,
+#custom-network-up.high,
+#custom-network-down.high {
   background-color: #D32F2F;
   color: #ffffff;
 }
 
-#custom-network.critical {
+#custom-network.critical,
+#custom-network-up.critical,
+#custom-network-down.critical {
   background-color: #B71C1C;
   color: #ffffff;
 }

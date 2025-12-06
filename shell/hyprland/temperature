@@ -16,4 +16,4 @@ else
 fi
 
 # Output JSON for Waybar
-echo "{\"text\":\"$temp\",\"class\":\"$class\"}"
+echo "{\"text\":\"${temp/+/}\",\"class\":\"$class\"}"
