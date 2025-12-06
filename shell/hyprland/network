@@ -56,28 +56,47 @@ rx_fmt=$(format_speed $rx_speed)
 tx_fmt=$(format_speed $tx_speed)
 
 # Determine class based on speed thresholds
-crit_speed=10485760
-high_speed=1048576
-medium_speed=104858
-low_speed=10486
+crit_speed_rx=10485760
+crit_speed_tx=$(($crit_speed_rx/2))
+high_speed_rx=1048576
+high_speed_tx=$(($high_speed_rx/2))
+medium_speed_rx=104858
+medium_speed_tx=$(($medium_speed_rx/2))
+low_speed_rx=10486
+low_speed_tx=$(($low_speed_rx/2))
 
-get_class() {
-    local speed=$1
-    if (( speed > crit_speed )); then
+get_class_rx() {
+    local speed=$1  
+    if (( speed > crit_speed_rx )); then
         echo "critical"
-    elif (( speed > high_speed )); then
+    elif (( speed > high_speed_rx )); then
         echo "high"
-    elif (( speed > medium_speed )); then
+    elif (( speed > medium_speed_rx )); then
         echo "medium"
-    elif (( speed > low_speed )); then
+    elif (( speed > low_speed_rx )); then
         echo "low"
     else
         echo "idle"
     fi
 }
 
-rx_class=$(get_class $rx_speed)
-tx_class=$(get_class $tx_speed)
+get_class_tx() {
+    local speed=$1  
+    if (( speed > crit_speed_rx )); then
+        echo "critical"
+    elif (( speed > high_speed_rx )); then
+        echo "high"
+    elif (( speed > medium_speed_rx )); then
+        echo "medium"
+    elif (( speed > low_speed_rx )); then
+        echo "low"
+    else
+        echo "idle"
+    fi
+}
+
+rx_class=$(get_class_rx $rx_speed)
+tx_class=$(get_class_tx $tx_speed)
 
 if [[ "$MODE" == "up" ]]; then
     printf '{"text":" %s","class":"%s"}' "$tx_fmt" "$tx_class"
