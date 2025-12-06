@@ -146,6 +146,7 @@ window#waybar.hidden {
 #custom-updates,
 #custom-bluetooth-connect,
 #custom-weather,
+#custom-uptime,
 #custom-keyboard-layout {
   border-radius: 4px;
   margin: 6px 1px;
@@ -449,6 +450,10 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
+#custom-uptime {
+  background-color: violet;
+  color: black;
+}
 
 tooltip {
   border-radius: 8px;

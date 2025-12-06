@@ -15,7 +15,7 @@
         "custom/weather",
         "custom/keyboard-layout",
         "pulseaudio",
-        "custom/temperature",
+        "custom/uptime",
         "custom/wallpaper-no",
         "custom/wallpaper-rm",
         "custom/wallpaper-previous",
@@ -27,9 +27,10 @@
         "hyprland/window"
     ],
     "modules-right": [
+        "custom/temperature",
         "custom/disk",
-        "custom/network-up",
         "custom/network-down",
+        "custom/network-up",
         "custom/cpu",
         "custom/memory",
         "clock"
@@ -167,6 +168,11 @@
             "locked": "",
             "unlocked": ""
         }
+    },
+    "custom/uptime": {
+        "format": "󰔚 {}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/uptime",
+        "interval": 1
     },
     "custom/disk": {
         "format": "{}",
