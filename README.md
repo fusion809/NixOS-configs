@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 5 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-05.png)
-**Figure 1: Hyprland NixOS configuration as of 5 December 2025.**
+![Hyprland on NixOS screenshot as of 6 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-06.png)
+**Figure 1: Hyprland NixOS configuration as of 6 December 2025.**
 
 These are my NixOS 25.11 configuration files for running on my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
 

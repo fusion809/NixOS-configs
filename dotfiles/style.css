@@ -82,7 +82,7 @@ window#waybar.hidden {
 }
 
 #disk {
-  background-color: #742a40;
+  background-color: #6100A0;
   color: #ffffff;
 }
 
@@ -216,7 +216,7 @@ window#waybar.hidden {
 }
 
 #custom-wallpaper-next {
-  background-color: #226722;
+  background-color: #C76E00;
   color: #ffffff;
   padding-right: 6px;
 }
@@ -255,7 +255,7 @@ window#waybar.hidden {
 }
 
 #network {
-  background-color: #3e2f64;
+  background-color: #385684;
   color: #ffffff;
   padding-right: 4px;
 }
