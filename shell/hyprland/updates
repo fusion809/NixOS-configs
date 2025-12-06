@@ -26,6 +26,13 @@ changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.
 	([$k1[] | select($old[0].nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
 ')
 outputStr=""
+# Function to add symbol to outputStr only if not already present
+add_symbol() {
+	local symbol=$1
+	if [[ "$outputStr" != *"$symbol"* ]]; then
+		outputStr+="$symbol"
+	fi
+}
 # Function to check for package changes
 check_packages() {
 	local s_rev=$1
@@ -64,7 +71,7 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }" 2>/dev/null)
 	
 	if [[ "$old_out" != "$new_out" ]]; then
-		outputStr+="h"
+		add_symbol "h"
 	fi
 fi
 
@@ -79,7 +86,7 @@ if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }" 2>/dev/null)
 
 	if [[ "$old_out" != "$new_out" ]]; then
-		outputStr+="m"
+		add_symbol "m"
 	fi
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
@@ -91,7 +98,7 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
 	
 	if [[ "$old_out" != "$new_out" ]]; then
-		outputStr+="s"
+		add_symbol "s"
 	fi
 fi
 if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
@@ -102,12 +109,12 @@ if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
 	
 	if [[ "$old_out" != "$new_out" ]]; then
-		outputStr+="u"
+		add_symbol "u"
 	fi
 fi
 
 if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
-	outputStr+="󱇛"
+	add_symbol "󱇛"
 	sed -i \
         -e "s|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_INST|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_TAG|" "$FLAKE_FILE"
 	if [[ ${#pushStr} -gt 0 ]]; then
@@ -117,7 +124,7 @@ if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]
 fi
 
 if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] ); then
-	outputStr+=""
+	add_symbol ""
 	sed -i -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
@@ -126,7 +133,7 @@ if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_T
 fi
 
 if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
-	outputStr+=""
+	add_symbol ""
 fi
 
 git -C $GHUBO/OpenRA pull origin bleed -q
@@ -136,7 +143,7 @@ uphash=$(echo $latestRev | head -c 7)
 packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
 latestVer="$upno.git.$uphash"
 if [[ $latestVer != $packagedVer ]]; then
-	outputStr+="󱢇"
+	add_symbol "󱢇"
 	
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
@@ -144,7 +151,11 @@ if [[ $latestVer != $packagedVer ]]; then
 	pushStr+="openra: $packagedVer->$latestVer"
 fi
 if [[ $(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1 | wc -l) -eq 1 ]]; then
-	outputStr+=$(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | sed 's/󱢇//g' | sed 's///g' | tail -n 1)
+	# Add cached symbols one by one to avoid duplicates
+	cached_symbols=$(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1)
+	for (( i=0; i<${#cached_symbols}; i++ )); do
+		add_symbol "${cached_symbols:$i:1}"
+	done
 fi
 echo $outputStr
 echo $(date +"%r %a %D") > $HOME/.cache/update
