@@ -82,7 +82,7 @@ window#waybar.hidden {
 }
 
 #disk {
-  background-color: #6100A0;
+  background-color: #6200EE;
   color: #ffffff;
 }
 
@@ -90,7 +90,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  background-color: #994444;
+  background-color: #2C2C2C;
   color: #ffffff;
 }
 
@@ -123,13 +123,13 @@ window#waybar.hidden {
 }
 
 #custom-keyboard-layout {
-  background-color: #006600;
+  background-color: #018786;
   color: #ffffff;
 }
 
 #custom-bluetooth-connect {
-  background-color: #aaf9f9;
-  color: #0000ff;
+  background-color: #03DAC6;
+  color: #000000;
 }
 
 #custom-nixosicon {
@@ -148,7 +148,7 @@ window#waybar.hidden {
 
 #custom-weather {
   color: white;
-  background-color: #a900a9;
+  background-color: #BB86FC;
 }
 
 #memory,
@@ -157,13 +157,13 @@ window#waybar.hidden {
 }
 
 #memory {
-  background-color: #7f6921;
-  color: #ffffff;
+  background-color: #FFA000;
+  color: #000000;
 }
 
 #cpu {
-  background-color: #006666;
-  color: #ffffff;
+  background-color: #03DAC6;
+  color: #000000;
 }
 
 #window {
@@ -190,33 +190,33 @@ window#waybar.hidden {
 #custom-wallpaper-no {
   /*background-color: #ff66bb;*/
   color: #ffffff;
-  background-color: #004566;
+  background-color: #1E1E1E;
 }
 
 #custom-wallpaper-no-specify {
-  background-color: #003377;
+  background-color: #3F51B5;
   color: #ffffff;
 }
 
 #custom-wallpaper-rm {
-  background-color: #550000;
+  background-color: #B71C1C;
   color: #ffffff;
 }
 
 #custom-wallpaper-previous {
-  background-color: #006776;
+  background-color: #018786;
   color: #ffffff;
   padding-right: 6px;
 }
 
 #custom-wallpaper-random {
-  background-color: #663366;
-  color: #ffffff;
-  padding-right: 6px;
+  background-color: #BB86FC;
+  color: #000000;
+  padding-right: 9px;
 }
 
 #custom-wallpaper-next {
-  background-color: #C76E00;
+  background-color: #689F38;
   color: #ffffff;
   padding-right: 6px;
 }
@@ -226,8 +226,8 @@ window#waybar.hidden {
   margin: 6px 1px;
   padding: 3px 3px;
   padding-right: 3px;
-  background-color: #3f11a9;
-  color: #f0f0f0;
+  background-color: #6200EE;
+  color: #ffffff;
 }
 
 #battery {
@@ -255,14 +255,14 @@ window#waybar.hidden {
 }
 
 #network {
-  background-color: #385684;
+  background-color: #00796B;
   color: #ffffff;
   padding-right: 4px;
 }
 
 #clock {
   font-family: JetBrainsMono Nerd Font;
-  background-color: #4b002b;
+  background-color: #0D47A1;
   /*font-weight: bold;*/
   color: #ffffff;
 }
@@ -282,6 +282,6 @@ tooltip label {
 }
 
 #custom-temperature {
-  background-color: #774444;
+  background-color: #D32F2F;
   color: #ffffff;
 }
