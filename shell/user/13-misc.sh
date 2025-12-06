@@ -48,3 +48,7 @@ function cpHyprNixScr {
 	push "Updating Hyprland NixOS screenshot"
 	popd -q
 }
+
+function oldCommands {
+	find ~ -maxdepth 1 -name ".zsh_history*" -exec grep "$@" {} +
+}
