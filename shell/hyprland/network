@@ -42,13 +42,13 @@ format_speed() {
     local bits=$((bytes * 8))
     
     if (( bits < 1000 )); then
-        echo "${bits}b"
+        echo "${bits}bps"
     elif (( bits < 1000000 )); then
-        printf "%.1fk" $((bits / 1000.0))
+        printf "%.1fkps" $((bits / 1000.0))
     elif (( bits < 1000000000 )); then
-        printf "%.1fM" $((bits / 1000000.0))
+        printf "%.1fMps" $((bits / 1000000.0))
     else
-        printf "%.1fG" $((bits / 1000000000.0))
+        printf "%.1fGps" $((bits / 1000000000.0))
     fi
 }
 
