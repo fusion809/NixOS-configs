@@ -204,19 +204,19 @@ window#waybar.hidden {
 }
 
 #custom-wallpaper-previous {
-  background-color: #005555;
+  background-color: #006776;
   color: #ffffff;
   padding-right: 6px;
 }
 
 #custom-wallpaper-random {
-  background-color: #552255;
+  background-color: #663366;
   color: #ffffff;
   padding-right: 6px;
 }
 
 #custom-wallpaper-next {
-  background-color: #004400;
+  background-color: #226722;
   color: #ffffff;
   padding-right: 6px;
 }
