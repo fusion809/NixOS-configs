@@ -1,0 +1,22 @@
+#!/usr/bin/env zsh
+# Get disk usage for root partition
+disk_info=$(df -h / | tail -1)
+used=$(echo $disk_info | awk '{print $3}')
+total=$(echo $disk_info | awk '{print $2}')
+percent=$(echo $disk_info | awk '{print $5}' | sed 's/%//')
+
+# Determine class based on disk usage
+if (( percent >= 90 )); then
+    class="critical"
+elif (( percent >= 75 )); then
+    class="high"
+elif (( percent >= 50 )); then
+    class="medium"
+elif (( percent >= 25 )); then
+    class="low"
+else
+    class="idle"
+fi
+
+# Output JSON with icon
+printf '{"text":" %s/%s","class":"%s"}' "$used" "$total" "$class"

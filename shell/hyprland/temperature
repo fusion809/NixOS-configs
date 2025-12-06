@@ -1,3 +1,19 @@
 #!/usr/bin/env zsh
 temp=$(sensors | tail -n 2 | head -n 1 | cut -d ':' -f 2 | sed 's/\s*//g')
-echo $temp
+temp_value=$(echo $temp | grep -o '[0-9.]*' | head -n 1)
+
+# Determine class based on temperature using zsh's floating point arithmetic
+if (( temp_value < 40 )); then
+    class="cool"
+elif (( temp_value < 60 )); then
+    class="normal"
+elif (( temp_value < 75 )); then
+    class="warm"
+elif (( temp_value < 85 )); then
+    class="hot"
+else
+    class="critical"
+fi
+
+# Output JSON for Waybar
+echo "{\"text\":\"$temp\",\"class\":\"$class\"}"

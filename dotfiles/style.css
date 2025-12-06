@@ -81,8 +81,38 @@ window#waybar.hidden {
   color: white;
 }
 
-#disk {
-  background-color: #6200EE;
+#custom-disk {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  padding-right: 3px;
+  background-color: #1E1E1E;
+  color: #ffffff;
+}
+
+/* Disk usage-based classes */
+#custom-disk.idle {
+  background-color: #66BB6A;
+  color: #000000;
+}
+
+#custom-disk.low {
+  background-color: #9CCC65;
+  color: #000000;
+}
+
+#custom-disk.medium {
+  background-color: #FFCA28;
+  color: #000000;
+}
+
+#custom-disk.high {
+  background-color: #FF7043;
+  color: #000000;
+}
+
+#custom-disk.critical {
+  background-color: #EF5350;
   color: #ffffff;
 }
 
@@ -127,6 +157,14 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
+#custom-keyboard-layout.us {
+  background-color: #018786;
+}
+
+#custom-keyboard-layout.br {
+  background-color: #AD1457;
+}
+
 #custom-bluetooth-connect {
   background-color: #03DAC6;
   color: #000000;
@@ -147,23 +185,126 @@ window#waybar.hidden {
 }
 
 #custom-weather {
-  color: white;
-  background-color: #BB86FC;
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  background-color: #1E1E1E;
+  color: #ffffff;
 }
 
-#memory,
-#cpu {
+/* Weather temperature-based classes */
+#custom-weather.critical {
+  background-color: #B71C1C;
+  color: #ffffff;
+}
+
+#custom-weather.very-hot {
+  background-color: #D32F2F;
+  color: #ffffff;
+}
+
+#custom-weather.hot {
+  background-color: #FF5722;
   color: #000000;
 }
 
-#memory {
-  background-color: #FFA000;
+#custom-weather.warm {
+  background-color: #EF6C00;
   color: #000000;
 }
 
-#cpu {
+#custom-weather.normal {
+  background-color: #4CAF50;
+  color: #000000;
+}
+
+#custom-weather.cool {
   background-color: #03DAC6;
   color: #000000;
+}
+
+#custom-weather.cold {
+  background-color: #2196F3;
+  color: #ffffff;
+}
+
+#custom-weather.very-cold {
+  background-color: #1565C0;
+  color: #ffffff;
+}
+
+#custom-memory,
+#custom-cpu {
+  color: #000000;
+}
+
+#custom-memory {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  padding-right: 6px;
+  background-color: #1E1E1E;
+  color: #ffffff;
+}
+
+/* Memory usage-based classes */
+#custom-memory.idle {
+  background-color: #66BB6A;
+  color: #000000;
+}
+
+#custom-memory.low {
+  background-color: #9CCC65;
+  color: #000000;
+}
+
+#custom-memory.medium {
+  background-color: #FFCA28;
+  color: #000000;
+}
+
+#custom-memory.high {
+  background-color: #FF7043;
+  color: #000000;
+}
+
+#custom-memory.critical {
+  background-color: #EF5350;
+  color: #ffffff;
+}
+
+#custom-cpu {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 6px;
+  background-color: #1E1E1E;
+  color: #ffffff;
+}
+
+/* CPU usage-based classes */
+#custom-cpu.idle {
+  background-color: #66BB6A;
+  color: #000000;
+}
+
+#custom-cpu.low {
+  background-color: #9CCC65;
+  color: #000000;
+}
+
+#custom-cpu.medium {
+  background-color: #FFCA28;
+  color: #000000;
+}
+
+#custom-cpu.high {
+  background-color: #FF7043;
+  color: #000000;
+}
+
+#custom-cpu.critical {
+  background-color: #EF5350;
+  color: #ffffff;
 }
 
 #window {
@@ -254,10 +395,39 @@ window#waybar.hidden {
   background-color: #f9e2af;
 }
 
-#network {
+#custom-network {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  padding-right: 4px;
   background-color: #00796B;
   color: #ffffff;
-  padding-right: 4px;
+}
+
+/* Network speed-based classes */
+#custom-network.idle {
+  background-color: #00796B;
+  color: #ffffff;
+}
+
+#custom-network.low {
+  background-color: #4CAF50;
+  color: #000000;
+}
+
+#custom-network.medium {
+  background-color: #FF9800;
+  color: #000000;
+}
+
+#custom-network.high {
+  background-color: #D32F2F;
+  color: #ffffff;
+}
+
+#custom-network.critical {
+  background-color: #B71C1C;
+  color: #ffffff;
 }
 
 #clock {
@@ -282,6 +452,35 @@ tooltip label {
 }
 
 #custom-temperature {
-  background-color: #D32F2F;
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  background-color: #1E1E1E;
+  color: #ffffff;
+}
+
+/* Temperature-based color classes */
+#custom-temperature.cool {
+  background-color: #42A5F5;
+  color: #000000;
+}
+
+#custom-temperature.normal {
+  background-color: #66BB6A;
+  color: #000000;
+}
+
+#custom-temperature.warm {
+  background-color: #FFA726;
+  color: #000000;
+}
+
+#custom-temperature.hot {
+  background-color: #FF7043;
+  color: #000000;
+}
+
+#custom-temperature.critical {
+  background-color: #EF5350;
   color: #ffffff;
 }

@@ -1,0 +1,41 @@
+#!/usr/bin/env zsh
+# Get weather data from wttrbar and flatten newlines to avoid invalid JSON
+weather_output=$(wttrbar 2>/dev/null | tr '\n' ' ')
+
+# Extract temperature from the text field using grep/sed to avoid jq issues with emojis
+temp_text=$(echo -E "$weather_output" | grep -o '"text":"[^"]*"' | sed 's/"text":"//;s/"//')
+# Use sed to keep only numbers, minus sign and dot.
+temp=$(echo "$temp_text" | sed 's/[^0-9.-]//g')
+
+
+# If we couldn't get temperature, output the original wttrbar data
+if [[ -z "$temp" ]]; then
+    echo -E "$weather_output"
+    exit 0
+fi
+
+# Determine class based on temperature
+if (( temp >= 40 )); then
+    class="critical"
+elif (( temp >= 35 )); then
+    class="very-hot"
+elif (( temp >= 30 )); then
+    class="hot"
+elif (( temp >= 25 )); then
+    class="warm"
+elif (( temp >= 20 )); then
+    class="normal"
+elif (( temp >= 15 )); then
+    class="cool"
+elif (( temp >= 10 )); then
+    class="cold"
+else
+    class="very-cold"
+fi
+
+# Debug output
+# echo "Debug: temp='$temp' class='$class'" >&2
+
+# Output JSON with class replaced using sed
+echo -E "$weather_output" | sed 's/"class":"[^"]*"/"class":"'"$class"'"/'
+

@@ -1,0 +1,19 @@
+#!/usr/bin/env zsh
+# Get memory usage percentage
+mem_usage=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
+
+# Determine class based on memory usage
+if (( mem_usage >= 90 )); then
+    class="critical"
+elif (( mem_usage >= 75 )); then
+    class="high"
+elif (( mem_usage >= 50 )); then
+    class="medium"
+elif (( mem_usage >= 25 )); then
+    class="low"
+else
+    class="idle"
+fi
+
+# Output JSON with icon
+printf '{"text":"%d%% ","class":"%s"}' $mem_usage "$class"

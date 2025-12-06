@@ -1,0 +1,19 @@
+#!/usr/bin/env zsh
+# Get CPU usage from /proc/stat
+cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')
+
+# Determine class based on CPU usage
+if (( cpu_usage >= 90 )); then
+    class="critical"
+elif (( cpu_usage >= 75 )); then
+    class="high"
+elif (( cpu_usage >= 50 )); then
+    class="medium"
+elif (( cpu_usage >= 25 )); then
+    class="low"
+else
+    class="idle"
+fi
+
+# Output JSON with icon
+printf '{"text":"%d%% ","class":"%s"}' ${cpu_usage%.*} "$class"

@@ -27,30 +27,32 @@
         "hyprland/window"
     ],
     "modules-right": [
-        "disk",
-        "network",
-        "cpu",
-        "memory",
+        "custom/disk",
+        "custom/network",
+        "custom/cpu",
+        "custom/memory",
         "clock"
     ],
     "custom/weather": {
         "format": "{}°",
         "tooltip": true,
         "interval": 600,
-        "exec": "wttrbar",
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/weather",
         "return-type": "json"
     },
     "custom/temperature": {
         "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
         "on-click": "alacritty -e s-tui",
-        "interval": 1
+        "interval": 1,
+        "return-type": "json"
     },
-    "network": {
-        "interface": "enp24s0",
-        "format": " {bandwidthUpBits}  {bandwidthDownBits}",
-        "on-click": "alacritty -e gtop",
-        "interval": 1
+    "custom/network": {
+        "format": "{}",
+        "interval": 1,
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network",
+        "return-type": "json",
+        "on-click": "alacritty -e gtop"
     },
     // Modules configuration
     "hyprland/workspaces": {
@@ -158,11 +160,12 @@
             "unlocked": ""
         }
     },
-    "disk": {
-        "format": "/ {used}/{total}",
-        "path": "/", // Or the path to the desired mount point, e.g., "/home"
+    "custom/disk": {
+        "format": "{}",
         "interval": 1,
-        "on-click": "alacritty -e gtop"
+        "on-click": "alacritty -e gtop",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/disk",
+        "return-type": "json"
     },
     "clock": {
         "timezone": "Australia/Brisbane",
@@ -170,14 +173,20 @@
         "format": "{:%r %a %d/%m/%y}",
         "interval": 1
     },
-    "cpu": {
-        "format": "{usage}% ",
+    "custom/cpu": {
+        "format": "{}",
         "tooltip": false,
-        "on-click": "alacritty -e gtop"
+        "on-click": "alacritty -e gtop",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/cpu",
+        "return-type": "json",
+        "interval": 1
     },
-    "memory": {
-        "format": "{}% ",
-        "on-click": "alacritty -e gtop"
+    "custom/memory": {
+        "format": "{}",
+        "on-click": "alacritty -e gtop",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
+        "return-type": "json",
+        "interval": 1
     },
     "power-profiles-daemon": {
         "format": "{icon}",
@@ -229,6 +238,7 @@
     "custom/keyboard-layout": {
         "format": " {}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/keyboard-layout",
+        "return-type": "json",
         "on-click": "hyprctl switchxkblayout current next",
         "tooltip": true,
         "interval": 1,

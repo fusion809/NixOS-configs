@@ -1,0 +1,82 @@
+#!/usr/bin/env zsh
+
+INTERFACE="enp24s0"
+STATE_FILE="/tmp/waybar_network_state"
+
+# Get current stats
+rx_now=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
+tx_now=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes)
+time_now=$(date +%s%N)
+
+# Read previous state
+if [[ -f $STATE_FILE ]]; then
+    read rx_prev tx_prev time_prev < $STATE_FILE
+else
+    rx_prev=$rx_now
+    tx_prev=$tx_now
+    time_prev=$time_now
+fi
+
+# Calculate deltas
+rx_delta=$((rx_now - rx_prev))
+tx_delta=$((tx_now - tx_prev))
+time_delta=$((time_now - time_prev))
+
+# Avoid division by zero
+if (( time_delta == 0 )); then
+    time_delta=1000000000
+fi
+
+# Calculate speed in bytes per second
+# time_delta is in nanoseconds, so multiply bytes by 1e9
+rx_speed=$(( (rx_delta * 1000000000) / time_delta ))
+tx_speed=$(( (tx_delta * 1000000000) / time_delta ))
+
+# Save current state
+echo "$rx_now $tx_now $time_now" > $STATE_FILE
+
+# Function to format speed (bits/sec)
+format_speed() {
+    local bytes=$1
+    local bits=$((bytes * 8))
+    
+    if (( bits < 1000 )); then
+        echo "${bits}b"
+    elif (( bits < 1000000 )); then
+        printf "%.1fk" $((bits / 1000.0))
+    elif (( bits < 1000000000 )); then
+        printf "%.1fM" $((bits / 1000000.0))
+    else
+        printf "%.1fG" $((bits / 1000000000.0))
+    fi
+}
+
+rx_fmt=$(format_speed $rx_speed)
+tx_fmt=$(format_speed $tx_speed)
+
+# Determine class based on download speed (rx_speed in bytes/sec)
+# 98.4 MB/s = ~103,000,000 bytes/sec
+# Critical: > 90 MB/s (94,371,840 bytes)
+# High: > 50 MB/s (52,428,800 bytes)
+# Medium: > 10 MB/s (10,485,760 bytes)
+# Low: > 1 MB/s (1,048,576 bytes)
+# Idle: < 1 MB/s
+
+crit_speed=10485760
+high_speed=1048576
+medium_speed=104858
+low_speed=10486
+if ( (( rx_speed > crit_speed )) || (( tx_speed > crit_speed )) ); then
+    class="critical"
+elif ( (( rx_speed > high_speed )) || (( tx_speed > high_speed )) ); then
+    class="high"
+elif ( (( rx_speed > medium_speed )) || (( tx_speed > medium_speed )) ); then
+    class="medium"
+elif ( (( rx_speed > low_speed )) || (( tx_speed > low_speed )) ); then
+    class="low"
+else
+    class="idle"
+fi
+
+# Output JSON
+printf '{"text":" %s  %s","class":"%s"}' "$tx_fmt" "$rx_fmt" "$class"

@@ -6,4 +6,4 @@ current_layout_name=$(hyprctl devices -j | jq -r '
   | .active_keymap
 ')
 current_layout=$(grep --include="*" -R "name\[Group1\]=\s*\"$current_layout_name\"" /run/current-system/sw/share/X11/xkb/symbols | cut -d ':' -f 1 | cut -d '/' -f 9 | uniq)
-echo $current_layout
+echo "{\"text\": \"$current_layout\", \"class\": \"$current_layout\"}"
