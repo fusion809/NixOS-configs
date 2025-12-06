@@ -37,3 +37,14 @@ function sclipf {
 function lastUpdate {
 	date -d "@$(cat $HOME/.cache/last_update)"
 }
+
+function cpHyprNixScr {
+	filename=$(ls $HOME/Pictures/Screenshots/ | grep "Screenshot_" | sort | tail -n 1)
+	scrnShotDate=$(echo $filename | cut -d '_' -f 2)
+	rm $IM/Hyprland/Hyprland_NixOS_*.png
+	cp $HOME/Pictures/Screenshots/$filename $IM/Hyprland/Hyprland_NixOS_$scrnShotDate.png
+	optipng -o7 $IM/Hyprland/Hyprland_NixOS_$scrnShotDate.png
+	pushd -q $IM
+	push "Updating Hyprland NixOS screenshot"
+	popd -q
+}
