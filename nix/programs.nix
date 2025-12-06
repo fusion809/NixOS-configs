@@ -3,22 +3,21 @@
 let
   lib = import ./lib.nix { inherit username; };
   nixcfgDir = lib.nixcfgDir;
-in
 
-{
+in {
   appimage = {
     enable = true;
     binfmt = true;
   };
   bash.shellInit = ''
-      export USER="${username}"
-      export NIXCFG="${nixcfgDir}"
-    '' + builtins.readFile ../shell/root/main.sh;
+    export USER="${username}"
+    export NIXCFG="${nixcfgDir}"
+  '' + builtins.readFile ../shell/root/main.sh;
   firefox = { enable = false; };
   hyprland = {
     enable = true;
     package =
-      inputs.hyprland.packages.${pkgs.system}.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
+      inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
     #package = pkgs.hyprland;
   };
   nano = { enable = false; };
