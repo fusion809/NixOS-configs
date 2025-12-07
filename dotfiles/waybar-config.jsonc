@@ -206,14 +206,14 @@
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
         "return-type": "json",
-        "on-click": "alacritty -e gtop"
+        "on-click": "alacritty -e nethogs"
     },
     "custom/network-down": {
         "format": " {}",
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
         "return-type": "json",
-        "on-click": "alacritty -e gtop"
+        "on-click": "alacritty -e nethogs"
     },
     "custom/cpu": {
         "format": " {}",
