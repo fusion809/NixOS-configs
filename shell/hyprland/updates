@@ -189,7 +189,7 @@ echo $outputStr
 echo $(date +"%r %a %D") > $HOME/.cache/update
 echo $outputStr >> $HOME/.cache/update
 echo $pushStr >> $HOME/.cache/pushStr
-nixcg
+sudo nix-collect-garbage &> /tmp/gc.log
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
