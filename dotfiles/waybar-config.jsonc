@@ -86,7 +86,7 @@
         "format": "{}°C",
         "tooltip": true,
         "interval": 600,
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/weather",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/weather",
         "return-type": "json"
     },
     "custom/keyboard-layout": {
@@ -189,7 +189,7 @@
     },
     "custom/temperature": {
         "format": "{}",
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
         "on-click": "alacritty -e s-tui",
         "interval": 1,
         "return-type": "json"
@@ -204,14 +204,14 @@
     "custom/network-up": {
         "format": " {}",
         "interval": 1,
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
         "return-type": "json",
         "on-click": "alacritty -e gtop"
     },
     "custom/network-down": {
         "format": " {}",
         "interval": 1,
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
         "return-type": "json",
         "on-click": "alacritty -e gtop"
     },

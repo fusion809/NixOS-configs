@@ -165,10 +165,10 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 				sed -i "s/version = \".*\"/version = \"$latest_marvin_ver\"/" "$marvin_pkg_file"
 				sed -i "s|hash = \".*\"|hash = \"$new_sri_hash\"|" "$marvin_pkg_file"
 				# Arch
-				sed -i "s/^pkgver=.*/pkgver=$latest_marvin_ver/" /arch/home/fusion809/AUR/marvin/PKGBUILD
-				wget -cq http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.rpm -O /arch/home/fusion809/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm
-				aur_hash=$(md5sums /arch/home/fusion809/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm)
-				sed -i "14s/'.*'/'$aur_hash'/" /arch/home/fusion809/AUR/marvin/PKGBUILD
+				sed -i "s/^pkgver=.*/pkgver=$latest_marvin_ver/" /arch$HOME/AUR/marvin/PKGBUILD
+				wget -cq http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.rpm -O /arch$HOME/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm
+				aur_hash=$(md5sums /arch$HOME/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm)
+				sed -i "14s/'.*'/'$aur_hash'/" /arch$HOME/AUR/marvin/PKGBUILD
 				if [[ ${#pushStr} -gt 0 ]]; then
 					pushStr+="; "
 				fi
