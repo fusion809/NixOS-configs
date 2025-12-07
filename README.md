@@ -19,20 +19,20 @@ in nixpkgs/openra. Or simply run `openraup`.
 # Waybar
 The waybar has the following components:
 * The NixOS menu which gives you options for (all websites opened in Chrome and all directories opened inAntigravity):
-- Opening up the Nerd font cheat sheet websites.
-- Opening up NixOS-configs repo on GitHub.
-- Opening up the NixOS options search.
-- Opening up the NixOS packages search.
-- Opening up the NixOS Wiki.
-- Rebuilding one's system.
-- Repairing the Nix store.
-- Update one's system without repairing the store. 
-- Opening NixOS-configs in the default code editor.
-- Suspend.
-- Hibernate.
-- Shutdown.
-- Logout.
-- Reboot.
+  - Opening up the Nerd font cheat sheet websites.
+  - Opening up NixOS-configs repo on GitHub.
+  - Opening up the NixOS options search.
+  - Opening up the NixOS packages search.
+  - Opening up the NixOS Wiki.
+  - Rebuilding one's system.
+  - Repairing the Nix store.
+  - Update one's system without repairing the store. 
+  - Opening NixOS-configs in the default code editor.
+  - Suspend.
+  - Hibernate.
+  - Shutdown.
+  - Logout.
+  - Reboot.
 * Workspaces.
 * Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 * Keyboard layout (just the two-letter initial though). 
