@@ -470,6 +470,10 @@ tooltip label {
   background-color: #ffffff;
 }
 
+#window {
+  padding-right: 5px;
+}
+
 #custom-temperature {
   border-radius: 4px;
   margin: 6px 1px;
