@@ -1,4 +1,4 @@
-{ username }:
-{
-  nixcfgDir = "/home/${username}/GitHub/mine/config/NixOS-configs";
+{ username }: rec {
+  homeDir = "/home/${username}";
+  nixcfgDir = "${homeDir}/GitHub/mine/config/NixOS-configs";
 }

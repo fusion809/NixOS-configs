@@ -5,7 +5,10 @@
 These are my NixOS 25.11 configuration files for running on my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
 
 # Package management commands
-`nixrsu` is the shell command that updates one's system. `update` will run `nixrsu`, also repair the Nix store if necessary (with the `nixstrep` command) and remove old configurations (using the `nixcg` command). `nixfrb` is used to build your system configuration. 
+* `nixfrb` is used to build the flake-based system configuration.
+* `nixfu` will update your flake.lock file. 
+* `nixrsu` will run `nixfu` and `nixfrb`, if nixfu updated flake.lock.  
+* `update` will run `nixrsu`, also repair the Nix store if necessary (with the `nixstrep` command) and remove old configurations (using the `nixcg` command). 
 
 # OpenRA package
 To update the deps.json file for OpenRA git package, run:
@@ -14,7 +17,7 @@ To update the deps.json file for OpenRA git package, run:
 nix-build --arg pkgs '(import <nixpkgs> {})' -A engines.git
 ```
 
-in nixpkgs/openra. Or simply run `openraup`. 
+in nixpkgs/openra. Or simply run `openraup`. The package assumes you have a local copy of the OpenRA git repo at `${homeDir}/GitHub/others/OpenRA` (where `${homeDir}` is from `nix/lib.nix`).
 
 # Waybar
 The waybar has the following components:

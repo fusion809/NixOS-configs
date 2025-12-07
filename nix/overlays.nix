@@ -1,4 +1,4 @@
-inputs:
+{ inputs, username }:
 [
   (self: super:
 
@@ -14,6 +14,9 @@ inputs:
           "packages"
         ]);
 
+      myLib = import ./lib.nix { inherit username; };
+      inherit (myLib) homeDir;
+
     in with pkgs; {
       #fork = import forkNixpkgsPath {
       #  config = {
@@ -27,7 +30,7 @@ inputs:
       #};
 
       openraPackages = import (forkNixpkgsPath + /openra/default.nix) {
-        inherit pkgs;
+        inherit pkgs homeDir;
       }; # Import as a set
       openra-git = openraPackages.engines.git; # Access the git engine directly
       marvin = callPackage (forkNixpkgsPath + /marvin/package.nix) { };

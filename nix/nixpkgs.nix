@@ -1,4 +1,4 @@
-{ config, inputs, ... }:
+{ config, inputs, username, ... }:
 
 {
   config = {
@@ -19,5 +19,5 @@
       };
     };
   };
-  overlays = import ./overlays.nix inputs;
+  overlays = import ./overlays.nix { inherit inputs username; };
 }

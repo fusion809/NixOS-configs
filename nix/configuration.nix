@@ -25,7 +25,7 @@
   networking = import ./networking.nix { };
   nix = import ./nix.nix { };
   # Allow unfree packages
-  nixpkgs = import ./nixpkgs.nix { inherit config inputs; };
+  nixpkgs = import ./nixpkgs.nix { inherit config inputs username; };
   # Install firefox.
   programs = import ./programs.nix { inherit pkgs inputs username; };
   # Enable sound with pipewire.

@@ -1,10 +1,10 @@
-{ buildOpenRAEngine, dotnetCorePackages }:
+{ buildOpenRAEngine, dotnetCorePackages, homeDir }:
 
 let
   # Use local Git repo to avoid re-downloading
   # Nix will cache this and only fetch updates
   openraSrc = builtins.fetchGit {
-    url = "file:///home/fusion809/GitHub/others/OpenRA";
+    url = "file://${homeDir}/GitHub/others/OpenRA";
     ref = "bleed";
   };
 
