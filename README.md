@@ -18,8 +18,21 @@ in nixpkgs/openra. Or simply run `openraup`.
 
 # Waybar
 The waybar has the following components:
-* The NixOS menu which gives you options for opening up the NixOS packages search, NixOS options search, NixOS Wiki, NixOS configs GitHub repo and Nerd font cheat sheet websites in the default browser, rebuilding and updating one's system, repairing the Nix store, and opening NixOS-configs in default code editor.
-* Updates available. "h" indicates updates to home-manager are available. "s" indicates that updates to nixpkgs (stable branch) are available. "u" indicates updates to nixpkgs-unstable are available. "m" indicates updates to nixpkgs-master are available. 󱇛 indicates that hy3 updates are available.  indicates that Hyprland updates are available.  indicates that Vim updates are available. 󱢇 indicates that OpenRA updates are available. 
+* The NixOS menu which gives you options for (all websites opened in Chrome and all directories opened inAntigravity):
+- Opening up the Nerd font cheat sheet websites.
+- Opening up NixOS-configs repo on GitHub.
+- Opening up the NixOS options search.
+- Opening up the NixOS packages search.
+- Opening up the NixOS Wiki.
+- Rebuilding one's system.
+- Repairing the Nix store.
+- Update one's system without repairing the store. 
+- Opening NixOS-configs in the default code editor.
+- Suspend.
+- Hibernate.
+- Shutdown.
+- Logout.
+- Reboot.
 * Workspaces.
 * Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 * Keyboard layout (just the two-letter initial though). 
@@ -36,8 +49,8 @@ The waybar has the following components:
 * Internet download/upload speed on enp24s0 interface.
 * CPU usage percentage.
 * RAM usage percentage.
-* Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format). 
-* A menu that gives logout, shutdown, reboot, hibernate and suspend options.
+* Updates available. "h" indicates updates to home-manager are available. "s" indicates that updates to nixpkgs (stable branch) are available. "u" indicates updates to nixpkgs-unstable are available. "m" indicates updates to nixpkgs-master are available. 󱇛 indicates that hy3 updates are available.  indicates that Hyprland updates are available.  indicates that Vim updates are available. 󱢇 indicates that OpenRA updates are available. 󰄻 indicates that Marvin updates are available. 
+* Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).
 
 # Wallpaper script
 There is a script within this repository called `wallpaper` that will, using swaybg, set your background to a wallpaper in Arch's `/usr/share/wallpapers`, `/usr/share/backgrounds`, `/usr/share/antergos/wallpapers`, `~/.local/share/backgrounds`, `~/.local/share/wallpapers` or `~/Pictures/Wallpapers`. I originally used hyprpaper to set the wallpaper, I find hyprpaper more difficult to use and I also use the wallpaper script under Niri. 
