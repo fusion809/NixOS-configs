@@ -150,6 +150,34 @@ if [[ $latestVer != $packagedVer ]]; then
 	fi
 	pushStr+="openra: $packagedVer->$latestVer"
 fi
+if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
+	marvin_pkg_file="$NIXCFG/nixpkgs/marvin/package.nix"
+	current_marvin_ver=$(grep -o 'version = ".*"' "$marvin_pkg_file" | cut -d '"' -f 2)
+	latest_marvin_ver=$(curl -L -s "https://docs.chemaxon.com/display/docs/Marvin+Desktop+Suite+History+of+Changes" | grep -E -o 'Marvin (Desktop Suite )?[0-9]+\.[0-9]+\.[0-9]+' | sed -E 's/Marvin (Desktop Suite )?//' | sort -V | tail -n 1)
+	
+	if [[ -n "$latest_marvin_ver" ]] && [[ "$latest_marvin_ver" != "$current_marvin_ver" ]]; then
+		new_url="http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.deb"
+		if curl --output /dev/null --silent --head --fail "$new_url"; then
+			new_sri_hash=$(nix-prefetch-url --type sha256 --sri "$new_url" 2>/dev/null)
+			if [[ -n "$new_sri_hash" ]]; then
+				add_symbol "󰄻"
+				# NixOS
+				sed -i "s/version = \".*\"/version = \"$latest_marvin_ver\"/" "$marvin_pkg_file"
+				sed -i "s|hash = \".*\"|hash = \"$new_sri_hash\"|" "$marvin_pkg_file"
+				# Arch
+				sed -i "s/^pkgver=.*/pkgver=$latest_marvin_ver/" /arch/home/fusion809/AUR/marvin/PKGBUILD
+				wget -cq http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.rpm -O /arch/home/fusion809/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm
+				aur_hash=$(md5sums /arch/home/fusion809/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm)
+				sed -i "14s/'.*'/'$aur_hash'/" /arch/home/fusion809/AUR/marvin/PKGBUILD
+				if [[ ${#pushStr} -gt 0 ]]; then
+					pushStr+="; "
+				fi
+				pushStr+="marvin: $current_marvin_ver->$latest_marvin_ver"
+			fi
+		fi
+	fi
+fi
+
 if [[ $(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1 | wc -l) -eq 1 ]]; then
 	# Add cached symbols one by one to avoid duplicates
 	cached_symbols=$(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1)
@@ -183,6 +211,11 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		
 		# flake.lock is always OK for the script to modify
 		if [[ "$file" == "nix/flake.lock" ]]; then
+			continue
+		fi
+
+		# marvin package.nix is OK
+		if [[ "$file" == "nixpkgs/marvin/package.nix" ]]; then
 			continue
 		fi
 		
