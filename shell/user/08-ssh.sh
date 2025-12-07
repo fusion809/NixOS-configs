@@ -337,3 +337,21 @@ function cp_from_deepin {
 function view_deepin {
     view_qemu_vm "Deepin 25.0.1"
 }
+
+function start_alpine {
+    start_qemu_vm_root "Alpine Linux 3.23" 30
+}
+
+function ssh_alpine {
+    start_alpine
+    TERM=xterm-256color ssh fusion809@192.168.122.26
+}
+
+function cp_from_alpine {
+    start_alpine
+    scp -O -r fusion809@192.168.122.26:$1 $2
+}
+
+function view_alpine {
+    view_qemu_vm "Alpine Linux 3.23"
+}

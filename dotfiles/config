@@ -46,3 +46,6 @@ Host freebsd-kvm
 Host deepin-kvm
 	Hostname 192.168.122.23
 	User fusion809
+Host alpine-kvm
+	Hostname 192.168.122.26
+	User fusion809
