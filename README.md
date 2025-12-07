@@ -18,7 +18,7 @@ in nixpkgs/openra. Or simply run `openraup`.
 
 # Waybar
 The waybar has the following components:
-* The NixOS menu which gives you options for (all websites opened in Chrome and all directories opened inAntigravity):
+* The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened inAntigravity):
   - Opening up the Nerd font cheat sheet websites.
   - Opening up NixOS-configs repo on GitHub.
   - Opening up the NixOS options search.
@@ -35,21 +35,31 @@ The waybar has the following components:
   - Reboot.
 * Workspaces.
 * Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
-* Keyboard layout (just the two-letter initial though). 
-* Pulseaudio showing the volume of your output audio device.
-* Temperature according to sensors.
-* Wallpaper number widget: it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.
-* A bin icon that, when clicked, will delete your current wallpaper and load the next wallpaper.
-* A left arrow that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).
-* A shuffling arrow that, when clicked, changes your wallpaper to a randomly selected one.
-* A forward arrow that, when clicked, changes your wallpaper to the next systematically selected one. 
-* A collection of numbers that, when clicked, changes your wallpaper to one which a number you specify. 
+* Keyboard layout ( followed by its two-letter initial though). 
+* Pulseaudio showing the volume of your output audio device. Has a purple background and white text.
+* Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.
+* A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.
+* A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).
+* A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.
+* A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one. 
+* A collection of numbers () that, when clicked, changes your wallpaper to a wallpaper whose number you specify in a pop-up window. 
 * The title of your currently focused window.
-* Used spaced on your root file system.
-* Internet download/upload speed on enp24s0 interface.
-* CPU usage percentage.
-* RAM usage percentage.
-* Updates available. "h" indicates updates to home-manager are available. "s" indicates that updates to nixpkgs (stable branch) are available. "u" indicates updates to nixpkgs-unstable are available. "m" indicates updates to nixpkgs-master are available. 󱇛 indicates that hy3 updates are available.  indicates that Hyprland updates are available.  indicates that Vim updates are available. 󱢇 indicates that OpenRA updates are available. 󰄻 indicates that Marvin updates are available. 
+* Motherboard temperature () according to sensors.
+* Used space () on your root file system.
+* Internet download speed () on enp24s0 interface.
+* Internet upload speed () on enp24s0 interface.
+* CPU usage percentage ().
+* RAM usage percentage ().
+* Updates available. 
+    - "h" indicates updates to home-manager are available. 
+    - "m" indicates updates to nixpkgs-master are available.
+    - "s" indicates that updates to nixpkgs (stable branch) are available. 
+    - "u" indicates updates to nixpkgs-unstable are available. 
+    - 󱇛 indicates that hy3 updates are available. 
+    -  indicates that Hyprland updates are available. 
+    -  indicates that Vim updates are available.
+    - 󱢇 indicates that OpenRA updates are available.
+    - 󰄻 indicates that Marvin updates are available. 
 * Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).
 
 # Wallpaper script

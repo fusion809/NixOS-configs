@@ -35,35 +35,29 @@
         "custom/updates",
         "clock"
     ],
-    "custom/weather": {
-        "format": "{}°C",
-        "tooltip": true,
-        "interval": 600,
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/weather",
-        "return-type": "json"
-    },
-    "custom/temperature": {
-        "format": "{}",
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
-        "on-click": "alacritty -e s-tui",
-        "interval": 1,
-        "return-type": "json"
-    },
-    "custom/network-up": {
-        "format": "{}",
-        "interval": 1,
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
-        "return-type": "json",
-        "on-click": "alacritty -e gtop"
-    },
-    "custom/network-down": {
-        "format": "{}",
-        "interval": 1,
-        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
-        "return-type": "json",
-        "on-click": "alacritty -e gtop"
-    },
     // Modules configuration
+    "custom/nixosicon": {
+        "format": "",
+        "tooltip": false,
+        "menu": "on-click",
+        "menu-file": "$HOME/GitHub/mine/config/NixOS-configs/dotfiles/nixos_menu.xml", // Menu file in resources folder
+        "menu-actions": {
+            "nerdfonts": "xdg-open https://www.nerdfonts.com/cheat-sheet",
+            "wiki": "xdg-open https://wiki.nixos.org",
+            "update": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
+            "rebuild": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/rebuild",
+            "repair": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/repair",
+            "nixpkgs": "xdg-open https://search.nixos.org/packages",
+            "options": "xdg-open https://search.nixos.org/options",
+            "nixosconfigs": "antigravity $HOME/GitHub/mine/config/NixOS-configs",
+            "nixosconfigsrepo": "xdg-open https://github.com/fusion809/NixOS-configs",
+            "shutdown": "sudo poweroff",
+            "reboot": "sudo reboot",
+            "logout": "hyprctl dispatch exit",
+            "suspend": "sudo systemctl suspend",
+            "hibernate": "sudo systemctl hibernate"
+        }
+    },
     "hyprland/workspaces": {
         "on-scroll-up": "hyprctl dispatch workspace e+1",
         "on-scroll-down": "hyprctl dispatch workspace e-1",
@@ -88,33 +82,50 @@
             "default": " "
         }
     },
-    "custom/nixosicon": {
-        "format": "",
-        "tooltip": false,
-        "menu": "on-click",
-        "menu-file": "$HOME/GitHub/mine/config/NixOS-configs/dotfiles/nixos_menu.xml", // Menu file in resources folder
-        "menu-actions": {
-            "nerdfonts": "xdg-open https://www.nerdfonts.com/cheat-sheet",
-            "wiki": "xdg-open https://wiki.nixos.org",
-            "update": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
-            "rebuild": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/rebuild",
-            "repair": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/repair",
-            "nixpkgs": "xdg-open https://search.nixos.org/packages",
-            "options": "xdg-open https://search.nixos.org/options",
-            "nixosconfigs": "antigravity $HOME/GitHub/mine/config/NixOS-configs",
-            "nixosconfigsrepo": "xdg-open https://github.com/fusion809/NixOS-configs",
-            "shutdown": "sudo poweroff",
-            "reboot": "sudo reboot",
-            "logout": "hyprctl dispatch exit",
-            "suspend": "sudo systemctl suspend",
-            "hibernate": "sudo systemctl hibernate"
-        }
+    "custom/weather": {
+        "format": "{}°C",
+        "tooltip": true,
+        "interval": 600,
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/weather",
+        "return-type": "json"
     },
-    "custom/updates": {
-        "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
-        "interval": 60
+    "custom/keyboard-layout": {
+        "format": " {}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/keyboard-layout",
+        "return-type": "json",
+        "on-click": "hyprctl switchxkblayout current next",
+        "tooltip": true,
+        "interval": 1,
+        "tooltip-format": "Keyboard layout; click or press Win+Space to change it."
+    },
+    "pulseaudio": {
+        // "scroll-step": 1, // %, can be a float
+        "format": "{icon}{volume}%",
+        "format-bluetooth": "{icon}{volume}%",
+        "format-bluetooth-muted": "{icon}",
+        "format-muted": " ",
+        "format-source": "",
+        //"format-source": "{volume}% ",
+        "format-source-muted": "",
+        "format-icons": {
+            "headphone": "",
+            "hands-free": "",
+            "headset": "",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": [
+                "",
+                "",
+                ""
+            ]
+        },
+        "on-click": "pavucontrol"
+    },
+    "custom/uptime": {
+        "format": "󰔚 {}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/uptime",
+        "interval": 1
     },
     "custom/wallpaper-no": {
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/no-wallpapers",
@@ -154,41 +165,58 @@
         "tooltip-format": "Enter the number of the next wallpaper you want to see.",
         "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-no-specify"
     },
-    "custom/bluetooth-connect": {
-        "format": "",
-        "on-click": "bluetooth-connect",
-        "tooltip": true,
-        "tooltip-format": "Connect to Bluetooth device"
-    },
-    "keyboard-state": {
-        "numlock": true,
-        "capslock": true,
-        "format": "{name} {icon}",
-        "format-icons": {
-            "locked": "",
-            "unlocked": ""
+    "hyprland/window": {
+        "format": "{title}",
+        "max-length": 50,
+        "rewrite": {
+            "Google Earth - Google Chrome": "󰊷",
+            "(.*) - Google Chrome": " $1",
+            "fusion809@nixos(.*)": " $1",
+            "(.*) - Discord": " $1",
+            "(.*) - Antigravity - (.*)": "󰨞 $1",
+            "Steam": "",
+            "Friends List": " Friends List",
+            "Virtual Machine Manager": "",
+            "Instagram(.*)": " $1",
+            "Google Chat - Chat": "󰭹",
+            "WhatsApp Web": "",
+            "Duolingo - (.*)": "  $1",
+            "WinBoat": "",
+            "Bluetooth Devices": "",
+            "Debian 13.*": "",
+            ".*@hpc-login-prd-t1:(.*)": "󰇅 $1"
         }
     },
-    "custom/uptime": {
-        "format": "󰔚 {}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/uptime",
-        "interval": 1
+    "custom/temperature": {
+        "format": "{}",
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
+        "on-click": "alacritty -e s-tui",
+        "interval": 1,
+        "return-type": "json"
     },
     "custom/disk": {
-        "format": "{}",
+        "format": " {}",
         "interval": 1,
         "on-click": "alacritty -e gtop",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/disk",
         "return-type": "json"
     },
-    "clock": {
-        "timezone": "Australia/Brisbane",
-        "tooltip-format": "<big>{:%r %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
-        "format": "{:%r %a %d/%m/%y}",
-        "interval": 1
+    "custom/network-up": {
+        "format": " {}",
+        "interval": 1,
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
+        "return-type": "json",
+        "on-click": "alacritty -e gtop"
+    },
+    "custom/network-down": {
+        "format": " {}",
+        "interval": 1,
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
+        "return-type": "json",
+        "on-click": "alacritty -e gtop"
     },
     "custom/cpu": {
-        "format": "{}",
+        "format": " {}",
         "tooltip": false,
         "on-click": "alacritty -e gtop",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/cpu",
@@ -196,10 +224,22 @@
         "interval": 1
     },
     "custom/memory": {
-        "format": "{}",
+        "format": " {}",
         "on-click": "alacritty -e gtop",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
         "return-type": "json",
+        "interval": 1
+    },
+    "custom/updates": {
+        "format": "{}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
+        "interval": 60
+    },
+    "clock": {
+        "timezone": "Australia/Brisbane",
+        "tooltip-format": "<big>{:%r %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
+        "format": "{:%r %a %d/%m/%y}",
         "interval": 1
     },
     "power-profiles-daemon": {
@@ -212,31 +252,7 @@
             "balanced": "",
             "power-saver": ""
         }
-    },
-    "pulseaudio": {
-        // "scroll-step": 1, // %, can be a float
-        "format": "{icon}{volume}%",
-        "format-bluetooth": "{icon}{volume}%",
-        "format-bluetooth-muted": "{icon}",
-        "format-muted": " ",
-        "format-source": "",
-        //"format-source": "{volume}% ",
-        "format-source-muted": "",
-        "format-icons": {
-            "headphone": "",
-            "hands-free": "",
-            "headset": "",
-            "phone": "",
-            "portable": "",
-            "car": "",
-            "default": [
-                "",
-                "",
-                ""
-            ]
-        },
-        "on-click": "pavucontrol"
-    },
+    }
     /*"custom/media": {
         "format": "{icon} {text}",
         "return-type": "json",
@@ -249,13 +265,4 @@
         "exec": "$HOME/.config/waybar/mediaplayer.py 2> /dev/null" // Script in resources folder
         // "exec": "$HOME/.config/waybar/mediaplayer.py --player spotify 2> /dev/null" // Filter player based on name
     },*/
-    "custom/keyboard-layout": {
-        "format": " {}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/keyboard-layout",
-        "return-type": "json",
-        "on-click": "hyprctl switchxkblayout current next",
-        "tooltip": true,
-        "interval": 1,
-        "tooltip-format": "Keyboard layout; click or press Win+Space to change it."
-    }
 }

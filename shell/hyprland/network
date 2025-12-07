@@ -99,9 +99,9 @@ rx_class=$(get_class_rx $rx_speed)
 tx_class=$(get_class_tx $tx_speed)
 
 if [[ "$MODE" == "up" ]]; then
-    printf '{"text":" %s","class":"%s"}' "$tx_fmt" "$tx_class"
+    printf '{"text":"%s","class":"%s"}' "$tx_fmt" "$tx_class"
 elif [[ "$MODE" == "down" ]]; then
-    printf '{"text":" %s","class":"%s"}' "$rx_fmt" "$rx_class"
+    printf '{"text":"%s","class":"%s"}' "$rx_fmt" "$rx_class"
 else
     # Legacy/Both mode - use max class? Or just rx class as primary?
     # Original logic used max of both.
