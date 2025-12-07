@@ -65,8 +65,7 @@ window#waybar.hidden {
 #clock {
   border-radius: 4px;
   margin: 6px 1px;
-  padding: 3px 3px;
-  padding-right: 3px;
+  padding: 3px 2px;
   background-color: #1e1e2e;
   color: #000000;
 }
@@ -139,7 +138,6 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  padding-right: 6px;
 }
 
 #custom-nixosicon,
@@ -150,7 +148,7 @@ window#waybar.hidden {
 #custom-keyboard-layout {
   border-radius: 4px;
   margin: 6px 1px;
-  padding: 3px 3px;
+  padding: 3px 2px;
 }
 
 #custom-keyboard-layout {
@@ -188,7 +186,7 @@ window#waybar.hidden {
 #custom-weather {
   border-radius: 4px;
   margin: 6px 1px;
-  padding: 3px 3px;
+  padding: 2px 2px;
   background-color: #1E1E1E;
   color: #ffffff;
 }
@@ -243,7 +241,6 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  padding-right: 6px;
   background-color: #1E1E1E;
   color: #ffffff;
 }
@@ -277,7 +274,7 @@ window#waybar.hidden {
 #custom-cpu {
   border-radius: 4px;
   margin: 6px 1px;
-  padding: 3px 6px;
+  padding: 3px 3px;
   background-color: #1E1E1E;
   color: #ffffff;
 }
@@ -325,7 +322,7 @@ window#waybar.hidden {
 #custom-wallpaper-no-specify {
   border-radius: 4px;
   margin: 6px 1px;
-  padding: 3px 3px;
+  padding: 3px 2px;
   color: #000000;
 }
 
@@ -333,11 +330,14 @@ window#waybar.hidden {
   /*background-color: #ff66bb;*/
   color: #ffffff;
   background-color: #795548;
+  padding-right: 2px;
 }
 
 #custom-wallpaper-no-specify {
   background-color: #3F51B5;
   color: #ffffff;
+  padding-left: 3px;
+  padding-right: 4px;
 }
 
 #custom-wallpaper-rm {
@@ -348,19 +348,19 @@ window#waybar.hidden {
 #custom-wallpaper-previous {
   background-color: #018786;
   color: #ffffff;
-  padding-right: 6px;
+  padding-right: 5px;
 }
 
 #custom-wallpaper-random {
   background-color: #BB86FC;
   color: #000000;
-  padding-right: 9px;
+  padding-right: 6px;
 }
 
 #custom-wallpaper-next {
   background-color: #689F38;
   color: #ffffff;
-  padding-right: 6px;
+  padding-right: 5px;
 }
 
 #pulseaudio {
@@ -401,8 +401,9 @@ window#waybar.hidden {
 #custom-network-down {
   border-radius: 4px;
   margin: 6px 1px;
-  padding: 3px 3px;
-  padding-right: 4px;
+  padding: 1px 1px;
+  padding-left: 1px;
+  padding-right: 2px;
   background-color: #00796B;
   color: #ffffff;
 }
@@ -453,6 +454,7 @@ window#waybar.hidden {
 #custom-uptime {
   background-color: violet;
   color: black;
+  padding-right: 2px;
 }
 
 tooltip {
@@ -472,6 +474,7 @@ tooltip label {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
+  padding-right: 2px;
   background-color: #1E1E1E;
   color: #ffffff;
 }
