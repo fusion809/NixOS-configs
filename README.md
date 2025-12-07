@@ -2,7 +2,7 @@
 ![Hyprland on NixOS screenshot as of 7 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-07.png)
 **Figure 1: Hyprland NixOS configuration as of 7 December 2025.**
 
-These are my NixOS 25.11 configuration files for running on my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
+These are my NixOS 25.11 configuration files for my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
 
 # Package management commands
 * `nixcg` is used to remove old generations and sources with `sudo nix-collect-garbage -d`.
