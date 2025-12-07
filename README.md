@@ -5,10 +5,20 @@
 These are my NixOS 25.11 configuration files for running on my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
 
 # Package management commands
+* `nixcg` is used to remove old generations and sources with `sudo nix-collect-garbage -d`.
+* `nixdg` is used to delete specified generations. 
 * `nixfrb` is used to build the flake-based system configuration.
 * `nixfu` will update your flake.lock file. 
-* `nixrsu` will run `nixfu` and `nixfrb`, if nixfu updated flake.lock.  
-* `update` will run `nixrsu`, also repair the Nix store if necessary (with the `nixstrep` command) and remove old configurations (using the `nixcg` command). 
+* `nixlg` will list generations.
+* `nixrb` (alias `rebuild`) will rebuild your system without using your flake setup.
+* `nixrsu` will run `nixfu` and `nixfrb`, if nixfu updated flake.lock. 
+* `nixs` will search for a package in a specified repository. First argument is repo name and second argument is the package name.
+* `nixspc` will count the number of packages in a specified repository. 
+* `nixstrep` will try to repair the Nix store, if necessary.
+* `nixver` will show the version of your NixOS system based on your installed channels.
+* `update` will run `nixrsu`, `nixstrep` and `nixcg`. 
+* `upgrade` will upgrade your system to the latest stable NixOS release. Shell profile is set up to automatically check for upgrades within 35 days of the end of life of your installed version of NixOS. 
+* `rollback` will roll back your system to the previous generation.
 
 # OpenRA package
 To update the deps.json file for OpenRA git package, run:
@@ -19,7 +29,8 @@ nix-build --arg pkgs '(import <nixpkgs> {})' -A engines.git
 
 in nixpkgs/openra. Or simply run `openraup`. The package assumes you have a local copy of the OpenRA git repo at `${homeDir}/GitHub/others/OpenRA` (where `${homeDir}` is from `nix/lib.nix`).
 
-# Waybar
+# Hyprland
+## Waybar
 The waybar has the following components:
 * The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened inAntigravity):
   - Opening up the Nerd font cheat sheet websites.
@@ -53,7 +64,7 @@ The waybar has the following components:
 * Internet upload speed () on enp24s0 interface.
 * CPU usage percentage ().
 * RAM usage percentage ().
-* Updates available. 
+* Updates available.<sup>1</sup>
     - "h" indicates updates to home-manager are available. 
     - "m" indicates updates to nixpkgs-master are available.
     - "s" indicates that updates to nixpkgs (stable branch) are available. 
@@ -65,10 +76,13 @@ The waybar has the following components:
     - 󰄻 indicates that Marvin updates are available. 
 * Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).
 
-# Wallpaper script
+Footnotes:
+1. The script that manages this runs every ~2 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them.
+
+## Wallpaper script
 There is a script within this repository called `wallpaper` that will, using swaybg, set your background to a wallpaper in Arch's `/usr/share/wallpapers`, `/usr/share/backgrounds`, `/usr/share/antergos/wallpapers`, `~/.local/share/backgrounds`, `~/.local/share/wallpapers` or `~/Pictures/Wallpapers`. I originally used hyprpaper to set the wallpaper, I find hyprpaper more difficult to use and I also use the wallpaper script under Niri. 
 
-## Syntax
+### Syntax
 
 ```bash
 wallpaper <algorithm/no> [direction]
@@ -82,7 +96,7 @@ An alternative to the algorithm argument is the no argument which specifies the 
 
 The direction argument, which is only applicable if the first argument is algorithm, can be "previous" or something else. If it is previous and the first argument is "systematic", this will lead to the previous wallpaper being shown. Otherwise the next wallpaper will be shown. This is also the default behaviour if direction is omitted.
 
-# Keyboard shortcuts
+## Keyboard shortcuts
 | Keyboard combination                                              | Action                |
 |-------------------------------------------------------------------|-----------------------|
 | <kbd>h</kbd>                                                      | Resize window (only in resize mode) to the left. | 
