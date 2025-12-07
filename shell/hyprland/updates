@@ -13,18 +13,17 @@ if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 else
 	export git_clean=false
 fi
-nixfu &> /tmp/flake-update.log
-diffLen=$(git -C "$NIXCFG" diff nix/flake.lock | wc -l)
+
+# Removed nixfu to avoid downloading flakes to store
+# nixfu &> /tmp/flake-update.log
+# diffLen=$(git -C "$NIXCFG" diff nix/flake.lock | wc -l)
+
 pushStr=""
-if $git_clean && [[ $diffLen -gt 0 ]]; then
-	pushStr+="updates: Updating flake.lock"
-fi
-# Get the list of changed nodes
-changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.lock) --slurpfile new "$NIXCFG/nix/flake.lock" '
-	($old[0].nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
-	($k1 - $k2) + ($k2 - $k1) +
-	([$k1[] | select($old[0].nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
-')
+# Push string logic modified since we don't update flake.lock automatically for nixpkgs anymore
+# if $git_clean && [[ $diffLen -gt 0 ]]; then
+# 	pushStr+="updates: Updating flake.lock"
+# fi
+
 outputStr=""
 # Function to add symbol to outputStr only if not already present
 add_symbol() {
@@ -33,86 +32,39 @@ add_symbol() {
 		outputStr+="$symbol"
 	fi
 }
-# Function to check for package changes
-check_packages() {
-	local s_rev=$1
-	local u_rev=$2
-	local m_rev=$3
-	local vim_rev=$4
-	local s_path=$5
-	local u_path=$6
-	local m_path=$7
-	local vim_path=$8
-	nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }" 2>/dev/null
-}
 
-# Get current revisions and store paths
-# Use nix flake archive to get store paths for inputs (avoids re-downloading)
-archive_json=$(nix flake archive $NIXCFG/nix --json)
+# Read current flake.lock
+lock_json=$(cat "$NIXCFG/nix/flake.lock")
 
-curr_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.locked.rev')
-curr_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".locked.rev')
-curr_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".locked.rev')
-curr_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".locked.rev')
-curr_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".locked.rev')
+# Define inputs to check: symbol, url, branch, json path
+# Using arrays for structure. 
+# Zsh arrays are 1-based usually, but we'll specific vars for clarity or loop.
 
-path_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.path')
-path_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".path')
-path_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".path')
-path_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".path')
-path_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".path')
+typeset -A inputs
+inputs[nixpkgs]="s https://github.com/NixOS/nixpkgs.git nixos-25.11 .nodes.nixpkgs.locked.rev"
+inputs[nixpkgs-unstable]="u https://github.com/NixOS/nixpkgs.git nixos-unstable .nodes.\"nixpkgs-unstable\".locked.rev"
+inputs[nixpkgs-master]="m https://github.com/NixOS/nixpkgs.git master .nodes.\"nixpkgs-master\".locked.rev"
+inputs[home-manager]="h https://github.com/nix-community/home-manager.git release-25.11 .nodes.\"home-manager\".locked.rev"
 
+for name in ${(k)inputs}; do
+    line="${inputs[$name]}"
+    symbol=$(echo $line | cut -d ' ' -f 1)
+    url=$(echo $line | cut -d ' ' -f 2)
+    branch=$(echo $line | cut -d ' ' -f 3)
+    json_path=$(echo $line | cut -d ' ' -f 4)
 
-if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
-	old_hm=$(jq -r '.nodes."home-manager".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
-	
-	# Compare home-manager modules directory paths
-	old_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }" 2>/dev/null)
-	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }" 2>/dev/null)
-	
-	if [[ "$old_out" != "$new_out" ]]; then
-		add_symbol "h"
-	fi
-fi
+    current_rev=$(echo "$lock_json" | jq -r "$json_path")
+    
+    # Check remote head
+    # Use head -n 1 to be safe, awk to get hash (first column)
+    remote_rev=$(git ls-remote "$url" "$branch" | head -n 1 | awk '{print $1}')
+    
+    if [[ -n "$remote_rev" ]] && [[ "$remote_rev" != "$current_rev" ]]; then
+        add_symbol "$symbol"
+    fi
+done
 
-if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
-	old_rev=$(jq -r '.nodes."nixpkgs-master".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
-	
-	# Automatically extract master package names from packages.nix
-	master_pkgs=$(grep -o 'master\.[a-zA-Z0-9_-]*' $NIXCFG/nix/packages.nix | sed 's/master\.//' | sort -u | tr '\n' ' ')
-	
-	# Compare master packages
-	old_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }" 2>/dev/null)
-	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }" 2>/dev/null)
-
-	if [[ "$old_out" != "$new_out" ]]; then
-		add_symbol "m"
-	fi
-fi
-if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
-	old_rev=$(jq -r '.nodes.nixpkgs.locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
-	
-	# Check if packages changed (keeping unstable/master constant)
-	# For old check, we use old stable rev (fetched), but keep current unstable/master/vim paths (local)
-	old_out=$(check_packages "$old_rev" "$curr_u" "$curr_m" "$curr_vim" "" "$path_u" "$path_m" "$path_vim")
-	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
-	
-	if [[ "$old_out" != "$new_out" ]]; then
-		add_symbol "s"
-	fi
-fi
-if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
-	old_rev=$(jq -r '.nodes."nixpkgs-unstable".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
-	
-	# Check if packages changed (keeping stable/master constant)
-	old_out=$(check_packages "$curr_s" "$old_rev" "$curr_m" "$curr_vim" "$path_s" "" "$path_m" "$path_vim")
-	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
-	
-	if [[ "$old_out" != "$new_out" ]]; then
-		add_symbol "u"
-	fi
-fi
-
+# Hy3 and Hyprland Logic (Variables sourced from 15-hyprland.sh)
 if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
 	add_symbol "󱇛"
 	sed -i \
@@ -132,10 +84,12 @@ if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_T
 	pushStr+="hyprland: $HYPR_INST->$HYPR_TAG"
 fi
 
+# Vim Logic (Variables sourced from 14-vimup.sh)
 if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
 	add_symbol ""
 fi
 
+# OpenRA Logic
 git -C $GHUBO/OpenRA pull origin bleed -q
 latestRev=$(revision $GHUBO/OpenRA)
 upno=$(comno $GHUBO/OpenRA)
@@ -150,6 +104,8 @@ if [[ $latestVer != $packagedVer ]]; then
 	fi
 	pushStr+="openra: $packagedVer->$latestVer"
 fi
+
+# Marvin Logic
 if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	marvin_pkg_file="$NIXCFG/nixpkgs/marvin/package.nix"
 	current_marvin_ver=$(grep -o 'version = ".*"' "$marvin_pkg_file" | cut -d '"' -f 2)
@@ -158,6 +114,9 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	if [[ -n "$latest_marvin_ver" ]] && [[ "$latest_marvin_ver" != "$current_marvin_ver" ]]; then
 		new_url="http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.deb"
 		if curl --output /dev/null --silent --head --fail "$new_url"; then
+            # Clean up old RPMs before downloading
+            rm -f /arch$HOME/AUR/marvin/*.rpm
+
 			new_sri_hash=$(nix-prefetch-url --type sha256 --sri "$new_url" 2>/dev/null)
 			if [[ -n "$new_sri_hash" ]]; then
 				add_symbol "󰄻"
@@ -209,7 +168,7 @@ if [[ ${#pushStr} -gt 0 ]]; then
 			break
 		fi
 		
-		# flake.lock is always OK for the script to modify
+		# flake.lock is always OK for the script to modify << NO LONGER MODIFIED BY THIS SCRIPT AUTOMATICALLY
 		if [[ "$file" == "nix/flake.lock" ]]; then
 			continue
 		fi

@@ -48,6 +48,7 @@ with pkgs; [
   keychain
   hyfetch
   libnotify
+  nethogs
   nh
   optipng
   p7zip
