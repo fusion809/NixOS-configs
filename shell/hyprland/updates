@@ -27,6 +27,26 @@ changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.
 	([$k1[] | select($old[0].nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
 ')
 outputStr=""
+# Function to retry commands on failure
+retry() {
+	local max_attempts=10
+	local wait_time=10
+	local attempt=1
+
+	while true; do
+		if "$@"; then
+			return 0
+		else
+			if [[ $attempt -ge $max_attempts ]]; then
+				echo "Command '$*' failed after $max_attempts attempts." >&2
+				return 1
+			fi
+			echo "Command '$*' failed. Retrying in ${wait_time}s... (Attempt $attempt/$max_attempts)" >&2
+			sleep $wait_time
+			attempt=$((attempt + 1))
+		fi
+	done
+}
 # Function to add symbol to outputStr only if not already present
 add_symbol() {
 	local symbol=$1
@@ -44,7 +64,7 @@ check_packages() {
 	local u_path=$6
 	local m_path=$7
 	local vim_path=$8
-	nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }" 2>/dev/null
+	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }" 2>/dev/null
 }
 
 # Get current revisions and store paths
@@ -68,8 +88,8 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 	old_hm=$(jq -r '.nodes."home-manager".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
 	# Compare home-manager modules directory paths
-	old_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }" 2>/dev/null)
-	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }" 2>/dev/null)
+	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }" 2>/dev/null)
+	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }" 2>/dev/null)
 	
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "h"
@@ -83,8 +103,8 @@ if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 	master_pkgs=$(grep -o 'master\.[a-zA-Z0-9_-]*' $NIXCFG/nix/packages.nix | sed 's/master\.//' | sort -u | tr '\n' ' ')
 	
 	# Compare master packages
-	old_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }" 2>/dev/null)
-	new_out=$(nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }" 2>/dev/null)
+	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }" 2>/dev/null)
+	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }" 2>/dev/null)
 
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "m"
@@ -137,7 +157,7 @@ if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
 	add_symbol ""
 fi
 
-git -C $GHUBO/OpenRA pull origin bleed -q
+retry git -C $GHUBO/OpenRA pull origin bleed -q
 latestRev=$(revision $GHUBO/OpenRA)
 upno=$(comno $GHUBO/OpenRA)
 uphash=$(echo $latestRev | head -c 7)
@@ -154,12 +174,12 @@ fi
 if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	marvin_pkg_file="$NIXCFG/nixpkgs/marvin/package.nix"
 	current_marvin_ver=$(grep -o 'version = ".*"' "$marvin_pkg_file" | cut -d '"' -f 2)
-	latest_marvin_ver=$(curl -L -s "https://docs.chemaxon.com/display/docs/Marvin+Desktop+Suite+History+of+Changes" | grep -E -o 'Marvin (Desktop Suite )?[0-9]+\.[0-9]+\.[0-9]+' | sed -E 's/Marvin (Desktop Suite )?//' | sort -V | tail -n 1)
+	latest_marvin_ver=$(retry curl -L -s "https://docs.chemaxon.com/display/docs/Marvin+Desktop+Suite+History+of+Changes" | grep -E -o 'Marvin (Desktop Suite )?[0-9]+\.[0-9]+\.[0-9]+' | sed -E 's/Marvin (Desktop Suite )?//' | sort -V | tail -n 1)
 	
 	if [[ -n "$latest_marvin_ver" ]] && [[ "$latest_marvin_ver" != "$current_marvin_ver" ]]; then
 		new_url="http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.deb"
-		if curl --output /dev/null --silent --head --fail "$new_url"; then
-			new_sri_hash=$(nix-prefetch-url --type sha256 --sri "$new_url" 2>/dev/null)
+		if retry curl --output /dev/null --silent --head --fail "$new_url"; then
+			new_sri_hash=$(retry nix-prefetch-url --type sha256 --sri "$new_url" 2>/dev/null)
 			if [[ -n "$new_sri_hash" ]]; then
 				add_symbol "󰄻"
 				# NixOS
@@ -213,13 +233,6 @@ if [[ ${#pushStr} -gt 0 ]]; then
 	safe_to_push=true
 	
 	for file in $(echo "$files_after"); do
-		# Skip files that were already modified before the script ran
-		if echo "$files_already_modified" | grep -q "^${file}$"; then
-			echo "Skipping push: file '$file' was already modified before script ran"
-			safe_to_push=false
-			break
-		fi
-		
 		# flake.lock is always OK for the script to modify
 		if [[ "$file" == "nix/flake.lock" ]]; then
 			continue
@@ -228,6 +241,13 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		# marvin package.nix is OK
 		if [[ "$file" == "nixpkgs/marvin/package.nix" ]]; then
 			continue
+		fi
+
+		# Skip files that were already modified before the script ran
+		if echo "$files_already_modified" | grep -q "^${file}$"; then
+			echo "Skipping push: file '$file' was already modified before script ran"
+			safe_to_push=false
+			break
 		fi
 		
 		# For flake.nix, check if changes are ONLY the hy3/hyprland URL updates
