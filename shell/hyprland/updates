@@ -243,7 +243,7 @@ $SUDO $NIX_COLLECT_GARBAGE
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
-	files_after=$(git -C $NIXCFG diff --name-only | sort)
+	files_after=$(/run/current-system/sw/bin/git -C $NIXCFG diff --name-only | /run/current-system/sw/bin/sort)
 	
 	# Files that were already modified before the script ran
 	# These are OK because they're not the script's responsibility
@@ -310,6 +310,8 @@ if [[ ${#pushStr} -gt 0 ]]; then
 
 	if [[ "$safe_to_push" == "true" ]]; then
 		# Only script-made changes exist, safe to push
-		push "$pushStr"
+		/run/current-system/sw/bin/git -C $NIXCFG add --all
+		/run/current-system/sw/bin/git -C $NIXCFG commit -m "$pushStr"
+		/run/current-system/sw/bin/git -C $NIXCFG push origin $(/run/current-system/sw/bin/git -C $NIXCFG rev-parse --abbrev-ref HEAD)
 	fi
 fi
