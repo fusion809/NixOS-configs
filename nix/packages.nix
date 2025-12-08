@@ -14,7 +14,7 @@ with pkgs; [
   nixfmt-classic # Needed for Nix IDE extension of vscode/antigravity
   pinta
   vlc
-  unstable.vscode
+  master.vscode
   ###############################################################
   # Assorted packages
   ###############################################################

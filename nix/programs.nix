@@ -33,6 +33,18 @@ in {
         \   'filetypes': ['nix']
         \ }
         \ })
+      
+      " NERDTree settings
+      let NERDTreeQuitOnOpen = 1
+      
+      " Automatically open NERDTree when opening a directory
+      autocmd StdinReadPre * let s:std_in=1
+      autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in") | 
+        \ execute 'NERDTree' argv()[0] | wincmd p | enew | execute 'cd '.argv()[0] | 
+        \ endif
+      
+      " Toggle NERDTree with Ctrl+n
+      nnoremap <C-n> :NERDTreeToggle<CR>
     '';
   };
   steam = {
