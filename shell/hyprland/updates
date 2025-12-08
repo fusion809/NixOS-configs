@@ -264,9 +264,9 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		fi
 	done
 	
-	echo "safe_to_push=$safe_to_push" >> /tmp/main.log
+	echo "safe_to_push=$safe_to_push" >> /tmp/safe_to_push.log
 	if [[ "$safe_to_push" == "true" ]]; then
 		# Only script-made changes exist, safe to push
-		push "$pushStr" >> /tmp/main.log
+		push "$pushStr" >> /tmp/push.log
 	fi
 fi
