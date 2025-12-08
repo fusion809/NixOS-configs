@@ -189,6 +189,15 @@ echo $outputStr
 echo $(date +"%r %a %D") > $HOME/.cache/update
 echo $outputStr >> $HOME/.cache/update
 echo $pushStr >> $HOME/.cache/pushStr
+# Protect flake inputs from GC
+mkdir -p "$HOME/.cache/nix-gcroots"
+# We parse the archive_json which contains the paths of the JUST UPDATED inputs
+echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r path; do
+	if [[ -n "$path" && -e "$path" ]]; then
+		nix-store --add-root "$HOME/.cache/nix-gcroots/$(basename "$path")" --indirect -r "$path" >/dev/null
+	fi
+done
+
 sudo nix-collect-garbage &> /tmp/gc.log
 
 if [[ ${#pushStr} -gt 0 ]]; then
