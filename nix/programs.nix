@@ -25,8 +25,15 @@ in {
     enable = true;
 
     colorschemes.catppuccin.enable = true;
-    plugins.lualine.enable = true;
-    extraPlugins = with pkgs.vimPlugins; [ vim-nix ];
+    extraPlugins = with pkgs.vimPlugins; [ vim-nix nerdtree coc-nvim ];
+    extraConfigVim = ''
+      call coc#config('languageserver', {
+        \ 'nix': {
+        \   'command': 'nixd',
+        \   'filetypes': ['nix']
+        \ }
+        \ })
+    '';
   };
   steam = {
     enable = true;

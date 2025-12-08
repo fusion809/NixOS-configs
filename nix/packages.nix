@@ -50,6 +50,8 @@ with pkgs; [
   libnotify
   nethogs
   nh
+  nixd
+  nodejs
   optipng
   p7zip
   pciutils
