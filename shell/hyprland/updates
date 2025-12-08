@@ -172,7 +172,7 @@ if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_T
 	pushStr+="hyprland: $HYPR_INST->$HYPR_TAG"
 fi
 
-if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]] && [[ $(which vim) != "vim not found" ]]); then
+if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]] && command -v vim &> /dev/null ); then
 	add_symbol ""
 fi
 
