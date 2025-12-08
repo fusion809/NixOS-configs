@@ -18,17 +18,6 @@
       inherit (myLib) homeDir;
 
     in with pkgs; {
-      #fork = import forkNixpkgsPath {
-      #  config = {
-      #    allowUnfree = true;
-      #  };
-      #  permittedInsecurePackages = [
-      #    "dotnet-sdk-6.0.428"
-      #    "dotnet-runtime-6.0.428"
-      #  ];
-      #  overlays = [ ];
-      #};
-
       openraPackages = import (forkNixpkgsPath + /openra/default.nix) {
         inherit pkgs homeDir;
       }; # Import as a set
