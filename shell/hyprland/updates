@@ -32,10 +32,13 @@ fi
 nixfu
 
 diffLen=$(git -C "$NIXCFG" diff nix/flake.lock | wc -l)
+echo "diffLen=$diffLen"
+echo "git_clean=$git_clean"
 pushStr=""
 if $git_clean && [[ $diffLen -gt 0 ]]; then
 	pushStr+="updates: Updating flake.lock"
 fi
+echo "pushStr @L41=$pushStr"
 # Get the list of changed nodes
 changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.lock) --slurpfile new "$NIXCFG/nix/flake.lock" '
 	($old[0].nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
@@ -225,7 +228,7 @@ fi
 echo $outputStr >&3
 echo $(date +"%r %a %D") > $HOME/.cache/update
 echo $outputStr >> $HOME/.cache/update
-echo $pushStr >> $HOME/.cache/pushStr
+echo $pushStr > $HOME/.cache/pushStr
 # Protect flake inputs from GC
 mkdir -p "$HOME/.cache/nix-gcroots"
 # We parse the archive_json which contains the paths of the JUST UPDATED inputs
@@ -308,6 +311,5 @@ if [[ ${#pushStr} -gt 0 ]]; then
 	if [[ "$safe_to_push" == "true" ]]; then
 		# Only script-made changes exist, safe to push
 		push "$pushStr"
-
 	fi
 fi
