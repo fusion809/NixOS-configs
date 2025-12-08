@@ -52,6 +52,7 @@ with pkgs; [
   nh
   nixd
   nodejs
+  ollama
   optipng
   p7zip
   pciutils

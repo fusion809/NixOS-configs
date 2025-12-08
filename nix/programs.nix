@@ -25,7 +25,17 @@ in {
     enable = true;
 
     colorschemes.catppuccin.enable = true;
-    extraPlugins = with pkgs.vimPlugins; [ vim-nix nerdtree coc-nvim ];
+    extraPlugins = with pkgs.vimPlugins; [ vim-nix nerdtree coc-nvim ] ++ [
+      (pkgs.vimUtils.buildVimPlugin {
+        name = "vim-ai";
+        src = pkgs.fetchFromGitHub {
+          owner = "madox2";
+          repo = "vim-ai";
+          rev = "8887f9f78dc0957f57afbc60355a5f328cb84f20";
+          hash = "sha256-gpVMxOqfQMMMb9dAfEaf0edHlEvy8lmetNL2oWolQ4c=";
+        };
+      })
+    ];
     extraConfigVim = ''
       call coc#config('languageserver', {
         \ 'nix': {
@@ -45,6 +55,22 @@ in {
       
       " Toggle NERDTree with Ctrl+n
       nnoremap <C-n> :NERDTreeToggle<CR>
+      nnoremap <C-a> :AIChat<CR>
+      
+      " Navigate between splits with Alt+hjkl
+      nnoremap <M-h> <C-w>j
+      nnoremap <M-l> <C-w>k
+      nnoremap <M-j> <C-w>l
+      nnoremap <M-k> <C-w>h
+      " Configure vim-ai to use Ollama (free local AI)
+      let g:vim_ai_chat = {
+      \  "options": {
+      \    "model": "llama3.2",
+      \    "endpoint_url": "http://localhost:11434/v1/chat/completions",
+      \    "max_tokens": 0,
+      \    "temperature": 1,
+      \  },
+      \}
     '';
   };
   steam = {

@@ -10,6 +10,7 @@
     };
   };
   gvfs = { enable = true; };
+  ollama = { enable = true; };
   pipewire = {
     enable = true;
     alsa.enable = true;
