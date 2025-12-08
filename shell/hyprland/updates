@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 current_date=$(date +"%s")
 source "${0:a:h}/../user/main.sh" &> /tmp/main.log
+echo $PATH >> /tmp/main.log
 
 # Set up git SSH authentication
 export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes"
@@ -13,7 +14,7 @@ if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 else
 	export git_clean=false
 fi
-nixfu &> /tmp/flake-update.log
+nixfu >> /tmp/main.log
 diffLen=$(git -C "$NIXCFG" diff nix/flake.lock | wc -l)
 pushStr=""
 if $git_clean && [[ $diffLen -gt 0 ]]; then
@@ -198,7 +199,7 @@ echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r path; do
 	fi
 done
 
-sudo nix-collect-garbage &> /tmp/gc.log
+/run/wrappers/bin/sudo nix-collect-garbage >> /tmp/main.log
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
@@ -264,9 +265,9 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		fi
 	done
 	
-	echo "safe_to_push=$safe_to_push" >> /tmp/safe_to_push.log
+	echo "safe_to_push=$safe_to_push" >> /tmp/main.log
 	if [[ "$safe_to_push" == "true" ]]; then
 		# Only script-made changes exist, safe to push
-		push "$pushStr" >> /tmp/push.log
+		push "$pushStr" >> /tmp/main.log
 	fi
 fi
