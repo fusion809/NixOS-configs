@@ -1,7 +1,22 @@
 #!/usr/bin/env zsh
 current_date=$(date +"%s")
-source "${0:a:h}/../user/main.sh" &> /tmp/main.log
-echo $PATH >> /tmp/main.log
+source $HOME/.zshrc
+
+# Fix PATH to ensure core utilities are available
+export PATH=$PATH:/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin
+
+# Define absolute paths for robustness
+NIX_STORE="/run/current-system/sw/bin/nix-store"
+NIX_COLLECT_GARBAGE="/run/current-system/sw/bin/nix-collect-garbage"
+SUDO="/run/wrappers/bin/sudo"
+
+# Setup logging
+log_file="$HOME/.cache/updates.$(date +"%s")"
+exec 3>&1        # Save original stdout to FD 3
+exec > "$log_file" 2>&1 # Redirect stdout and stderr to log file
+
+echo "PATH=$PATH"
+
 
 # Set up git SSH authentication
 export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes"
@@ -14,7 +29,8 @@ if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 else
 	export git_clean=false
 fi
-nixfu >> /tmp/main.log
+nixfu
+
 diffLen=$(git -C "$NIXCFG" diff nix/flake.lock | wc -l)
 pushStr=""
 if $git_clean && [[ $diffLen -gt 0 ]]; then
@@ -206,7 +222,7 @@ if [[ $(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | t
 		add_symbol "${cached_symbols:$i:1}"
 	done
 fi
-echo $outputStr
+echo $outputStr >&3
 echo $(date +"%r %a %D") > $HOME/.cache/update
 echo $outputStr >> $HOME/.cache/update
 echo $pushStr >> $HOME/.cache/pushStr
@@ -215,11 +231,12 @@ mkdir -p "$HOME/.cache/nix-gcroots"
 # We parse the archive_json which contains the paths of the JUST UPDATED inputs
 echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r path; do
 	if [[ -n "$path" && -e "$path" ]]; then
-		nix-store --add-root "$HOME/.cache/nix-gcroots/$(basename "$path")" --indirect -r "$path" >/dev/null
+		$NIX_STORE --add-root "$HOME/.cache/nix-gcroots/${path:t}" --indirect -r "$path" >/dev/null
 	fi
 done
 
-/run/wrappers/bin/sudo nix-collect-garbage >> /tmp/main.log
+$SUDO $NIX_COLLECT_GARBAGE
+
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
@@ -269,7 +286,8 @@ if [[ ${#pushStr} -gt 0 ]]; then
 				if echo "$line" | grep -qE '(github.com/outfoxxed/hy3\?ref=refs/tags/|github.com/hyprwm/Hyprland\?submodules=1&ref=refs/tags/)'; then
 					continue
 				else
-					echo "Skipping push: flake.nix has unexpected changes:" >> /tmp/main.log
+					echo "Skipping push: flake.nix has unexpected changes:"
+
 					echo "$line"
 					safe_to_push=false
 					break
@@ -285,9 +303,11 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		fi
 	done
 	
-	echo "safe_to_push=$safe_to_push" >> /tmp/main.log
+	echo "safe_to_push=$safe_to_push"
+
 	if [[ "$safe_to_push" == "true" ]]; then
 		# Only script-made changes exist, safe to push
-		push "$pushStr" >> /tmp/main.log
+		push "$pushStr"
+
 	fi
 fi
