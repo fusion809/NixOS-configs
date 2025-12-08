@@ -1,5 +1,10 @@
 #!/usr/bin/env zsh
 current_date=$(date +"%s")
+# Setup logging
+log_file="$HOME/.cache/updates.$(date +"%s")"
+exec 3>&1        # Save original stdout to FD 3
+exec > "$log_file" 2>&1 # Redirect stdout and stderr to log file
+
 source $HOME/.zshrc
 
 # Fix PATH to ensure core utilities are available
@@ -9,11 +14,6 @@ export PATH=$PATH:/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/prof
 NIX_STORE="/run/current-system/sw/bin/nix-store"
 NIX_COLLECT_GARBAGE="/run/current-system/sw/bin/nix-collect-garbage"
 SUDO="/run/wrappers/bin/sudo"
-
-# Setup logging
-log_file="$HOME/.cache/updates.$(date +"%s")"
-exec 3>&1        # Save original stdout to FD 3
-exec > "$log_file" 2>&1 # Redirect stdout and stderr to log file
 
 echo "PATH=$PATH"
 
@@ -83,7 +83,7 @@ check_packages() {
 	local u_path=$6
 	local m_path=$7
 	local vim_path=$8
-	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }" 2>/dev/null
+	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }"
 }
 
 # Get current revisions and store paths
@@ -107,8 +107,8 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 	old_hm=$(jq -r '.nodes."home-manager".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
 	# Compare home-manager modules directory paths
-	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }" 2>/dev/null)
-	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }" 2>/dev/null)
+	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }")
+	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }")
 	
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "h"
@@ -122,8 +122,8 @@ if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 	master_pkgs=$(grep -o 'master\.[a-zA-Z0-9_-]*' $NIXCFG/nix/packages.nix | sed 's/master\.//' | sort -u | tr '\n' ' ')
 	
 	# Compare master packages
-	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }" 2>/dev/null)
-	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }" 2>/dev/null)
+	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }")
+	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }")
 
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "m"
@@ -172,7 +172,7 @@ if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_T
 	pushStr+="hyprland: $HYPR_INST->$HYPR_TAG"
 fi
 
-if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]]); then
+if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]] && [[ $(which vim) != "vim not found" ]]); then
 	add_symbol ""
 fi
 
@@ -198,7 +198,7 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	if [[ -n "$latest_marvin_ver" ]] && [[ "$latest_marvin_ver" != "$current_marvin_ver" ]]; then
 		new_url="http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.deb"
 		if retry curl --output /dev/null --silent --head --fail "$new_url"; then
-			new_sri_hash=$(retry nix-prefetch-url --type sha256 --sri "$new_url" 2>/dev/null)
+			new_sri_hash=$(retry nix-prefetch-url --type sha256 --sri "$new_url")
 			if [[ -n "$new_sri_hash" ]]; then
 				add_symbol "󰄻"
 				# NixOS

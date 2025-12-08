@@ -23,7 +23,7 @@ in {
   nano = { enable = false; };
   nixvim = {
     enable = true;
-
+    defaultEditor = true;
     colorschemes.catppuccin.enable = true;
     extraPlugins = with pkgs.vimPlugins;
       [ vim-nix nerdtree coc-nvim ] ++ [
@@ -88,11 +88,6 @@ in {
 
     # Add extra compatibility packages for Nvidia + Wayland
     extraCompatPackages = with pkgs; [ proton-ge-bin ];
-  };
-  vim = {
-    enable = true;
-    defaultEditor = true;
-    package = pkgs.vim-latest;
   };
   virt-manager.enable = true;
   waybar.enable = true;
