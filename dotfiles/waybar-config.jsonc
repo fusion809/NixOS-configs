@@ -49,7 +49,7 @@
             "repair": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/repair",
             "nixpkgs": "xdg-open https://search.nixos.org/packages",
             "options": "xdg-open https://search.nixos.org/options",
-            "nixosconfigs": "code $HOME/GitHub/mine/config/NixOS-configs",
+            "nixosconfigs": "antigravity $HOME/GitHub/mine/config/NixOS-configs",
             "nixosconfigsrepo": "xdg-open https://github.com/fusion809/NixOS-configs",
             "shutdown": "sudo poweroff",
             "reboot": "sudo reboot",
