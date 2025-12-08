@@ -248,7 +248,7 @@ if [[ ${#pushStr} -gt 0 ]]; then
 				if echo "$line" | grep -qE '(github.com/outfoxxed/hy3\?ref=refs/tags/|github.com/hyprwm/Hyprland\?submodules=1&ref=refs/tags/)'; then
 					continue
 				else
-					echo "Skipping push: flake.nix has unexpected changes:"
+					echo "Skipping push: flake.nix has unexpected changes:" >> /tmp/main.log
 					echo "$line"
 					safe_to_push=false
 					break
@@ -267,6 +267,6 @@ if [[ ${#pushStr} -gt 0 ]]; then
 	echo "safe_to_push=$safe_to_push" >> /tmp/main.log
 	if [[ "$safe_to_push" == "true" ]]; then
 		# Only script-made changes exist, safe to push
-		push "$pushStr"
+		push "$pushStr" >> /tmp/main.log
 	fi
 fi
