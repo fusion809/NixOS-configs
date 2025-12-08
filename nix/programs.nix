@@ -21,6 +21,13 @@ in {
     #package = pkgs.hyprland;
   };
   nano = { enable = false; };
+  nixvim = {
+    enable = true;
+
+    colorschemes.catppuccin.enable = true;
+    plugins.lualine.enable = true;
+    extraPlugins = with pkgs.vimPlugins; [ vim-nix ];
+  };
   steam = {
     enable = true;
     remotePlay.openFirewall =

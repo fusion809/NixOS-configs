@@ -33,10 +33,14 @@
       url = "git+https://github.com/vim/vim.git?allRefs=1";
       flake = false;
     };
+    nixvim = {
+      url = "git+https://github.com/nix-community/nixvim.git?ref=nixos-25.11";
+      # If using a stable channel you can use `url = "github:nix-community/nixvim/nixos-<version>"`
+    };
 
   };
 
-  outputs = { self, nixpkgs, home-manager, hyprland, hy3, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, hyprland, hy3, nixvim, ... }@inputs:
     let username = "fusion809";
     in {
       # expose the hy3 package from the hy3 input so it can be built directly
@@ -49,6 +53,7 @@
         specialArgs = { inherit inputs username; };
         modules = [
           { nixpkgs.hostPlatform = "x86_64-linux"; }
+          nixvim.nixosModules.nixvim
           ./configuration.nix
           home-manager.nixosModules.home-manager
           {
