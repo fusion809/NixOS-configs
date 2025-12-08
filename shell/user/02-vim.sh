@@ -1,31 +1,31 @@
 function vbash {
-  vim $HOME/.bashrc
+  nvim $HOME/.bashrc
 }
 
 function vcf {
-  vim $NIXCFG/nix
+  nvim $NIXCFG/nix
 }
 
 function vhc {
-  vim $NIXCFG/dotfiles/hyprland.conf
+  nvim $NIXCFG/dotfiles/hyprland.conf
 }
 
 function vrm {
   if [[ -f README.md ]]; then
-    vim README.md
+    nvim README.md
   else
-    vim $NIXCFG/README.md
+    nvim $NIXCFG/README.md
   fi
 }
 
 function vst {
-  vim $NIXCFG/dotfiles/style.css
+  nvim $NIXCFG/dotfiles/style.css
 }
 
 function vwc {
-  vim $NIXCFG/dotfiles/waybar-config.jsonc
+  nvim $NIXCFG/dotfiles/waybar-config.jsonc
 }
 
 function vzsh {
-  vim $HOME/.zshrc
+  nvim $HOME/.zshrc
 }

@@ -1,12 +1,12 @@
 function vbash {
-    vim $HOME/.bashrc
+    nvim $HOME/.bashrc
 } 
 
 function vcf {
-    vim /etc/nixos/configuration.nix
+    nvim /etc/nixos/configuration.nix
 }
 
 function vzsh {
-    vim $HOME/.zshrc
+    nvim $HOME/.zshrc
 }
 
