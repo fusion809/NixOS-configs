@@ -1,37 +1,41 @@
 #!/usr/bin/env zsh
-current_date=$(/run/current-system/sw/bin/date +"%s")
-# Setup logging
-log_file="$HOME/.cache/updates.$(/run/current-system/sw/bin/date +"%s")"
-exec 3>&1        # Save original stdout to FD 3
-exec > "$log_file" 2>&1 # Redirect stdout and stderr to log file
 
+source "${0:a:h}/../user/main.sh"
 source $HOME/.zshrc
 
 # Fix PATH to ensure core utilities are available
+# Export PATH *after* sourcing .zshrc to ensure it takes precedence
 export PATH=$PATH:/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin
+rehash
+
+current_date=$(date +"%s")
+# Setup logging
+log_file="$HOME/.cache/updates.$(date +"%s")"
+exec 3>&1        # Save original stdout to FD 3
+exec > "$log_file" 2>&1 # Redirect stdout and stderr to log file
 
 # Define absolute paths for robustness
-NIX_STORE="/run/current-system/sw/bin/nix-store"
-NIX_COLLECT_GARBAGE="/run/current-system/sw/bin/nix-collect-garbage"
-SUDO="/run/wrappers/bin/sudo"
+NIX_STORE="nix-store"
+NIX_COLLECT_GARBAGE="nix-collect-garbage"
+SUDO="sudo"
 
 echo "PATH=$PATH"
 
 
 # Set up git SSH authentication
-export GIT_SSH_COMMAND="/run/current-system/sw/bin/ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes"
+export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes"
 
 # Capture files with uncommitted changes before script makes any modifications
-files_before=$(/run/current-system/sw/bin/git -C $NIXCFG diff --name-only | /run/current-system/sw/bin/sort)
+files_before=$(git -C $NIXCFG diff --name-only | sort)
 
-if [[ $(/run/current-system/sw/bin/git -C $NIXCFG diff | /run/current-system/sw/bin/wc -l) -eq 0 ]]; then
+if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 	export git_clean=true
 else
 	export git_clean=false
 fi
 nixfu
 
-diffLen=$(/run/current-system/sw/bin/git -C "$NIXCFG" diff nix/flake.lock | /run/current-system/sw/bin/wc -l)
+diffLen=$(git -C "$NIXCFG" diff nix/flake.lock | wc -l)
 echo "diffLen=$diffLen"
 echo "git_clean=$git_clean"
 pushStr=""
@@ -40,7 +44,7 @@ if $git_clean && [[ $diffLen -gt 0 ]]; then
 fi
 echo "pushStr @L41=$pushStr"
 # Get the list of changed nodes
-changed_nodes=$(/run/current-system/sw/bin/jq -n -r --slurpfile old <(/run/current-system/sw/bin/git -C "$NIXCFG" show HEAD:nix/flake.lock) --slurpfile new "$NIXCFG/nix/flake.lock" '
+changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.lock) --slurpfile new "$NIXCFG/nix/flake.lock" '
 	($old[0].nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
 	($k1 - $k2) + ($k2 - $k1) +
 	([$k1[] | select($old[0].nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
@@ -61,7 +65,7 @@ retry() {
 				return 1
 			fi
 			echo "Command '$*' failed. Retrying in ${wait_time}s... (Attempt $attempt/$max_attempts)" >&2
-			/run/current-system/sw/bin/sleep $wait_time
+			sleep $wait_time
 			attempt=$((attempt + 1))
 		fi
 	done
@@ -83,32 +87,32 @@ check_packages() {
 	local u_path=$6
 	local m_path=$7
 	local vim_path=$8
-	retry /run/current-system/sw/bin/nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }"
+	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }"
 }
 
 # Get current revisions and store paths
 # Use nix flake archive to get store paths for inputs (avoids re-downloading)
-archive_json=$(/run/current-system/sw/bin/nix flake archive $NIXCFG/nix --json)
+archive_json=$(nix flake archive $NIXCFG/nix --json)
 
-curr_s=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs.nixpkgs.locked.rev')
-curr_u=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."nixpkgs-unstable".locked.rev')
-curr_m=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."nixpkgs-master".locked.rev')
-curr_vim=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."vim-src".locked.rev')
-curr_hm=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."home-manager".locked.rev')
+curr_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.locked.rev')
+curr_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".locked.rev')
+curr_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".locked.rev')
+curr_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".locked.rev')
+curr_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".locked.rev')
 
-path_s=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs.nixpkgs.path')
-path_u=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."nixpkgs-unstable".path')
-path_m=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."nixpkgs-master".path')
-path_vim=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."vim-src".path')
-path_hm=$(echo "$archive_json" | /run/current-system/sw/bin/jq -r '.inputs."home-manager".path')
+path_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.path')
+path_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".path')
+path_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".path')
+path_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".path')
+path_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".path')
 
 
 if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
-	old_hm=$(/run/current-system/sw/bin/jq -r '.nodes."home-manager".locked.rev' <(/run/current-system/sw/bin/git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_hm=$(jq -r '.nodes."home-manager".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
 	# Compare home-manager modules directory paths
-	old_out=$(retry /run/current-system/sw/bin/nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }")
-	new_out=$(retry /run/current-system/sw/bin/nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }")
+	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }")
+	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }")
 	
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "h"
@@ -116,21 +120,21 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 fi
 
 if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
-	old_rev=$(/run/current-system/sw/bin/jq -r '.nodes."nixpkgs-master".locked.rev' <(/run/current-system/sw/bin/git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_rev=$(jq -r '.nodes."nixpkgs-master".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
 	# Automatically extract master package names from packages.nix
-	master_pkgs=$(/run/current-system/sw/bin/grep -o 'master\.[a-zA-Z0-9_-]*' $NIXCFG/nix/packages.nix | /run/current-system/sw/bin/sed 's/master\.//' | /run/current-system/sw/bin/sort -u | /run/current-system/sw/bin/tr '\n' ' ')
+	master_pkgs=$(grep -o 'master\.[a-zA-Z0-9_-]*' $NIXCFG/nix/packages.nix | sed 's/master\.//' | sort -u | tr '\n' ' ')
 	
 	# Compare master packages
-	old_out=$(retry /run/current-system/sw/bin/nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }")
-	new_out=$(retry /run/current-system/sw/bin/nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }")
+	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }")
+	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }")
 
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "m"
 	fi
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
-	old_rev=$(/run/current-system/sw/bin/jq -r '.nodes.nixpkgs.locked.rev' <(/run/current-system/sw/bin/git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_rev=$(jq -r '.nodes.nixpkgs.locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
 	# Check if packages changed (keeping unstable/master constant)
 	# For old check, we use old stable rev (fetched), but keep current unstable/master/vim paths (local)
@@ -142,7 +146,7 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	fi
 fi
 if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
-	old_rev=$(/run/current-system/sw/bin/jq -r '.nodes."nixpkgs-unstable".locked.rev' <(/run/current-system/sw/bin/git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_rev=$(jq -r '.nodes."nixpkgs-unstable".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
 	# Check if packages changed (keeping stable/master constant)
 	old_out=$(check_packages "$curr_s" "$old_rev" "$curr_m" "$curr_vim" "$path_s" "" "$path_m" "$path_vim")
@@ -155,7 +159,7 @@ fi
 
 if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
 	add_symbol "󱇛"
-	/run/current-system/sw/bin/sed -i \
+	sed -i \
         -e "s|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_INST|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_TAG|" "$FLAKE_FILE"
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
@@ -165,7 +169,7 @@ fi
 
 if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] ); then
 	add_symbol ""
-	/run/current-system/sw/bin/sed -i -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
+	sed -i -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
 	if [[ ${#pushStr} -gt 0 ]]; then
 		pushStr+="; "
 	fi
@@ -176,11 +180,11 @@ if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]] && command -v vim &
 	add_symbol ""
 fi
 
-retry /run/current-system/sw/bin/git -C $GHUBO/OpenRA pull origin bleed -q
-latestRev=$(/run/current-system/sw/bin/git -C $GHUBO/OpenRA log | /run/current-system/sw/bin/head -n 1 | /run/current-system/sw/bin/cut -d ' ' -f 2)
-upno=$(/run/current-system/sw/bin/git -C $GHUBO/OpenRA rev-list --count HEAD)
-uphash=$(echo $latestRev | /run/current-system/sw/bin/head -c 7)
-packagedVer=$(/run/current-system/sw/bin/ls -ld $(which openra-ra) | /run/current-system/sw/bin/cut -d '/' -f 9 | /run/current-system/sw/bin/cut -d '-' -f 4)
+retry git -C $GHUBO/OpenRA pull origin bleed -q
+latestRev=$(git -C $GHUBO/OpenRA log | head -n 1 | cut -d ' ' -f 2)
+upno=$(git -C $GHUBO/OpenRA rev-list --count HEAD)
+uphash=$(echo $latestRev | head -c 7)
+packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
 latestVer="$upno.git.$uphash"
 if [[ $latestVer != $packagedVer ]]; then
 	add_symbol "󱢇"
@@ -192,23 +196,23 @@ if [[ $latestVer != $packagedVer ]]; then
 fi
 if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	marvin_pkg_file="$NIXCFG/nixpkgs/marvin/package.nix"
-	current_marvin_ver=$(/run/current-system/sw/bin/grep -o 'version = ".*"' "$marvin_pkg_file" | cut -d '"' -f 2)
-	latest_marvin_ver=$(retry /run/current-system/sw/bin/curl -L -s "https://docs.chemaxon.com/display/docs/Marvin+Desktop+Suite+History+of+Changes" | /run/current-system/sw/bin/grep -E -o 'Marvin (Desktop Suite )?[0-9]+\.[0-9]+\.[0-9]+' | /run/current-system/sw/bin/sed -E 's/Marvin (Desktop Suite )?//' | /run/current-system/sw/bin/sort -V | /run/current-system/sw/bin/tail -n 1)
+	current_marvin_ver=$(grep -o 'version = ".*"' "$marvin_pkg_file" | cut -d '"' -f 2)
+	latest_marvin_ver=$(retry curl -L -s "https://docs.chemaxon.com/display/docs/Marvin+Desktop+Suite+History+of+Changes" | grep -E -o 'Marvin (Desktop Suite )?[0-9]+\.[0-9]+\.[0-9]+' | sed -E 's/Marvin (Desktop Suite )?//' | sort -V | tail -n 1)
 	
 	if [[ -n "$latest_marvin_ver" ]] && [[ "$latest_marvin_ver" != "$current_marvin_ver" ]]; then
 		new_url="http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.deb"
-		if retry /run/current-system/sw/bin/curl --output /dev/null --silent --head --fail "$new_url"; then
-			new_sri_hash=$(retry /run/current-system/sw/bin/nix-prefetch-url --type sha256 --sri "$new_url")
+		if retry curl --output /dev/null --silent --head --fail "$new_url"; then
+			new_sri_hash=$(retry nix-prefetch-url --type sha256 --sri "$new_url")
 			if [[ -n "$new_sri_hash" ]]; then
 				add_symbol "󰄻"
 				# NixOS
-				/run/current-system/sw/bin/sed -i "s/version = \".*\"/version = \"$latest_marvin_ver\"/" "$marvin_pkg_file"
-				/run/current-system/sw/bin/sed -i "s|hash = \".*\"|hash = \"$new_sri_hash\"|" "$marvin_pkg_file"
+				sed -i "s/version = \".*\"/version = \"$latest_marvin_ver\"/" "$marvin_pkg_file"
+				sed -i "s|hash = \".*\"|hash = \"$new_sri_hash\"|" "$marvin_pkg_file"
 				# Arch
-				/run/current-system/sw/bin/sed -i "s/^pkgver=.*/pkgver=$latest_marvin_ver/" /arch$HOME/AUR/marvin/PKGBUILD
-				/run/current-system/sw/bin/wget -cq http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.rpm -O /arch$HOME/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm
+				sed -i "s/^pkgver=.*/pkgver=$latest_marvin_ver/" /arch$HOME/AUR/marvin/PKGBUILD
+				wget -cq http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.rpm -O /arch$HOME/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm
 				aur_hash=$(md5sums /arch$HOME/AUR/marvin/marvin_linux-${latest_marvin_ver}.rpm)
-				/run/current-system/sw/bin/sed -i "14s/'.*'/'$aur_hash'/" /arch$HOME/AUR/marvin/PKGBUILD
+				sed -i "14s/'.*'/'$aur_hash'/" /arch$HOME/AUR/marvin/PKGBUILD
 				if [[ ${#pushStr} -gt 0 ]]; then
 					pushStr+="; "
 				fi
@@ -218,15 +222,15 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	fi
 fi
 
-if [[ $(/run/current-system/sw/bin/cat $HOME/.cache/update | /run/current-system/sw/bin/grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | /run/current-system/sw/bin/tail -n 1 | /run/current-system/sw/bin/wc -l) -eq 1 ]]; then
+if [[ $(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1 | wc -l) -eq 1 ]]; then
 	# Add cached symbols one by one to avoid duplicates
-	cached_symbols=$(/run/current-system/sw/bin/cat $HOME/.cache/update | /run/current-system/sw/bin/grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | /run/current-system/sw/bin/tail -n 1)
+	cached_symbols=$(cat $HOME/.cache/update | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1)
 	for (( i=0; i<${#cached_symbols}; i++ )); do
 		add_symbol "${cached_symbols:$i:1}"
 	done
 fi
 echo $outputStr >&3
-echo $(/run/current-system/sw/bin/date +"%r %a %D") > $HOME/.cache/update
+echo $(date +"%r %a %D") > $HOME/.cache/update
 echo $outputStr >> $HOME/.cache/update
 echo $pushStr > $HOME/.cache/pushStr
 # Protect flake inputs from GC
@@ -243,7 +247,7 @@ $SUDO $NIX_COLLECT_GARBAGE
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
-	files_after=$(/run/current-system/sw/bin/git -C $NIXCFG diff --name-only | /run/current-system/sw/bin/sort)
+	files_after=$(git -C $NIXCFG diff --name-only | sort)
 	
 	# Files that were already modified before the script ran
 	# These are OK because they're not the script's responsibility
@@ -264,7 +268,7 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		fi
 
 		# Skip files that were already modified before the script ran
-		if echo "$files_already_modified" | /run/current-system/sw/bin/grep -q "^${file}$"; then
+		if echo "$files_already_modified" | grep -q "^${file}$"; then
 			echo "Skipping push: file '$file' was already modified before script ran"
 			safe_to_push=false
 			break
@@ -273,11 +277,11 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		# For flake.nix, check if changes are ONLY the hy3/hyprland URL updates
 		if [[ "$file" == "nix/flake.nix" ]]; then
 			# Get the diff for flake.nix
-			diff_output=$(/run/current-system/sw/bin/git -C $NIXCFG diff nix/flake.nix)
+			diff_output=$(git -C $NIXCFG diff nix/flake.nix)
 			
 			# Extract only the changed lines (lines starting with + or -)
 			# Exclude the +++ and --- header lines
-			changed_lines=$(echo "$diff_output" | /run/current-system/sw/bin/grep -E '^[+-]' | /run/current-system/sw/bin/grep -v -E '^(---|\+\+\+)')
+			changed_lines=$(echo "$diff_output" | grep -E '^[+-]' | grep -v -E '^(---|\+\+\+)')
 			
 			# Check if all changes match the expected patterns
 			# Expected patterns: lines with hy3 or Hyprland URLs with version tags
@@ -286,7 +290,7 @@ if [[ ${#pushStr} -gt 0 ]]; then
 				[[ -z "$line" ]] && continue
 				
 				# Check if line is a hy3 or Hyprland URL change
-				if echo "$line" | /run/current-system/sw/bin/grep -qE '(github.com/outfoxxed/hy3\?ref=refs/tags/|github.com/hyprwm/Hyprland\?submodules=1&ref=refs/tags/)'; then
+				if echo "$line" | grep -qE '(github.com/outfoxxed/hy3\?ref=refs/tags/|github.com/hyprwm/Hyprland\?submodules=1&ref=refs/tags/)'; then
 					continue
 				else
 					echo "Skipping push: flake.nix has unexpected changes:"
@@ -310,8 +314,8 @@ if [[ ${#pushStr} -gt 0 ]]; then
 
 	if [[ "$safe_to_push" == "true" ]]; then
 		# Only script-made changes exist, safe to push
-		/run/current-system/sw/bin/git -C $NIXCFG add --all
-		/run/current-system/sw/bin/git -C $NIXCFG commit -m "$pushStr"
-		/run/current-system/sw/bin/git -C $NIXCFG push origin $(/run/current-system/sw/bin/git -C $NIXCFG rev-parse --abbrev-ref HEAD)
+		git -C $NIXCFG add --all
+		git -C $NIXCFG commit -m "$pushStr"
+		git -C $NIXCFG push origin $(git -C $NIXCFG rev-parse --abbrev-ref HEAD)
 	fi
 fi
