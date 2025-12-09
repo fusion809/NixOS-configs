@@ -4,7 +4,10 @@
 
 These are my NixOS 25.11 configuration files for my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
 
-# Package management commands
+# Shell profile
+Within shell/root is my root shell profile files, and within shell/user is my user shell profile files. I have many functions designed to make my time in the terminal more pleasant.
+
+## Package management commands
 * `nixcg` is used to remove old generations and sources with `sudo nix-collect-garbage -d`.
 * `nixdg` is used to delete specified generations. 
 * `nixfrb` is used to build the flake-based system configuration.
@@ -20,81 +23,24 @@ These are my NixOS 25.11 configuration files for my MS-7B90 PC. Hyprland is my g
 * `upgrade` will upgrade your system to the latest stable NixOS release. Shell profile is set up to automatically check for upgrades within 35 days of the end of life of your installed version of NixOS. 
 * `rollback` will roll back your system to the previous generation.
 
-# OpenRA package
-To update the deps.json file for OpenRA git package, run:
+# nixpkgs
+
+## Marvin package
+[The Marvin package](/nixpkgs/marvin/) is essentially just a copy of the `marvin` package in [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs); I keep it as an overlay just so that I can more easily update it to the latest version when a new release comes out. I do update it in [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs), too, but it can take a month for my PRs to be merged. 
+
+## OpenRA package
+[The OpenRA package](/nixpkgs/openra/) utilizes `$HOME/GitHub/others/OpenRA` as the source directory for [its git repository](https://github.com/OpenRA/OpenRA). It will install the latest git commit and version it as `<commit number>.git.<commit 7-character hash>`. It is a modified version of the OpenRA package in [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs) as of ~October 2025. I use this one as it is more up-to-date, builds from a local copy of the git repo and has a version string I prefer. 
+
+To update the [deps.json](/nixpkgs/openra/engines.git/deps.json) file for OpenRA git package, run:
 
 ```bash
 nix-build --arg pkgs '(import <nixpkgs> {})' -A engines.git
 ```
 
-in nixpkgs/openra. Or simply run `openraup`. The package assumes you have a local copy of the OpenRA git repo at `${homeDir}/GitHub/others/OpenRA` (where `${homeDir}` is from `nix/lib.nix`).
+in [nixpkgs/openra](/nixpkgs/openra/). Or simply run `openraup`. The package assumes you have a local copy of the OpenRA git repo at `${homeDir}/GitHub/others/OpenRA` (where `${homeDir}` is from `nix/lib.nix`).
 
 # Hyprland
-## Waybar
-The waybar has the following components:
-* The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened inAntigravity):
-  - Opening up the Nerd font cheat sheet websites.
-  - Opening up NixOS-configs repo on GitHub.
-  - Opening up the NixOS options search.
-  - Opening up the NixOS packages search.
-  - Opening up the NixOS Wiki.
-  - Rebuilding one's system.
-  - Repairing the Nix store.
-  - Update one's system without repairing the store. 
-  - Opening NixOS-configs in the default code editor.
-  - Suspend.
-  - Hibernate.
-  - Shutdown.
-  - Logout.
-  - Reboot.
-* Workspaces.
-* Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
-* Keyboard layout ( followed by its two-letter initial though). 
-* Pulseaudio showing the volume of your output audio device. Has a purple background and white text.
-* Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.
-* A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.
-* A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).
-* A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.
-* A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one. 
-* A collection of numbers () that, when clicked, changes your wallpaper to a wallpaper whose number you specify in a pop-up window. 
-* The title of your currently focused window.
-* Motherboard temperature () according to sensors.
-* Used space () on your root file system.
-* Internet download speed () on enp24s0 interface.
-* Internet upload speed () on enp24s0 interface.
-* CPU usage percentage ().
-* RAM usage percentage ().
-* Updates available.<sup>1</sup>
-    - "h" indicates updates to home-manager are available. 
-    - "m" indicates updates to nixpkgs-master are available.
-    - "s" indicates that updates to nixpkgs (stable branch) are available. 
-    - "u" indicates updates to nixpkgs-unstable are available. 
-    - 󱇛 indicates that hy3 updates are available. 
-    -  indicates that Hyprland updates are available. 
-    <!---  indicates that Vim updates are available.-->
-    - 󱢇 indicates that OpenRA updates are available.
-    - 󰄻 indicates that Marvin updates are available. 
-* Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).
-
-Footnotes:
-1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`. Right clicking the widget will instead update the widget to show the contents of the final line of `$HOME/.cache/update` (which is the file that the update script writes update notifications to). This can be useful if it's made a mistake and you've corrected that in `$HOME/.cache/update`.
-
-## Wallpaper script
-There is a script within this repository called `wallpaper` that will, using swaybg, set your background to a wallpaper in Arch's `/usr/share/wallpapers`, `/usr/share/backgrounds`, `/usr/share/antergos/wallpapers`, `~/.local/share/backgrounds`, `~/.local/share/wallpapers` or `~/Pictures/Wallpapers`. I originally used hyprpaper to set the wallpaper, I find hyprpaper more difficult to use and I also use the wallpaper script under Niri. 
-
-### Syntax
-
-```bash
-wallpaper <algorithm/no> [direction]
-```
-
-The algorithm/no argument is mandatory; the direction argument is optional. 
-
-The algorithm argument decides which algorithm is used to decide the wallpaper set as your background. If you give it the argument `random` (first letter's case doesn't matter), you will get a randomly decided wallpaper out of those within those specified directories. If you give it the argument `systematic` (first letter's case also doesn't matter), wallpaper will systematically go through the wallpapers one by one. 
-
-An alternative to the algorithm argument is the no argument which specifies the number of the wallpaper to be displayed. Keep in mind that list-wallpapers (which shows wallpapers with Vim line numbers) displays wallpapers with a number one higher than the number used by the wallpaper script (as wallpaper script numbers start at 0, whereas Vim starts at 1).  
-
-The direction argument, which is only applicable if the first argument is algorithm, can be "previous" or something else. If it is previous and the first argument is "systematic", this will lead to the previous wallpaper being shown. Otherwise the next wallpaper will be shown. This is also the default behaviour if direction is omitted.
+I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs)' Hyprland is not the latest version. It is managed by my [nix/flake.nix](nix/flake.nix) file and the [shell/hyprland/updates](/shell/hyprland/updates) script &mdash; which is run by Waybar's custom/updates widget &mdash; updates it. I also utilize the [hy3](https://github.com/outfoxxed/hy3) plugin to provide the window tabbing I am used to from i3. 
 
 ## Keyboard shortcuts
 | Keyboard combination                                              | Action                |
@@ -225,4 +171,68 @@ The direction argument, which is only applicable if the first argument is algori
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Return</kbd>                 | Open workspace of Alacritty terminal. |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>                  | Toggle float of focused window. | 
 
+## Waybar
+The waybar has the following components:
+* The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):
+  - Opening up the Nerd font cheat sheet websites.
+  - Opening up NixOS-configs repo on GitHub.
+  - Opening up the NixOS options search.
+  - Opening up the NixOS packages search.
+  - Opening up the NixOS Wiki.
+  - Rebuilding one's system.
+  - Repairing the Nix store.
+  - Update one's system without repairing the store. 
+  - Opening NixOS-configs in the default code editor.
+  - Suspend.
+  - Hibernate.
+  - Shutdown.
+  - Logout.
+  - Reboot.
+* Workspaces.
+* Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
+* Keyboard layout ( followed by its two-letter initial though). 
+* Pulseaudio showing the volume of your output audio device. Has a purple background and white text.
+* Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.
+* A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.
+* A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).
+* A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.
+* A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one. 
+* A collection of numbers () that, when clicked, changes your wallpaper to a wallpaper whose number you specify in a pop-up window. 
+* The title of your currently focused window.
+* Motherboard temperature () according to sensors. Left clicking this opens a graph showing the history of the motherboard temperature.
+* Used space () on your root file system. Left clicking this opens gtop in Alacritty.
+* Internet download speed () on enp24s0 interface. Left clicking this opens nethogs in Alacritty. Right clicking prompts the user for how long they want to monitor network usage for and then, after this period, it displays network usage and network usage by process. Middle clicking produces a pop up window with a graph of download speed (on enp24s0) history against time. 
+* Internet upload speed () on enp24s0 interface. Left clicking and right clicking does the same thing as per download speed. Middle clicking largely does the same as per download, except with upload speeds. 
+* CPU usage percentage (). Left clicking this opens gtop in Alacritty.
+* RAM usage percentage (). Left clicking this opens gtop in Alacritty.
+* Updates available.<sup>1</sup>
+    - "h" indicates updates to home-manager are available. 
+    - "m" indicates updates to nixpkgs-master are available.
+    - "s" indicates that updates to nixpkgs (stable branch) are available. 
+    - "u" indicates updates to nixpkgs-unstable are available. 
+    - 󱇛 indicates that hy3 updates are available. 
+    -  indicates that Hyprland updates are available. 
+    <!---  indicates that Vim updates are available.-->
+    - 󱢇 indicates that OpenRA updates are available.
+    - 󰄻 indicates that Marvin updates are available. 
+* Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).
 
+Footnotes:
+1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`. Right clicking the widget will instead update the widget to show the contents of the final line of `$HOME/.cache/update` (which is the file that the update script writes update notifications to). This can be useful if it's made a mistake and you've corrected that in `$HOME/.cache/update`.
+
+## Wallpaper script
+There is a script within this repository called `wallpaper` that will, using swaybg, set your background to a wallpaper in Arch's `/usr/share/wallpapers`, `/usr/share/backgrounds`, `/usr/share/antergos/wallpapers`, `~/.local/share/backgrounds`, `~/.local/share/wallpapers` or `~/Pictures/Wallpapers`. I originally used hyprpaper to set the wallpaper, I find hyprpaper more difficult to use and I also use the wallpaper script under Niri. 
+
+### Syntax
+
+```bash
+wallpaper <algorithm/no> [direction]
+```
+
+The algorithm/no argument is mandatory; the direction argument is optional. 
+
+The algorithm argument decides which algorithm is used to decide the wallpaper set as your background. If you give it the argument `random` (first letter's case doesn't matter), you will get a randomly decided wallpaper out of those within those specified directories. If you give it the argument `systematic` (first letter's case also doesn't matter), wallpaper will systematically go through the wallpapers one by one. 
+
+An alternative to the algorithm argument is the no argument which specifies the number of the wallpaper to be displayed. Keep in mind that list-wallpapers (which shows wallpapers with Vim line numbers) displays wallpapers with a number one higher than the number used by the wallpaper script (as wallpaper script numbers start at 0, whereas Vim starts at 1).  
+
+The direction argument, which is only applicable if the first argument is algorithm, can be "previous" or something else. If it is previous and the first argument is "systematic", this will lead to the previous wallpaper being shown. Otherwise the next wallpaper will be shown. This is also the default behaviour if direction is omitted.
