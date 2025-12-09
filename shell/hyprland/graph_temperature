@@ -1,0 +1,52 @@
+#!/usr/bin/env zsh
+
+
+LOGFILE="$HOME/.cache/temperature.log"
+
+if [[ ! -f "$LOGFILE" ]]; then
+    notify-send "Temperature Graph" "No log file found at $LOGFILE"
+    exit 1
+fi
+
+# Use nix-shell to run gnuplot if it's not in PATH, or just run it if installed.
+# We assume user might not have it permanently installed, so nix-shell is safer.
+
+if ! command -v gnuplot &> /dev/null; then
+    notify-send "Error" "Gnuplot not found. Please rebuild your system."
+    exit 1
+fi
+
+# Calculate timezone offset in seconds
+offset_str=$(date +%z)
+sign="${offset_str:0:1}"
+h="${offset_str:1:2}"
+m="${offset_str:3:2}"
+# Use 10# to force base 10 (avoid octal for 08/09)
+offset_sec=$(( 10#$h * 3600 + 10#$m * 60 ))
+if [[ "$sign" == "-" ]]; then
+    offset_sec=$(( -offset_sec ))
+fi
+
+IMGFILE="$HOME/.cache/temperature.png"
+
+gnuplot -e "
+    set title \"CPU Temperature History\";
+    set xdata time;
+    set timefmt \"%s\";
+    set format x \"%I:%M %p\\n%d/%m\";
+    set xlabel \"Time\";
+    set ylabel \"Temperature (°C)\";
+    set grid;
+    set xtics rotate by -45;
+    set bmargin 6;
+    set term pngcairo size 1000,700 font \"monospace,16\";
+    set output \"$IMGFILE\";
+    plot \"$LOGFILE\" using (\$1 + $offset_sec):2 with lines lw 3 title \"Temp\";
+"
+
+# Open the image with eog
+if command -v eog &> /dev/null; then
+    eog "$IMGFILE" &
+else
+    notify-send "Error" "eog not found to view graph."
+fi

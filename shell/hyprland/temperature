@@ -15,5 +15,8 @@ else
     class="critical"
 fi
 
+# Log temperature
+echo "$(date +%s) $temp_value" >> $HOME/.cache/temperature.log
+
 # Output JSON for Waybar
 echo "{\"text\":\"${temp/+/}\",\"class\":\"$class\"}"
