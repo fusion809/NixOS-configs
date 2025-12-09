@@ -21,7 +21,7 @@ fi
 
 current_date=$(date +"%s")
 # Setup logging
-log_file="$HOME/.cache/updates.$(date +"%s")"
+log_file="$HOME/.cache/updates.$current_date"
 exec 3>&1        # Save original stdout to FD 3
 exec > "$log_file" 2>&1 # Redirect stdout and stderr to log file
 

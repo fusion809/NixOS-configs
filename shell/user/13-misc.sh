@@ -52,3 +52,7 @@ function cpHyprNixScr {
 function oldCommands {
 	find ~ -maxdepth 1 -name ".zsh_history*" -exec grep "$@" {} +
 }
+
+function updateLog {
+	cat $(ls $HOME/.cache/updates.* | tail -n 1)
+}
