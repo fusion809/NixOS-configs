@@ -140,10 +140,11 @@ function logNetTransfers {
 				for (p in tot_sent) {
 					# Filter out negligible traffic (e.g. < 1KB) to keep logs clean
 					if (tot_sent[p] > 0 || tot_recv[p] > 0) {
-						printf "%-60s %13.2f %13.2f\n", p, tot_sent[p], tot_recv[p]
+						# Print numbers first for reliable sorting (Recv|Sent|Name)
+						printf "%.2f|%.2f|%s\n", tot_recv[p], tot_sent[p], p
 					}
 				}
-			}' "${outfile}.nethogs" | sort -rnk3 | head -n 30
+			}' "${outfile}.nethogs" | sort -t "|" -rnk1 | head -n 30 | awk -F "|" '{ printf "%-60s %13s %13s\n", $3, $2, $1 }'
 			
 			echo ""
 			echo "(Note: Values are sum of KB/s samples. Precision depends on sampling rate.)"
