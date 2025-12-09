@@ -244,7 +244,7 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
         "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
         "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update-updates",
-        "interval": 1000
+        "interval": 1200
     },
     "clock": {
         "timezone": "Australia/Brisbane",

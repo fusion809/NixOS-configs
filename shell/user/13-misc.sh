@@ -68,7 +68,7 @@ function logNetTransfers {
 		return 1
 	fi
 	
-	outfile="$HOME/.cache/network-transfers.$(date +%s)"
+	outfile="${2:-$HOME/.cache/network-transfers.$(date +%s)}"
 	
 	echo "Capturing process activity with nethogs (auto-detecting all interfaces)..."
 	# Run nethogs in trace mode monitoring ALL interfaces (-a)

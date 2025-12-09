@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 source $HOME/.zshrc
-duration=$(rofi -dmenu -p "Duration (in seconds)")
-logNetTransfers $duration
-logFile=$(ls $HOME/.cache/network-transfers.[0-9]* | tail -n 1)
-vim $logFile
+duration=$(echo "300" | rofi -dmenu -p "Duration (in seconds)" -filter "300")
+logFile="$HOME/.cache/network-transfers.$(date +%s)"
+logNetTransfers $duration "$logFile"
+vim "$logFile"
