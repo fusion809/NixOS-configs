@@ -19,6 +19,13 @@ if ! command -v sudo &> /dev/null; then
     exit 1
 fi
 
+OVERRIDE_FILE="/tmp/waybar_updates_msg"
+if [[ -f "$OVERRIDE_FILE" ]]; then
+    cat "$OVERRIDE_FILE"
+    rm "$OVERRIDE_FILE"
+    exit 0
+fi
+
 current_date=$(date +"%s")
 # Setup logging
 log_file="$HOME/.cache/updates.$current_date"

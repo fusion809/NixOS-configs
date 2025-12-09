@@ -246,6 +246,7 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
         "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
         "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update-updates",
+        "signal": 8,
         "interval": 1200
     },
     "clock": {

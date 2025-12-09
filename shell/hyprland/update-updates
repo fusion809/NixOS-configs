@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 latestLog=$HOME/.cache/update
 if [[ -f "$latestLog" ]]; then
-    lastLine=$(tail -n 1 "$latestLog")
-    notify-send "Updates Log" "$lastLine"
+    # Get 2nd line
+    logLine=$(sed -n '2p' "$latestLog")
+    if [[ -z "$logLine" ]]; then logLine="No Data"; fi
+    
+    # Write to override
+    echo "$logLine" > /tmp/waybar_updates_msg
+    
+    # Signal Waybar to refresh custom/updates (signal 8)
+    pkill -SIGRTMIN+8 waybar
 else
-    notify-send "Updates Log" "No log file found."
+    # Fallback
+    echo "No Log" > /tmp/waybar_updates_msg
+    pkill -SIGRTMIN+8 waybar
 fi
