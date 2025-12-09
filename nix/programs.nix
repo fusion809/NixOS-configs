@@ -24,7 +24,7 @@ in {
   nixvim = {
     enable = true;
     defaultEditor = true;
-    colorschemes.catppuccin.enable = true;
+    colorschemes.monokai-pro.enable = true;
     extraPlugins = with pkgs.vimPlugins;
       [ vim-nix nerdtree coc-nvim ] ++ [
         (pkgs.vimUtils.buildVimPlugin {
