@@ -2,5 +2,5 @@
 source $HOME/.zshrc
 duration=$(rofi -dmenu -p "Duration (in seconds)")
 logNetTransfers $duration
-logFile=$(ls $HOME/.cache/network-transfers.* | tail -n 1)
+logFile=$(ls $HOME/.cache/network-transfers.[0-9]* | tail -n 1)
 vim $logFile
