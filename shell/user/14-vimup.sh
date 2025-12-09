@@ -1,4 +1,4 @@
-if ! which vim | grep "vim not found" &> /dev/null; then
+if ! [[ -f /run/current-system/sw/bin/vim ]]; then
     vim_verout=$(vim --version | head -n 2)
     vim_basever=$(echo $vim_verout | head -n 1 | cut -d ' ' -f 5)
     vim_patchver=$(echo $vim_verout | tail -n 1 | cut -d '-' -f 2)
