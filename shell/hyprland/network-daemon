@@ -1,0 +1,65 @@
+#!/usr/bin/env zsh
+
+LOGFILE="$HOME/.cache/network_graph.log"
+LOCKFILE="/tmp/network_logger.lock"
+
+# Single Instance Check
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    exit 0 # Already running
+fi
+
+# Detect interface
+IFACE=$(ip route get 1.1.1.1 | awk '{print $5; exit}')
+if [[ -z "$IFACE" ]]; then
+    # Retry loop? Or exit. Network might come up later.
+    # Persistent daemon should wait.
+    while [[ -z "$IFACE" ]]; do
+        sleep 5
+        IFACE=$(ip route get 1.1.1.1 | awk '{print $5; exit}')
+    done
+fi
+
+logging_loop() {
+    local old_rx=$(cat /sys/class/net/$IFACE/statistics/rx_bytes 2>/dev/null || echo 0)
+    local old_tx=$(cat /sys/class/net/$IFACE/statistics/tx_bytes 2>/dev/null || echo 0)
+    local old_time=$(date +%s%N)
+    
+    while true; do
+        sleep 1
+        local new_rx=$(cat /sys/class/net/$IFACE/statistics/rx_bytes 2>/dev/null || echo 0)
+        local new_tx=$(cat /sys/class/net/$IFACE/statistics/tx_bytes 2>/dev/null || echo 0)
+        local new_time=$(date +%s%N)
+        
+        local diff_rx=$(( new_rx - old_rx ))
+        local diff_tx=$(( new_tx - old_tx ))
+        local diff_time=$(( new_time - old_time ))
+
+        if (( diff_time == 0 )); then diff_time=1; fi
+        
+        # Handle counter wrap or interface reset?
+        if (( diff_rx < 0 )); then diff_rx=0; fi
+        if (( diff_tx < 0 )); then diff_tx=0; fi
+
+        local rx_kb=$(( (diff_rx * 1000000000) / (diff_time * 1024) ))
+        local tx_kb=$(( (diff_tx * 1000000000) / (diff_time * 1024) ))
+        
+        local log_ts=$(( new_time / 1000000000 ))
+        
+        # Determine day for rotation?
+        # User wants "actual history".
+        # We append forever?
+        # File grows. 1 line approx 30 bytes.
+        # 1 year = 31e6 seconds = 31e6 lines = 1GB.
+        # Maybe acceptable on modern disk, but log rotation recommended.
+        # For now, I'll let it grow.
+        
+        echo "$log_ts $rx_kb $tx_kb" >> "$LOGFILE"
+        
+        old_rx=$new_rx
+        old_tx=$new_tx
+        old_time=$new_time
+    done
+}
+
+logging_loop

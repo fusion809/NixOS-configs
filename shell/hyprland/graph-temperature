@@ -32,12 +32,13 @@ IMGFILE="$HOME/.cache/temperature.png"
 # Function to generate graph
 generate_graph() {
     gnuplot -e "
-        set title \"CPU Temperature History\";
+        set title \"Motherboard temperature history\";
         set xdata time;
         set timefmt \"%s\";
         set format x \"%I:%M %p\\n%d/%m\";
         set xlabel \"Time\";
         set ylabel \"Temperature (°C)\";
+        set key off;
         set grid;
         set xtics rotate by -45;
         set bmargin 6;

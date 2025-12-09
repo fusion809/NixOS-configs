@@ -1,69 +1,34 @@
 #!/usr/bin/env zsh
 
 MODE="${1:-combined}"
+LOGFILE="$HOME/.cache/network_graph.log"
 
-# Detect interface
-IFACE=$(ip route get 1.1.1.1 | awk '{print $5; exit}')
-if [[ -z "$IFACE" ]]; then
-    notify-send "Network Error" "No active interface found"
-    exit 1
-fi
+# Detect interface for title
+IFACE=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $5; exit}')
+if [[ -z "$IFACE" ]]; then IFACE="Unknown"; fi
 
 # Configure paths and plot based on mode
 if [[ "$MODE" == "download" ]]; then
-    LOGFILE="$HOME/.cache/network_graph_download.log"
     IMGFILE="$HOME/.cache/network_graph_download.png"
     PLOT_TITLE="Download Speed ($IFACE)"
+    # Filter valid timestamps > 2020 (1.6e9)
+    DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     # Plot column 2 (Rx)
-    PLOT_CMD="plot \"$LOGFILE\" using (\$1 + offset_sec):(\$2+1) title \"Download\" with lines lw 3 lc rgb \"green\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$2*8+1) title \"Download\" with lines lw 3 lc rgb \"green\""
 elif [[ "$MODE" == "upload" ]]; then
-    LOGFILE="$HOME/.cache/network_graph_upload.log"
     IMGFILE="$HOME/.cache/network_graph_upload.png"
     PLOT_TITLE="Upload Speed ($IFACE)"
+    DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     # Plot column 3 (Tx)
-    PLOT_CMD="plot \"$LOGFILE\" using (\$1 + offset_sec):(\$3+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$3*8+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
 else
-    LOGFILE="$HOME/.cache/network_graph.log"
     IMGFILE="$HOME/.cache/network_graph.png"
     PLOT_TITLE="Network Traffic ($IFACE)"
-    PLOT_CMD="plot \"$LOGFILE\" using (\$1 + offset_sec):(\$2+1) title \"Download\" with lines lw 3 lc rgb \"green\", \"$LOGFILE\" using (\$1 + offset_sec):(\$3+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
+    DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$2*8+1) title \"Download\" with lines lw 3 lc rgb \"green\", \"$DATA_SRC\" using (\$1 + offset_sec):(\$3*8+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
 fi
 
-# Ensure clean start? No, user wants history.
-# echo "" > "$LOGFILE"
-
-# Background Logging Function
-logging_loop() {
-    # Initial values
-    local old_rx=$(cat /sys/class/net/$IFACE/statistics/rx_bytes)
-    local old_tx=$(cat /sys/class/net/$IFACE/statistics/tx_bytes)
-    
-    while true; do
-        sleep 1
-        local now=$(date +%s)
-        local new_rx=$(cat /sys/class/net/$IFACE/statistics/rx_bytes)
-        local new_tx=$(cat /sys/class/net/$IFACE/statistics/tx_bytes)
-        
-        # Calculate diffs (bytes)
-        local diff_rx=$(( new_rx - old_rx ))
-        local diff_tx=$(( new_tx - old_tx ))
-        
-        # Convert to KB/s
-        local rx_kb=$(( diff_rx / 1024 ))
-        local tx_kb=$(( diff_tx / 1024 ))
-        
-        echo "$now $rx_kb $tx_kb" >> "$LOGFILE"
-        
-        old_rx=$new_rx
-        old_tx=$new_tx
-    done
-}
-
-# Start Logger
-logging_loop &
-LOGGER_PID=$!
-
-# Timezone offset for graph
+# Timezone offset
 offset_str=$(date +%z)
 sign="${offset_str:0:1}"
 h="${offset_str:1:2}"
@@ -73,19 +38,34 @@ if [[ "$sign" == "-" ]]; then offset_sec=$(( -offset_sec )); fi
 
 # Graphing Function
 generate_graph() {
-    # Check if log has data
     if [[ ! -s "$LOGFILE" ]]; then return 1; fi
+    
+    # Calculate optimal xtics step
+    # Filter bad timestamps (e.g. 0/1970)
+    local start_ts=$(awk '$1 > 1600000000 {print $1; exit}' "$LOGFILE")
+    local last_ts=$(awk 'END {print $1}' "$LOGFILE")
+    
+    if [[ -z "$start_ts" || -z "$last_ts" ]]; then return 1; fi
+    
+    local duration=$(( last_ts - start_ts ))
+    local step=$(( duration / 10 ))
+    if (( step < 60 )); then step=60; fi
+    
+    local format_str="%I:%M %p"
+    if (( duration > 86400 )); then
+        format_str="%d/%m\\n%I:%M %p"
+    fi
     
     gnuplot -e "
         offset_sec = $offset_sec;
         set title \"$PLOT_TITLE\";
         set xdata time;
         set timefmt \"%s\";
-        set format x \"%I:%M %p\";
-        set xtics 60;
+        set format x \"$format_str\";
+        set xtics rotate by -45 $step;
         set xlabel \"Time\";
-        set ylabel \"Speed (KB/s)\";
-        set logscale y 10;
+        set ylabel \"Speed (Kbps)\";
+        set key off;
         set grid;
         set term pngcairo size 1000,700 font \"monospace,16\";
         set output \"$IMGFILE\";
@@ -93,11 +73,9 @@ generate_graph() {
     "
 }
 
-# Wait for data if log is empty (first run)
-count=0
-while [[ ! -s "$LOGFILE" ]] && [[ $count -lt 10 ]]; do
-    sleep 0.5
-    ((count++))
+# Wait for log file
+while [[ ! -f "$LOGFILE" ]]; do
+    sleep 1
 done
 
 # Initial generation
@@ -110,20 +88,15 @@ if command -v eog &> /dev/null; then
         EOG_PID=$!
     else
         notify-send "Graph Error" "Failed to generate graph image."
-        kill "$LOGGER_PID"
         exit 1
     fi
 else
     notify-send "Error" "eog not found."
-    kill "$LOGGER_PID"
     exit 1
 fi
 
-# Main Loop
+# Main Loop: Update Graph
 while kill -0 "$EOG_PID" 2> /dev/null; do
     sleep 2
     generate_graph
 done
-
-# Cleanup
-kill "$LOGGER_PID"
