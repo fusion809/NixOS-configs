@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/run/current-system/sw/bin/zsh
 
 source "${0:a:h}/../user/main.sh"
 source $HOME/.zshrc
@@ -247,9 +247,9 @@ echo $pushStr > $HOME/.cache/pushStr
 # Protect flake inputs from GC
 mkdir -p "$HOME/.cache/nix-gcroots"
 # We parse the archive_json which contains the paths of the JUST UPDATED inputs
-echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r path; do
-	if [[ -n "$path" && -e "$path" ]]; then
-		nix-store --add-root "$HOME/.cache/nix-gcroots/${path:t}" --indirect -r "$path" >/dev/null
+echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r store_path; do
+	if [[ -n "$store_path" && -e "$store_path" ]]; then
+		nix-store --add-root "$HOME/.cache/nix-gcroots/${store_path:t}" --indirect -r "$store_path" >/dev/null
 	fi
 done
 
