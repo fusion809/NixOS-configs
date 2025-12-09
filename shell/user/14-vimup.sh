@@ -1,7 +1,11 @@
-vim_verout=$(vim --version | head -n 2)
-vim_basever=$(echo $vim_verout | head -n 1 | cut -d ' ' -f 5)
-vim_patchver=$(echo $vim_verout | tail -n 1 | cut -d '-' -f 2)
-export vim_instver="$vim_basever.$vim_patchver"
+if [[ $(which vim) != "vim not found" ]]; then
+    vim_verout=$(vim --version | head -n 2)
+    vim_basever=$(echo $vim_verout | head -n 1 | cut -d ' ' -f 5)
+    vim_patchver=$(echo $vim_verout | tail -n 1 | cut -d '-' -f 2)
+    export vim_instver="$vim_basever.$vim_patchver"
+else
+    export vim_instver=""
+fi
 export vim_upver=$(wget -q https://github.com/vim/vim/tags -O - | grep "tar\.gz" | head -n 1 | cut -d '/' -f 7 | cut -d '"' -f 1 | sed 's/v//g' | sed 's/\.tar\.gz//g')
 
 if ( [[ $vim_instver == $vim_upver ]] || [[ -z $vim_upver ]] ) && [[ $(which vim) != "vim not found" ]]; then
