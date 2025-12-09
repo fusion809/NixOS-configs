@@ -5,8 +5,19 @@ source $HOME/.zshrc
 
 # Fix PATH to ensure core utilities are available
 # Export PATH *after* sourcing .zshrc to ensure it takes precedence
-export PATH=$PATH:/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin
+export PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH
 rehash
+
+# Verify critical binaries are available
+if ! command -v nix-store &> /dev/null; then
+    echo "Error: nix-store not found in PATH" >&2
+    echo "PATH=$PATH" >&2
+    exit 1
+fi
+if ! command -v sudo &> /dev/null; then
+    echo "Error: sudo not found in PATH" >&2
+    exit 1
+fi
 
 current_date=$(date +"%s")
 # Setup logging
@@ -238,12 +249,11 @@ mkdir -p "$HOME/.cache/nix-gcroots"
 # We parse the archive_json which contains the paths of the JUST UPDATED inputs
 echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r path; do
 	if [[ -n "$path" && -e "$path" ]]; then
-		$NIX_STORE --add-root "$HOME/.cache/nix-gcroots/${path:t}" --indirect -r "$path" >/dev/null
+		nix-store --add-root "$HOME/.cache/nix-gcroots/${path:t}" --indirect -r "$path" >/dev/null
 	fi
 done
 
-$SUDO $NIX_COLLECT_GARBAGE
-
+sudo nix-collect-garbage
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
