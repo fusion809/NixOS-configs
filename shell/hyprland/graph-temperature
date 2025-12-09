@@ -4,7 +4,7 @@
 LOGFILE="$HOME/.cache/temperature.log"
 
 if [[ ! -f "$LOGFILE" ]]; then
-    notify-send "Temperature Graph" "No log file found at $LOGFILE"
+    notify-send "Temperature graph" "No log file found at $LOGFILE"
     exit 1
 fi
 
@@ -27,10 +27,8 @@ if [[ "$sign" == "-" ]]; then
     offset_sec=$(( -offset_sec ))
 fi
 
-IMGFILE="$HOME/.cache/temperature.png"
-
-gnuplot -e "
-    set title \"CPU Temperature History\";
+gnuplot -p -e "
+    set title \"Motherboard temperature history\";
     set xdata time;
     set timefmt \"%s\";
     set format x \"%I:%M %p\\n%d/%m\";
@@ -39,14 +37,9 @@ gnuplot -e "
     set grid;
     set xtics rotate by -45;
     set bmargin 6;
-    set term pngcairo size 1000,700 font \"monospace,16\";
-    set output \"$IMGFILE\";
-    plot \"$LOGFILE\" using (\$1 + $offset_sec):2 with lines lw 3 title \"Temp\";
+    set term x11 font \"monospace,16\" persist; 
+    while (1) {
+        plot \"$LOGFILE\" using (\$1 + $offset_sec):2 with lines lw 3 title \"Temp\";
+        pause 5;
+    }
 "
-
-# Open the image with eog
-if command -v eog &> /dev/null; then
-    eog "$IMGFILE" &
-else
-    notify-send "Error" "eog not found to view graph."
-fi

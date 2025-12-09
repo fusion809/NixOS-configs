@@ -197,7 +197,7 @@
     "custom/temperature": {
         "format": "{}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph_temperature",
+        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-temperature",
         "interval": 1,
         "return-type": "json"
     },
