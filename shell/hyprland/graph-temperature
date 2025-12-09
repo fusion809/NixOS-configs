@@ -27,19 +27,40 @@ if [[ "$sign" == "-" ]]; then
     offset_sec=$(( -offset_sec ))
 fi
 
-gnuplot -p -e "
-    set title \"Motherboard temperature history\";
-    set xdata time;
-    set timefmt \"%s\";
-    set format x \"%I:%M %p\\n%d/%m\";
-    set xlabel \"Time\";
-    set ylabel \"Temperature (°C)\";
-    set grid;
-    set xtics rotate by -45;
-    set bmargin 6;
-    set term x11 font \"monospace,16\" persist; 
-    while (1) {
+IMGFILE="$HOME/.cache/temperature.png"
+
+# Function to generate graph
+generate_graph() {
+    gnuplot -e "
+        set title \"CPU Temperature History\";
+        set xdata time;
+        set timefmt \"%s\";
+        set format x \"%I:%M %p\\n%d/%m\";
+        set xlabel \"Time\";
+        set ylabel \"Temperature (°C)\";
+        set grid;
+        set xtics rotate by -45;
+        set bmargin 6;
+        set term pngcairo size 1000,700 font \"monospace,16\";
+        set output \"$IMGFILE\";
         plot \"$LOGFILE\" using (\$1 + $offset_sec):2 with lines lw 3 title \"Temp\";
-        pause 5;
-    }
-"
+    "
+}
+
+# Initial generation
+generate_graph
+
+# Open EOG in background
+if command -v eog &> /dev/null; then
+    eog "$IMGFILE" &
+    EOG_PID=$!
+else
+    notify-send "Error" "eog not found."
+    exit 1
+fi
+
+# Loop to update graph while EOG is running
+while kill -0 "$EOG_PID" 2> /dev/null; do
+    sleep 5
+    generate_graph
+done

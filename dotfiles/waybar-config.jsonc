@@ -214,7 +214,8 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
         "return-type": "json",
         "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified"
+        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified",
+        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network upload"
     },
     "custom/network-down": {
         "format": " {}",
@@ -222,7 +223,8 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
         "return-type": "json",
         "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified"
+        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified",
+        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network download"
     },
     "custom/cpu": {
         "format": " {}",
