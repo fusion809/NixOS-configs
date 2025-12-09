@@ -54,5 +54,10 @@ function oldCommands {
 }
 
 function updateLog {
-	cat $(ls $HOME/.cache/updates.* | tail -n 1)
+	latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n 1)
+	if ! ps ax | grep updates | grep -v grep &> /dev/null; then
+		cat $latestUpdateLog
+	else
+		tail -f $latestUpdateLog
+	fi
 }
