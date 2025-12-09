@@ -71,13 +71,13 @@ The waybar has the following components:
     - "u" indicates updates to nixpkgs-unstable are available. 
     - 󱇛 indicates that hy3 updates are available. 
     -  indicates that Hyprland updates are available. 
-    -  indicates that Vim updates are available.
+    <!---  indicates that Vim updates are available.-->
     - 󱢇 indicates that OpenRA updates are available.
     - 󰄻 indicates that Marvin updates are available. 
 * Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).
 
 Footnotes:
-1. The script that manages this runs every ~2 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them.
+1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`. Right clicking the widget will instead update the widget to show the contents of the final line of `$HOME/.cache/update` (which is the file that the update script writes update notifications to). This can be useful if it's made a mistake and you've corrected that in `$HOME/.cache/update`.
 
 ## Wallpaper script
 There is a script within this repository called `wallpaper` that will, using swaybg, set your background to a wallpaper in Arch's `/usr/share/wallpapers`, `/usr/share/backgrounds`, `/usr/share/antergos/wallpapers`, `~/.local/share/backgrounds`, `~/.local/share/wallpapers` or `~/Pictures/Wallpapers`. I originally used hyprpaper to set the wallpaper, I find hyprpaper more difficult to use and I also use the wallpaper script under Niri. 
