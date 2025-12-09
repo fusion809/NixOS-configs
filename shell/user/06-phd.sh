@@ -1,6 +1,6 @@
 function ved {
 	cdphd Rcode/RQ5
-	vim Edits_to_parameters_$(date +"%Y-%m-%d").txt
+	nvim Edits_to_parameters_$(date +"%Y-%m-%d").txt
 }
 
 function ged {
