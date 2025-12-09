@@ -1,4 +1,9 @@
 function nixcg {
+  # Remove stale GC roots from user checks to allow source cleanup
+  if [[ -d "$HOME/.cache/nix-gcroots" ]]; then
+    rm -f "$HOME/.cache/nix-gcroots/"*
+  fi
+
   sudo nix-store --add-root /nix/var/nix/gcroots/current-system --indirect -r $(readlink -f /run/current-system)
   sudo nix-collect-garbage -d
 }
