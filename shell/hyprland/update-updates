@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+latestLog=$HOME/.cache/update
+if [[ -f "$latestLog" ]]; then
+    lastLine=$(tail -n 1 "$latestLog")
+    notify-send "Updates Log" "$lastLine"
+else
+    notify-send "Updates Log" "No log file found."
+fi
