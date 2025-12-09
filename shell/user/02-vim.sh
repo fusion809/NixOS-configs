@@ -29,3 +29,5 @@ function vwc {
 function vzsh {
   nvim $HOME/.zshrc
 }
+
+alias vim='nvim'
