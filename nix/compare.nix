@@ -38,7 +38,7 @@ let
     in builtins.toJSON outPaths;
 
   # All packages comparison
-  comparePackages = { stableRev, unstableRev, masterRev, vimRev
+  comparePackages = { stableRev, unstableRev, masterRev, vimRev, username
     , stablePath ? null, unstablePath ? null, masterPath ? null, vimPath ? null
     }:
     let
@@ -76,7 +76,7 @@ let
       };
 
       # Import overlays
-      userOverlays = import ./overlays.nix inputs;
+      userOverlays = import ./overlays.nix { inherit inputs username; };
 
       # Config with packageOverrides
       config = {

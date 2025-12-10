@@ -98,7 +98,7 @@ check_packages() {
 	local u_path=$6
 	local m_path=$7
 	local vim_path=$8
-	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; }"
+	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; username = \"$USER\"; }"
 }
 
 # Get current revisions and store paths
