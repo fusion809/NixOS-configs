@@ -1,7 +1,7 @@
 function nixcg {
   # Remove stale GC roots from user checks to allow source cleanup
   if [[ -d "$HOME/.cache/nix-gcroots" ]]; then
-    rm -f "$HOME/.cache/nix-gcroots/"*
+    rm -rf "$HOME/.cache/nix-gcroots/"*
   fi
 
   sudo nix-store --add-root /nix/var/nix/gcroots/current-system --indirect -r $(readlink -f /run/current-system)
@@ -26,7 +26,10 @@ function nixdiff {
   fi
   previousGen=$(echo "$generations" | head -n 1)
   currentGen=$(echo "$generations" | tail -n 1)
-  nix run nixpkgs#nvd -- diff /nix/var/nix/profiles/system-${previousGen}-link /nix/var/nix/profiles/system-${currentGen}-link
+  diff=$(nix run nixpkgs#nvd -- diff /nix/var/nix/profiles/system-${previousGen}-link /nix/var/nix/profiles/system-${currentGen}-link)
+  echo "$(date +"%r %D")" >> $HOME/.cache/systemChangeLog
+  echo $diff >> $HOME/.cache/systemChangeLog
+  echo $diff
 }
 
 function nixfrb {
@@ -36,6 +39,7 @@ function nixfrb {
     git add --all
   fi
   sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure
+  nixdiff
   sed -i -e "2s|.*||g" $HOME/.cache/update
 }
 
