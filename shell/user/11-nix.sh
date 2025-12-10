@@ -16,6 +16,19 @@ function nixdg {
   sudo nix-env --delete-generations $@ --profile /nix/var/nix/profiles/system
 }
 
+
+function nixdiff {
+  generations=$(nixlg | awk '{print $1}' | tail -n 2)
+  noGens=$(echo "$generations" | wc -l)
+  if [[ $noGens -lt 2 ]]; then
+    echo "Not enough generations to diff."
+    return
+  fi
+  previousGen=$(echo "$generations" | head -n 1)
+  currentGen=$(echo "$generations" | tail -n 1)
+  nix run nixpkgs#nvd -- diff /nix/var/nix/profiles/system-${previousGen}-link /nix/var/nix/profiles/system-${currentGen}-link
+}
+
 function nixfrb {
   if [[ $PWD != $NIXCFG ]]; then
     git -C $NIXCFG add --all
