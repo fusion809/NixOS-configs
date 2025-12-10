@@ -45,12 +45,15 @@ I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixO
 
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. 
 
+## Autostart
+Applications and programs autostarted include the default browser, virtual machine manager, the Brave browser, Waybar, Discord, Blueman Manager, Kitty (with Hyfetch), WinBoat, GNOME Files, Alacritty, my Debian 13 virtual machine, and cliphist and wl-clip-persist for managing the clipboard. A command is also run to show the next wallpaper, another kills old processes for showing the wallpaper that are errantly running, and another logs network activity so it can be used for creating graphs if one clicks the network widgets in the Waybar.
+
 ## Default apps
 * Application menu is [Rofi](https://github.com/davatorium/rofi).
 * File manager is [GNOME Files](https://apps.gnome.org/en-GB/Nautilus/), as it has among the best Wayland support of any graphical file manager. 
 * Terminal is [Alacritty](https://alacritty.org/), although [Kitty](https://sw.kovidgoyal.net/kitty/) is also installed and used for creating [Hyfetch](https://github.com/hykilpikonna/hyfetch) output-inclusive screenshots. 
 * Text editor/IDE is [Antigravity](https://antigravity.google/). [Neovim](https://neovim.io/) and [Visual Studio Code](https://code.visualstudio.com/) are also installed. 
-* Web browser is [Google Chrome](https://www.google.com/chrome/).
+* Web browser is [Google Chrome](https://www.google.com/chrome/), although [Brave](https://brave.com/) is also installed. 
 
 ## Keyboard shortcuts
 | Keyboard combination                                              | Action                |
@@ -225,7 +228,7 @@ The waybar has the following components, going from left to right:
 <br/><br/>
 The background colour of this depends on the temperature. Temperatures of <10&deg;C are <span style="color: #1565C0;">blue</span>, between 10 and <15&deg;C are <span style="color: #2196F3">lighter blue</span>, between 15 and <20&deg;C are <span style="color: #03DAC6">cyan</span>, between 20 and <25&deg;C are <span style="color: #4CAF50">green</span>, between 25 and <30&deg;C are <span style="color: #EF6C00">orange</span>, between 30 and <35&deg;C are <span style="color: #FF5722">light red</span>, between 35 and <40&deg;C are <span style="color: #D32F2F">medium red</span> and &geq;40&deg;C are <span style="color: #B71C1C">dark red</span>.</li>
 <li>Keyboard layout ( followed by its two-letter initial). I have two colours set up for this widget: us=<span style="color: #018786">teal</span>, which is also the default, and br=<span style="color: #AD1457">purple</span>.</li>
-<li>Pulseaudio showing the volume of your output audio device. Has a purple background and white text.</li>
+<li>Pulseaudio showing the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol.</li>
 <li>Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.</li>
 <li>A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.</li>
 <li>A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).</li>
