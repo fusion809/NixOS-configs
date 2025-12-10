@@ -122,6 +122,7 @@ with pkgs; [
   onlyoffice-desktopeditors
   texliveFull
   texstudio
+  zotero
   ###############################################################
   # Theming
   ###############################################################
