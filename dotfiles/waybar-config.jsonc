@@ -205,6 +205,7 @@
         "format": " {}",
         "interval": 1,
         "on-click": "alacritty -e gtop",
+        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/nixcg",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/disk",
         "return-type": "json"
     },
