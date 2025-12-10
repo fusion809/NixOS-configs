@@ -2,7 +2,7 @@
 ![Hyprland on NixOS screenshot as of 7 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-07.png)
 **Figure 1: Hyprland NixOS configuration as of 7 December 2025.**
 
-These are my NixOS 25.11 configuration files for my MS-7B90 PC. Hyprland is my graphical user interface (GUI). Flakes are used to manage packages. 
+These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
 # Shell profile
 Within shell/root is my root shell profile files, and within shell/user is my user shell profile files. I have many functions designed to make my time in the terminal more pleasant.
@@ -10,7 +10,7 @@ Within shell/root is my root shell profile files, and within shell/user is my us
 ## Package management commands
 * `nixcg` is used to remove old generations and sources with `sudo nix-collect-garbage -d`.
 * `nixdg` is used to delete specified generations. 
-* `nixdiff` will diff the two most recent generations of your system.
+* `nixdiff` will show the differences between the two most recent generations of your system.
 * `nixfrb` is used to build the flake-based system configuration.
 * `nixfu` will update your flake.lock file. 
 * `nixlg` will list generations.
@@ -44,6 +44,13 @@ in [nixpkgs/openra](/nixpkgs/openra/). Or simply run `openraup`. The package ass
 I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs)' Hyprland is not the latest version. It is managed by my [nix/flake.nix](nix/flake.nix) file and the [shell/hyprland/updates](/shell/hyprland/updates) script &mdash; which is run by Waybar's custom/updates widget &mdash; updates it. I also utilize the [hy3](https://github.com/outfoxxed/hy3) plugin to provide the window tabbing I am used to from i3. 
 
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. 
+
+## Default apps
+* Application menu is [Rofi](https://github.com/davatorium/rofi).
+* File manager is [GNOME Files](https://apps.gnome.org/en-GB/Nautilus/), as it has among the best Wayland support of any graphical file manager. 
+* Terminal is [Alacritty](https://alacritty.org/), although [Kitty](https://sw.kovidgoyal.net/kitty/) is also installed and used for creating [Hyfetch](https://github.com/hykilpikonna/hyfetch) output-inclusive screenshots. 
+* Text editor/IDE is [Antigravity](https://antigravity.google/). [Neovim](https://neovim.io/) and [Visual Studio Code](https://code.visualstudio.com/) are also installed. 
+* Web browser is [Google Chrome](https://www.google.com/chrome/).
 
 ## Keyboard shortcuts
 | Keyboard combination                                              | Action                |
