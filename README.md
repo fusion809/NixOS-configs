@@ -174,57 +174,8 @@ I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixO
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Return</kbd>                 | Open workspace of Alacritty terminal. |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>                  | Toggle float of focused window. | 
 
-## Waybar
-The waybar has the following components:
-* The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):
-  - Opening up the Nerd font cheat sheet websites.
-  - Opening up NixOS-configs repo on GitHub.
-  - Opening up the NixOS options search.
-  - Opening up the NixOS packages search.
-  - Opening up the NixOS Wiki.
-  - Rebuilding one's system.
-  - Repairing the Nix store.
-  - Update one's system without repairing the store. 
-  - Opening NixOS-configs in the default code editor.
-  - Suspend.
-  - Hibernate.
-  - Shutdown.
-  - Logout.
-  - Reboot.
-* Workspaces.
-* Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
-* Keyboard layout ( followed by its two-letter initial though). 
-* Pulseaudio showing the volume of your output audio device. Has a purple background and white text.
-* Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.
-* A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.
-* A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).
-* A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.
-* A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one. 
-* A collection of numbers () that, when clicked, changes your wallpaper to a wallpaper whose number you specify in a pop-up window. 
-* The title of your currently focused window.
-* Motherboard temperature () according to sensors. Left clicking this opens a graph showing the history of the motherboard temperature.
-* Used space () on your root file system. Left clicking this opens gtop in Alacritty.
-* Internet download speed () on enp24s0 interface. Left clicking this opens nethogs in Alacritty. Right clicking prompts the user for how long they want to monitor network usage for and then, after this period, it displays network usage and network usage by process. Middle clicking produces a pop up window with a graph of download speed (on enp24s0) history against time. 
-* Internet upload speed () on enp24s0 interface. Left clicking and right clicking does the same thing as per download speed. Middle clicking largely does the same as per download, except with upload speeds. 
-* CPU usage percentage (). Left clicking this opens gtop in Alacritty.
-* RAM usage percentage (). Left clicking this opens gtop in Alacritty.
-* Updates available.<sup>1</sup>
-    - "h" indicates updates to home-manager are available. 
-    - "m" indicates updates to nixpkgs-master are available.
-    - "s" indicates that updates to nixpkgs (stable branch) are available. 
-    - "u" indicates updates to nixpkgs-unstable are available. 
-    - 󱇛 indicates that hy3 updates are available. 
-    -  indicates that Hyprland updates are available. 
-    <!---  indicates that Vim updates are available.-->
-    - 󱢇 indicates that OpenRA updates are available.
-    - 󰄻 indicates that Marvin updates are available. 
-* Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).
-
-Footnotes:
-1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`. Right clicking the widget will instead update the widget to show the contents of the final line of `$HOME/.cache/update` (which is the file that the update script writes update notifications to). This can be useful if it's made a mistake and you've corrected that in `$HOME/.cache/update`.
-
 ## Wallpaper script
-There is a script within this repository called `wallpaper` that will, using swaybg, set your background to a wallpaper in Arch's `/usr/share/wallpapers`, `/usr/share/backgrounds`, `/usr/share/antergos/wallpapers`, `~/.local/share/backgrounds`, `~/.local/share/wallpapers` or `~/Pictures/Wallpapers`. I originally used hyprpaper to set the wallpaper, I find hyprpaper more difficult to use and I also use the wallpaper script under Niri. 
+There is a script within this repository called `wallpaper` that will, using swaybg, set your background to a wallpaper in Arch's `/usr/share/wallpapers`, `/usr/share/backgrounds`, `/usr/share/antergos/wallpapers`, `~/.local/share/backgrounds`, `~/.local/share/wallpapers` or `~/Pictures/Wallpapers`. It is used by some Waybar widgets mentioned below. I originally used hyprpaper to set the wallpaper, I find hyprpaper more difficult to use and I also use the wallpaper script under Niri.
 
 ### Syntax
 
@@ -239,3 +190,87 @@ The algorithm argument decides which algorithm is used to decide the wallpaper s
 An alternative to the algorithm argument is the no argument which specifies the number of the wallpaper to be displayed. Keep in mind that list-wallpapers (which shows wallpapers with Vim line numbers) displays wallpapers with a number one higher than the number used by the wallpaper script (as wallpaper script numbers start at 0, whereas Vim starts at 1).  
 
 The direction argument, which is only applicable if the first argument is algorithm, can be "previous" or something else. If it is previous and the first argument is "systematic", this will lead to the previous wallpaper being shown. Otherwise the next wallpaper will be shown. This is also the default behaviour if direction is omitted.
+
+## Waybar
+The waybar has the following components, going from left to right:
+
+<ul>
+<li>The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):
+<ul>
+<li>Opening up the Nerd font cheat sheet websites.</li>
+<li>Opening up NixOS-configs repo on GitHub.</li>
+<li>Opening up the NixOS options search.</li>
+<li>Opening up the NixOS packages search.</li>
+<li>Opening up the NixOS Wiki.</li>
+<li>Rebuilding one's system.</li>
+<li>Repairing the Nix store.</li>
+<li>Update one's system without repairing the store.</li>
+<li>Opening NixOS-configs in the default code editor.</li>
+<li>Suspend.</li>
+<li>Hibernate.</li>
+<li>Shutdown.</li>
+<li>Logout.</li>
+<li>Reboot.</li>
+</ul>
+</li>
+<li>Workspaces (which are numbered).</li>
+<li>Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
+<br/><br/>
+The background colour of this depends on the temperature. Temperatures of <10&deg;C are <span style="color: #1565C0;">blue</span>, between 10 and <15&deg;C are <span style="color: #2196F3">lighter blue</span>, between 15 and <20&deg;C are <span style="color: #03DAC6">cyan</span>, between 20 and <25&deg;C are <span style="color: #4CAF50">green</span>, between 25 and <30&deg;C are <span style="color: #EF6C00">orange</span>, between 30 and <35&deg;C are <span style="color: #FF5722">light red</span>, between 35 and <40&deg;C are <span style="color: #D32F2F">medium red</span> and &geq;40&deg;C are <span style="color: #B71C1C">dark red</span>.</li>
+<li>Keyboard layout ( followed by its two-letter initial). I have two colours set up for this widget: us=<span style="color: #018786">teal</span>, which is also the default, and br=<span style="color: #AD1457">purple</span>.</li>
+<li>Pulseaudio showing the volume of your output audio device. Has a purple background and white text.</li>
+<li>Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.</li>
+<li>A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.</li>
+<li>A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).</li>
+<li>A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.</li>
+<li>A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one.</li> 
+<li>A collection of numbers () that, when clicked, changes your wallpaper to a wallpaper whose number you specify in a pop-up window.</li> 
+<li>The title of your currently focused window.</li>
+<li>Motherboard temperature () according to sensors. 
+<br/><br/>
+It is colour coded with <40&deg;C being <span style="#42A5F5">sky blue</span>, 40 to <60&deg;C being <span style="color: #66BB6A">green</span>, 60 to <75&deg;C being <span style="color: #FFA726">orange</span>, 75 to <85&deg;C being <span style="color: #FF7043">light red</span> and &geq;85&deg;C being <span style="color: #EF5350">deep red</span>. 
+<br/><br/>
+Left clicking this opens a graph showing the history of the motherboard temperature.</li>
+<li>Used space () on your root file system. 
+<br/><br/>
+If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
+<br/><br/>
+Left clicking this opens gtop in Alacritty.</li>
+<li>Internet download speed () on enp24s0 interface.
+<br/><br/>
+If the download speed is &lt;10486 bits per second, it is <span style="color: #00796B">green</span>. If it is between 10486 and &lt;104858 bits per second, it is <span style="color: #4CAF50">light green</span>. If it is between 104858 and &lt;1048576 bits per second, it is <span style="color: #FF9800">orange</span>. If it is between 1048576 and &lt;5242880 bits per second, it is <span style="color: #D32F2F">light red</span>. If it is &geq;5242880 bits per second, it is <span style="color: #B71C1C">darker red</span>.
+<br/><br/>
+Left clicking this opens nethogs, which is a command-line app monitoring network activity, in Alacritty. Right clicking prompts the user for how long they want to monitor network usage for and then, after this period, it displays network usage and network usage by process. Middle clicking produces a pop up window with a graph of download speed (on enp24s0) history against time.</li> 
+<li>Internet upload speed () on enp24s0 interface.
+<br/><br/>
+If the download speed is &lt;5243 bits per second, it is <span style="color: #00796B">green</span>. If it is between 5243 and &lt;52429 bits per second, it is <span style="color: #4CAF50">light green</span>. If it is between 52429 and &lt;524288 bits per second, it is <span style="color: #FF9800">orange</span>. If it is between 524288 and &lt;5242880 bits per second, it is <span style="color: #D32F2F">light red</span>. If it is &geq;5242880 bits per second, it is <span style="color: #B71C1C">darker red</span>. 
+<br/><br/>
+Left clicking and right clicking does the same thing as per download speed. Middle clicking largely does the same as per download, except with upload speeds.</li> 
+<li>CPU usage percentage (). 
+<br/><br/>
+If the CPU usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
+<br/><br/>
+Left clicking this opens gtop, a command-line system monitor app, in Alacritty.</li>
+<li>RAM usage percentage (). 
+<br/><br/>
+If the CPU usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
+<br/><br/>
+Left clicking this opens gtop in Alacritty.</li>
+<li>Updates available.<sup>1</sup>
+<ul>
+<li>"h" indicates updates to home-manager are available.</li>
+<li>"m" indicates updates to nixpkgs-master are available.</li>
+<li>"s" indicates that updates to nixpkgs (stable branch) are available.</li> 
+<li>"u" indicates updates to nixpkgs-unstable are available.</li>
+<li>󱇛 indicates that hy3 updates are available. </li>
+<li> indicates that Hyprland updates are available. </li>
+    <!---  indicates that Vim updates are available.-->
+<li>󱢇 indicates that OpenRA updates are available.</li>
+<li>󰄻 indicates that Marvin updates are available.</li>
+</li> 
+</ul>
+<li>Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).</li>
+</ul>
+
+Footnotes:
+1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`.

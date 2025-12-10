@@ -79,6 +79,7 @@ with pkgs; [
   nautilus
   ## Required by Waybar widgets
   lm_sensors
+  pavucontrol
   wttrbar
   ## Required for a clipboard
   cliphist
