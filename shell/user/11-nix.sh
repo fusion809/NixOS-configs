@@ -119,7 +119,7 @@ function upgrade {
 function nearEOL {
   eol_date=$(cat /etc/os-release | grep "^SUPPORT_END" | cut -d '"' -f 2)
   eol_secs=$(date -d "$eol_date" +%s);
-  release_date=$(($eol_secs - 35*24*60*60)); # Let us estimated that within 35 days of the EOL date, we may wish to start checking for the new release.
+  release_date=$(($eol_secs - 40*24*60*60)); # Let us estimated that within 40 days of the EOL date, we may wish to start checking for the new release.
   if [[ $(date +%s) -ge $release_date ]]; then
     true
   else
