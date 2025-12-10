@@ -43,6 +43,8 @@ in [nixpkgs/openra](/nixpkgs/openra/). Or simply run `openraup`. The package ass
 # Hyprland
 I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs)' Hyprland is not the latest version. It is managed by my [nix/flake.nix](nix/flake.nix) file and the [shell/hyprland/updates](/shell/hyprland/updates) script &mdash; which is run by Waybar's custom/updates widget &mdash; updates it. I also utilize the [hy3](https://github.com/outfoxxed/hy3) plugin to provide the window tabbing I am used to from i3. 
 
+[shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. 
+
 ## Keyboard shortcuts
 | Keyboard combination                                              | Action                |
 |-------------------------------------------------------------------|-----------------------|
