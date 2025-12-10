@@ -10,6 +10,7 @@ Within shell/root is my root shell profile files, and within shell/user is my us
 ## Package management commands
 * `nixcg` is used to remove old generations and sources with `sudo nix-collect-garbage -d`.
 * `nixdg` is used to delete specified generations. 
+* `nixdiff` will diff the two most recent generations of your system.
 * `nixfrb` is used to build the flake-based system configuration.
 * `nixfu` will update your flake.lock file. 
 * `nixlg` will list generations.
