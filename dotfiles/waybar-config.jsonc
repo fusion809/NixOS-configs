@@ -133,7 +133,7 @@
         "tooltip": true,
         "tooltip-format": "Wallpaper: number selected/total number",
         "interval": 1, // Don’t poll or update automatically
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/list-wallpapers"
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/list-wallpapers --title \"List of wallpapers\""
     },
     "custom/wallpaper-rm": {
         "format": "󰆴",
@@ -204,7 +204,7 @@
     "custom/disk": {
         "format": " {}",
         "interval": 1,
-        "on-click": "alacritty -e gtop",
+        "on-click": "alacritty -e gtop --title \"gtop\"",
         "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/nixcg",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/disk",
         "return-type": "json"
@@ -214,8 +214,8 @@
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
         "return-type": "json",
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified",
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor --title \"Network monitor\"",
+        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified --title \"Network monitor over specified period\"",
         "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network upload"
     },
     "custom/network-down": {
@@ -223,21 +223,21 @@
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
         "return-type": "json",
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified",
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor --title \"Network monitor\"",
+        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified --title \"Network monitor over specified period\"",
         "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network download"
     },
     "custom/cpu": {
         "format": " {}",
         "tooltip": false,
-        "on-click": "alacritty -e gtop",
+        "on-click": "alacritty -e gtop --title \"gtop\"",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/cpu",
         "return-type": "json",
         "interval": 1
     },
     "custom/memory": {
         "format": " {}",
-        "on-click": "alacritty -e gtop",
+        "on-click": "alacritty -e gtop --title \"gtop\"",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
         "return-type": "json",
         "interval": 1
