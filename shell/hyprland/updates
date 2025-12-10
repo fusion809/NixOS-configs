@@ -124,7 +124,9 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 	# Compare home-manager modules directory paths
 	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }")
 	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }")
-	
+	echo "home-manager: $old_out"
+	echo "home-manager: $new_out"
+
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "h"
 	fi
@@ -143,6 +145,8 @@ if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "m"
 	fi
+	echo "master: $old_out"
+	echo "master: $new_out"
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	old_rev=$(jq -r '.nodes.nixpkgs.locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
@@ -151,7 +155,8 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	# For old check, we use old stable rev (fetched), but keep current unstable/master/vim paths (local)
 	old_out=$(check_packages "$old_rev" "$curr_u" "$curr_m" "$curr_vim" "" "$path_u" "$path_m" "$path_vim")
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
-	
+	echo "stable: $old_out"
+	echo "stable: $new_out"
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "s"
 	fi
@@ -162,7 +167,8 @@ if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
 	# Check if packages changed (keeping stable/master constant)
 	old_out=$(check_packages "$curr_s" "$old_rev" "$curr_m" "$curr_vim" "$path_s" "" "$path_m" "$path_vim")
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
-	
+	echo "unstable: $old_out"
+	echo "unstable: $new_out"
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "u"
 	fi
