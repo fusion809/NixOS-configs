@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=enCIFer
+Comment=CCDC enCIFer
+Keywords=ccdc;scientific;
+Exec=csd-env /home/username/CCDC/ccdc-software/encifer/bin/encifer %u
+Icon=/home/username/CCDC/ccdc-software/encifer/icons/encifer_48x48.png
+Terminal=false
+Type=Application

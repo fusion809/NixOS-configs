@@ -39,6 +39,16 @@ in {
   # Desktop config files
   ".local/share/applications/dsv.desktop".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/dsv.desktop";
+  ".local/share/applications/encifer.desktop".source = pkgs.substitute {
+    src = builtins.toFile "encifer.desktop"
+      (builtins.readFile "${dotfilesDir}/encifer.desktop");
+    substitutions = [ "--replace-quiet" "username" "${username}" ];
+  };
+  ".local/share/applications/mercury.desktop".source = pkgs.substitute {
+    src = builtins.toFile "mercury.desktop"
+      (builtins.readFile "${dotfilesDir}/mercury.desktop");
+    substitutions = [ "--replace-quiet" "username" "${username}" ];
+  };
   ".local/share/applications/outlive.desktop".source = pkgs.substitute {
     src = builtins.toFile "outlive.desktop"
       (builtins.readFile "${dotfilesDir}/outlive.desktop");

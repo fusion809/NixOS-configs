@@ -29,6 +29,7 @@ with pkgs; [
   ###############################################################
   unstable.avogadro2 # unstable to silence outdated popup msg.
   (import ./ds-fhs-env.nix { inherit pkgs; }) # DSV
+  (import ./csd-env.nix { inherit pkgs; }) # Mercury / CSD
   jmol
   marvin
   molsketch

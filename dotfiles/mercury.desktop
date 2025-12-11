@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Mercury
+Comment=CCDC Mercury
+Keywords=ccdc;scientific;chemistry;
+Exec=csd-env /home/username/CCDC/ccdc-software/mercury/c_linux-64/bin/mercury.x %
+Icon=/home/username/CCDC/ccdc-software/mercury/icons/mercury_48x48.png
+Type=Application
