@@ -1,18 +1,28 @@
 { lib, stdenv, fetchurl, dpkg, makeWrapper, coreutils, gawk, gnugrep, gnused
-, openjdk17, }:
+, openjdk17, freetype, fontconfig, xorg, }:
 
-stdenv.mkDerivation rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = "marvin";
   version = "25.3.5";
 
   src = fetchurl {
-    name = "marvin-${version}.deb";
+    name = "marvin-${finalAttrs.version}.deb";
     url =
-      "http://dl.chemaxon.com/marvin/${version}/marvin_linux_${version}.deb";
+      "http://dl.chemaxon.com/marvin/${finalAttrs.version}/marvin_linux_${finalAttrs.version}.deb";
     hash = "sha256-OiTHMGKAuHadoKQMTTPRcYl/zKL+bc0ts/UNsJlHn0Q=";
   };
 
   nativeBuildInputs = [ dpkg makeWrapper ];
+
+  buildInputs = [
+    freetype
+    fontconfig
+    xorg.libXi
+    xorg.libX11
+    xorg.libXext
+    xorg.libXtst
+    xorg.libXrender
+  ];
 
   unpackPhase = ''
     dpkg-deb -x $src opt
@@ -22,6 +32,9 @@ stdenv.mkDerivation rec {
     wrapBin() {
       makeWrapper $1 $out/bin/$(basename $1) \
         --set INSTALL4J_JAVA_HOME "${openjdk17}" \
+        --prefix LD_LIBRARY_PATH : ${
+          lib.makeLibraryPath finalAttrs.buildInputs
+        } \
         --prefix PATH : ${lib.makeBinPath [ coreutils gawk gnugrep gnused ]}
     }
     cp -r opt $out
@@ -47,4 +60,4 @@ stdenv.mkDerivation rec {
     license = licenses.unfree;
     platforms = platforms.linux;
   };
-}
+})
