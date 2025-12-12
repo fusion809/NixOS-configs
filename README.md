@@ -6,18 +6,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 
 # Language breakdown
 <!-- STATS START -->
-| Language | Lines | Percentage |
-| :--- | :--- | :--- |
-| Shell | 2389 | 40.59% |
-| Nix | 1598 | 27.15% |
-| CSS | 678 | 11.52% |
-| JSONC | 342 | 5.81% |
-| JSON | 327 | 5.56% |
-| Markdown | 313 | 5.32% |
-| Python | 148 | 2.51% |
-| XML | 78 | 1.33% |
-| TOML | 13 | 0.22% |
-| **Total** | **5886** | **100.00%** |
+| Language | Lines | Lines % | Complexity | Complexity % |
+| :--- | :--- | :--- | :--- | :--- |
+| Shell | 2389 | 40.54% | 276 | 72.63% |
+| Nix | 1598 | 27.12% | 72 | 18.95% |
+| CSS | 678 | 11.51% | 0 | 0.00% |
+| JSONC | 342 | 5.80% | 0 | 0.00% |
+| JSON | 327 | 5.55% | 0 | 0.00% |
+| Markdown | 313 | 5.31% | 0 | 0.00% |
+| Python | 155 | 2.63% | 32 | 8.42% |
+| XML | 78 | 1.32% | 0 | 0.00% |
+| TOML | 13 | 0.22% | 0 | 0.00% |
+| **Total** | **5893** | **100.00%** | **380** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile

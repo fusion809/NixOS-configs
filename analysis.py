@@ -58,8 +58,9 @@ def main():
         
     final_list.extend(other_languages)
     
-    # Calculate total lines for percentage
+    # Calculate total lines and complexity
     total_lines = sum(lang.get("Lines", 0) for lang in final_list)
+    total_complexity = sum(lang.get("Complexity", 0) for lang in final_list)
     
     if total_lines == 0:
         print("No lines of code found.")
@@ -70,17 +71,23 @@ def main():
 
     # Generate Markdown Table
     table_lines = []
-    table_lines.append(f"| Language | Lines | Percentage |")
-    table_lines.append(f"| :--- | :--- | :--- |")
+    table_lines.append(f"| Language | Lines | Lines % | Complexity | Complexity % |")
+    table_lines.append(f"| :--- | :--- | :--- | :--- | :--- |")
     
     for lang in final_list:
         name = lang.get("Name")
         lines = lang.get("Lines", 0)
+        complexity = lang.get("Complexity", 0)
         percentage = (lines / total_lines) * 100
         
-        table_lines.append(f"| {name} | {lines} | {percentage:.2f}% |")
+        if total_complexity > 0:
+            comp_percentage = (complexity / total_complexity) * 100
+        else:
+            comp_percentage = 0.0
+        
+        table_lines.append(f"| {name} | {lines} | {percentage:.2f}% | {complexity} | {comp_percentage:.2f}% |")
 
-    table_lines.append(f"| **Total** | **{total_lines}** | **100.00%** |")
+    table_lines.append(f"| **Total** | **{total_lines}** | **100.00%** | **{total_complexity}** | **100.00%** |")
     
     markdown_table = "\n".join(table_lines)
     
