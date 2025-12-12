@@ -210,6 +210,17 @@ if [[ $latestVer != $packagedVer ]]; then
 		pushStr+="; "
 	fi
 	pushStr+="openra: $packagedVer->$latestVer"
+	
+	# Prefetch the new hash
+	# We use the local repo path to be consistent with the fetchGit in default.nix, but prefetch needs the hash of the *content* at that revision.
+	# Using the file URL ensures we get the hash of the tree.
+	new_hash=$(nix-prefetch-git --url "file://$GHUBO/OpenRA" --rev "$latestRev" --quiet | jq -r '.hash')
+	
+	if [[ -n "$new_hash" ]]; then
+		sed -i "s|hash = \".*\"|hash = \"$new_hash\"|" "$NIXCFG/nixpkgs/openra/engines/git/default.nix"
+	else
+		echo "Warning: Failed to prefetch OpenRA hash" >&2
+	fi
 fi
 if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	marvin_pkg_file="$NIXCFG/nixpkgs/marvin/package.nix"
