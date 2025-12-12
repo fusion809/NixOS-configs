@@ -39,6 +39,7 @@ with pkgs; [
   # Command-line utilities
   ###############################################################
   aria2
+  bc
   cloc
   dnsmasq
   fastfetch

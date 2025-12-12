@@ -1,0 +1,12 @@
+#!/usr/bin/env zsh
+info=$(nvidia-smi | head -n 10 | tail -n 1 | sed 's/|\s*//g' | sed -E 's/\s+/ /g')
+fan=$(echo $info | cut -d ' ' -f 1)
+temp=$(echo $info | cut -d ' ' -f 2)
+mem_num=$(echo $info | cut -d ' ' -f 7)
+mem_den=$(echo $info | cut -d ' ' -f 9)
+mem_num=${mem_num/MiB/}
+mem_den=${mem_den/MiB/}
+util=$(echo $info | cut -d ' ' -f 10)
+#echo "󰭯  $fan 󰔏 $temp 󰍛 ${mem_num}/${mem_den} 󰟻 $util"
+source $HOME/.zshrc
+echo "$(R -e "round(100*$mem_num/$mem_den)" -q | head -n 2 | tail -n 1 | sed -E 's/^\[1\]\s//g')%"

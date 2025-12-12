@@ -236,7 +236,7 @@
         "interval": 1
     },
     "custom/memory": {
-        "format": " {}",
+        "format": "󰍛 {}",
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
         "return-type": "json",
