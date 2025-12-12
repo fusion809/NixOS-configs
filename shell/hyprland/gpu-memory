@@ -1,12 +1,24 @@
 #!/usr/bin/env zsh
-info=$(nvidia-smi | head -n 10 | tail -n 1 | sed 's/|\s*//g' | sed -E 's/\s+/ /g')
-fan=$(echo $info | cut -d ' ' -f 1)
-temp=$(echo $info | cut -d ' ' -f 2)
-mem_num=$(echo $info | cut -d ' ' -f 7)
-mem_den=$(echo $info | cut -d ' ' -f 9)
-mem_num=${mem_num/MiB/}
-mem_den=${mem_den/MiB/}
-util=$(echo $info | cut -d ' ' -f 10)
-#echo "󰭯  $fan 󰔏 $temp 󰍛 ${mem_num}/${mem_den} 󰟻 $util"
-source $HOME/.zshrc
-echo "$(R -e "round(100*$mem_num/$mem_den)" -q | head -n 2 | tail -n 1 | sed -E 's/^\[1\]\s//g')%"
+# Get memory usage
+info=$(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits)
+used=$(echo $info | cut -d ',' -f 1)
+total=$(echo $info | cut -d ',' -f 2)
+
+# Calculate percentage
+perc=$(R -e "round(100*$used/$total)" -q | head -n 2 | tail -n 1 | sed -E 's/^\[1\]\s//g')
+
+# Determine class based on usage
+if (( perc >= 90 )); then
+    class="critical"
+elif (( perc >= 75 )); then
+    class="high"
+elif (( perc >= 50 )); then
+    class="medium"
+elif (( perc >= 25 )); then
+    class="low"
+else
+    class="idle"
+fi
+
+# Output JSON
+printf '{"text":"%d%%","class":"%s"}' $perc "$class"

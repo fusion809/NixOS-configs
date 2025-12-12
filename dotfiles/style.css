@@ -453,6 +453,76 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
+/* Module: custom/gpu-utilization */
+#custom-gpu-utilization {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  background-color: #1E1E1E;
+  color: #ffffff;
+}
+
+/* GPU Utilization based classes */
+#custom-gpu-utilization.idle {
+  background-color: #66BB6A;
+  color: #000000;
+}
+
+#custom-gpu-utilization.low {
+  background-color: #9CCC65;
+  color: #000000;
+}
+
+#custom-gpu-utilization.medium {
+  background-color: #FFCA28;
+  color: #000000;
+}
+
+#custom-gpu-utilization.high {
+  background-color: #FF7043;
+  color: #000000;
+}
+
+#custom-gpu-utilization.critical {
+  background-color: #EF5350;
+  color: #ffffff;
+}
+
+/* Module: custom/gpu-memory */
+#custom-gpu-memory {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  background-color: #1E1E1E;
+  color: #ffffff;
+}
+
+/* GPU Memory based classes */
+#custom-gpu-memory.idle {
+  background-color: #66BB6A;
+  color: #000000;
+}
+
+#custom-gpu-memory.low {
+  background-color: #9CCC65;
+  color: #000000;
+}
+
+#custom-gpu-memory.medium {
+  background-color: #FFCA28;
+  color: #000000;
+}
+
+#custom-gpu-memory.high {
+  background-color: #FF7043;
+  color: #000000;
+}
+
+#custom-gpu-memory.critical {
+  background-color: #EF5350;
+  color: #ffffff;
+}
+
 /* Module: custom/updates */
 #custom-updates {
   border-radius: 4px;

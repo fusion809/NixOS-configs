@@ -32,6 +32,8 @@
         "custom/network-up",
         "custom/cpu",
         "custom/memory",
+        "custom/gpu-memory",
+        "custom/gpu-utilization",
         "custom/updates",
         "clock"
     ],
@@ -199,7 +201,9 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
         "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-temperature",
         "interval": 1,
-        "return-type": "json"
+        "return-type": "json",
+        "tooltip": true,
+        "tooltip-format": "Motherboard temperature"
     },
     "custom/disk": {
         "format": " {}",
@@ -207,16 +211,9 @@
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/nixcg",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/disk",
-        "return-type": "json"
-    },
-    "custom/network-up": {
-        "format": " {}",
-        "interval": 1,
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
         "return-type": "json",
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor --title \"Network monitor\"",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified --title \"Network monitor over specified period\"",
-        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network upload"
+        "tooltip": true,
+        "tooltip-format": "Disk usage"
     },
     "custom/network-down": {
         "format": " {}",
@@ -225,13 +222,27 @@
         "return-type": "json",
         "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor --title \"Network monitor\"",
         "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified --title \"Network monitor over specified period\"",
-        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network download"
+        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network download",
+        "tooltip": true,
+        "tooltip-format": "Network download speed"
+    },
+    "custom/network-up": {
+        "format": " {}",
+        "interval": 1,
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
+        "return-type": "json",
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor --title \"Network monitor\"",
+        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified --title \"Network monitor over specified period\"",
+        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network upload",
+        "tooltip": true,
+        "tooltip-format": "Network upload speed"
     },
     "custom/cpu": {
         "format": " {}",
-        "tooltip": false,
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/cpu",
+        "tooltip": true,
+        "tooltip-format": "CPU usage",
         "return-type": "json",
         "interval": 1
     },
@@ -239,6 +250,24 @@
         "format": "󰍛 {}",
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
+        "tooltip": true,
+        "tooltip-format": "Memory usage",
+        "return-type": "json",
+        "interval": 1
+    },
+    "custom/gpu-memory": {
+        "format": "󰾲 {}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",
+        "tooltip": true,
+        "tooltip-format": "GPU memory usage",
+        "return-type": "json",
+        "interval": 1
+    },
+    "custom/gpu-utilization": {
+        "format": "󰟻 {}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-utilization",
+        "tooltip": true,
+        "tooltip-format": "GPU utilization",
         "return-type": "json",
         "interval": 1
     },
