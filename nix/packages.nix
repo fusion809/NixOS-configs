@@ -57,6 +57,7 @@ with pkgs; [
   optipng
   p7zip
   pciutils
+  python3
   scc
   unzip
   wget
