@@ -4,6 +4,20 @@
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
+<!-- STATS START -->
+| Language | Lines | Percentage |
+| :--- | :--- | :--- |
+| **Shell** (Aggregated) | **2389** | **41.75%** |
+| Nix | 1598 | 27.93% |
+| CSS | 678 | 11.85% |
+| JSONC | 342 | 5.98% |
+| JSON | 327 | 5.71% |
+| Markdown | 297 | 5.19% |
+| XML | 78 | 1.36% |
+| TOML | 13 | 0.23% |
+| **Total** | **5722** | **100.00%** |
+<!-- STATS END -->
+
 # Shell profile
 Within shell/root is my root shell profile files, and within shell/user is my user shell profile files. I have many functions designed to make my time in the terminal more pleasant.
 

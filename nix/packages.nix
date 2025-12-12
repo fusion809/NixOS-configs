@@ -58,6 +58,7 @@ with pkgs; [
   optipng
   p7zip
   pciutils
+  scc
   unzip
   wget
   winetricks
