@@ -268,10 +268,14 @@ If the CPU usage is less than 25%, it is <span style="color: #66BB6A">green</spa
 Left clicking this opens gtop in Alacritty.</li>
 <li>GPU memory usage percentage (). 
 <br/><br/>
-If the GPU memory usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. </li>
+If the GPU memory usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
+<br/><br/>
+If this is left clicked, it opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it).</li>
 <li>GPU utilization percentage (󱃏). 
 <br/><br/>
-If the GPU utilization is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. </li>
+If the GPU utilization is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
+<br/><br/>
+If this is left clicked, it opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it). </li>
 <li>Updates available.<sup>1</sup>
 <ul>
 <li>"h" indicates updates to home-manager are available.</li>

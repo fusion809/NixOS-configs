@@ -260,6 +260,7 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",
         "tooltip": true,
         "tooltip-format": "GPU memory usage",
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-info --title \"GPU info\"",
         "return-type": "json",
         "interval": 1
     },
@@ -268,6 +269,7 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-utilization",
         "tooltip": true,
         "tooltip-format": "GPU utilization",
+        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-info --title \"GPU info\"",
         "return-type": "json",
         "interval": 1
     },
