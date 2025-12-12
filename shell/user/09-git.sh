@@ -22,20 +22,22 @@ function gitsw {
 
 function push {
   if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    $NIXCFG/analysis.py
     git -C "$NIXCFG" add --all
-    git -C "$NIXCFG" commit -m "$@"
-    git -C "$NIXCFG" push origin $(git-branch "$NIXCFG")
+    git -C "$NIXCFG" commit -m "$1"
+    git -C "$NIXCFG" push origin $(git-branch "$NIXCFG") $2
   else
+    if echo $PWD | grep $NIXCFG &> /dev/null ; then
+      $NIXCFG/analysis.py
+    fi
     git add --all
-    git commit -m "$@"
-    git push origin $(git-branch)
+    git commit -m "$1"
+    git push origin $(git-branch) $2
   fi
 }
 
 function pushf {
-  git add --all
-  git commit -m "$@"
-  git push origin $(git-branch) -f
+  push "$1" -f
 }
 
 function revision {
