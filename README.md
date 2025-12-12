@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 7 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-07.png)
-**Figure 1: Hyprland NixOS configuration as of 7 December 2025.**
+![Hyprland on NixOS screenshot as of 12 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-12.png)
+**Figure 1: Hyprland NixOS configuration as of 12 December 2025.**
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
@@ -266,6 +266,12 @@ Left clicking this opens gtop, a command-line system monitor app, in Alacritty.<
 If the CPU usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
 <br/><br/>
 Left clicking this opens gtop in Alacritty.</li>
+<li>GPU memory usage percentage (). 
+<br/><br/>
+If the GPU memory usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. </li>
+<li>GPU utilization percentage (󱃏). 
+<br/><br/>
+If the GPU utilization is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. </li>
 <li>Updates available.<sup>1</sup>
 <ul>
 <li>"h" indicates updates to home-manager are available.</li>
