@@ -78,10 +78,7 @@ def main():
         lines = lang.get("Lines", 0)
         percentage = (lines / total_lines) * 100
         
-        if name == "Shell":
-             table_lines.append(f"| **{name}** (Aggregated) | **{lines}** | **{percentage:.2f}%** |")
-        else:
-             table_lines.append(f"| {name} | {lines} | {percentage:.2f}% |")
+        table_lines.append(f"| {name} | {lines} | {percentage:.2f}% |")
 
     table_lines.append(f"| **Total** | **{total_lines}** | **100.00%** |")
     
