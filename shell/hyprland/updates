@@ -8,6 +8,7 @@ source $HOME/.zshrc
 export PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH
 rehash
 
+
 # Verify critical binaries are available
 if ! command -v nix-store &> /dev/null; then
     echo "Error: nix-store not found in PATH" >&2
@@ -17,6 +18,22 @@ fi
 if ! command -v sudo &> /dev/null; then
     echo "Error: sudo not found in PATH" >&2
     exit 1
+fi
+
+cache_file="$HOME/.cache/update"
+if [[ -f "$cache_file" ]]; then
+    last_run=$(head -n 1 "$cache_file")
+    # Handle potentially malformed dates or empty files
+    if [[ -n "$last_run" ]]; then
+        last_run_sec=$(date -d "$last_run" +%s 2>/dev/null)
+        current_sec=$(date +%s)
+        
+        if [[ -n "$last_run_sec" ]] && (( current_sec - last_run_sec < 1200 )); then
+            # Less than 20 minutes (1200 seconds) have passed
+            sed -n '2p' "$cache_file"
+            exit 0
+        fi
+    fi
 fi
 
 current_date=$(date +"%s")
