@@ -27,7 +27,7 @@ exec > "$log_file" 2>&1 # Redirect stdout and stderr to log file
 
 # Define absolute paths for robustness
 NIX_STORE="nix-store"
-NIX_COLLECT_GARBAGE="nix-collect-garbage"
+NIX_COLLECT_GARBAGE="nixcg"
 SUDO="sudo"
 
 echo "PATH=$PATH"
