@@ -17,6 +17,7 @@ if ! command -v sudo &> /dev/null; then
 fi
 
 cache_file="$HOME/.cache/update"
+source "${0:a:h}/../user/13-misc.sh"
 log_timestamp=$(latestUpdatesRun)
 if [[ -n "$log_timestamp" ]]; then
     current_sec=$(date +%s)
@@ -27,7 +28,6 @@ if [[ -n "$log_timestamp" ]]; then
         exit 0
     fi
 fi
-
 source $HOME/.zshrc
 
 current_date=$(date +"%s")
