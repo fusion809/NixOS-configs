@@ -169,3 +169,13 @@ function logNetTransfers {
 	# Display summary (everything before Raw Trace)
 	sed '/--- Raw Nethogs Trace/q' "$outfile"
 }
+
+function latestUpdatesRun {
+	filename=$(ls "$HOME/.cache/updates."* | tail -n 1)
+	timestamp="${filename##*.}"
+	if ! [[ -n $1 ]]; then
+		echo $timestamp
+	else
+		date -d "@${timestamp}" +"$1"
+	fi
+}
