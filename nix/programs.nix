@@ -91,6 +91,7 @@ in {
   };
   virt-manager.enable = true;
   waybar.enable = true;
+
   zsh = {
     autosuggestions.enable = true;
     enable = true;

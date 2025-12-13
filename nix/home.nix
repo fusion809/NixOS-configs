@@ -43,14 +43,14 @@
   #
   #  /etc/profiles/per-user/fusion809/etc/profile.d/hm-session-vars.sh
   #
-  home.sessionVariables = { 
+  home.sessionVariables = {
     EDITOR = "vim";
     USER = username;
     NIXCFG = "/home/${username}/GitHub/mine/config/NixOS-configs";
   };
 
   # Let Home Manager install and manage itself.
-  programs = import ./home-programs.nix { inherit username; };
+  programs = import ./home-programs.nix { inherit pkgs username; };
   # This part is probably largely redundant, due to GNOME not being used, 
   # but may affect theming in GTK+ apps. 
   dconf = import ./home-dconf.nix { };

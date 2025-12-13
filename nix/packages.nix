@@ -51,6 +51,7 @@ with pkgs; [
   libnotify
   nethogs
   nh
+  nil
   nixd
   nodejs
   ollama
