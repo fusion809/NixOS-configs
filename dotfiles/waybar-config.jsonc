@@ -140,6 +140,7 @@
     "custom/wallpaper-rm": {
         "format": "󰆴",
         "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-rm",
+        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/show-rmed-wallpapers",
         "tooltip": true,
         "tooltip-format": "Remove currently displayed wallpaper and move onto next wallpaper (Win+Shift+d)."
     },

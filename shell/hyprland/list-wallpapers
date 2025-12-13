@@ -9,4 +9,4 @@ find /arch/usr/share/antergos/wallpapers \
      -type f \( -iname '*.*g' \) \
      2>/dev/null | nl > /arch$HOME/.cache/wallpapers-list
 zenity --info --text "Keep in mind that the shown wallpaper numberings are 1 higher than that used by the wallpaper script."
-vim /arch$HOME/.cache/wallpapers-list +$($HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/no-wallpapers | cut -d '/' -f 1)
+nvim /arch$HOME/.cache/wallpapers-list +$($HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/no-wallpapers | cut -d '/' -f 1)

@@ -1,0 +1,4 @@
+#!/usr/bin/env zsh
+file="/arch$HOME/.cache/deleted-wallpapers"
+len=$(cat $file | wc -l)
+nvim $file +$len
