@@ -1,8 +1,4 @@
 #!/run/current-system/sw/bin/zsh
-
-source "${0:a:h}/../user/main.sh"
-source $HOME/.zshrc
-
 # Fix PATH to ensure core utilities are available
 # Export PATH *after* sourcing .zshrc to ensure it takes precedence
 export PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH
@@ -35,6 +31,8 @@ if [[ -f "$cache_file" ]]; then
         fi
     fi
 fi
+
+source $HOME/.zshrc
 
 current_date=$(date +"%s")
 # Setup logging
