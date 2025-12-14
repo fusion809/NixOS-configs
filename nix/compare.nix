@@ -5,7 +5,7 @@ let
   # Home-manager modules comparison
   compareHome = { hmRev, hmPath ? null }:
     let
-      hmSrc = if hmPath != null then
+      hmSrc = if hmPath != null && hmPath != "" then
         builtins.toPath hmPath
       else
         builtins.fetchGit {
@@ -18,7 +18,7 @@ let
   # Master packages comparison
   compareMaster = { masterRev, packageNames, masterPath ? null }:
     let
-      masterSrc = if masterPath != null then
+      masterSrc = if masterPath != null && masterPath != "" then
         builtins.toPath masterPath
       else
         builtins.fetchGit {
@@ -48,19 +48,19 @@ let
           inherit rev;
         };
 
-      stableSrc = if stablePath != null then
+      stableSrc = if stablePath != null && stablePath != "" then
         builtins.toPath stablePath
       else
         fetch stableRev;
-      unstableSrc = if unstablePath != null then
+      unstableSrc = if unstablePath != null && unstablePath != "" then
         builtins.toPath unstablePath
       else
         fetch unstableRev;
-      masterSrc = if masterPath != null then
+      masterSrc = if masterPath != null && masterPath != "" then
         builtins.toPath masterPath
       else
         fetch masterRev;
-      vimSrc = if vimPath != null then
+      vimSrc = if vimPath != null && vimPath != "" then
         builtins.toPath vimPath
       else
         builtins.fetchGit {
