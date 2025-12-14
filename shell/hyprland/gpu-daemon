@@ -1,0 +1,28 @@
+#!/usr/bin/env zsh
+
+LOGFILE="$HOME/.cache/gpu_graph.log"
+LOCKFILE="/tmp/gpu_logger.lock"
+
+# Single Instance Check
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    exit 0 # Already running
+fi
+
+logging_loop() {
+    while true; do
+        # Get timestamp
+        timestamp=$(date +%s)
+        
+        # Get GPU stats using nvidia-smi
+        # utilization.gpu: Percent of time over the past sample period during which one or more kernels was executing on the GPU.
+        # memory.used: Total memory allocated by active contexts.
+        # memory.total: Total installed GPU memory.
+        vals=$(nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits | awk -F', ' '{printf "%d %d %d", $1, $2, $3}')
+        
+        echo "$timestamp $vals" >> "$LOGFILE"
+        sleep 1
+    done
+}
+
+logging_loop

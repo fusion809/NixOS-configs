@@ -1,34 +1,34 @@
 #!/usr/bin/env zsh
 
-MODE="${1:-combined}"
-LOGFILE="$HOME/.cache/network_graph.log"
-
-# Detect interface for title
-IFACE=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $5; exit}')
-if [[ -z "$IFACE" ]]; then IFACE="Unknown"; fi
+MODE="${1:-cpu}"
+LOGFILE="$HOME/.cache/system_graph.log"
 
 # Configure paths and plot based on mode
-if [[ "$MODE" == "download" ]]; then
-    mkdir -p "$HOME/.cache/graphs/network/download"
-    IMGFILE="$HOME/.cache/graphs/network/download/graph.png"
-    PLOT_TITLE="Download Speed ($IFACE)"
+if [[ "$MODE" == "cpu" ]]; then
+    mkdir -p "$HOME/.cache/graphs/system/cpu"
+    IMGFILE="$HOME/.cache/graphs/system/cpu/graph.png"
+    PLOT_TITLE="CPU Usage"
     # Filter valid timestamps > 2020 (1.6e9)
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    # Plot column 2 (Rx)
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$2*8+1) title \"Download\" with lines lw 3 lc rgb \"green\""
-elif [[ "$MODE" == "upload" ]]; then
-    mkdir -p "$HOME/.cache/graphs/network/upload"
-    IMGFILE="$HOME/.cache/graphs/network/upload/graph.png"
-    PLOT_TITLE="Upload Speed ($IFACE)"
+    # Plot column 2 (CPU Usage)
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"CPU Usage (%)\" with lines lw 3 lc rgb \"green\""
+    YLABEL="Usage (%)"
+elif [[ "$MODE" == "memory" ]]; then
+    mkdir -p "$HOME/.cache/graphs/system/memory"
+    IMGFILE="$HOME/.cache/graphs/system/memory/graph.png"
+    PLOT_TITLE="Memory Usage"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    # Plot column 3 (Tx)
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$3*8+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
+    # Plot column 3 (Memory Usage)
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):3 title \"Memory Usage (%)\" with lines lw 3 lc rgb \"blue\""
+    YLABEL="Usage (%)"
 else
-    mkdir -p "$HOME/.cache/graphs/network/combined"
-    IMGFILE="$HOME/.cache/graphs/network/combined/graph.png"
-    PLOT_TITLE="Network Traffic ($IFACE)"
+    # Default to CPU
+    mkdir -p "$HOME/.cache/graphs/system/cpu"
+    IMGFILE="$HOME/.cache/graphs/system/cpu/graph.png"
+    PLOT_TITLE="CPU Usage"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$2*8+1) title \"Download\" with lines lw 3 lc rgb \"green\", \"$DATA_SRC\" using (\$1 + offset_sec):(\$3*8+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"CPU Usage (%)\" with lines lw 3 lc rgb \"green\""
+    YLABEL="Usage (%)"
 fi
 
 # Timezone offset
@@ -44,7 +44,6 @@ generate_graph() {
     if [[ ! -s "$LOGFILE" ]]; then return 1; fi
     
     # Calculate optimal xtics step
-    # Filter bad timestamps (e.g. 0/1970)
     local start_ts=$(awk '$1 > 1600000000 {print $1; exit}' "$LOGFILE")
     local last_ts=$(awk 'END {print $1}' "$LOGFILE")
     
@@ -67,8 +66,9 @@ generate_graph() {
         set format x \"$format_str\";
         set xtics rotate by -45 $step;
         set xlabel \"Time\";
-        set ylabel \"Speed (Kbps)\";
-        set key off;
+        set ylabel \"$YLABEL\";
+        set yrange [0:100];
+        set key outside;
         set grid;
         set term pngcairo size 1000,700 font \"monospace,16\";
         set output \"${IMGFILE}.tmp\";

@@ -1,34 +1,37 @@
 #!/usr/bin/env zsh
 
 MODE="${1:-combined}"
-LOGFILE="$HOME/.cache/network_graph.log"
+LOGFILE="$HOME/.cache/gpu_graph.log"
 
-# Detect interface for title
-IFACE=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $5; exit}')
-if [[ -z "$IFACE" ]]; then IFACE="Unknown"; fi
+# Detect GPU for title
+GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader,nounits | head -n 1)
+if [[ -z "$GPU_NAME" ]]; then GPU_NAME="NVIDIA GPU"; fi
 
 # Configure paths and plot based on mode
-if [[ "$MODE" == "download" ]]; then
-    mkdir -p "$HOME/.cache/graphs/network/download"
-    IMGFILE="$HOME/.cache/graphs/network/download/graph.png"
-    PLOT_TITLE="Download Speed ($IFACE)"
+if [[ "$MODE" == "utilization" ]]; then
+    mkdir -p "$HOME/.cache/graphs/gpu/utilization"
+    IMGFILE="$HOME/.cache/graphs/gpu/utilization/graph.png"
+    PLOT_TITLE="GPU Utilization ($GPU_NAME)"
     # Filter valid timestamps > 2020 (1.6e9)
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    # Plot column 2 (Rx)
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$2*8+1) title \"Download\" with lines lw 3 lc rgb \"green\""
-elif [[ "$MODE" == "upload" ]]; then
-    mkdir -p "$HOME/.cache/graphs/network/upload"
-    IMGFILE="$HOME/.cache/graphs/network/upload/graph.png"
-    PLOT_TITLE="Upload Speed ($IFACE)"
+    # Plot column 2 (Utilization)
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"Utilization (%)\" with lines lw 3 lc rgb \"green\""
+    YLABEL="Utilization (%)"
+elif [[ "$MODE" == "memory" ]]; then
+    mkdir -p "$HOME/.cache/graphs/gpu/memory"
+    IMGFILE="$HOME/.cache/graphs/gpu/memory/graph.png"
+    PLOT_TITLE="GPU Memory Usage ($GPU_NAME)"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    # Plot column 3 (Tx)
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$3*8+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
+    # Plot calculated percentage: ($3 / $4) * 100
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory Usage (%)\" with lines lw 3 lc rgb \"blue\""
+    YLABEL="Memory Usage (%)"
 else
-    mkdir -p "$HOME/.cache/graphs/network/combined"
-    IMGFILE="$HOME/.cache/graphs/network/combined/graph.png"
-    PLOT_TITLE="Network Traffic ($IFACE)"
+    mkdir -p "$HOME/.cache/graphs/gpu/combined"
+    IMGFILE="$HOME/.cache/graphs/gpu/combined/graph.png"
+    PLOT_TITLE="GPU Statistics ($GPU_NAME)"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):(\$2*8+1) title \"Download\" with lines lw 3 lc rgb \"green\", \"$DATA_SRC\" using (\$1 + offset_sec):(\$3*8+1) title \"Upload\" with lines lw 3 lc rgb \"red\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"Utilization (%)\" with lines lw 3 lc rgb \"green\", \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory Usage (%)\" with lines lw 3 lc rgb \"blue\""
+    YLABEL="Percentage (%)"
 fi
 
 # Timezone offset
@@ -44,7 +47,6 @@ generate_graph() {
     if [[ ! -s "$LOGFILE" ]]; then return 1; fi
     
     # Calculate optimal xtics step
-    # Filter bad timestamps (e.g. 0/1970)
     local start_ts=$(awk '$1 > 1600000000 {print $1; exit}' "$LOGFILE")
     local last_ts=$(awk 'END {print $1}' "$LOGFILE")
     
@@ -67,8 +69,9 @@ generate_graph() {
         set format x \"$format_str\";
         set xtics rotate by -45 $step;
         set xlabel \"Time\";
-        set ylabel \"Speed (Kbps)\";
-        set key off;
+        set ylabel \"$YLABEL\";
+        set yrange [0:100];
+        set key outside;
         set grid;
         set term pngcairo size 1000,700 font \"monospace,16\";
         set output \"${IMGFILE}.tmp\";

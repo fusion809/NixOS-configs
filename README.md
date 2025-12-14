@@ -8,16 +8,16 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 2416 | 40.25% | 274 | 72.49% |
-| Nix | 1681 | 28.00% | 72 | 19.05% |
-| CSS | 678 | 11.29% | 0 | 0.00% |
-| JSONC | 343 | 5.71% | 0 | 0.00% |
-| JSON | 327 | 5.45% | 0 | 0.00% |
-| Markdown | 313 | 5.21% | 0 | 0.00% |
-| Python | 154 | 2.57% | 32 | 8.47% |
-| XML | 78 | 1.30% | 0 | 0.00% |
-| TOML | 13 | 0.22% | 0 | 0.00% |
-| **Total** | **6003** | **100.00%** | **378** | **100.00%** |
+| Shell | 2724 | 43.14% | 309 | 74.82% |
+| Nix | 1681 | 26.62% | 72 | 17.43% |
+| CSS | 678 | 10.74% | 0 | 0.00% |
+| JSONC | 347 | 5.49% | 0 | 0.00% |
+| JSON | 327 | 5.18% | 0 | 0.00% |
+| Markdown | 313 | 4.96% | 0 | 0.00% |
+| Python | 154 | 2.44% | 32 | 7.75% |
+| XML | 78 | 1.24% | 0 | 0.00% |
+| TOML | 13 | 0.21% | 0 | 0.00% |
+| **Total** | **6315** | **100.00%** | **413** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -276,22 +276,22 @@ Left clicking and right clicking does the same thing as per download speed. Midd
 <br/><br/>
 If the CPU usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
 <br/><br/>
-Left clicking this opens gtop, a command-line system monitor app, in Alacritty.</li>
+Left clicking this opens gtop, a command-line system monitor app, in Alacritty. Right clicking this opens a graph of the CPU usage over time.</li>
 <li>RAM usage percentage (). 
 <br/><br/>
 If the CPU usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
 <br/><br/>
-Left clicking this opens gtop in Alacritty.</li>
+Left clicking this opens gtop in Alacritty. Right clicking this opens a graph of the RAM usage over time.</li>
 <li>GPU memory usage percentage (). 
 <br/><br/>
 If the GPU memory usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
 <br/><br/>
-If this is left clicked, it opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it).</li>
+Left clicking this opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it). Right clicking this opens a graph of the GPU memory usage over time.</li>
 <li>GPU utilization percentage (󱃏). 
 <br/><br/>
 If the GPU utilization is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
 <br/><br/>
-If this is left clicked, it opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it). </li>
+Left clicking this opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it). Right clicking this opens a graph of the GPU utilization over time.</li>
 <li>Updates available.<sup>1</sup>
 <ul>
 <li>"h" indicates updates to home-manager are available.</li>

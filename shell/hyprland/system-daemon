@@ -1,0 +1,61 @@
+#!/usr/bin/env zsh
+
+LOGFILE="$HOME/.cache/system_graph.log"
+LOCKFILE="/tmp/system_logger.lock"
+
+# Single Instance Check
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    exit 0 # Already running
+fi
+
+# Function to get CPU usage
+get_cpu_usage() {
+    # Read /proc/stat
+    read -r cpu user nice system idle iowait irq softirq steal guest guest_nice < /proc/stat
+    
+    # Calculate total time
+    total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+    # Calculate idle time
+    idle_time=$((idle + iowait))
+    
+    echo "$total $idle_time"
+}
+
+logging_loop() {
+    # Initial CPU reading
+    read total_prev idle_prev <<< $(get_cpu_usage)
+    
+    while true; do
+        sleep 1
+        
+        # Get timestamp
+        timestamp=$(date +%s)
+        
+        # Get Memory Usage
+        # Parse free command output or /proc/meminfo. Using free is easier.
+        # free | grep Mem | awk '{print $3/$2 * 100.0}'
+        mem_usage=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
+        
+        # Get CPU Usage
+        read total_curr idle_curr <<< $(get_cpu_usage)
+        
+        diff_total=$((total_curr - total_prev))
+        diff_idle=$((idle_curr - idle_prev))
+        
+        # Avoid division by zero
+        if (( diff_total == 0 )); then diff_total=1; fi
+        
+        # Calculate usage percentage
+        cpu_usage=$(( 100 * (diff_total - diff_idle) / diff_total ))
+        
+        # Log data
+        echo "$timestamp $cpu_usage $mem_usage" >> "$LOGFILE"
+        
+        # Update previous values
+        total_prev=$total_curr
+        idle_prev=$idle_curr
+    done
+}
+
+logging_loop

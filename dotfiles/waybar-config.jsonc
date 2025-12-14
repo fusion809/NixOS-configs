@@ -241,6 +241,7 @@
     "custom/cpu": {
         "format": " {}",
         "on-click": "alacritty -e gtop --title \"gtop\"",
+        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-system cpu",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/cpu",
         "tooltip": true,
         "tooltip-format": "CPU usage",
@@ -250,6 +251,7 @@
     "custom/memory": {
         "format": "󰍛 {}",
         "on-click": "alacritty -e gtop --title \"gtop\"",
+        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-system memory",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
         "tooltip": true,
         "tooltip-format": "Memory usage",
@@ -262,6 +264,7 @@
         "tooltip": true,
         "tooltip-format": "GPU memory usage",
         "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-info --title \"GPU info\"",
+        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-gpu memory",
         "return-type": "json",
         "interval": 1
     },
@@ -271,6 +274,7 @@
         "tooltip": true,
         "tooltip-format": "GPU utilization",
         "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-info --title \"GPU info\"",
+        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-gpu utilization",
         "return-type": "json",
         "interval": 1
     },
