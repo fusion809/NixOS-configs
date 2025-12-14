@@ -27,7 +27,8 @@ if [[ "$sign" == "-" ]]; then
     offset_sec=$(( -offset_sec ))
 fi
 
-IMGFILE="$HOME/.cache/temperature.png"
+mkdir -p "$HOME/.cache/graphs/temperature"
+IMGFILE="$HOME/.cache/graphs/temperature/graph.png"
 
 # Function to generate graph
 generate_graph() {
@@ -43,9 +44,10 @@ generate_graph() {
         set xtics rotate by -45;
         set bmargin 6;
         set term pngcairo size 1000,700 font \"monospace,16\";
-        set output \"$IMGFILE\";
+        set output \"${IMGFILE}.tmp\";
         plot \"$LOGFILE\" using (\$1 + $offset_sec):2 with lines lw 3 title \"Temp\";
     "
+    mv "${IMGFILE}.tmp" "$IMGFILE"
 }
 
 # Initial generation
