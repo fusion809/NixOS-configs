@@ -24,6 +24,9 @@ if [[ -n "$log_timestamp" ]]; then
         
     if [[ -n "$log_timestamp" ]] && (( current_sec - log_timestamp < 1200 )); then
         # Less than 20 minutes (1200 seconds) have passed
+		if [[ $(cat $cache_file | wc -l) -lt 2 ]]; then
+			echo "" >> $cache_file
+		fi
         sed -n '2p' "$cache_file"
         exit 0
     fi
