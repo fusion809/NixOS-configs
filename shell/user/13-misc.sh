@@ -70,7 +70,7 @@ function updateLog {
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n 1)
 	fi
 	latestUpdatesRun "%r"
-	if ! ps ax | grep updates | grep -v grep &> /dev/null; then
+	if ! ps ax | grep "shell/hyprland/updates" | grep -v grep &> /dev/null; then
 		cat $latestUpdateLog
 	else
 		tail -f $latestUpdateLog
