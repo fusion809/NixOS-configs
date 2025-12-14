@@ -355,3 +355,21 @@ function cp_from_alpine {
 function view_alpine {
     view_qemu_vm "Alpine Linux 3.23"
 }
+
+function start_elementary {
+    start_qemu_vm_root "elementary OS 8.0.2" 30
+}
+
+function ssh_elementary {
+    start_elementary
+    TERM=xterm-256color ssh fusion809@192.168.122.6
+}
+
+function cp_from_elementary {
+    start_elementary
+    scp -O -r fusion809@192.168.122.6:$1 $2
+}
+
+function view_elementary {
+    view_qemu_vm "elementary OS 8.0.2"
+}

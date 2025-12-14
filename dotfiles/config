@@ -49,3 +49,6 @@ Host deepin-kvm
 Host alpine-kvm
 	Hostname 192.168.122.26
 	User fusion809
+Host elementary-kvm
+	Hostname 192.168.122.6
+	User fusion809
