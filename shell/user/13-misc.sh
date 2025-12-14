@@ -53,6 +53,16 @@ function oldCommands {
 	find ~ -maxdepth 1 -name ".zsh_history*" -exec grep "$@" {} +
 }
 
+function latestUpdatesRun {
+	filename=$(ls "$HOME/.cache/updates."* | tail -n 1)
+	timestamp="${filename##*.}"
+	if ! [[ -n $1 ]]; then
+		echo $timestamp
+	else
+		date -d "@${timestamp}" +"$1"
+	fi
+}
+
 function updateLog {
 	if [[ -n $1 ]]; then
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n $1 | head -n 1)
@@ -60,6 +70,7 @@ function updateLog {
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n 1)
 	fi
 	if ! ps ax | grep updates | grep -v grep &> /dev/null; then
+		latestUpdatesRun "%r"
 		cat $latestUpdateLog
 	else
 		tail -f $latestUpdateLog
@@ -172,14 +183,4 @@ function logNetTransfers {
 	echo "Network stats written to $outfile"
 	# Display summary (everything before Raw Trace)
 	sed '/--- Raw Nethogs Trace/q' "$outfile"
-}
-
-function latestUpdatesRun {
-	filename=$(ls "$HOME/.cache/updates."* | tail -n 1)
-	timestamp="${filename##*.}"
-	if ! [[ -n $1 ]]; then
-		echo $timestamp
-	else
-		date -d "@${timestamp}" +"$1"
-	fi
 }
