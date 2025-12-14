@@ -19,15 +19,30 @@ fi
 cache_file="$HOME/.cache/update"
 source "${0:a:h}/../user/13-misc.sh"
 log_timestamp=$(latestUpdatesRun)
-if [[ -n "$log_timestamp" ]]; then
-    current_sec=$(date +%s)
-        
-    if [[ -n "$log_timestamp" ]] && (( current_sec - log_timestamp < 1200 )); then
-        # Less than 20 minutes (1200 seconds) have passed
-		if [[ $(cat $cache_file | wc -l) -lt 2 ]]; then
-			echo "" >> $cache_file
-		fi
+current_min=$(date +"%M")
+
+if [[ ! "$current_min" =~ ^(00|20|40)$ ]]; then
+    if [[ -f "$cache_file" ]]; then
+        if [[ $(cat "$cache_file" | wc -l) -lt 2 ]]; then
+             echo "" >> "$cache_file"
+        fi
         sed -n '2p' "$cache_file"
+    fi
+    exit 0
+fi
+
+if [[ -n "$log_timestamp" ]]; then
+    # Check if we already ran in the exact same minute (avoid re-running in same 00/20/40 window)
+    last_run_str=$(date -d "@$log_timestamp" +"%Y%m%d%H%M")
+    current_run_str=$(date +"%Y%m%d%H%M")
+
+    if [[ "$last_run_str" == "$current_run_str" ]]; then
+        if [[ -f "$cache_file" ]]; then
+            if [[ $(cat "$cache_file" | wc -l) -lt 2 ]]; then
+                echo "" >> "$cache_file"
+            fi
+            sed -n '2p' "$cache_file"
+        fi
         exit 0
     fi
 fi
