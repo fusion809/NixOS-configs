@@ -69,8 +69,8 @@ function updateLog {
 	else
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n 1)
 	fi
+	latestUpdatesRun "%r"
 	if ! ps ax | grep updates | grep -v grep &> /dev/null; then
-		latestUpdatesRun "%r"
 		cat $latestUpdateLog
 	else
 		tail -f $latestUpdateLog
