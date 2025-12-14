@@ -1,5 +1,6 @@
 { lib, stdenv, fetchurl, dpkg, makeWrapper, coreutils, gawk, gnugrep, gnused
-, openjdk17, freetype, fontconfig, xorg, }:
+, openjdk17, freetype, fontconfig, libXi, libX11, libXext, libXtst, libXrender,
+}:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "marvin";
@@ -14,15 +15,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [ dpkg makeWrapper ];
 
-  buildInputs = [
-    freetype
-    fontconfig
-    xorg.libXi
-    xorg.libX11
-    xorg.libXext
-    xorg.libXtst
-    xorg.libXrender
-  ];
+  buildInputs = [ freetype fontconfig libXi libX11 libXext libXtst libXrender ];
 
   unpackPhase = ''
     dpkg-deb -x $src opt
