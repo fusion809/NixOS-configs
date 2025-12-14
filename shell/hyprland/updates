@@ -20,26 +20,25 @@ cache_file="$HOME/.cache/update"
 source "${0:a:h}/../user/13-misc.sh"
 log_timestamp=$(latestUpdatesRun)
 current_min=$(date +"%M")
+current_hour=$(date +"%H")
 
-if [[ ! "$current_min" =~ ^(00|20|40)$ ]]; then
-    if [[ -f "$cache_file" ]]; then
-        if [[ $(cat "$cache_file" | wc -l) -lt 2 ]]; then
-             echo "" >> "$cache_file"
-        fi
-        sed -n '2p' "$cache_file"
-    fi
-    exit 0
+if (( current_min < 20 )); then
+    slot_min="00"
+elif (( current_min < 40 )); then
+    slot_min="20"
+else
+    slot_min="40"
 fi
 
-if [[ -n "$log_timestamp" ]]; then
-    # Check if we already ran in the exact same minute (avoid re-running in same 00/20/40 window)
-    last_run_str=$(date -d "@$log_timestamp" +"%Y%m%d%H%M")
-    current_run_str=$(date +"%Y%m%d%H%M")
+# Calculate epoch timestamp for the start of the current 20-minute slot
+slot_start_ts=$(date -d "$current_hour:$slot_min:00" +"%s")
 
-    if [[ "$last_run_str" == "$current_run_str" ]]; then
+if [[ -n "$log_timestamp" ]]; then
+    # If the last update run was AFTER or AT the start of the current slot, we are done for this slot.
+    if (( log_timestamp >= slot_start_ts )); then
         if [[ -f "$cache_file" ]]; then
             if [[ $(cat "$cache_file" | wc -l) -lt 2 ]]; then
-                echo "" >> "$cache_file"
+                 echo "" >> "$cache_file"
             fi
             sed -n '2p' "$cache_file"
         fi
