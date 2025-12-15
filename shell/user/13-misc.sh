@@ -74,12 +74,13 @@ function updateLog {
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n 1)
 	fi
 	latestUpdatesRun "%r" $1
-	if ! ps ax | grep "shell/hyprland/updates" | grep -v grep &> /dev/null; then
+	if ((! [[ -n $1 ]]) && (! ps ax | grep "shell/hyprland/updates" | grep -v grep &> /dev/null)); then
 		cat $latestUpdateLog
 	else
 		tail -f $latestUpdateLog
 	fi
 }
+
 function logNetTransfers {
 	duration=$1
 	if [[ -z "$duration" ]]; then
