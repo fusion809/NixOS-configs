@@ -183,6 +183,7 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	old_out=$(check_packages "$old_rev" "$curr_u" "$curr_m" "$curr_vim" "" "$path_u" "$path_m" "$path_vim")
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
 	echo "stable: $old_out"
+	echo ""
 	echo "stable: $new_out"
 	if [[ "$old_out" != "$new_out" ]]; then
 		add_symbol "s"

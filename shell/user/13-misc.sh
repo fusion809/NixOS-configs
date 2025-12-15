@@ -54,7 +54,11 @@ function oldCommands {
 }
 
 function latestUpdatesRun {
-	filename=$(ls "$HOME/.cache/updates."* | tail -n 1)
+	if [[ -n $2 ]]; then
+		filename=$(ls "$HOME/.cache/updates."* | tail -n $2 | head -n 1)
+	else
+		filename=$(ls "$HOME/.cache/updates."* | tail -n 1)
+	fi
 	timestamp="${filename##*.}"
 	if ! [[ -n $1 ]]; then
 		echo $timestamp
@@ -69,7 +73,7 @@ function updateLog {
 	else
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n 1)
 	fi
-	latestUpdatesRun "%r"
+	latestUpdatesRun "%r" $1
 	if ! ps ax | grep "shell/hyprland/updates" | grep -v grep &> /dev/null; then
 		cat $latestUpdateLog
 	else
