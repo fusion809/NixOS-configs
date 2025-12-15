@@ -28,5 +28,14 @@
         version = "latest";
         src = inputs.vim-src;
       });
+
+      pulsar = super.pulsar.overrideAttrs (oldAttrs: rec {
+        version = "1.130.1";
+        src = fetchurl {
+          url =
+            "https://github.com/pulsar-edit/pulsar/releases/download/v${version}/Linux.pulsar-${version}.tar.gz";
+          hash = "sha256-1qdbcxayna1kiwxz68kwir0c7pmypr5q49cjf9yf4m43c66arkgy";
+        };
+      });
     })
 ]

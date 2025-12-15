@@ -3,7 +3,8 @@
 {
   config = {
     allowUnfree = true;
-    permittedInsecurePackages = [ "openssl-1.1.1w" "qtwebengine-5.15.19" ];
+    permittedInsecurePackages =
+      [ "openssl-1.1.1w" "qtwebengine-5.15.19" "pulsar-1.130.1" ];
     packageOverrides = pkgs: {
       unstable = import inputs.nixpkgs-unstable {
         config = config.nixpkgs.config;
