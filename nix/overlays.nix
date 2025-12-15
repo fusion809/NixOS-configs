@@ -29,5 +29,4 @@
         src = inputs.vim-src;
       });
     })
-  )
 ]

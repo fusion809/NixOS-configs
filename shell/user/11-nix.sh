@@ -39,7 +39,7 @@ function nixfrb {
   else
     git add --all
   fi
-  sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure
+  sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure || return
   nixdiff
   sed -i -e "2s|.*||g" $HOME/.cache/update
 }
