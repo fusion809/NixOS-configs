@@ -188,3 +188,7 @@ function logNetTransfers {
 	# Display summary (everything before Raw Trace)
 	sed '/--- Raw Nethogs Trace/q' "$outfile"
 }
+
+function rmLastUpdatesRun {
+	rm $(ls $HOME/.cache/updates.* | tail -n 1)
+}
