@@ -261,7 +261,7 @@ Left clicking this opens a graph showing the history of the motherboard temperat
 <br/><br/>
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
 <br/><br/>
-Left clicking this opens gtop in Alacritty.</li>
+Left clicking this opens gtop in Alacritty. Right clicking runs `nixcg` in Alacritty.</li>
 <li>Internet download speed () on enp24s0 interface.
 <br/><br/>
 If the download speed is &lt;10486 bits per second, it is <span style="color: #00796B">green</span>. If it is between 10486 and &lt;104858 bits per second, it is <span style="color: #4CAF50">light green</span>. If it is between 104858 and &lt;1048576 bits per second, it is <span style="color: #FF9800">orange</span>. If it is between 1048576 and &lt;5242880 bits per second, it is <span style="color: #D32F2F">light red</span>. If it is &geq;5242880 bits per second, it is <span style="color: #B71C1C">darker red</span>.
