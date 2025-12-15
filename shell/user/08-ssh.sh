@@ -373,3 +373,21 @@ function cp_from_elementary {
 function view_elementary {
     view_qemu_vm "elementary OS 8.0.2"
 }
+
+function start_kylin {
+    start_qemu_vm_root "Ubuntu Kylin 25.10" 30
+}
+
+function ssh_kylin {
+    start_kylin
+    TERM=xterm-256color ssh fusion809@192.168.122.163
+}
+
+function cp_from_kylin {
+    start_kylin
+    scp -O -r fusion809@192.168.122.163:$1 $2
+}
+
+function view_kylin {
+    view_qemu_vm "Ubuntu Kylin 25.10"
+}

@@ -155,7 +155,8 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 	diff_out=$(jq -n --arg old "$old_out" --arg new "$new_out" 'if $old == $new then [] else [$new] end')
 	if [[ "$diff_out" != "[]" ]]; then
 		echo "home-manager changes: $diff_out"
-		add_symbol "h"
+		count=$(echo "$diff_out" | jq 'length')
+		add_symbol "h$count"
 	fi
 fi
 
@@ -173,7 +174,8 @@ if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
 	if [[ "$diff_out" != "[]" ]]; then
 		echo "master changes: $diff_out"
-		add_symbol "m"
+		count=$(echo "$diff_out" | jq 'length')
+		add_symbol "m$count"
 	fi
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
@@ -187,7 +189,8 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
 	if [[ "$diff_out" != "[]" ]]; then
 		echo "stable changes: $diff_out"
-		add_symbol "s"
+		count=$(echo "$diff_out" | jq 'length')
+		add_symbol "s$count"
 	fi
 fi
 if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
@@ -200,7 +203,8 @@ if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
 	if [[ "$diff_out" != "[]" ]]; then
 		echo "unstable changes: $diff_out"
-		add_symbol "u"
+		count=$(echo "$diff_out" | jq 'length')
+		add_symbol "u$count"
 	fi
 fi
 
@@ -283,8 +287,8 @@ fi
 if [[ $(cat $cache_file | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1 | wc -l) -eq 1 ]]; then
 	# Add cached symbols one by one to avoid duplicates
 	cached_symbols=$(cat $cache_file | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1)
-	for (( i=0; i<${#cached_symbols}; i++ )); do
-		add_symbol "${cached_symbols:$i:1}"
+	echo "$cached_symbols" | grep -o -E '[hmus][0-9]*|.' | while read -r token; do
+		add_symbol "$token"
 	done
 fi
 echo $outputStr >&3
