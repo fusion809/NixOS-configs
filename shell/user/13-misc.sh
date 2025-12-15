@@ -77,7 +77,8 @@ function updateLog {
 	if ((! [[ -n $1 ]]) && (! ps ax | grep "shell/hyprland/updates" | grep -v grep &> /dev/null)); then
 		cat $latestUpdateLog
 	else
-		tail -f $latestUpdateLog
+		pid=$(pgrep -f "shell/hyprland/updates" | head -n 1)
+		tail -n +1 -f ${pid:+--pid=$pid} "$latestUpdateLog"
 	fi
 }
 

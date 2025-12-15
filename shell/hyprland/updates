@@ -80,7 +80,7 @@ pushStr=""
 if $git_clean && [[ $diffLen -gt 0 ]]; then
 	pushStr+="updates: Updating flake.lock"
 fi
-echo "pushStr @L41=$pushStr"
+echo "pushStr @L83=$pushStr"
 # Get the list of changed nodes
 changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.lock) --slurpfile new "$NIXCFG/nix/flake.lock" '
 	($old[0].nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
