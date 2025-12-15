@@ -36,6 +36,16 @@
             "https://github.com/pulsar-edit/pulsar/releases/download/v${version}/Linux.pulsar-${version}.tar.gz";
           hash = "sha256-1qdbcxayna1kiwxz68kwir0c7pmypr5q49cjf9yf4m43c66arkgy";
         };
+        meta = oldAttrs.meta // { knownVulnerabilities = [ ]; };
+        postFixup = lib.replaceStrings [
+          "unlink $dugite/git/libexec/git-core/git-lfs"
+          "unlink $asarBundle/node_modules/document-register-element/dre"
+          "rm $opt/resources/app.asar.unpacked/node_modules/tree-sitter-bash/build/node_gyp_bins/python3"
+        ] [
+          "rm -f $dugite/git/libexec/git-core/git-lfs"
+          "rm -f $asarBundle/node_modules/document-register-element/dre"
+          "rm -f $opt/resources/app.asar.unpacked/node_modules/tree-sitter-bash/build/node_gyp_bins/python3"
+        ] oldAttrs.postFixup;
       });
     })
 ]
