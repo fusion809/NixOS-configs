@@ -74,11 +74,11 @@ function updateLog {
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n 1)
 	fi
 	latestUpdatesRun "%r" $1
-	if ((! [[ -n $1 ]] || [[ "$1" == "1" ]]) && (! ps ax | grep "shell/hyprland/updates" | grep -v grep &> /dev/null)); then
-		cat $latestUpdateLog
-	else
+	if [[ ( -z "$1" || "$1" == "1" ) ]] && pgrep -f "shell/hyprland/updates" > /dev/null; then
 		pid=$(pgrep -f "shell/hyprland/updates" | head -n 1)
 		tail -n +1 -f ${pid:+--pid=$pid} "$latestUpdateLog"
+	else
+		cat "$latestUpdateLog"
 	fi
 }
 
