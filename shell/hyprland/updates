@@ -265,8 +265,6 @@ if [[ $(cat $cache_file | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1
 	done
 fi
 echo $outputStr >&3
-echo $(date +"%r %a %d %b %y") > $cache_file
-echo $outputStr >> $cache_file
 echo $pushStr > $HOME/.cache/pushStr
 # Protect flake inputs from GC
 mkdir -p "$HOME/.cache/nix-gcroots"
@@ -354,3 +352,6 @@ if [[ ${#pushStr} -gt 0 ]]; then
 		git -C $NIXCFG push origin $(git -C $NIXCFG rev-parse --abbrev-ref HEAD)
 	fi
 fi
+
+echo $(date +"%r %a %d %b %y") > $cache_file
+echo $outputStr >> $cache_file
