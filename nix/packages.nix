@@ -7,7 +7,6 @@ with pkgs; [
   master.antigravity
   brave
   discord
-  element-desktop
   gimp
   google-chrome
   inkscape
@@ -129,7 +128,6 @@ with pkgs; [
   ###############################################################
   # Theming
   ###############################################################
-  pantheon.elementary-wallpapers
   whitesur-gtk-theme
   whitesur-cursors
   master.whitesur-icon-theme
