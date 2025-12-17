@@ -586,11 +586,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1765796859,
-        "narHash": "sha256-c2YaJUsLGk3WNqIHIU/Pt1fGjNH02ePsHfD5MJlfEe4=",
+        "lastModified": 1766002164,
+        "narHash": "sha256-QtDp8UDjBH0Dr7DgVUQHDU8lgQOHagx3JCRJcMWk5Ms=",
         "ref": "nixos-25.11",
-        "rev": "d8c9d8451d4592dd7de647230f407d4d6370bd8e",
-        "revCount": 4173,
+        "rev": "685d0be1fce70865c71108ef4105749dbd0957f3",
+        "revCount": 4175,
         "type": "git",
         "url": "https://github.com/nix-community/nixvim.git"
       },
