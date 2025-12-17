@@ -516,16 +516,32 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1765959115,
-        "narHash": "sha256-oq/js7J0XS6IBRohy2sLKkw+7BuEDc0onCZuXH4gbhw=",
+        "lastModified": 1765961516,
+        "narHash": "sha256-BjmMDWjpj6eLh6PEexKLSpmlhQuvoMpgrp+gQ1g7GTY=",
         "ref": "master",
-        "rev": "328d8d285592237faf6652c80f07a7698da62ab1",
-        "revCount": 913093,
+        "rev": "3a0d49a9496fbf2adee1971b9770a0509291409b",
+        "revCount": 913099,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
       "original": {
         "ref": "master",
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      }
+    },
+    "nixpkgs-oldstable": {
+      "locked": {
+        "lastModified": 1765687488,
+        "narHash": "sha256-7YAJ6xgBAQ/Nr+7MI13Tui1ULflgAdKh63m1tfYV7+M=",
+        "ref": "nixos-25.05",
+        "rev": "d02bcc33948ca19b0aaa0213fe987ceec1f4ebe1",
+        "revCount": 813613,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      },
+      "original": {
+        "ref": "nixos-25.05",
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       }
@@ -637,6 +653,7 @@
         "hyprland": "hyprland",
         "nixpkgs": "nixpkgs",
         "nixpkgs-master": "nixpkgs-master",
+        "nixpkgs-oldstable": "nixpkgs-oldstable",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixvim": "nixvim",
         "vim-src": "vim-src"

@@ -38,9 +38,9 @@ let
     in builtins.toJSON outPaths;
 
   # All packages comparison
-  comparePackages = { stableRev, unstableRev, masterRev, vimRev, username
-    , stablePath ? null, unstablePath ? null, masterPath ? null, vimPath ? null
-    }:
+  comparePackages = { stableRev, unstableRev, masterRev, oldstableRev, vimRev
+    , username, stablePath ? null, unstablePath ? null, masterPath ? null
+    , oldstablePath ? null, vimPath ? null }:
     let
       fetch = rev:
         builtins.fetchGit {
@@ -60,6 +60,10 @@ let
         builtins.toPath masterPath
       else
         fetch masterRev;
+      oldstableSrc = if oldstablePath != null && oldstablePath != "" then
+        builtins.toPath oldstablePath
+      else
+        fetch oldstableRev;
       vimSrc = if vimPath != null && vimPath != "" then
         builtins.toPath vimPath
       else
@@ -72,6 +76,7 @@ let
       inputs = {
         nixpkgs-unstable = unstableSrc;
         nixpkgs-master = masterSrc;
+        nixpkgs-oldstable = oldstableSrc;
         vim-src = vimSrc;
       };
 
@@ -87,6 +92,10 @@ let
             system = "x86_64-linux";
           };
           master = import masterSrc {
+            config = { allowUnfree = true; };
+            system = "x86_64-linux";
+          };
+          oldstable = import oldstableSrc {
             config = { allowUnfree = true; };
             system = "x86_64-linux";
           };

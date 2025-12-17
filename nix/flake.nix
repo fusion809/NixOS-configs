@@ -22,6 +22,8 @@
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     # nixpkgs
+    nixpkgs-oldstable.url =
+      "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
     nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.11";
     nixpkgs-unstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";

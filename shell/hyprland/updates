@@ -93,12 +93,14 @@ check_packages() {
 	local s_rev=$1
 	local u_rev=$2
 	local m_rev=$3
-	local vim_rev=$4
-	local s_path=$5
-	local u_path=$6
-	local m_path=$7
-	local vim_path=$8
-	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; vimPath = \"$vim_path\"; username = \"$USER\"; }"
+	local os_rev=$4
+	local vim_rev=$5
+	local s_path=$6
+	local u_path=$7
+	local m_path=$8
+	local os_path=$9
+	local vim_path=${10}
+	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; oldstableRev = \"$os_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; oldstablePath = \"$os_path\"; vimPath = \"$vim_path\"; username = \"$USER\"; }"
 }
 
 # Get current revisions and store paths
@@ -108,12 +110,14 @@ archive_json=$(nix flake archive $NIXCFG/nix --json)
 curr_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.locked.rev')
 curr_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".locked.rev')
 curr_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".locked.rev')
+curr_os=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-oldstable".locked.rev')
 curr_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".locked.rev')
 curr_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".locked.rev')
 
 path_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.path')
 path_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".path')
 path_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".path')
+path_os=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-oldstable".path')
 path_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".path')
 path_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".path')
 
@@ -154,10 +158,10 @@ fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	old_rev=$(jq -r '.nodes.nixpkgs.locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
-	# Check if packages changed (keeping unstable/master constant)
-	# For old check, we use old stable rev (fetched), but keep current unstable/master/vim paths (local)
-	old_out=$(check_packages "$old_rev" "$curr_u" "$curr_m" "$curr_vim" "" "$path_u" "$path_m" "$path_vim")
-	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
+	# Check if packages changed (keeping unstable/master/oldstable constant)
+	# For old check, we use old stable rev (fetched), but keep current unstable/master/oldstable/vim paths (local)
+	old_out=$(check_packages "$old_rev" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "" "$path_u" "$path_m" "$path_os" "$path_vim")
+	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_os" "$path_vim")
 	# Log only the differences
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
 	if [[ "$diff_out" != "[]" ]]; then
@@ -166,12 +170,26 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 		add_symbol "s$count"
 	fi
 fi
+if [[ " ${changed_nodes} " == *" nixpkgs-oldstable "* ]]; then
+	old_rev=$(jq -r '.nodes."nixpkgs-oldstable".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
+	
+	# Check if packages changed (keeping stable/unstable/master constant)
+	old_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$old_rev" "$curr_vim" "$path_s" "$path_u" "$path_m" "" "$path_vim")
+	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_os" "$path_vim")
+	# Log only the differences
+	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
+	if [[ "$diff_out" != "[]" ]]; then
+		echo "oldstable changes: $diff_out"
+		count=$(echo "$diff_out" | jq 'length')
+		add_symbol "o$count"
+	fi
+fi
 if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
 	old_rev=$(jq -r '.nodes."nixpkgs-unstable".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
-	# Check if packages changed (keeping stable/master constant)
-	old_out=$(check_packages "$curr_s" "$old_rev" "$curr_m" "$curr_vim" "$path_s" "" "$path_m" "$path_vim")
-	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_vim")
+	# Check if packages changed (keeping stable/master/oldstable constant)
+	old_out=$(check_packages "$curr_s" "$old_rev" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "" "$path_m" "$path_os" "$path_vim")
+	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_os" "$path_vim")
 	# Log only the differences
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
 	if [[ "$diff_out" != "[]" ]]; then
@@ -260,7 +278,7 @@ fi
 if [[ $(cat $cache_file | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1 | wc -l) -eq 1 ]]; then
 	# Add cached symbols one by one to avoid duplicates
 	cached_symbols=$(cat $cache_file | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1)
-	echo "$cached_symbols" | grep -o -E '[hmus][0-9]*|.' | while read -r token; do
+	echo "$cached_symbols" | grep -o -E '[hmuso][0-9]*|.' | while read -r token; do
 		add_symbol "$token"
 	done
 fi
