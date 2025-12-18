@@ -27,8 +27,12 @@ function cdgm {
   cdg mine/$1
 }
 
+function cdcf {
+  cdgm config/$1
+}
+
 function cdhc {
-  cdgm config/hyprland-configs
+  cdcf hyprland-configs/$1
 }
 
 function cdim {
