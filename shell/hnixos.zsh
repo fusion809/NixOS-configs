@@ -31,26 +31,7 @@ function conditional_newline {
 }
 
 export OPS=$(operating_system)
-
-if [[ $OPS == "openSUSE"* ]] || [[ $OPS == "Linux Mint"* ]]; then
-	PROMPT_PREFIX='%{$fg_bold[green]%}[%{$fg_bold[yellow]%}%D{%l:%M:%S%p, %a %d/%m/%y}%{$fg_bold[green]%}|%{$fg_bold[cyan]%}${OPS}%{$fg_bold[green]%}] $(user) %{$fg_bold[cyan]%}%(!.%1~.%~) $(git_prompt_info)'
-elif [[ $OPS == "NixOS"* ]]; then
-	PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a %d/%m/%y}|%{$fg_bold[blue]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
-elif [[ ${OPS} == "CentOS"* ]]; then
-	PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a, %d/%m/%y}|%{$fg_bold[cyan]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
-elif [[ ${OPS} == "FreeBSD"* ]] || [[ ${OPS} == "Scientific Linux"* ]] || [[ ${OPS} == "Ubuntu"* ]] ; then
-	PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a, %d/%m/%y}|%{$fg_bold[red]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
-elif [[ ${OPS} == "Arch Linux"* ]] || [[ ${OPS} == "Fedora"* ]] || [[ ${OPS} == "Mageia"* ]]; then
-	PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a, %d/%m/%y}|%{$fg_bold[blue]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
-elif [[ ${OPS} == "Gentoo Linux"* ]]; then
-	PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a, %d/%m/%y}|%{$fg_bold[purple]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
-elif [[ ${OPS} == "Void"* ]]; then
-	PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a, %d/%m/%y}|%{$fg_bold[white]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
-elif [[ $(uname) == "Linux" ]]; then
-	echo "Linux selected"
-	PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a, %d/%m/%y}|%{$fg_bold[yellow]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
-fi
-
+PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a %d/%m/%y}|%{$fg_bold[blue]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
 setopt prompt_subst
 
 PROMPT="${PROMPT_PREFIX}\$(conditional_newline)\$(prompt_char)%{$reset_color%} "
