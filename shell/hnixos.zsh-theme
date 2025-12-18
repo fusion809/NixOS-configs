@@ -7,27 +7,7 @@ function operating_system {
 
 	OPS=$(uname)
 
-	if [[ $OPS == "Linux" ]]; then
-		CAT=$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g')
-
-		if [[ $CAT == "void" ]]; then
-			printf "Void"
-		else
-			printf "$CAT"
-		fi
-	else
-
-		 printf "$OPS"
-
-	fi
-}
-
-function kernel {
-
-	KERNEL=$(uname -r)
-
-	printf "Kernel: $KERNEL"
-
+	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g')"
 }
 
 function user {
