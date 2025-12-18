@@ -8,16 +8,16 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 2794 | 43.67% | 320 | 72.73% |
-| Nix | 1694 | 26.48% | 88 | 20.00% |
-| CSS | 678 | 10.60% | 0 | 0.00% |
-| JSONC | 347 | 5.42% | 0 | 0.00% |
-| JSON | 327 | 5.11% | 0 | 0.00% |
-| Markdown | 313 | 4.89% | 0 | 0.00% |
-| Python | 154 | 2.41% | 32 | 7.27% |
-| XML | 78 | 1.22% | 0 | 0.00% |
+| Shell | 2816 | 43.54% | 321 | 72.79% |
+| Nix | 1694 | 26.19% | 88 | 19.95% |
+| CSS | 713 | 11.03% | 0 | 0.00% |
+| JSONC | 356 | 5.50% | 0 | 0.00% |
+| JSON | 327 | 5.06% | 0 | 0.00% |
+| Markdown | 316 | 4.89% | 0 | 0.00% |
+| Python | 154 | 2.38% | 32 | 7.26% |
+| XML | 78 | 1.21% | 0 | 0.00% |
 | TOML | 13 | 0.20% | 0 | 0.00% |
-| **Total** | **6398** | **100.00%** | **440** | **100.00%** |
+| **Total** | **6467** | **100.00%** | **441** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -257,11 +257,14 @@ The background colour of this depends on the temperature. Temperatures of &lt;10
 It is colour coded with <40&deg;C being <span style="#42A5F5">sky blue</span>, 40 to <60&deg;C being <span style="color: #66BB6A">green</span>, 60 to <75&deg;C being <span style="color: #FFA726">orange</span>, 75 to <85&deg;C being <span style="color: #FF7043">light red</span> and &geq;85&deg;C being <span style="color: #EF5350">deep red</span>. 
 <br/><br/>
 Left clicking this opens a graph showing the history of the motherboard temperature.</li>
-<li>Used space () on your root file system. 
+<li>Used space (/) on your root file system. 
 <br/><br/>
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
 <br/><br/>
 Left clicking this opens gtop in Alacritty. Right clicking runs `nixcg` in Alacritty.</li>
+<li>Used space (/data) on your data file system. 
+<br/><br/>
+If the used disk space is less than 76%, it is <span style="color: #66BB6A">green</span> If it is between 76 to &lt;86%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 86 to &lt;95%, it is <span style="color: #FFCA28">yellow</span>. If it is between 95 to &lt;99%, it is <span style="color: #FF7043">orange</span>. If it is &geq;99%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.</li>
 <li>Internet download speed () on enp24s0 interface.
 <br/><br/>
 If the download speed is &lt;10486 bits per second, it is <span style="color: #00796B">green</span>. If it is between 10486 and &lt;104858 bits per second, it is <span style="color: #4CAF50">light green</span>. If it is between 104858 and &lt;1048576 bits per second, it is <span style="color: #FF9800">orange</span>. If it is between 1048576 and &lt;5242880 bits per second, it is <span style="color: #D32F2F">light red</span>. If it is &geq;5242880 bits per second, it is <span style="color: #B71C1C">darker red</span>.

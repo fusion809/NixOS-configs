@@ -27,7 +27,8 @@
     ],
     "modules-right": [
         "custom/temperature",
-        "custom/disk",
+        "custom/root",
+        "custom/data",
         "custom/network-down",
         "custom/network-up",
         "custom/cpu",
@@ -206,15 +207,23 @@
         "tooltip": true,
         "tooltip-format": "Motherboard temperature"
     },
-    "custom/disk": {
-        "format": " {}",
+    "custom/root": {
+        "format": "{}",
         "interval": 1,
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/nixcg",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/disk",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/root",
         "return-type": "json",
         "tooltip": true,
-        "tooltip-format": "Disk usage"
+        "tooltip-format": "Root file system usage"
+    },
+    "custom/data": {
+        "format": "{}",
+        "interval": 1,
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/data",
+        "return-type": "json",
+        "tooltip": true,
+        "tooltip-format": "Data file system usage"
     },
     "custom/network-down": {
         "format": " {}",
