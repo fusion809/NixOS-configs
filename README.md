@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 17 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-17.png)
-**Figure 1: Hyprland NixOS configuration as of 17 December 2025.**
+![Hyprland on NixOS screenshot as of 18 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-18.png)
+**Figure 1: Hyprland NixOS configuration as of 18 December 2025.**
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
