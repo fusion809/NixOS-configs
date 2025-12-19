@@ -8,11 +8,11 @@ percent=$(echo $disk_info | awk '{print $5}' | sed 's/%//')
 # Determine class based on disk usage
 if (( percent >= 95 )); then
     class="critical"
-elif (( percent >= 88 )); then
+elif (( percent >= 75 )); then
     class="high"
-elif (( percent >= 78 )); then
+elif (( percent >= 50 )); then
     class="medium"
-elif (( percent >= 68 )); then
+elif (( percent >= 25 )); then
     class="low"
 else
     class="idle"

@@ -8,16 +8,16 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 2859 | 43.92% | 325 | 73.03% |
-| Nix | 1694 | 26.02% | 88 | 19.78% |
-| CSS | 713 | 10.95% | 0 | 0.00% |
-| JSONC | 356 | 5.47% | 0 | 0.00% |
+| Shell | 2859 | 43.86% | 325 | 73.03% |
+| Nix | 1703 | 26.12% | 88 | 19.78% |
+| CSS | 713 | 10.94% | 0 | 0.00% |
+| JSONC | 356 | 5.46% | 0 | 0.00% |
 | JSON | 327 | 5.02% | 0 | 0.00% |
 | Markdown | 316 | 4.85% | 0 | 0.00% |
-| Python | 154 | 2.37% | 32 | 7.19% |
+| Python | 154 | 2.36% | 32 | 7.19% |
 | XML | 78 | 1.20% | 0 | 0.00% |
 | TOML | 13 | 0.20% | 0 | 0.00% |
-| **Total** | **6510** | **100.00%** | **445** | **100.00%** |
+| **Total** | **6519** | **100.00%** | **445** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -264,7 +264,7 @@ If the used disk space is less than 25%, it is <span style="color: #66BB6A">gree
 Left clicking this opens gtop in Alacritty. Right clicking runs `nixcg` in Alacritty.</li>
 <li>Used space (/data) on your data file system. 
 <br/><br/>
-If the used disk space is less than 68%, it is <span style="color: #66BB6A">green</span> If it is between 68 to &lt;78%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 78 to &lt;88%, it is <span style="color: #FFCA28">yellow</span>. If it is between 88 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.</li>
+If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to &lt;50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to &lt;75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.</li>
 <li>Internet download speed () on enp24s0 interface.
 <br/><br/>
 If the download speed is &lt;10486 bits per second, it is <span style="color: #00796B">green</span>. If it is between 10486 and &lt;104858 bits per second, it is <span style="color: #4CAF50">light green</span>. If it is between 104858 and &lt;1048576 bits per second, it is <span style="color: #FF9800">orange</span>. If it is between 1048576 and &lt;5242880 bits per second, it is <span style="color: #D32F2F">light red</span>. If it is &geq;5242880 bits per second, it is <span style="color: #B71C1C">darker red</span>.
