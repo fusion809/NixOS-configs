@@ -39,6 +39,10 @@
       url = "git+https://github.com/nix-community/nixvim.git?ref=nixos-25.11";
       # If using a stable channel you can use `url = "github:nix-community/nixvim/nixos-<version>"`
     };
+    antigravity-pr = {
+      url =
+        "git+https://github.com/NixOS/nixpkgs.git?rev=b6f23f319a7a5977bd8f5c576d37a58545700617";
+    };
 
   };
 

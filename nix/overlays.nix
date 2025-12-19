@@ -28,5 +28,9 @@
         version = "latest";
         src = inputs.vim-src;
       });
+      antigravity = (import inputs.antigravity-pr {
+        system = pkgs.system;
+        config.allowUnfree = true;
+      }).antigravity;
     })
 ]

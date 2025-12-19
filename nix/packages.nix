@@ -4,7 +4,7 @@ with pkgs; [
   ###############################################################
   # Assorted apps
   ###############################################################   
-  master.antigravity
+  antigravity
   brave
   discord
   gimp

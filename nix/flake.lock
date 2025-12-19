@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "antigravity-pr": {
+      "locked": {
+        "lastModified": 1765998150,
+        "narHash": "sha256-QpXrYsyFW7q6auwXY+woVacVtADQ6i0CuOAjSUg2A2U=",
+        "ref": "refs/heads/master",
+        "rev": "b6f23f319a7a5977bd8f5c576d37a58545700617",
+        "revCount": 913310,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      },
+      "original": {
+        "rev": "b6f23f319a7a5977bd8f5c576d37a58545700617",
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      }
+    },
     "aquamarine": {
       "inputs": {
         "hyprutils": [
@@ -516,11 +532,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1766148151,
-        "narHash": "sha256-KwEhc3NGmByynC0W81T016nkYedFP1gOh3zKG/wj48I=",
+        "lastModified": 1766156903,
+        "narHash": "sha256-FtSRDBpjzXBPj4n4SPikfrzqHMILPwe1TSkTKcucdN4=",
         "ref": "master",
-        "rev": "0a89da2c4eeb13ebe6fd96c3ec7d70e2d42ca7c4",
-        "revCount": 914139,
+        "rev": "103f1c0ffa4c01141b8f07acc5fb6069edbfb133",
+        "revCount": 914181,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -648,6 +664,7 @@
     },
     "root": {
       "inputs": {
+        "antigravity-pr": "antigravity-pr",
         "home-manager": "home-manager",
         "hy3": "hy3",
         "hyprland": "hyprland",
