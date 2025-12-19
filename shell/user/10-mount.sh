@@ -19,7 +19,7 @@ mount_arch
 
 function mount_data {
   if ! `mountpoint -q /data`; then
-    sudo mount '/dev/disk/by-label/Data\x20partition' /data
+    sudo mount '/dev/disk/by-label/data' /data
   fi
 }
 

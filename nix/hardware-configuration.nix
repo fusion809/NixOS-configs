@@ -4,29 +4,36 @@
 { config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports =
-    [ (modulesPath + "/installer/scan/not-detected.nix")
-    ];
+  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
 
   boot = {
     initrd = {
-      availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
+      availableKernelModules =
+        [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
       kernelModules = [ ];
     };
-    kernelModules = [ "vboxdrv" "vboxnetadp" "vboxnet"];
-    kernelParams = ["split_lock_detect=off"];
+    kernelModules = [ "vboxdrv" "vboxnetadp" "vboxnet" ];
+    kernelParams = [ "split_lock_detect=off" ];
     extraModulePackages = [ ];
   };
   fileSystems = {
-    "/" =
-      { device = "/dev/disk/by-uuid/7de0be9a-0b69-4b4c-9f3e-3249a210f290";
-        fsType = "ext4";
-      };
-    "/boot" =
-      { device = "/dev/disk/by-uuid/CB29-A2D2";
-        fsType = "vfat";
-        options = [ "fmask=0077" "dmask=0077" ];
-      };
+    "/" = {
+      device = "/dev/disk/by-uuid/7de0be9a-0b69-4b4c-9f3e-3249a210f290";
+      fsType = "ext4";
+    };
+    "/boot" = {
+      device = "/dev/disk/by-uuid/CB29-A2D2";
+      fsType = "vfat";
+      options = [ "fmask=0077" "dmask=0077" ];
+    };
+    "/data" = {
+      device = "/dev/disk/by-uuid/2c70eda9-6538-4851-81e6-0ef8a9426d95";
+      fsType = "ext4";
+    };
+    "/arch" = {
+      device = "/dev/disk/by-uuid/1f93f091-b052-4802-a533-1a1977b99fdb";
+      fsType = "ext4";
+    };
   };
   swapDevices = [ ];
 
@@ -38,5 +45,6 @@
   # networking.interfaces.enp24s0.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  hardware.cpu.amd.updateMicrocode =
+    lib.mkDefault config.hardware.enableRedistributableFirmware;
 }

@@ -59,6 +59,7 @@ with pkgs; [
   pciutils
   python3
   scc
+  smartmontools
   unzip
   wget
   winetricks
