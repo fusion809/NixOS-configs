@@ -8,17 +8,17 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 2897 | 43.12% | 336 | 72.41% |
-| Nix | 1810 | 26.94% | 92 | 19.83% |
+| Shell | 2897 | 43.10% | 336 | 72.41% |
+| Nix | 1810 | 26.93% | 92 | 19.83% |
 | CSS | 713 | 10.61% | 0 | 0.00% |
 | JSONC | 356 | 5.30% | 0 | 0.00% |
-| JSON | 337 | 5.02% | 0 | 0.00% |
-| Markdown | 317 | 4.72% | 0 | 0.00% |
+| JSON | 337 | 5.01% | 0 | 0.00% |
+| Markdown | 319 | 4.75% | 0 | 0.00% |
 | Python | 154 | 2.29% | 32 | 6.90% |
 | XML | 78 | 1.16% | 0 | 0.00% |
 | JavaScript | 44 | 0.65% | 4 | 0.86% |
 | TOML | 13 | 0.19% | 0 | 0.00% |
-| **Total** | **6719** | **100.00%** | **464** | **100.00%** |
+| **Total** | **6721** | **100.00%** | **464** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -42,6 +42,8 @@ Within shell/root is my root shell profile files, and within shell/user is my us
 * `rollback` will roll back your system to the previous generation.
 
 # nixpkgs
+## Antigravity package
+Essentially just a copy of the `antigravity` package in [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs) with shell/hyprland/updates auto-updating it. 
 
 ## Marvin package
 [The Marvin package](/nixpkgs/marvin/) is essentially just a copy of the `marvin` package in [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs); I keep it as an overlay just so that I can more easily update it to the latest version when a new release comes out. I do update it in [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs), too, but it can take a month for my PRs to be merged. 
