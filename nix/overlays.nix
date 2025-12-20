@@ -17,6 +17,11 @@
       myLib = import ./lib.nix { inherit username; };
       inherit (myLib) homeDir;
 
+      pkgsOld = import inputs.nixpkgs-oldstable {
+        system = pkgs.system;
+        config.allowUnfree = true;
+      };
+
     in with pkgs; {
       openraPackages = import (forkNixpkgsPath + /openra/default.nix) {
         inherit pkgs homeDir;
@@ -28,9 +33,10 @@
         version = "latest";
         src = inputs.vim-src;
       });
-      antigravity = (import inputs.antigravity-pr {
-        system = pkgs.system;
-        config.allowUnfree = true;
-      }).antigravity;
+      antigravity = pkgsOld.callPackage
+        (inputs.antigravity-pr + /pkgs/by-name/an/antigravity/package.nix) {
+          vscode-generic = pkgsOld.path
+            + /pkgs/applications/editors/vscode/generic.nix;
+        };
     })
 ]
