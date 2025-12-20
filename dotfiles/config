@@ -53,5 +53,5 @@ Host elementary-kvm
 	Hostname 192.168.122.6
 	User fusion809
 Host ubuntukylin-kvm
-	Hostname 192.168.122.163
+	Hostname 192.168.122.203
 	User fusion809

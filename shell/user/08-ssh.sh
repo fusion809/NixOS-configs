@@ -380,12 +380,12 @@ function start_kylin {
 
 function ssh_kylin {
     start_kylin
-    TERM=xterm-256color ssh fusion809@192.168.122.163
+    TERM=xterm-256color ssh fusion809@192.168.122.203
 }
 
 function cp_from_kylin {
     start_kylin
-    scp -O -r fusion809@192.168.122.163:$1 $2
+    scp -O -r fusion809@192.168.122.203:$1 $2
 }
 
 function view_kylin {
