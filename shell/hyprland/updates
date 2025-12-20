@@ -298,7 +298,13 @@ if [[ -f "$NIXCFG/nixpkgs/antigravity/update.js" ]]; then
 		if [[ -d "$master_path/pkgs/by-name/an/antigravity" ]]; then
 			echo "Syncing packaging files from nixpkgs-master..."
 			cp "$master_path/pkgs/by-name/an/antigravity/package.nix" "$NIXCFG/nixpkgs/antigravity/"
-			cp "$master_path/pkgs/by-name/an/antigravity/update.js" "$NIXCFG/nixpkgs/antigravity/"
+			cp "$master_path/pkgs/by-name/an/antigravity/update.js" 
+			"$NIXCFG/nixpkgs/antigravity/"
+			sudo chmod 755 -R "$NIXCFG/nixpkgs/antigravity/"
+			# Remove unwanted platforms from the upstream update.js
+			sed -i -e 's/ | "aarch64-linux" | "x86_64-darwin" | "aarch64-darwin"//g' \
+			-e 's/ | "linux-arm64" | "darwin-arm64" | "darwin"//g' \
+			-e '/"aarch64.*":/d; /".*darwin":/d' "$NIXCFG/nixpkgs/antigravity/update.js"
 			# information.json is managed by us (update.js), so we don't overwrite it
 		else
 			echo "Warning: Antigravity not found in nixpkgs-master path: $master_path"
