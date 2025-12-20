@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # Get disk usage for root partition
-disk_info=$(df -h /data | tail -1)
+disk_info=$(timeout 0.5s df -h /data | tail -1)
 used=$(echo $disk_info | awk '{print $3}')
 total=$(echo $disk_info | awk '{print $2}')
 percent=$(echo $disk_info | awk '{print $5}' | sed 's/%//')

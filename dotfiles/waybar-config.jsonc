@@ -209,7 +209,7 @@
     },
     "custom/root": {
         "format": "{}",
-        "interval": 1,
+        "interval": 5,
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/nixcg",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/root",
@@ -219,7 +219,7 @@
     },
     "custom/data": {
         "format": "{}",
-        "interval": 1,
+        "interval": 5,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/data",
         "return-type": "json",
         "tooltip": true,
@@ -292,7 +292,7 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
         "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
         "signal": 8,
-        "interval": 1
+        "interval": 60
     },
     "clock": {
         "timezone": "Australia/Brisbane",
