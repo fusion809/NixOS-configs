@@ -273,7 +273,6 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 			fi
 		fi
 	fi
-	fi
 fi
 
 if [[ -f "$NIXCFG/nixpkgs/antigravity/update.js" ]]; then
