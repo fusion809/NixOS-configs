@@ -326,7 +326,7 @@ echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r store_path;
 done
 
 nixcg_log="$HOME/.cache/nixcg.$current_date"
-#nixcg > "$nixcg_log" 2>&1
+nixcg > "$nixcg_log" 2>&1
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
