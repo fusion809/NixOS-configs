@@ -273,6 +273,38 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 			fi
 		fi
 	fi
+	fi
+fi
+
+if [[ -f "$NIXCFG/nixpkgs/antigravity/update.js" ]]; then
+	echo "Checking for Antigravity updates..."
+	# Run update script to update information.json
+	# We use node directly or wrapper
+	old_ver=$(grep -o '"version": ".*"' "$NIXCFG/nixpkgs/antigravity/information.json" | cut -d '"' -f 4)
+	retry nix shell nixpkgs#nodejs --command node "$NIXCFG/nixpkgs/antigravity/update.js"
+	
+	# Check if information.json changed
+	if ! git -C "$NIXCFG" diff --quiet nixpkgs/antigravity/information.json; then
+		# Version changed
+		new_ver=$(grep -o '"version": ".*"' "$NIXCFG/nixpkgs/antigravity/information.json" | cut -d '"' -f 4)
+		add_symbol "󰨞" # Use a distinct symbol, e.g. for IDE/Antigravity
+		if [[ ${#pushStr} -gt 0 ]]; then
+			pushStr+="; "
+		fi
+		pushStr+="antigravity: $old_ver->$new_ver"
+		
+		# Now check for packaging changes in master
+		# We use the nixpkgs-master input path which should be available
+		master_path=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".path')
+		if [[ -d "$master_path/pkgs/by-name/an/antigravity" ]]; then
+			echo "Syncing packaging files from nixpkgs-master..."
+			cp "$master_path/pkgs/by-name/an/antigravity/package.nix" "$NIXCFG/nixpkgs/antigravity/"
+			cp "$master_path/pkgs/by-name/an/antigravity/update.js" "$NIXCFG/nixpkgs/antigravity/"
+			# information.json is managed by us (update.js), so we don't overwrite it
+		else
+			echo "Warning: Antigravity not found in nixpkgs-master path: $master_path"
+		fi
+	fi
 fi
 
 if [[ $(cat $cache_file | grep -v "[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" | tail -n 1 | wc -l) -eq 1 ]]; then
@@ -313,8 +345,14 @@ if [[ ${#pushStr} -gt 0 ]]; then
 			continue
 		fi
 
+
 		# marvin package.nix is OK
 		if [[ "$file" == "nixpkgs/marvin/package.nix" ]]; then
+			continue
+		fi
+
+		# antigravity files are OK
+		if [[ "$file" == "nixpkgs/antigravity/package.nix" ]] || [[ "$file" == "nixpkgs/antigravity/update.js" ]] || [[ "$file" == "nixpkgs/antigravity/information.json" ]]; then
 			continue
 		fi
 
