@@ -416,5 +416,5 @@ fi
 
 end_date=$(date +"%r %a %d %b %y")
 echo "Run ended: $end_date" >> $log_file
-echo "$end_date" >> $cache_file
+echo "$end_date" > $cache_file
 echo $outputStr >> $cache_file
