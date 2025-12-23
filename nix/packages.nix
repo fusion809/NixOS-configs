@@ -60,6 +60,7 @@ with pkgs; [
   python3
   scc
   smartmontools
+  usbutils
   unzip
   wget
   winetricks

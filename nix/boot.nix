@@ -15,4 +15,5 @@
     };
     efi.canTouchEfiVariables = true;
   };
+  kernelParams = [ "usbcore.autosuspend=-1" ];
 }
