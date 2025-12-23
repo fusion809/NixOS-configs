@@ -391,3 +391,21 @@ function cp_from_kylin {
 function view_kylin {
     view_qemu_vm "Ubuntu Kylin 25.10"
 }
+
+function start_mocaccino {
+    start_qemu_vm_root "MocaccinOS" 30
+}
+
+function ssh_mocaccino {
+    start_mocaccino
+    TERM=xterm-256color ssh fusion809@192.168.122.95
+}
+
+function cp_from_mocaccino {
+    start_mocaccino
+    scp -O -r fusion809@192.168.122.95:$1 $2
+}
+
+function view_mocaccino {
+    view_qemu_vm "MocaccinOS"
+}

@@ -55,3 +55,6 @@ Host elementary-kvm
 Host ubuntukylin-kvm
 	Hostname 192.168.122.203
 	User fusion809
+Host mocaccinoos-kvm
+	Hostname 192.168.122.95
+	User fusion809
