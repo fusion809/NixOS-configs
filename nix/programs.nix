@@ -66,7 +66,7 @@ in {
       " Configure vim-ai to use Ollama (free local AI)
       let g:vim_ai_chat = {
       \  "options": {
-      \    "model": "llama3.2",
+      \    "model": "deepseek-coder",
       \    "endpoint_url": "http://localhost:11434/v1/chat/completions",
       \    "max_tokens": 0,
       \    "temperature": 1,
