@@ -8,17 +8,17 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 2922 | 43.25% | 336 | 72.10% |
-| Nix | 1824 | 27.00% | 94 | 20.17% |
-| CSS | 713 | 10.55% | 0 | 0.00% |
-| JSONC | 355 | 5.25% | 0 | 0.00% |
-| JSON | 337 | 4.99% | 0 | 0.00% |
-| Markdown | 319 | 4.72% | 0 | 0.00% |
+| Shell | 2922 | 43.35% | 336 | 72.10% |
+| Nix | 1805 | 26.78% | 94 | 20.17% |
+| CSS | 713 | 10.58% | 0 | 0.00% |
+| JSONC | 355 | 5.27% | 0 | 0.00% |
+| JSON | 337 | 5.00% | 0 | 0.00% |
+| Markdown | 322 | 4.78% | 0 | 0.00% |
 | Python | 154 | 2.28% | 32 | 6.87% |
-| XML | 78 | 1.15% | 0 | 0.00% |
+| XML | 78 | 1.16% | 0 | 0.00% |
 | JavaScript | 41 | 0.61% | 4 | 0.86% |
 | TOML | 13 | 0.19% | 0 | 0.00% |
-| **Total** | **6756** | **100.00%** | **466** | **100.00%** |
+| **Total** | **6740** | **100.00%** | **466** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -316,3 +316,6 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 
 Footnotes:
 1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`.
+
+# History
+6e524bcfb7db7653ac4df86b378faab6e25a7bf3 was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
