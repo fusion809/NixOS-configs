@@ -10,7 +10,6 @@
     "modules-left": [
         "custom/nixosicon",
         "hyprland/workspaces",
-        //"hyprland/mode",
         "custom/weather",
         "custom/keyboard-layout",
         "pulseaudio",

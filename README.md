@@ -9,9 +9,9 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
 | Shell | 2922 | 43.25% | 336 | 72.10% |
-| Nix | 1823 | 26.98% | 94 | 20.17% |
+| Nix | 1824 | 27.00% | 94 | 20.17% |
 | CSS | 713 | 10.55% | 0 | 0.00% |
-| JSONC | 356 | 5.27% | 0 | 0.00% |
+| JSONC | 355 | 5.25% | 0 | 0.00% |
 | JSON | 337 | 4.99% | 0 | 0.00% |
 | Markdown | 319 | 4.72% | 0 | 0.00% |
 | Python | 154 | 2.28% | 32 | 6.87% |
