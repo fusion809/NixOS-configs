@@ -409,3 +409,21 @@ function cp_from_mocaccino {
 function view_mocaccino {
     view_qemu_vm "MocaccinOS"
 }
+
+function start_pop {
+    start_qemu_vm_root "Pop!_OS 24.04" 30
+}
+
+function ssh_pop {
+    start_pop
+    TERM=xterm-256color ssh fusion809@192.168.122.229
+}
+
+function cp_from_pop {
+    start_pop
+    scp -O -r fusion809@192.168.122.229:$1 $2
+}
+
+function view_pop {
+    view_qemu_vm "Pop!_OS 24.04"
+}

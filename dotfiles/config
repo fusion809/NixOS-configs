@@ -58,3 +58,6 @@ Host ubuntukylin-kvm
 Host mocaccinoos-kvm
 	Hostname 192.168.122.95
 	User fusion809
+Host pop-os
+	Hostname 192.168.122.229
+	User fusion809
