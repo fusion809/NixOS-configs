@@ -16,4 +16,5 @@
     efi.canTouchEfiVariables = true;
   };
   kernelParams = [ "usbcore.autosuspend=-1" ];
+  extraModprobeConfig = "options usbhid mousepoll=8";
 }
