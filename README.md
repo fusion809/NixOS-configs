@@ -318,4 +318,4 @@ Footnotes:
 1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`.
 
 # History
-6e524bcfb7db7653ac4df86b378faab6e25a7bf3 was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
+[6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
