@@ -94,7 +94,7 @@ def main():
     print(markdown_table)
     
     # Update README.md
-    readme_path = "README.md"
+    readme_path = "../README.md"
     try:
         with open(readme_path, "r") as f:
             lines = f.readlines()

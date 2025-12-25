@@ -10,10 +10,6 @@
     };
   };
   gvfs = { enable = true; };
-  ollama = {
-    enable = true;
-    loadModels = [ "deepseek-coder" ];
-  };
   pipewire = {
     enable = true;
     alsa.enable = true;
