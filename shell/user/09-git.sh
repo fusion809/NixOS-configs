@@ -28,7 +28,7 @@ function push {
     git -C "$NIXCFG" push origin $(git-branch "$NIXCFG") $2
   else
     if echo $PWD | grep $NIXCFG &> /dev/null ; then
-      $NIXCFG/analysis.py
+      $NIXCFG/python/analysis.py
     fi
     git add --all
     git commit -m "$1"
