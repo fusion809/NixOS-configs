@@ -61,3 +61,9 @@ Host mocaccinoos-kvm
 Host pop-os
 	Hostname 192.168.122.229
 	User fusion809
+Host pclinuxos-kvm
+	Hostname 192.168.122.223
+	User fusion809
+Host alt-kvm
+	Hostname 192.168.122.68
+	User fusion809

@@ -427,3 +427,39 @@ function cp_from_pop {
 function view_pop {
     view_qemu_vm "Pop!_OS 24.04"
 }
+
+function start_pclinuxos {
+    start_qemu_vm_root "PCLinuxOS" 30
+}
+
+function ssh_pclinuxos {
+    start_pclinuxos
+    TERM=xterm-256color ssh fusion809@192.168.122.223
+}
+
+function cp_from_pclinuxos {
+    start_pclinuxos
+    scp -O -r fusion809@192.168.122.223:$1 $2
+}
+
+function view_pclinuxos {
+    view_qemu_vm "PCLinuxOS"
+}
+
+function start_alt {
+    start_qemu_vm_root "ALT Linux 11" 30
+}
+
+function ssh_alt {
+    start_alt
+    TERM=xterm-256color ssh fusion809@192.168.122.68
+}
+
+function cp_from_alt {
+    start_alt
+    scp -O -r fusion809@192.168.122.68:$1 $2
+}
+
+function view_alt {
+    view_qemu_vm "ALT Linux 11"
+}
