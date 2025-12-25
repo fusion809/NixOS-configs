@@ -29,7 +29,7 @@ Host chimera-kvm
 	Hostname 192.168.122.162
 	User fusion809
 Host void-kvm
-	Hostname 192.168.122.29
+	Hostname 192.168.122.101
 	User fusion809
 Host gentoo-kvm
 	Hostname 192.168.122.146

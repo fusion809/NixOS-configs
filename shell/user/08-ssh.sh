@@ -236,12 +236,12 @@ function start_void {
 
 function ssh_void {
     start_void
-    TERM=xterm-256color ssh fusion809@192.168.122.28
+    TERM=xterm-256color ssh fusion809@192.168.122.101
 }
 
 function cp_from_void {
     start_void
-    scp -O -r fusion809@192.168.122.28:$1 $2
+    scp -O -r fusion809@192.168.122.101:$1 $2
 }
 
 function view_void {
