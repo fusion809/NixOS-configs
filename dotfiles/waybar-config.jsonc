@@ -297,7 +297,7 @@
     "clock": {
         "timezone": "Australia/Brisbane",
         "tooltip-format": "<big>{:%I:%M:%S%p %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
-        "format": "{:%I:%M:%S%p %a %d/%m/%y}",
+        "format": "{:%I:%M:%S%p %a %d/%m}",
         "interval": 1
     },
     "power-profiles-daemon": {
