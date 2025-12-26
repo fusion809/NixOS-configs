@@ -45,22 +45,22 @@ format_speed() {
     
     if (( bits < 1000 )); then
         val=$bits
-        unit=" bps"
+        unit=" "
     elif (( bits < 1000000 )); then
         val=$((bits / 1000.0))
-        unit="Kbps"
+        unit="K"
     elif (( bits < 1000000000 )); then
         val=$((bits / 1000000.0))
-        unit="Mbps"
+        unit="M"
     else
         val=$((bits / 1000000000.0))
-        unit="Gbps"
+        unit="G"
     fi
     
     if (( val >= 10 )); then
-        printf "%3.0f%4s" "$val" "$unit"
+        printf "%3.0f%1s" "$val" "$unit"
     else
-        printf "%3.1f%4s" "$val" "$unit"
+        printf "%3.1f%1s" "$val" "$unit"
     fi
 }
 
