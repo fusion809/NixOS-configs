@@ -16,4 +16,4 @@ else
 fi
 
 # Output JSON with icon
-printf '{"text":"%d%%","class":"%s"}' $mem_usage "$class"
+printf '{"text":"%2d%%","class":"%s"}' $mem_usage "$class"

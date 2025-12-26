@@ -21,4 +21,4 @@ else
 fi
 
 # Output JSON
-printf '{"text":"%d%%","class":"%s"}' $perc "$class"
+printf '{"text":"%2d%%","class":"%s"}' $perc "$class"

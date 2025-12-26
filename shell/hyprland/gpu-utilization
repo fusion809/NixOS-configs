@@ -16,4 +16,4 @@ else
 fi
 
 # Output JSON
-printf '{"text":"%d%%","class":"%s"}' $util "$class"
+printf '{"text":"%3d%%","class":"%s"}' $util "$class"

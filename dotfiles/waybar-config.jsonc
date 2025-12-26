@@ -184,6 +184,7 @@
             "(.*) - Discord": " $1",
             "(.*) - Antigravity - (.*)": "󰨞 $2 - $1",
             "(.*) - Visual Studio Code": "󰨞 $1",
+            "(.*) - VLC media player": "󰕼 $1",
             "Steam": "",
             "Friends List": " Friends List",
             "Virtual Machine Manager": "",
@@ -295,8 +296,8 @@
     },
     "clock": {
         "timezone": "Australia/Brisbane",
-        "tooltip-format": "<big>{:%r %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
-        "format": "{:%r %a %d/%m/%y}",
+        "tooltip-format": "<big>{:%I:%M:%S%p %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
+        "format": "{:%I:%M:%S%p %a %d/%m/%y}",
         "interval": 1
     },
     "power-profiles-daemon": {

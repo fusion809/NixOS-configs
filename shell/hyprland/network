@@ -40,15 +40,27 @@ echo "$rx_now $tx_now $time_now" > $STATE_FILE
 format_speed() {
     local bytes=$1
     local bits=$((bytes * 8))
+    local val=0
+    local unit=""
     
     if (( bits < 1000 )); then
-        echo "${bits}bps"
+        val=$bits
+        unit=" bps"
     elif (( bits < 1000000 )); then
-        printf "%.1fKbps" $((bits / 1000.0))
+        val=$((bits / 1000.0))
+        unit="Kbps"
     elif (( bits < 1000000000 )); then
-        printf "%.1fMbps" $((bits / 1000000.0))
+        val=$((bits / 1000000.0))
+        unit="Mbps"
     else
-        printf "%.1fGbps" $((bits / 1000000000.0))
+        val=$((bits / 1000000000.0))
+        unit="Gbps"
+    fi
+    
+    if (( val >= 100 )); then
+        printf "%4.0f%4s" "$val" "$unit"
+    else
+        printf "%4.1f%4s" "$val" "$unit"
     fi
 }
 
