@@ -57,10 +57,10 @@ format_speed() {
         unit="Gbps"
     fi
     
-    if (( val >= 100 )); then
-        printf "%4.0f%4s" "$val" "$unit"
+    if (( val >= 10 )); then
+        printf "%3.0f%4s" "$val" "$unit"
     else
-        printf "%4.1f%4s" "$val" "$unit"
+        printf "%3.1f%4s" "$val" "$unit"
     fi
 }
 

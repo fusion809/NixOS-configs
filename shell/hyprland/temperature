@@ -19,4 +19,8 @@ fi
 echo "$(date +%s) $temp_value" >> $HOME/.cache/temperature.log
 
 # Output JSON for Waybar
-echo "{\"text\":\"${temp/+/}\",\"class\":\"$class\"}"
+# Round to nearest integer
+temp_rounded=$(printf "%.0f" $temp_value)
+
+# Output JSON for Waybar
+echo "{\"text\":\"${temp_rounded}°C\",\"class\":\"$class\"}"
