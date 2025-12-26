@@ -602,11 +602,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1766455379,
-        "narHash": "sha256-aajoMAR81hZX4PZho2Hvx8Y95M1MtgQHF/8CwyJquZ4=",
+        "lastModified": 1766725080,
+        "narHash": "sha256-JG0KvKmVyAQZ4PxKVDy7FGGUirt1lLhWwGwy9ExLCoI=",
         "ref": "nixos-25.11",
-        "rev": "35688970083857d26bf6c57934541eb906f96249",
-        "revCount": 4177,
+        "rev": "2d3184cd3dd31f6eb57eb4ddfe2387ebd141f1e5",
+        "revCount": 4178,
         "type": "git",
         "url": "https://github.com/nix-community/nixvim.git"
       },
