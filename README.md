@@ -311,7 +311,7 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 <li>󰄻 indicates that Marvin updates are available.</li>
 </li> 
 </ul>
-<li>Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year/year (short format).</li>
+<li>Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year (short format).</li>
 </ul>
 
 Footnotes:
