@@ -38,6 +38,7 @@ with pkgs; [
   # Command-line utilities
   ###############################################################
   aria2
+  claude-code
   dnsmasq
   fastfetch
   ffmpeg-full
