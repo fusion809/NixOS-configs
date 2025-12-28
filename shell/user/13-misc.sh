@@ -39,7 +39,7 @@ function lastUpdate {
 }
 
 function cpHyprNixScr {
-	filename=$(ls $HOME/Pictures/Screenshots/ | grep -v "Pop" | grep "Screenshot_" | sort | tail -n 1)
+	filename=$(ls $HOME/Pictures/Screenshots/ | grep -v "Pop" | grep -v "Gentoo" | grep "Screenshot_" | sort | tail -n 1)
 	scrnShotDate=$(echo $filename | cut -d '_' -f 2)
 	rm $IM/Hyprland/Hyprland_NixOS_*.png
 	cp $HOME/Pictures/Screenshots/$filename $IM/Hyprland/Hyprland_NixOS_$scrnShotDate.png
