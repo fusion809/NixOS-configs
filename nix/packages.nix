@@ -13,7 +13,7 @@ with pkgs; [
   nixfmt-classic # Needed for Nix IDE extension of vscode/antigravity
   pinta
   vlc
-  master.vscode
+  master.vscodium
   ###############################################################
   # Assorted packages
   ###############################################################
