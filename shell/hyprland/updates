@@ -322,7 +322,12 @@ fi
 echo $outputStr >&3
 echo $pushStr > $HOME/.cache/pushStr
 # Protect flake inputs from GC
+# Clean up stale GC roots first to prevent disk bloat
+if [[ -d "$HOME/.cache/nix-gcroots" ]]; then
+	rm -rf "$HOME/.cache/nix-gcroots"
+fi
 mkdir -p "$HOME/.cache/nix-gcroots"
+
 # We parse the archive_json which contains the paths of the JUST UPDATED inputs
 echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r store_path; do
 	if [[ -n "$store_path" && -e "$store_path" ]]; then
@@ -330,8 +335,24 @@ echo "$archive_json" | jq -r '.inputs | .[] | .path' | while read -r store_path;
 	fi
 done
 
+# Protect sources of specific heavy/custom packages from GC to prevent re-downloads
+# Note: Evaluating all system packages is too fragile, so we target known heavy/custom ones.
+critical_pkgs=("OVMF" "unstable.winboat" "openra-git" "marvin")
+for pkg in "${critical_pkgs[@]}"; do
+	# Use NIXCFG with --impure to ensure we can evaluate standard flake outputs and custom sources
+	# We redirect stderr to suppress "evaluating..." messages
+	src_path=$(nix eval --impure --raw "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.src.outPath" 2>/dev/null)
+	if [[ -n "$src_path" && -e "$src_path" ]]; then
+		nix-store --add-root "$HOME/.cache/nix-gcroots/src-$pkg" --indirect -r "$src_path" >/dev/null
+	fi
+done
+
 nixcg_log="$HOME/.cache/nixcg.$current_date"
-#nixcg > "$nixcg_log" 2>&1
+# Use manual GC command to avoid clearing the roots we just created (nixcg function does rm -rf)
+{
+	sudo nix-store --add-root /nix/var/nix/gcroots/current-system --indirect -r $(readlink -f /run/current-system)
+	sudo nix-collect-garbage -d
+} > "$nixcg_log" 2>&1
 
 if [[ ${#pushStr} -gt 0 ]]; then
 	# Get current list of modified files
