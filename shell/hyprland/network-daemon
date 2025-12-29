@@ -20,6 +20,18 @@ if [[ -z "$IFACE" ]]; then
     done
 fi
 
+
+# Threshold for outlier detection (KB/s)
+# 20,000 KBps = ~160 Mbps. Typical 100Mbps link saturates at ~12,500 KBps.
+MAX_SPEED=20000
+
+# One-time cleanup of existing log file on startup
+if [[ -f "$LOGFILE" ]]; then
+    # Create temp file with filtered data
+    awk -v max="$MAX_SPEED" '$2 < max && $3 < max' "$LOGFILE" > "${LOGFILE}.tmp"
+    mv "${LOGFILE}.tmp" "$LOGFILE"
+fi
+
 logging_loop() {
     local old_rx=$(cat /sys/class/net/$IFACE/statistics/rx_bytes 2>/dev/null || echo 0)
     local old_tx=$(cat /sys/class/net/$IFACE/statistics/tx_bytes 2>/dev/null || echo 0)
@@ -54,7 +66,10 @@ logging_loop() {
         # Maybe acceptable on modern disk, but log rotation recommended.
         # For now, I'll let it grow.
         
-        echo "$log_ts $rx_kb $tx_kb" >> "$LOGFILE"
+        # Filter outliers
+        if (( rx_kb < MAX_SPEED )) && (( tx_kb < MAX_SPEED )); then
+            echo "$log_ts $rx_kb $tx_kb" >> "$LOGFILE"
+        fi
         
         old_rx=$new_rx
         old_tx=$new_tx
