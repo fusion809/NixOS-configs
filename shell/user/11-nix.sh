@@ -1,9 +1,41 @@
 function nixcg {
-  # Remove stale GC roots from user checks to allow source cleanup
+  # Clean up stale GC roots first to prevent disk bloat
   if [[ -d "$HOME/.cache/nix-gcroots" ]]; then
     rm -rf "$HOME/.cache/nix-gcroots"
-    mkdir -p "$HOME/.cache/nix-gcroots"
   fi
+  mkdir -p "$HOME/.cache/nix-gcroots"
+
+  # Protect sources and build inputs of specific heavy/custom packages from GC to prevent re-downloads
+  critical_pkgs=("OVMF" "unstable.winboat" "openra-git" "marvin")
+  for pkg in "${critical_pkgs[@]}"; do
+    # Use NIXCFG with --impure to ensure we can evaluate standard flake outputs and custom sources
+    # We redirect stderr to suppress "evaluating..." messages
+    
+    # Protect Source
+    src_path=$(nix eval --impure --raw "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.src.outPath" 2>/dev/null)
+    if [[ -n "$src_path" && -e "$src_path" ]]; then
+      nix-store --add-root "$HOME/.cache/nix-gcroots/src-$pkg" --indirect -r "$src_path" >/dev/null
+    fi
+    
+    # Protect Build Output (Store Path)
+    out_path=$(nix eval --impure --raw "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.outPath" 2>/dev/null)
+    if [[ -n "$out_path" && -e "$out_path" ]]; then
+      nix-store --add-root "$HOME/.cache/nix-gcroots/out-$pkg" --indirect -r "$out_path" >/dev/null
+    fi
+
+    # Protect Build Inputs (Dependencies)
+    # This prevents re-downloading build dependencies like dotnet-sdk when the package needs to be rebuilt
+    nix eval --impure --json "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.nativeBuildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
+      if [[ -n "$input_path" && -e "$input_path" ]]; then
+        nix-store --add-root "$HOME/.cache/nix-gcroots/dep-$pkg-${input_path:t}" --indirect -r "$input_path" >/dev/null
+      fi
+    done
+    nix eval --impure --json "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.buildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
+      if [[ -n "$input_path" && -e "$input_path" ]]; then
+        nix-store --add-root "$HOME/.cache/nix-gcroots/dep-$pkg-${input_path:t}" --indirect -r "$input_path" >/dev/null
+      fi
+    done
+  done
 
   sudo nix-store --add-root /nix/var/nix/gcroots/current-system --indirect -r $(readlink -f /run/current-system)
   sudo nix-collect-garbage -d
