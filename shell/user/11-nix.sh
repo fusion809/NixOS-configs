@@ -12,25 +12,26 @@ function nixcg {
     # We redirect stderr to suppress "evaluating..." messages
     
     # Protect Source
-    src_path=$(nix eval --impure --raw "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.src.outPath" 2>/dev/null)
+    echo "Checking source for $pkg..."
+    src_path=$(nix eval --impure --raw "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.src.outPath" 2>/dev/null)
     if [[ -n "$src_path" && -e "$src_path" ]]; then
       nix-store --add-root "$HOME/.cache/nix-gcroots/src-$pkg" --indirect -r "$src_path" >/dev/null
     fi
     
     # Protect Build Output (Store Path)
-    out_path=$(nix eval --impure --raw "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.outPath" 2>/dev/null)
+    out_path=$(nix eval --impure --raw "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.outPath" 2>/dev/null)
     if [[ -n "$out_path" && -e "$out_path" ]]; then
       nix-store --add-root "$HOME/.cache/nix-gcroots/out-$pkg" --indirect -r "$out_path" >/dev/null
     fi
 
     # Protect Build Inputs (Dependencies)
     # This prevents re-downloading build dependencies like dotnet-sdk when the package needs to be rebuilt
-    nix eval --impure --json "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.nativeBuildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
+    nix eval --impure --json "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.nativeBuildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
       if [[ -n "$input_path" && -e "$input_path" ]]; then
         nix-store --add-root "$HOME/.cache/nix-gcroots/dep-$pkg-${input_path:t}" --indirect -r "$input_path" >/dev/null
       fi
     done
-    nix eval --impure --json "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.buildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
+    nix eval --impure --json "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.buildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
       if [[ -n "$input_path" && -e "$input_path" ]]; then
         nix-store --add-root "$HOME/.cache/nix-gcroots/dep-$pkg-${input_path:t}" --indirect -r "$input_path" >/dev/null
       fi
@@ -74,6 +75,7 @@ function nixfrb {
   sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure || return
   nixdiff
   sed -i -e "2s|.*||g" $HOME/.cache/update
+  nixcg
 }
 
 function nixfu {
