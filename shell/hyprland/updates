@@ -341,9 +341,17 @@ critical_pkgs=("OVMF" "unstable.winboat" "openra-git" "marvin")
 for pkg in "${critical_pkgs[@]}"; do
 	# Use NIXCFG with --impure to ensure we can evaluate standard flake outputs and custom sources
 	# We redirect stderr to suppress "evaluating..." messages
+	
+	# Protect Source
 	src_path=$(nix eval --impure --raw "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.src.outPath" 2>/dev/null)
 	if [[ -n "$src_path" && -e "$src_path" ]]; then
 		nix-store --add-root "$HOME/.cache/nix-gcroots/src-$pkg" --indirect -r "$src_path" >/dev/null
+	fi
+	
+	# Protect Build Output (Store Path)
+	out_path=$(nix eval --impure --raw "$NIXCFG#nixosConfigurations.nixos.pkgs.$pkg.outPath" 2>/dev/null)
+	if [[ -n "$out_path" && -e "$out_path" ]]; then
+		nix-store --add-root "$HOME/.cache/nix-gcroots/out-$pkg" --indirect -r "$out_path" >/dev/null
 	fi
 done
 
