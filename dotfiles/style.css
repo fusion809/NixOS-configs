@@ -28,7 +28,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 2px;
-  background-color: #1e1e2e;
+  background-color: #263238;
   font-weight: bold;
   color: rgba(50, 150, 255, 1.0);
   padding-right: 6px;
@@ -36,7 +36,7 @@ window#waybar.hidden {
 
 /* Module: hyprland/workspaces */
 #workspaces {
-  background-color: #000000;
+  background-color: #212121;
   padding: 3px 3px;
   margin: 6px 6px;
   border-radius: 4px;
@@ -52,24 +52,24 @@ window#waybar.hidden {
   padding: 0px 0px;
   margin: 0px 0px;
   border-radius: 0px;
-  background-color: #1e1e2e;
+  background-color: #263238;
   color: #cdd6f4;
 }
 
 #workspaces button.active {
-  color: #1e1e2e;
-  background-color: #dff6f4;
+  color: #263238;
+  background-color: #B2EBF2;
 }
 
 #workspaces button:hover {
   box-shadow: inherit;
   text-shadow: inherit;
-  color: #1e1e2e;
-  background-color: #cdd6f4;
+  color: #263238;
+  background-color: #ECEFF1;
 }
 
 #workspaces button.urgent {
-  background-color: #f38ba8;
+  background-color: #E57373;
 }
 
 /* Module: custom/weather */
@@ -77,7 +77,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 2px 2px;
-  background-color: #1E1E1E;
+  background-color: #212121;
   color: #ffffff;
 }
 
@@ -228,7 +228,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  background-color: rgba(10, 10, 10, 0.6);
+  background-color: rgba(33, 33, 33, 0.6);
   color: #ffffff;
   font-weight: bold;
   font-size: 20px;
@@ -245,7 +245,7 @@ window#waybar.hidden {
   margin: 6px 1px;
   padding: 3px 3px;
   padding-right: 2px;
-  background-color: #1E1E1E;
+  background-color: #212121;
   color: #ffffff;
 }
 
@@ -316,7 +316,7 @@ window#waybar.hidden {
   margin: 6px 1px;
   padding: 3px 3px;
   padding-right: 3px;
-  background-color: #1E1E1E;
+  background-color: #212121;
   color: #ffffff;
 }
 
@@ -423,7 +423,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  background-color: #1E1E1E;
+  background-color: #212121;
   color: #ffffff;
 }
 
@@ -458,7 +458,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  background-color: #1E1E1E;
+  background-color: #212121;
   color: #ffffff;
 }
 
@@ -493,7 +493,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  background-color: #1E1E1E;
+  background-color: #212121;
   color: #ffffff;
 }
 
@@ -528,7 +528,7 @@ window#waybar.hidden {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  background-color: #1E1E1E;
+  background-color: #212121;
   color: #ffffff;
 }
 
@@ -566,7 +566,7 @@ window#waybar.hidden {
   font-weight: bold;
   padding-right: 6px;
   color: rgba(0, 150, 200, 1.0);
-  background-color: rgba(10, 30, 10, 1.0);
+  background-color: #33691E;
 }
 
 /* Module: clock */
@@ -607,7 +607,7 @@ tooltip label {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 2px;
-  background-color: #1e1e2e;
+  background-color: #263238;
   color: #000000;
 }
 
@@ -617,7 +617,7 @@ tooltip label {
   padding: 3px 3px;
   padding-right: 6px;
   margin-right: 6px;
-  background-color: #ff0000;
+  background-color: #E53935;
   color: white;
 }
 
@@ -625,7 +625,7 @@ tooltip label {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;
-  background-color: #2C2C2C;
+  background-color: #303030;
   color: #ffffff;
 }
 
@@ -654,27 +654,27 @@ tooltip label {
 }
 
 #battery {
-  background-color: #f38ba8;
+  background-color: #E57373;
 }
 
 #battery.warning,
 #battery.critical,
 #battery.urgent {
-  background-color: #ff0000;
-  color: #FFFF00;
+  background-color: #E53935;
+  color: #FFEB3B;
 }
 
 #battery.charging {
-  background-color: #a6e3a1;
+  background-color: #AED581;
   color: #181825;
 }
 
 #backlight {
-  background-color: #fab387;
+  background-color: #FFB74D;
 }
 
 #wireplumber {
-  background-color: #f9e2af;
+  background-color: #FFF59D;
 }
 
 #custom-network {
