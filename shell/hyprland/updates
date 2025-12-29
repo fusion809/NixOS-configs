@@ -210,7 +210,7 @@ if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]
 fi
 
 echo "Hyprland: $HYPR_INST->$HYPR_TAG" 
-if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] ); then
+if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] && [[ "$HY3_TAG" == "hl${HYPR_TAG#v}" ]] ); then
 	add_symbol ""
 	sed -i -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1\&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
 	if [[ ${#pushStr} -gt 0 ]]; then
