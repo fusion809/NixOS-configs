@@ -26,13 +26,13 @@ function nixcg {
 
     # Protect Build Inputs (Dependencies)
     # This prevents re-downloading build dependencies like dotnet-sdk when the package needs to be rebuilt
-    nix eval --impure --json "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.nativeBuildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
+    nix eval --impure --json "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.nativeBuildInputs" 2>/dev/null | jq -r 'try .[] | if type=="string" then . else .outPath end // empty' | while read -r input_path; do
       if [[ -n "$input_path" && -e "$input_path" ]]; then
         name=$(basename "$input_path")
         sudo nix-store --add-root "$HOME/.cache/nix-gcroots/dep-$pkg-$name" --indirect -r "$input_path" >/dev/null
       fi
     done
-    nix eval --impure --json "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.buildInputs" 2>/dev/null | jq -r 'try .[] | .outPath // empty' | while read -r input_path; do
+    nix eval --impure --json "$NIXCFG/nix#nixosConfigurations.nixos.pkgs.$pkg.buildInputs" 2>/dev/null | jq -r 'try .[] | if type=="string" then . else .outPath end // empty' | while read -r input_path; do
       if [[ -n "$input_path" && -e "$input_path" ]]; then
         name=$(basename "$input_path")
         sudo nix-store --add-root "$HOME/.cache/nix-gcroots/dep-$pkg-$name" --indirect -r "$input_path" >/dev/null
@@ -40,6 +40,10 @@ function nixcg {
     done
   done
 
+  # Remove existing current-system root if it exists to avoid "already exists" error
+  if [[ -L /nix/var/nix/gcroots/current-system ]]; then
+    sudo rm /nix/var/nix/gcroots/current-system
+  fi
   sudo nix-store --add-root /nix/var/nix/gcroots/current-system --indirect -r $(readlink -f /run/current-system)
   sudo nix-collect-garbage -d
 }
