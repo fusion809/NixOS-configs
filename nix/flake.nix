@@ -17,7 +17,7 @@
     };
     # use the github shorthand with the tag; this resolves Git refs more reliably
     hyprland.url =
-      "git+https://github.com/hyprwm/Hyprland?submodules=1https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.52.2ref=refs/tags/v0.53.0";
+      "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.53.0";
     # where 0.52.1 is the hyprland release version
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
