@@ -565,8 +565,8 @@ window#waybar.hidden {
   padding: 3px 2px;
   font-weight: bold;
   padding-right: 6px;
-  color: rgba(0, 150, 200, 1.0);
-  background-color: #33691E;
+  color: black;
+  background-color: #cf5555;
 }
 
 /* Module: clock */
