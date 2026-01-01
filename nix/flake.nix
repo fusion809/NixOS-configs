@@ -9,15 +9,15 @@
     };
     # Hyprland
     hy3 = {
-      url =
-        "git+https://github.com/outfoxxed/hy3?ref=refs/tags/hl0.52.0"; # where {version} is the hyprland release version
+      url = "git+https://github.com/outfoxxed/hy3?ref=master";
+      #refs/tags/hl0.52.0"; # where {version} is the hyprland release version
       # or "github:outfoxxed/hy3" to follow the development branch.
       # (you may encounter issues if you dont do the same for hyprland)
       inputs.hyprland.follows = "hyprland";
     };
     # use the github shorthand with the tag; this resolves Git refs more reliably
     hyprland.url =
-      "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.52.2";
+      "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.53.0";
     # where 0.52.1 is the hyprland release version
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
