@@ -17,7 +17,7 @@ in buildOpenRAEngine {
   build = "git";
   inherit version;
   rev = openraSrc.rev;
-  hash = "sha256-iAPGuLFjKk1OpUPIkYXVXr5jeLnd4Pmi6MswOg5Q9d8=";
+  hash = "sha256-UmTvKLvPxrXC0WuBtVYsfUaRHmx2d3XTaVaiRYOpqLU=";
   src = openraSrc;
   deps = ./deps.json;
   dotnet-sdk = dotnetCorePackages.sdk_8_0-bin;
