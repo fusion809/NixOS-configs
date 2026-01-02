@@ -67,3 +67,6 @@ Host pclinuxos-kvm
 Host alt-kvm
 	Hostname 192.168.122.68
 	User fusion809
+Host openmandriva-kvm
+	Hostname 192.168.122.99
+	User fusion809

@@ -463,3 +463,21 @@ function cp_from_alt {
 function view_alt {
     view_qemu_vm "ALT Linux 11"
 }
+
+function start_openmandriva {
+    start_qemu_vm_root "OpenMandriva Lx ROME" 30
+}
+
+function ssh_openmandriva {
+    start_openmandriva
+    TERM=xterm-256color ssh fusion809@192.168.122.99
+}
+
+function cp_from_openmandriva {
+    start_openmandriva
+    scp -O -r fusion809@192.168.122.99:$1 $2
+}
+
+function view_openmandriva {
+    view_qemu_vm "OpenMandriva Lx ROME"
+}
