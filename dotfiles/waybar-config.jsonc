@@ -175,6 +175,7 @@
             "Google Earth - Google Chrome": "󰊷",
             "(.*) - Google Chrome": " $1",
 	    "(.*) - Brave": " $1",
+	    "(.*) - VSCodium": " $1",
             "fusion809@nixos(.*)": " fusion809@nixos: $1",
             "root@nixos(.*)": " root@nixos: $1",
             "Alacritty(.*)": " $1",
