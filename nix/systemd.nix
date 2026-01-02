@@ -8,6 +8,7 @@
     dev-tpmrm0.enable = false;
   };
   tpm2.enable = false;
+  coredump.enable = false;
   user.services.swaync = {
     description = "Sway Notification Center";
     wantedBy = [ "graphical-session.target" ];
