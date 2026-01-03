@@ -5,17 +5,50 @@ if ! [[ -d $HOME/.ssh ]] || ! [[ -f $HOME/.ssh/id_rsa.pub ]]; then
   echo 'GitHub SSH key generated and is now in your clipboard. Go to https://github.com/settings/ssh to register it to your account!'
 fi
 
-function start_qemu_vm_root {
+function get_vm_ip {
+    local vm_name="$1"
+    # Get MAC address from the first interface found
+    local vm_mac=$(sudo virsh domiflist "$vm_name" | grep -o -E '([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})' | head -n 1)
+
+    if [ -z "$vm_mac" ]; then
+        echo "Could not find MAC address for VM: $vm_name"
+        return 1
+    fi
+
+    # Try libvirt DHCP leases first
+    local ip=$(sudo virsh net-dhcp-leases default | grep "$vm_mac" | awk '{print $5}' | cut -d'/' -f1 | tail -n 1)
+
+    # Fallback to ARP scan
+    if [ -z "$ip" ]; then
+        echo "IP not found in DHCP leases for $vm_mac. Scanning ARP table..."
+        ip=$(arp -an | grep "$vm_mac" | awk '{print $2}' | tr -d '()')
+    fi
+
+    if [ -z "$ip" ]; then
+        echo "Could not determine IP for $vm_name ($vm_mac)."
+        return 1
+    fi
+
+    echo "$ip"
+}
+
+function ssh_vm {
+    start_qemu_vm "$1" 30
+    TERM=xterm-256color ssh $USER@$(get_vm_ip "$1")
+}
+
+function cp_from_vm {
+    start_qemu_vm "$1" 30
+    scp -O -r $USER@$(get_vm_ip "$1"):$2 $3
+}
+
+function start_qemu_vm {
     if ! `sudo virsh list --all | grep "$1" | grep running &> /dev/null`; then
         sudo virsh start "$1"
         if [[ -n $2 ]]; then
             sleep $2 # Wait for VM to start
         fi
-    fi
-}
-
-function start_qemu_vm_user {
-    if ! `virsh list --all | grep "$1" | grep running &> /dev/null`; then
+    elif ! `virsh list --all | grep "$1" | grep running &> /dev/null`; then
         virsh start "$1"
         if [[ -n $2 ]]; then
             sleep $2 # Wait for VM to start
@@ -31,173 +64,119 @@ function view_qemu_vm {
     if [[ -n "${root_vm// /}" ]]; then
         echo "Assuming root vm..."
         if ! `echo $root_vm | grep running &> /dev/null`; then
-            start_qemu_vm_root "$1"
+            start_qemu_vm "$1"
         fi
         virt-viewer --connect qemu:///system "$1"
     elif [[ -n "${user_vm// /}" ]]; then
         if ! `echo $user_vm | grep running &> /dev/null`; then
-            start_qemu_vm_user "$1"
+            start_qemu_vm "$1"
         fi
         virt-viewer "$1"
     fi
 }
 
-function start_debian {
-    start_qemu_vm_root "Debian 13" 30
-}
-
 function ssh_debian {
-    start_debian
-    TERM=xterm-256color ssh fusion809@192.168.122.244
+    ssh_vm "Debian 13"
 }
 
 function cp_from_debian {
-    start_debian
-    scp -O -r fusion809@192.168.122.244:$HOME/$1 /arch$HOME/PhD/Rcode/
+    cp_from_vm "Debian 13" "$1" "$2"
 }
 
 function view_debian {
     view_qemu_vm "Debian 13"
 }
 
-function start_fedora_rawhide {
-    start_qemu_vm_root "Fedora Rawhide" 30
-}
-
 function ssh_fedora {
-    start_fedora_rawhide
-    TERM=xterm-256color ssh $USER@192.168.122.232
+    ssh_vm "Fedora Rawhide"
 }
 
 function cp_from_fedora {
-    start_fedora_rawhide
-    scp -O -r $USER@192.168.122.232:$1 $2
+    cp_from_vm "Fedora Rawhide" "$1" "$2"
 }
 
 function view_fedora {
     view_qemu_vm "Fedora Rawhide"
 }
 
-function start_ubuntu {
-    start_qemu_vm_root "Ubuntu 26.04" 30
-}
-
 function ssh_ubuntu {
-    start_ubuntu
-    TERM=xterm-256color ssh $USER@192.168.122.151
+    ssh_vm "Ubuntu 26.04"
 }
 
 function cp_from_ubuntu {
-    start_ubuntu
-    scp -O -r $USER@192.168.122.151:$1 $2
+    cp_from_vm "Ubuntu 26.04" "$1" "$2"
 }
 
 function view_ubuntu {
     view_qemu_vm "Ubuntu 26.04"
 }
 
-function start_guix {
-    start_qemu_vm_root "Guix System master" 30
-}
-
 function ssh_guix {
-    start_guix
-    TERM=xterm-256color ssh $USER@192.168.122.90
+    ssh_vm "Guix System master"
 }
 
 function cp_from_guix {
-    start_guix
-    scp -O -r $USER@192.168.122.90:$1 $2
+    cp_from_vm "Guix System master" "$1" "$2"
 }
 
 function view_guix {
     view_qemu_vm "Guix System master"
 }
 
-function start_rocky {
-    start_qemu_vm_root "Rocky Linux 10.1" 30
-}
-
 function ssh_rocky {
-    start_rocky
-    TERM=xterm-256color ssh fusion809@192.168.122.158
+    ssh_vm "Rocky Linux 10.1"
 }
 
 function cp_from_rocky {
-    start_rocky
-    scp -O -r fusion809@192.168.122.158:$1 $2
+    cp_from_vm "Rocky Linux 10.1" "$1" "$2"
 }
 
 function view_rocky {
     view_qemu_vm "Rocky Linux 10.1"
 }
 
-function start_rosa {
-    start_qemu_vm_root "ROSA Fresh GNOME 13.1" 30
-}
-
 function ssh_rosa {
-    start_rosa
-    TERM=xterm-256color ssh fusion809@192.168.122.165
+    ssh_vm "ROSA Fresh GNOME 13.1"
 }
 
 function cp_from_rosa {
-    start_rosa
-    scp -O -r fusion809@192.168.122.165:$1 $2
+    cp_from_vm "ROSA Fresh GNOME 13.1" "$1" "$2"
 }
 
 function view_rosa {
     view_qemu_vm "ROSA Fresh GNOME 13.1"
 }
 
-function start_mint {
-    start_qemu_vm_root "Linux Mint 22.2 Cinnamon" 30
-}
-
 function ssh_mint {
-    start_mint
-    TERM=xterm-256color ssh fusion809@192.168.122.54
+    ssh_vm "Linux Mint 22.2 Cinnamon"
 }
 
 function cp_from_mint {
-    start_mint
-    scp -O -r fusion809@192.168.122.54:$1 $2
+    cp_from_vm "Linux Mint 22.2 Cinnamon" "$1" "$2"
 }
 
 function view_mint {
     view_qemu_vm "Linux Mint 22.2 Cinnamon"
 }
 
-function start_slackware {
-    start_qemu_vm_root "Slackware Linux 15.0" 30
-}
-
 function ssh_slackware {
-    start_slackware
-    TERM=xterm-256color ssh fusion809@192.168.122.106
+    ssh_vm "Slackware Linux 15.0"
 }
 
 function cp_from_slackware {
-    start_slackware
-    scp -O -r fusion809@192.168.122.106:$1 $2
+    cp_from_vm "Slackware Linux 15.0" "$1" "$2"
 }
 
 function view_slackware {
     view_qemu_vm "Slackware Linux 15.0"
 }
 
-function start_opensuse {
-    start_qemu_vm_root "openSUSE Tumbleweed" 30
-}
-
 function ssh_opensuse {
-    start_opensuse
-    TERM=xterm-256color ssh fusion809@192.168.122.63
+    ssh_vm "openSUSE Tumbleweed"
 }
 
 function cp_from_opensuse {
-    start_opensuse
-    scp -O -r fusion809@192.168.122.63:$1 $2
+    cp_from_vm "openSUSE Tumbleweed" "$1" "$2"
 }
 
 function view_opensuse {
@@ -205,295 +184,199 @@ function view_opensuse {
 }
 
 function start_reactos {
-    start_qemu_vm_root "ReactOS2"
+    start_qemu_vm "ReactOS2"
 }
 
 function view_reactos {
     view_qemu_vm "ReactOS2"
 }
 
-function start_chimera {
-    start_qemu_vm_root "Chimera Linux" 30
-}
-
 function ssh_chimera {
-    start_chimera
-    TERM=xterm-256color ssh fusion809@192.168.122.161
+    ssh_vm "Chimera Linux"
 }
 
 function cp_from_chimera {
-    start_chimera
-    scp -O -r fusion809@192.168.122.161:$1 $2
+    cp_from_vm "Chimera Linux" "$1" "$2"
 }
 
 function view_chimera {
     view_qemu_vm "Chimera Linux"
 }
 
-function start_void {
-    start_qemu_vm_root "Void Linux" 30
-}
-
 function ssh_void {
-    start_void
-    TERM=xterm-256color ssh fusion809@192.168.122.101
+    ssh_vm "Void Linux"
 }
 
 function cp_from_void {
-    start_void
-    scp -O -r fusion809@192.168.122.101:$1 $2
+    cp_from_vm "Void Linux" "$1" "$2"
 }
 
 function view_void {
     view_qemu_vm "Void Linux"
 }
 
-function start_rhino {
-    start_qemu_vm_root "Rhino Linux" 30
-}
-
 function ssh_rhino {
-    start_rhino
-    TERM=xterm-256color ssh fusion809@192.168.122.116
+    ssh_vm "Rhino Linux"
 }
 
 function cp_from_rhino {
-    start_rhino
-    scp -O -r fusion809@192.168.122.116:$1 $2
+    cp_from_vm "Rhino Linux" "$1" "$2"
 }
 
 function view_rhino {
     view_qemu_vm "Rhino Linux"
 }
 
-function start_gentoo {
-    start_qemu_vm_root "Gentoo Linux" 30
-}
-
 function ssh_gentoo {
-    start_gentoo
-    TERM=xterm-256color ssh fusion809@192.168.122.146
+    ssh_vm "Gentoo Linux"
 }
 
 function cp_from_gentoo {
-    start_gentoo
-    scp -O -r fusion809@192.168.122.146:$1 $2
+    cp_from_vm "Gentoo Linux" "$1" "$2"
 }
 
 function view_gentoo {
     view_qemu_vm "Gentoo Linux"
 }
 
-function start_solus {
-    start_qemu_vm_root "Solus Budgie" 30
-}
-
 function ssh_solus {
-    start_solus
-    TERM=xterm-256color ssh fusion809@192.168.122.64
+    ssh_vm "Solus Budgie"
 }
 
 function cp_from_solus {
-    start_solus
-    scp -O -r fusion809@192.168.122.64:$1 $2
+    cp_from_vm "Solus Budgie" "$1" "$2"
 }
 
 function view_solus {
     view_qemu_vm "Solus Budgie"
 }
 
-function start_freebsd {
-    start_qemu_vm_root "FreeBSD 15.0" 30
-}
-
 function ssh_freebsd {
-    start_freebsd
-    TERM=xterm-256color ssh fusion809@192.168.122.192
+    ssh_vm "FreeBSD 15.0"
 }
 
 function cp_from_freebsd {
-    start_freebsd
-    scp -O -r fusion809@192.168.122.192:$1 $2
+    cp_from_vm "FreeBSD 15.0" "$1" "$2"
 }
 
 function view_freebsd {
     view_qemu_vm "FreeBSD 15.0"
 }
 
-function start_deepin {
-    start_qemu_vm_root "Deepin 25.0.1" 30
-}
-
 function ssh_deepin {
-    start_deepin
-    TERM=xterm-256color ssh fusion809@192.168.122.23
+    ssh_vm "Deepin 25.0.1"
 }
 
 function cp_from_deepin {
-    start_deepin
-    scp -O -r fusion809@192.168.122.23:$1 $2
+    cp_from_vm "Deepin 25.0.1" "$1" "$2"
 }
 
 function view_deepin {
     view_qemu_vm "Deepin 25.0.1"
 }
 
-function start_alpine {
-    start_qemu_vm_root "Alpine Linux 3.23" 30
-}
-
 function ssh_alpine {
-    start_alpine
-    TERM=xterm-256color ssh fusion809@192.168.122.26
+    ssh_vm "Alpine Linux 3.23"
 }
 
 function cp_from_alpine {
-    start_alpine
-    scp -O -r fusion809@192.168.122.26:$1 $2
+    cp_from_vm "Alpine Linux 3.23" "$1" "$2"
 }
 
 function view_alpine {
     view_qemu_vm "Alpine Linux 3.23"
 }
 
-function start_elementary {
-    start_qemu_vm_root "elementary OS 8.0.2" 30
-}
-
 function ssh_elementary {
-    start_elementary
-    TERM=xterm-256color ssh fusion809@192.168.122.6
+    ssh_vm "elementary OS 8.0.2"
 }
 
 function cp_from_elementary {
-    start_elementary
-    scp -O -r fusion809@192.168.122.6:$1 $2
+    cp_from_vm "elementary OS 8.0.2" "$1" "$2"
 }
 
 function view_elementary {
     view_qemu_vm "elementary OS 8.0.2"
 }
 
-function start_kylin {
-    start_qemu_vm_root "Ubuntu Kylin 25.10" 30
-}
-
 function ssh_kylin {
-    start_kylin
-    TERM=xterm-256color ssh fusion809@192.168.122.203
+    ssh_vm "Ubuntu Kylin 25.10"
 }
 
 function cp_from_kylin {
-    start_kylin
-    scp -O -r fusion809@192.168.122.203:$1 $2
+    cp_from_vm "Ubuntu Kylin 25.10" "$1" "$2"
 }
 
 function view_kylin {
     view_qemu_vm "Ubuntu Kylin 25.10"
 }
 
-function start_mocaccino {
-    start_qemu_vm_root "MocaccinOS" 30
-}
-
 function ssh_mocaccino {
-    start_mocaccino
-    TERM=xterm-256color ssh fusion809@192.168.122.95
+    ssh_vm "MocaccinOS"
 }
 
 function cp_from_mocaccino {
-    start_mocaccino
-    scp -O -r fusion809@192.168.122.95:$1 $2
+    cp_from_vm "MocaccinOS" "$1" "$2"
 }
 
 function view_mocaccino {
     view_qemu_vm "MocaccinOS"
 }
 
-function start_pop {
-    start_qemu_vm_root "Pop!_OS 24.04" 30
-}
-
 function ssh_pop {
-    start_pop
-    TERM=xterm-256color ssh fusion809@192.168.122.229
+    ssh_vm "Pop!_OS 24.04"
 }
 
 function cp_from_pop {
-    start_pop
-    scp -O -r fusion809@192.168.122.229:$1 $2
+    cp_from_vm "Pop!_OS 24.04" "$1" "$2"
 }
 
 function view_pop {
     view_qemu_vm "Pop!_OS 24.04"
 }
 
-function start_pclinuxos {
-    start_qemu_vm_root "PCLinuxOS" 30
-}
-
 function ssh_pclinuxos {
-    start_pclinuxos
-    TERM=xterm-256color ssh fusion809@192.168.122.223
+    ssh_vm "PCLinuxOS"
 }
 
 function cp_from_pclinuxos {
-    start_pclinuxos
-    scp -O -r fusion809@192.168.122.223:$1 $2
+    cp_from_vm "PCLinuxOS" "$1" "$2"
 }
 
 function view_pclinuxos {
     view_qemu_vm "PCLinuxOS"
 }
 
-function start_alt {
-    start_qemu_vm_root "ALT Linux 11" 30
-}
-
 function ssh_alt {
-    start_alt
-    TERM=xterm-256color ssh fusion809@192.168.122.68
+    ssh_vm "ALT Linux 11"
 }
 
 function cp_from_alt {
-    start_alt
-    scp -O -r fusion809@192.168.122.68:$1 $2
+    cp_from_vm "ALT Linux 11" "$1" "$2"
 }
 
 function view_alt {
     view_qemu_vm "ALT Linux 11"
 }
 
-function start_openmandriva {
-    start_qemu_vm_root "OpenMandriva Lx ROME" 30
-}
-
 function ssh_openmandriva {
-    start_openmandriva
-    TERM=xterm-256color ssh fusion809@192.168.122.99
+    ssh_vm "OpenMandriva Lx ROME"
 }
 
 function cp_from_openmandriva {
-    start_openmandriva
-    scp -O -r fusion809@192.168.122.99:$1 $2
+    cp_from_vm "OpenMandriva Lx ROME" "$1" "$2"
 }
 
 function view_openmandriva {
     view_qemu_vm "OpenMandriva Lx ROME"
 }
 
-function start_bedrock {
-    start_qemu_vm_root "Bedrock Linux (Arch Linux base)" 30
-}
-
 function ssh_bedrock {
-    start_bedrock
-    TERM=xterm-256color ssh fusion809@192.168.122.209
+    ssh_vm "Bedrock Linux (Arch Linux base)"
 }
 
 function cp_from_bedrock {
-    start_bedrock
-    scp -O -r fusion809@192.168.122.209:$1 $2
+    cp_from_vm "Bedrock Linux (Arch Linux base)" "$1" "$2"
 }
 
 function view_bedrock {
