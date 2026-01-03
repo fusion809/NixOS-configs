@@ -70,3 +70,6 @@ Host alt-kvm
 Host openmandriva-kvm
 	Hostname 192.168.122.99
 	User fusion809
+Host bedrock-kvm
+	Hostname 192.168.122.210
+	User fusion809

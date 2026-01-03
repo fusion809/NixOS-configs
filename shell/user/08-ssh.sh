@@ -481,3 +481,21 @@ function cp_from_openmandriva {
 function view_openmandriva {
     view_qemu_vm "OpenMandriva Lx ROME"
 }
+
+function start_bedrock {
+    start_qemu_vm_root "Bedrock Linux (Arch Linux base)" 30
+}
+
+function ssh_bedrock {
+    start_bedrock
+    TERM=xterm-256color ssh fusion809@192.168.122.210
+}
+
+function cp_from_bedrock {
+    start_bedrock
+    scp -O -r fusion809@192.168.122.210:$1 $2
+}
+
+function view_bedrock {
+    view_qemu_vm "Bedrock Linux (Arch Linux base)"
+}
