@@ -43,15 +43,16 @@ function cp_from_vm {
 }
 
 function start_qemu_vm {
-    if ! `sudo virsh list --all | grep "$1" | grep running &> /dev/null`; then
-        sudo virsh start "$1"
-        if [[ -n $2 ]]; then
-            sleep $2 # Wait for VM to start
-        fi
-    elif ! `virsh list --all | grep "$1" | grep running &> /dev/null`; then
-        virsh start "$1"
-        if [[ -n $2 ]]; then
-            sleep $2 # Wait for VM to start
+    local vm="$1"
+    # Check if VM is running using domstate (robust against special chars in name)
+    local state=$(sudo virsh domstate "$vm" 2>/dev/null | head -n1)
+    
+    # "running" or "idle" usually indicates it's up.
+    # Note: virsh domstate returns "shut off" if down.
+    if [[ "$state" != "running" && "$state" != "idle" ]]; then
+        sudo virsh start "$vm"
+        if [[ -n "$2" ]]; then
+            sleep "$2" # Wait for VM to start
         fi
     fi
 }
@@ -75,310 +76,46 @@ function view_qemu_vm {
     fi
 }
 
-function ssh_debian {
-    ssh_vm "Debian 13"
-}
-
-function cp_from_debian {
-    cp_from_vm "Debian 13" "$1" "$2"
-}
-
-function view_debian {
-    view_qemu_vm "Debian 13"
-}
-
-function ssh_fedora {
-    ssh_vm "Fedora Rawhide"
-}
-
-function cp_from_fedora {
-    cp_from_vm "Fedora Rawhide" "$1" "$2"
-}
-
-function view_fedora {
-    view_qemu_vm "Fedora Rawhide"
-}
-
-function ssh_ubuntu {
-    ssh_vm "Ubuntu 26.04"
-}
-
-function cp_from_ubuntu {
-    cp_from_vm "Ubuntu 26.04" "$1" "$2"
-}
-
-function view_ubuntu {
-    view_qemu_vm "Ubuntu 26.04"
-}
-
-function ssh_guix {
-    ssh_vm "Guix System master"
-}
-
-function cp_from_guix {
-    cp_from_vm "Guix System master" "$1" "$2"
-}
-
-function view_guix {
-    view_qemu_vm "Guix System master"
-}
-
-function ssh_rocky {
-    ssh_vm "Rocky Linux 10.1"
-}
-
-function cp_from_rocky {
-    cp_from_vm "Rocky Linux 10.1" "$1" "$2"
-}
-
-function view_rocky {
-    view_qemu_vm "Rocky Linux 10.1"
-}
-
-function ssh_rosa {
-    ssh_vm "ROSA Fresh GNOME 13.1"
-}
-
-function cp_from_rosa {
-    cp_from_vm "ROSA Fresh GNOME 13.1" "$1" "$2"
-}
-
-function view_rosa {
-    view_qemu_vm "ROSA Fresh GNOME 13.1"
-}
-
-function ssh_mint {
-    ssh_vm "Linux Mint 22.2 Cinnamon"
-}
-
-function cp_from_mint {
-    cp_from_vm "Linux Mint 22.2 Cinnamon" "$1" "$2"
-}
-
-function view_mint {
-    view_qemu_vm "Linux Mint 22.2 Cinnamon"
-}
-
-function ssh_slackware {
-    ssh_vm "Slackware Linux 15.0"
-}
-
-function cp_from_slackware {
-    cp_from_vm "Slackware Linux 15.0" "$1" "$2"
-}
-
-function view_slackware {
-    view_qemu_vm "Slackware Linux 15.0"
-}
-
-function ssh_opensuse {
-    ssh_vm "openSUSE Tumbleweed"
-}
-
-function cp_from_opensuse {
-    cp_from_vm "openSUSE Tumbleweed" "$1" "$2"
-}
-
-function view_opensuse {
-    view_qemu_vm "openSUSE Tumbleweed"
-}
-
-function start_reactos {
-    start_qemu_vm "ReactOS2"
-}
-
-function view_reactos {
-    view_qemu_vm "ReactOS2"
-}
-
-function ssh_chimera {
-    ssh_vm "Chimera Linux"
-}
-
-function cp_from_chimera {
-    cp_from_vm "Chimera Linux" "$1" "$2"
-}
-
-function view_chimera {
-    view_qemu_vm "Chimera Linux"
-}
-
-function ssh_void {
-    ssh_vm "Void Linux"
-}
-
-function cp_from_void {
-    cp_from_vm "Void Linux" "$1" "$2"
-}
-
-function view_void {
-    view_qemu_vm "Void Linux"
-}
-
-function ssh_rhino {
-    ssh_vm "Rhino Linux"
-}
-
-function cp_from_rhino {
-    cp_from_vm "Rhino Linux" "$1" "$2"
-}
-
-function view_rhino {
-    view_qemu_vm "Rhino Linux"
-}
-
-function ssh_gentoo {
-    ssh_vm "Gentoo Linux"
-}
-
-function cp_from_gentoo {
-    cp_from_vm "Gentoo Linux" "$1" "$2"
-}
-
-function view_gentoo {
-    view_qemu_vm "Gentoo Linux"
-}
-
-function ssh_solus {
-    ssh_vm "Solus Budgie"
-}
-
-function cp_from_solus {
-    cp_from_vm "Solus Budgie" "$1" "$2"
-}
-
-function view_solus {
-    view_qemu_vm "Solus Budgie"
-}
-
-function ssh_freebsd {
-    ssh_vm "FreeBSD 15.0"
-}
-
-function cp_from_freebsd {
-    cp_from_vm "FreeBSD 15.0" "$1" "$2"
-}
-
-function view_freebsd {
-    view_qemu_vm "FreeBSD 15.0"
-}
-
-function ssh_deepin {
-    ssh_vm "Deepin 25.0.1"
-}
-
-function cp_from_deepin {
-    cp_from_vm "Deepin 25.0.1" "$1" "$2"
-}
-
-function view_deepin {
-    view_qemu_vm "Deepin 25.0.1"
-}
-
-function ssh_alpine {
-    ssh_vm "Alpine Linux 3.23"
-}
-
-function cp_from_alpine {
-    cp_from_vm "Alpine Linux 3.23" "$1" "$2"
-}
-
-function view_alpine {
-    view_qemu_vm "Alpine Linux 3.23"
-}
-
-function ssh_elementary {
-    ssh_vm "elementary OS 8.0.2"
-}
-
-function cp_from_elementary {
-    cp_from_vm "elementary OS 8.0.2" "$1" "$2"
-}
-
-function view_elementary {
-    view_qemu_vm "elementary OS 8.0.2"
-}
-
-function ssh_kylin {
-    ssh_vm "Ubuntu Kylin 25.10"
-}
-
-function cp_from_kylin {
-    cp_from_vm "Ubuntu Kylin 25.10" "$1" "$2"
-}
-
-function view_kylin {
-    view_qemu_vm "Ubuntu Kylin 25.10"
-}
-
-function ssh_mocaccino {
-    ssh_vm "MocaccinOS"
-}
-
-function cp_from_mocaccino {
-    cp_from_vm "MocaccinOS" "$1" "$2"
-}
-
-function view_mocaccino {
-    view_qemu_vm "MocaccinOS"
-}
-
-function ssh_pop {
-    ssh_vm "Pop!_OS 24.04"
-}
-
-function cp_from_pop {
-    cp_from_vm "Pop!_OS 24.04" "$1" "$2"
-}
-
-function view_pop {
-    view_qemu_vm "Pop!_OS 24.04"
-}
-
-function ssh_pclinuxos {
-    ssh_vm "PCLinuxOS"
-}
-
-function cp_from_pclinuxos {
-    cp_from_vm "PCLinuxOS" "$1" "$2"
-}
-
-function view_pclinuxos {
-    view_qemu_vm "PCLinuxOS"
-}
-
-function ssh_alt {
-    ssh_vm "ALT Linux 11"
-}
-
-function cp_from_alt {
-    cp_from_vm "ALT Linux 11" "$1" "$2"
-}
-
-function view_alt {
-    view_qemu_vm "ALT Linux 11"
-}
-
-function ssh_openmandriva {
-    ssh_vm "OpenMandriva Lx ROME"
-}
-
-function cp_from_openmandriva {
-    cp_from_vm "OpenMandriva Lx ROME" "$1" "$2"
-}
-
-function view_openmandriva {
-    view_qemu_vm "OpenMandriva Lx ROME"
-}
-
-function ssh_bedrock {
-    ssh_vm "Bedrock Linux (Arch Linux base)"
-}
-
-function cp_from_bedrock {
-    cp_from_vm "Bedrock Linux (Arch Linux base)" "$1" "$2"
-}
-
-function view_bedrock {
-    view_qemu_vm "Bedrock Linux (Arch Linux base)"
-}
+declare -A vms=(
+    ["debian"]="Debian 13"
+    ["fedora"]="Fedora Rawhide"
+    ["ubuntu"]="Ubuntu 26.04"
+    ["guix"]="Guix System master"
+    ["rocky"]="Rocky Linux 10.1"
+    ["rosa"]="ROSA Fresh GNOME 13.1"
+    ["mint"]="Linux Mint 22.2 Cinnamon"
+    ["slackware"]="Slackware Linux 15.0"
+    ["opensuse"]="openSUSE Tumbleweed"
+    ["reactos"]="ReactOS2"
+    ["chimera"]="Chimera Linux"
+    ["void"]="Void Linux"
+    ["rhino"]="Rhino Linux"
+    ["gentoo"]="Gentoo Linux"
+    ["solus"]="Solus Budgie"
+    ["freebsd"]="FreeBSD 15.0"
+    ["deepin"]="Deepin 25.0.1"
+    ["alpine"]="Alpine Linux 3.23"
+    ["elementary"]="elementary OS 8.0.2"
+    ["kylin"]="Ubuntu Kylin 25.10"
+    ["mocaccino"]="MocaccinOS"
+    ["pop"]="Pop!_OS 24.04"
+    ["pclinuxos"]="PCLinuxOS"
+    ["alt"]="ALT Linux 11"
+    ["openmandriva"]="OpenMandriva Lx ROME"
+    ["bedrock"]="Bedrock Linux (Arch Linux base)"
+    ["zorin"]="Zorin OS 18"
+)
+
+# Shell-agnostic key iteration
+if [ -n "$ZSH_VERSION" ]; then
+    short_names=("${(@k)vms}")
+else
+    short_names=("${!vms[@]}")
+fi
+
+for short_name in "${short_names[@]}"; do
+    full_name="${vms[$short_name]}"
+    eval "function ssh_${short_name} { ssh_vm \"$full_name\"; }"
+    eval "function cp_from_${short_name} { cp_from_vm \"$full_name\" \"\$1\" \"\$2\"; }"
+    eval "function view_${short_name} { view_qemu_vm \"$full_name\"; }"
+done
