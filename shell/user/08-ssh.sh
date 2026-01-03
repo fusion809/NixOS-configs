@@ -488,12 +488,12 @@ function start_bedrock {
 
 function ssh_bedrock {
     start_bedrock
-    TERM=xterm-256color ssh fusion809@192.168.122.210
+    TERM=xterm-256color ssh fusion809@192.168.122.209
 }
 
 function cp_from_bedrock {
     start_bedrock
-    scp -O -r fusion809@192.168.122.210:$1 $2
+    scp -O -r fusion809@192.168.122.209:$1 $2
 }
 
 function view_bedrock {
