@@ -40,9 +40,10 @@ function ssh_vm {
     
     if [ -n "$ip" ]; then
         if [ -f "$HOME/.config/vm_pass" ]; then
-            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh "$USER@$ip" "$@"
+            # Use -t to force pseudo-terminal allocation if commands are passed
+            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -t "$USER@$ip" "$@"
         else
-            TERM=xterm-256color ssh "$USER@$ip" "$@"
+            TERM=xterm-256color ssh -t "$USER@$ip" "$@"
         fi
     else
         echo "Failed to get IP for $vm_name"
@@ -145,5 +146,5 @@ for short_name in "${short_names[@]}"; do
 done
 
 function hpc {
-    ssh_debian "source $HOME/.bashrc ; hpc"
+    ssh_debian "bash -ic hpc"
 }
