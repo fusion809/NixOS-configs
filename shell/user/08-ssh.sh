@@ -77,6 +77,7 @@ function view_qemu_vm {
 }
 
 declare -A vms=(
+    ["aeryn"]="AerynOS"
     ["alpine"]="Alpine Linux 3.23"
     ["alt"]="ALT Linux 11"
     ["bedrock"]="Bedrock Linux (Arch Linux base)"
