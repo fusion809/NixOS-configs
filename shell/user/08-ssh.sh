@@ -33,13 +33,36 @@ function get_vm_ip {
 }
 
 function ssh_vm {
-    start_qemu_vm "$1" 30
-    TERM=xterm-256color ssh $USER@$(get_vm_ip "$1")
+    local vm_name="$1"
+    shift
+    start_qemu_vm "$vm_name" 30
+    local ip=$(get_vm_ip "$vm_name")
+    
+    if [ -n "$ip" ]; then
+        if [ -f "$HOME/.config/vm_pass" ]; then
+            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh "$USER@$ip" "$@"
+        else
+            TERM=xterm-256color ssh "$USER@$ip" "$@"
+        fi
+    else
+        echo "Failed to get IP for $vm_name"
+        return 1
+    fi
 }
 
 function cp_from_vm {
     start_qemu_vm "$1" 30
-    scp -O -r $USER@$(get_vm_ip "$1"):$2 $3
+    local ip=$(get_vm_ip "$1")
+    if [ -n "$ip" ]; then
+        if [ -f "$HOME/.config/vm_pass" ]; then
+            sshpass -f "$HOME/.config/vm_pass" scp -O -r "$USER@$ip:$2" "$3"
+        else
+            scp -O -r "$USER@$ip:$2" "$3"
+        fi
+    else
+         echo "Failed to get IP for $1"
+         return 1
+    fi
 }
 
 function start_qemu_vm {
@@ -116,7 +139,11 @@ fi
 
 for short_name in "${short_names[@]}"; do
     full_name="${vms[$short_name]}"
-    eval "function ssh_${short_name} { ssh_vm \"$full_name\"; }"
+    eval "function ssh_${short_name} { ssh_vm \"$full_name\" \"\$@\"; }"
     eval "function cp_from_${short_name} { cp_from_vm \"$full_name\" \"\$1\" \"\$2\"; }"
     eval "function view_${short_name} { view_qemu_vm \"$full_name\"; }"
 done
+
+function hpc {
+    ssh_debian "source $HOME/.bashrc ; hpc"
+}

@@ -59,6 +59,7 @@ with pkgs; [
   scc
   smartmontools
   psmisc # For fuser
+  sshpass
   usbutils
   unzip
   wget
