@@ -58,6 +58,7 @@ with pkgs; [
   python3
   scc
   smartmontools
+  psmisc # For fuser
   usbutils
   unzip
   wget

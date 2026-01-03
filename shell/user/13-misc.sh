@@ -194,3 +194,15 @@ function logNetTransfers {
 function rmLastUpdatesRun {
 	rm $(ls $HOME/.cache/updates.* | tail -n 1)
 }
+
+function compactVMs {
+	# Requires psmisc (for fuser)
+	find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
+		if sudo fuser "$file" >/dev/null 2>&1; then
+			echo "Skipping being-used image: $file"
+		else
+			echo "Compacting $file..."
+			sudo virt-sparsify --in-place "$file"
+		fi
+	done
+}
