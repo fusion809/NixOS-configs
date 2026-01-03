@@ -32,27 +32,8 @@ function get_vm_ip {
     echo "$ip"
 }
 
-function ssh_vm {
-    local vm_name="$1"
-    shift
-    start_qemu_vm "$vm_name" 30
-    local ip=$(get_vm_ip "$vm_name")
-    
-    if [ -n "$ip" ]; then
-        if [ -f "$HOME/.config/vm_pass" ]; then
-            # Use -t to force pseudo-terminal allocation if commands are passed
-            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -t "$USER@$ip" "$@"
-        else
-            TERM=xterm-256color ssh -t "$USER@$ip" "$@"
-        fi
-    else
-        echo "Failed to get IP for $vm_name"
-        return 1
-    fi
-}
-
 function cp_from_vm {
-    start_qemu_vm "$1" 30
+    start_qemu_vm "$1"
     local ip=$(get_vm_ip "$1")
     if [ -n "$ip" ]; then
         if [ -f "$HOME/.config/vm_pass" ]; then
@@ -70,14 +51,71 @@ function start_qemu_vm {
     local vm="$1"
     # Check if VM is running using domstate (robust against special chars in name)
     local state=$(sudo virsh domstate "$vm" 2>/dev/null | head -n1)
-    
+
     # "running" or "idle" usually indicates it's up.
-    # Note: virsh domstate returns "shut off" if down.
     if [[ "$state" != "running" && "$state" != "idle" ]]; then
         sudo virsh start "$vm"
-        if [[ -n "$2" ]]; then
-            sleep "$2" # Wait for VM to start
+        echo "Starting $vm..."
+        
+        # Wait for IP acquisition
+        local ip=""
+        local retries=0
+        local max_retries=60 # Wait up to 60 seconds for IP
+        
+        while [ -z "$ip" ] && [ $retries -lt $max_retries ]; do
+             ip=$(get_vm_ip "$vm" 2>/dev/null)
+             if [ -z "$ip" ]; then
+                 sleep 1
+                 ((retries++))
+             fi
+        done
+        
+        if [ -z "$ip" ]; then
+            echo "Timed out waiting for IP address for $vm."
+            return 1
         fi
+        
+        echo "IP found: $ip. Waiting for SSH..."
+
+        # Wait for SSH port to be open
+        local port_ready=0
+        retries=0
+        max_retries=30 # Wait up to 30 more seconds for SSH
+        
+        while [ $port_ready -eq 0 ] && [ $retries -lt $max_retries ]; do
+            if nc -z -w 1 "$ip" 22 2>/dev/null; then
+                port_ready=1
+            else
+                sleep 1
+                ((retries++))
+            fi
+        done
+        
+        if [ $port_ready -eq 0 ]; then
+             echo "Timed out waiting for SSH on $ip."
+             return 1
+        fi
+        
+        echo "SSH is ready!"
+    fi
+}
+
+function ssh_vm {
+    local vm_name="$1"
+    shift
+    start_qemu_vm "$vm_name"
+    local ip=$(get_vm_ip "$vm_name")
+    
+    if [ -n "$ip" ]; then
+        if [ -f "$HOME/.config/vm_pass" ]; then
+            # Use -t to force pseudo-terminal allocation if commands are passed
+            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -t "$USER@$ip" "$@"
+        else
+            TERM=xterm-256color ssh -t "$USER@$ip" "$@"
+        fi
+    else
+        echo "Failed to get IP for $vm_name"
+        return 1
     fi
 }
 
