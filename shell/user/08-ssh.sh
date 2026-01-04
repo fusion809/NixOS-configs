@@ -7,8 +7,19 @@ fi
 
 function get_vm_ip {
     local vm_name="$1"
-    # Get MAC address from the first interface found
-    local vm_mac=$(sudo virsh domiflist "$vm_name" | grep -o -E '([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})' | head -n 1)
+    local ip=""
+
+    # 1. Try generic virsh domifaddr (handles both agent and lease sources if available)
+    # We filter for ipv4 and ignore loopback
+    ip=$(sudo virsh domifaddr "$vm_name" --source agent 2>/dev/null | grep -i ipv4 | grep -v "127.0.0.1" | awk '{print $4}' | cut -d'/' -f1 | head -n 1)
+    
+    if [ -z "$ip" ]; then
+        ip=$(sudo virsh domifaddr "$vm_name" --source lease 2>/dev/null | grep -i ipv4 | awk '{print $4}' | cut -d'/' -f1 | head -n 1)
+    fi
+
+    if [ -z "$ip" ]; then
+        # Get MAC address from the first interface found
+        local vm_mac=$(sudo virsh domiflist "$vm_name" | grep -o -E '([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})' | head -n 1)
 
     if [ -z "$vm_mac" ]; then
         echo "Could not find MAC address for VM: $vm_name" >&2
@@ -24,16 +35,17 @@ function get_vm_ip {
         ip=$(ip neigh | grep "$vm_mac" | awk '{print $1}')
     fi
 
-    if [ -z "$ip" ]; then
-        echo "Could not determine IP for $vm_name ($vm_mac)." >&2
-        return 1
+        if [ -z "$ip" ]; then
+            echo "Could not determine IP for $vm_name ($vm_mac)." >&2
+            return 1
+        fi
     fi
 
     echo "$ip"
 }
 
 function cp_from_vm {
-    start_qemu_vm "$1"
+    start_qemu_vm "$1" || return 1
     local ip=$(get_vm_ip "$1")
     if [ -n "$ip" ]; then
         if [ -f "$HOME/.config/vm_pass" ]; then
@@ -81,7 +93,7 @@ function start_qemu_vm {
         # Wait for SSH port to be open
         local port_ready=0
         retries=0
-        max_retries=30 # Wait up to 30 more seconds for SSH
+        max_retries=60 # Wait up to 300 more seconds (5 mins) for SSH
         
         while [ $port_ready -eq 0 ] && [ $retries -lt $max_retries ]; do
             if nc -z -w 1 "$ip" 22 2>/dev/null; then
@@ -104,7 +116,7 @@ function start_qemu_vm {
 function ssh_vm {
     local vm_name="$1"
     shift
-    start_qemu_vm "$vm_name"
+    start_qemu_vm "$vm_name" || return 1
     local ip=$(get_vm_ip "$vm_name")
     
     if [ -n "$ip" ]; then
@@ -129,14 +141,43 @@ function view_qemu_vm {
     if [[ -n "${root_vm// /}" ]]; then
         echo "Assuming root vm..."
         if ! `echo $root_vm | grep running &> /dev/null`; then
-            start_qemu_vm "$1"
+            start_qemu_vm "$1" || return 1
         fi
         virt-viewer --connect qemu:///system "$1"
     elif [[ -n "${user_vm// /}" ]]; then
         if ! `echo $user_vm | grep running &> /dev/null`; then
-            start_qemu_vm "$1"
+            start_qemu_vm "$1" || return 1
         fi
         virt-viewer "$1"
+    fi
+}
+
+function vm_shutdown {
+    ssh_vm "$1" 'sudo poweroff || sudo shutdown now || sudo shutdown || su -c "poweroff" || su -c "shutdown"'
+}
+
+function update_vm_wrapper {
+    local vm_name="$1"
+    # Check if VM is running using domstate
+    local state=$(sudo virsh domstate "$vm_name" 2>/dev/null | head -n1)
+    local was_running=false
+    
+    # "running" or "idle" indicates it's already up
+    if [[ "$state" == "running" || "$state" == "idle" ]]; then
+        was_running=true
+    fi
+
+    # Run the update command via ssh_vm
+    ssh_vm "$vm_name" '$SHELL -ic update'
+
+    # If it wasn't running before, shut it down
+    if [ "$was_running" = false ]; then
+        echo "Shutting down $vm_name as it was started by this script..."
+        # Try graceful shutdown from within the VM
+        if ! vm_shutdown "$vm_name"; then
+            echo "SSH shutdown failed. Attempting ACPI shutdown (virsh shutdown)..."
+            sudo virsh shutdown "$vm_name"
+        fi
     fi
 }
 
@@ -186,7 +227,7 @@ for short_name in "${short_names[@]}"; do
     eval "function cp_from_${short_name} { cp_from_vm \"$full_name\" \"\$1\" \"\$2\"; }"
     eval "function view_${short_name} { view_qemu_vm \"$full_name\"; }"
     # Use single quotes to prevent local expansion of $SHELL, allowing remote shell detection
-    eval "function update_${short_name} { ssh_vm \"$full_name\" '\$SHELL -ic update'; }"
+    eval "function update_${short_name} { update_vm_wrapper \"$full_name\"; }"
 done
 
 function update_all {
