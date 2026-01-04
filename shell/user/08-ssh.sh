@@ -110,9 +110,10 @@ function ssh_vm {
     if [ -n "$ip" ]; then
         if [ -f "$HOME/.config/vm_pass" ]; then
             # Use -t to force pseudo-terminal allocation if commands are passed
-            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -t "$USER@$ip" "$@"
+            # Disable StrictHostKeyChecking to avoid interactive prompts for local/ephemeral VMs
+            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
         else
-            TERM=xterm-256color ssh -t "$USER@$ip" "$@"
+            TERM=xterm-256color ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
         fi
     else
         echo "Failed to get IP for $vm_name"
@@ -147,7 +148,7 @@ declare -A vms=(
     ["chimera"]="Chimera Linux"
     ["debian"]="Debian 13"
     ["deepin"]="Deepin 25.0.1"
-    ["elementary"]="elementary OS 8.0.2"
+    ["elementary"]="elementary OS 8.1"
     ["fedora"]="Fedora Rawhide"
     ["freebsd"]="FreeBSD 15.0"
     ["gentoo"]="Gentoo Linux"
@@ -182,6 +183,7 @@ for short_name in "${short_names[@]}"; do
     eval "function ssh_${short_name} { ssh_vm \"$full_name\" \"\$@\"; }"
     eval "function cp_from_${short_name} { cp_from_vm \"$full_name\" \"\$1\" \"\$2\"; }"
     eval "function view_${short_name} { view_qemu_vm \"$full_name\"; }"
+    eval "function update_${short_name} { ssh_vm \"$full_name\" \"bash -ic update\"; }"
 done
 
 function hpc {
