@@ -187,6 +187,19 @@ for short_name in "${short_names[@]}"; do
     eval "function update_${short_name} { ssh_vm \"$full_name\" '\$SHELL -ic update'; }"
 done
 
+function update_all {
+    for short_name in "${short_names[@]}"; do
+        # Skip ReactOS as it doesn't support SSH/automated updates
+        if [[ "$short_name" == "reactos" ]]; then
+            continue
+        fi
+        
+        echo "Updating ${vms[$short_name]}..."
+        # Call the dynamically generated update function
+        eval "update_${short_name}"
+    done
+}
+
 function hpc {
     ssh_debian "bash -ic hpc"
 }
