@@ -56,6 +56,7 @@ function start_qemu_vm {
     if [[ "$state" != "running" && "$state" != "idle" ]]; then
         sudo virsh start "$vm"
         echo "Starting $vm..."
+    fi
         
         # Wait for IP acquisition
         local ip=""
@@ -97,7 +98,7 @@ function start_qemu_vm {
         fi
         
         echo "SSH is ready!"
-    fi
+    # Logic continues to wait for IP/SSH regardless of initial state
 }
 
 function ssh_vm {
