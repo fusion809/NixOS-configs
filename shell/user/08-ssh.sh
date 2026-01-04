@@ -11,7 +11,7 @@ function get_vm_ip {
     local vm_mac=$(sudo virsh domiflist "$vm_name" | grep -o -E '([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})' | head -n 1)
 
     if [ -z "$vm_mac" ]; then
-        echo "Could not find MAC address for VM: $vm_name"
+        echo "Could not find MAC address for VM: $vm_name" >&2
         return 1
     fi
 
@@ -20,12 +20,12 @@ function get_vm_ip {
 
     # Fallback to ARP scan
     if [ -z "$ip" ]; then
-        echo "IP not found in DHCP leases for $vm_mac. Scanning ARP table..."
-        ip=$(arp -an | grep "$vm_mac" | awk '{print $2}' | tr -d '()')
+        echo "IP not found in DHCP leases for $vm_mac. Scanning ARP table..." >&2
+        ip=$(ip neigh | grep "$vm_mac" | awk '{print $1}')
     fi
 
     if [ -z "$ip" ]; then
-        echo "Could not determine IP for $vm_name ($vm_mac)."
+        echo "Could not determine IP for $vm_name ($vm_mac)." >&2
         return 1
     fi
 
