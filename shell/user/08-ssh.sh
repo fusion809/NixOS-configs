@@ -49,9 +49,9 @@ function cp_from_vm {
     local ip=$(get_vm_ip "$1")
     if [ -n "$ip" ]; then
         if [ -f "$HOME/.config/vm_pass" ]; then
-            sshpass -f "$HOME/.config/vm_pass" scp -O -r "$USER@$ip:$2" "$3"
+            sshpass -f "$HOME/.config/vm_pass" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -O -r "$USER@$ip:\"$2\"" "$3"
         else
-            scp -O -r "$USER@$ip:$2" "$3"
+            scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -O -r "$USER@$ip:\"$2\"" "$3"
         fi
     else
          echo "Failed to get IP for $1"
