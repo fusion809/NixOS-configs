@@ -207,7 +207,7 @@ function compactVMs {
 	done
 }
 
-function list_vm_boots {
+function listVMBoots {
 	local sort_by_time=false
 	if [[ "$1" == "-t" || "$1" == "--time" ]]; then
 		sort_by_time=true
