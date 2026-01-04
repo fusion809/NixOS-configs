@@ -183,7 +183,8 @@ for short_name in "${short_names[@]}"; do
     eval "function ssh_${short_name} { ssh_vm \"$full_name\" \"\$@\"; }"
     eval "function cp_from_${short_name} { cp_from_vm \"$full_name\" \"\$1\" \"\$2\"; }"
     eval "function view_${short_name} { view_qemu_vm \"$full_name\"; }"
-    eval "function update_${short_name} { ssh_vm \"$full_name\" \"bash -ic update\"; }"
+    # Use single quotes to prevent local expansion of $SHELL, allowing remote shell detection
+    eval "function update_${short_name} { ssh_vm \"$full_name\" '\$SHELL -ic update'; }"
 done
 
 function hpc {
