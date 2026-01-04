@@ -19,6 +19,13 @@ function cddo {
   cd $HOME/Downloads/$1
 }
 
+function cddf {
+  DATE=$(date +"%Y-%m-%d")
+  if ! [[ -d "/arch$HOME/.files/$DATE" ]]; then
+    mkdir -p /arch$HOME/.files/$DATE
+  fi
+  cd /arch$HOME/.files/$DATE
+}
 function cdg {
   cd $HOME/GitHub/$1
 }
