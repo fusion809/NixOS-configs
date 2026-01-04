@@ -206,3 +206,63 @@ function compactVMs {
 		fi
 	done
 }
+
+function list_vm_boots {
+	local sort_by_time=false
+	if [[ "$1" == "-t" || "$1" == "--time" ]]; then
+		sort_by_time=true
+	fi
+
+	printf "%-35s | %s\n" "VM Name" "Last Boot Time"
+	printf "%s\n" "------------------------------------+--------------------------"
+	
+	# Capture data for potentially sorting
+	raw_output=$(
+		{ sudo virsh list --all --name; virsh list --all --name; } | grep -v "^$" | sort | uniq | while read -r vm_name; do 
+			log_file=""
+			cmd_prefix=""
+
+			# Check system log first
+			if sudo test -f "/var/log/libvirt/qemu/${vm_name}.log"; then
+				log_file="/var/log/libvirt/qemu/${vm_name}.log"
+				cmd_prefix="sudo"
+			# Check user log
+			elif [ -f "$HOME/.cache/libvirt/qemu/log/${vm_name}.log" ]; then
+				log_file="$HOME/.cache/libvirt/qemu/log/${vm_name}.log"
+			fi
+			
+			ts=0
+			formatted_date="No Log Found"
+			
+			if [ -n "$log_file" ]; then
+				# Get last start time
+				# Log format: 2026-01-04 02:29:01.116+0000: starting up ...
+				raw_line=$($cmd_prefix grep "starting up libvirt version" "$log_file" | tail -n 1)
+				
+				if [ -n "$raw_line" ]; then
+					# Extract timestamp: 2026-01-04 02:29:01.116+0000
+					ts_str=$(echo "$raw_line" | awk '{print $1, $2}' | sed 's/:$//')
+					# Convert to epoch for sorting
+					ts=$(date -d "$ts_str" "+%s")
+					
+					# Format date: DayOfWeek DD/MM/YY HH:MM AM/PM
+					# e.g., Sun 04/01/26 05:22 PM
+					formatted_date=$(date -d "$ts_str" "+%I:%M:%S %p %a %d/%m/%y")
+				else
+					formatted_date="Never/Log Empty"
+				fi
+			fi
+			
+			# Separator: | (Time | Name | Display)
+			echo "${ts}|${vm_name}|${formatted_date}"
+		done
+	)
+
+	if [ "$sort_by_time" = true ]; then
+		# Sort by timestamp (column 1) numerically ascending (Oldest first)
+		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' '{ printf "%-35s | %s\n", $2, $3 }'
+	else
+		# Default alphabetical (already sorted by input loop)
+		echo "$raw_output" | awk -F '|' '{ printf "%-35s | %s\n", $2, $3 }'
+	fi
+}
