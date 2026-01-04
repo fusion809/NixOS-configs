@@ -204,6 +204,7 @@ declare -A vms=(
     ["pclinuxos"]="PCLinuxOS"
     ["pop"]="Pop!_OS 24.04"
     ["reactos"]="ReactOS2"
+    ["redos"]="RED OS 8"
     ["rhino"]="Rhino Linux"
     ["rocky"]="Rocky Linux 10.1"
     ["rosa"]="ROSA Fresh GNOME 13.1"
