@@ -80,6 +80,7 @@ in {
       plugins = [ "vi-mode" ];
     };
     shellInit = ''
+      export DISABLE_MAGIC_FUNCTIONS=true
       export USER="${username}"
       export NIXCFG="${nixcfgDir}"
     '' + builtins.readFile ../shell/root/.zshrc;
