@@ -77,7 +77,7 @@ in {
     enableCompletion = true;
     ohMyZsh = {
       enable = true;
-      plugins = [ "safe-paste" "vi-mode" ];
+      plugins = [ "vi-mode" ];
     };
     shellInit = ''
       export USER="${username}"
