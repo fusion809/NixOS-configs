@@ -209,12 +209,15 @@ function compactVMs {
 
 function listVMBoots {
 	local sort_by_time=false
+	local sort_by_size=false
 	if [[ "$1" == "-t" || "$1" == "--time" ]]; then
 		sort_by_time=true
+	elif [[ "$1" == "-s" || "$1" == "--size" ]]; then
+		sort_by_size=true
 	fi
 
-	printf "%-35s | %s\n" "VM Name" "Last Boot Time"
-	printf "%s\n" "------------------------------------+--------------------------"
+	printf "%-35s | %-26s | %s\n" "VM Name" "Last Boot Time" "Size"
+	printf "%s\n" "------------------------------------+----------------------------+----------"
 	
 	# Capture data for potentially sorting
 	raw_output=$(
@@ -252,17 +255,45 @@ function listVMBoots {
 					formatted_date="Never/Log Empty"
 				fi
 			fi
+
+			# Get Disk Size
+			disk_size="N/A"
 			
-			# Separator: | (Time | Name | Display)
-			echo "${ts}|${vm_name}|${formatted_date}"
+			# Parse domblklist output line by line
+			# Skip the first 2 lines (header)
+			disk_path=""
+			while read -r target source; do
+				# source might be empty or "-" if valid path not found
+				# skip empty, "-", or .iso (CD-ROM)
+				if [[ -z "$source" ]] || [[ "$source" == "-" ]] || [[ "$source" == *.iso ]]; then
+					continue
+				fi
+				
+				# Check if file exists (using local checking or sudo if remote/root)
+				# Note: source contains the full path from virsh, read puts the rest of the line in source
+				if $cmd_prefix test -f "$source"; then
+					disk_path="$source"
+					break # Found first valid disk
+				fi
+			done < <($cmd_prefix virsh domblklist "$vm_name" | tail -n +3)
+
+			if [ -n "$disk_path" ]; then
+				disk_size=$($cmd_prefix du -hL "$disk_path" | cut -f1)
+			fi
+			
+			# Separator: | (Time | Name | Display | Size)
+			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}"
 		done
 	)
 
 	if [ "$sort_by_time" = true ]; then
 		# Sort by timestamp (column 1) numerically ascending (Oldest first)
-		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' '{ printf "%-35s | %s\n", $2, $3 }'
+		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' '{ printf "%-35s | %-26s | %s\n", $2, $3, $4 }'
+	elif [ "$sort_by_size" = true ]; then
+		# Sort by size (column 4) human-readable ascending
+		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' '{ printf "%-35s | %-26s | %s\n", $2, $3, $4 }'
 	else
 		# Default alphabetical (already sorted by input loop)
-		echo "$raw_output" | awk -F '|' '{ printf "%-35s | %s\n", $2, $3 }'
+		echo "$raw_output" | awk -F '|' '{ printf "%-35s | %-26s | %s\n", $2, $3, $4 }'
 	fi
 }
