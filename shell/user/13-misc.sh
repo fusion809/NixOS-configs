@@ -207,7 +207,7 @@ function compactVMs {
 	done
 }
 
-function listVMBoots {
+function listVMs {
 	local sort_by_time=false
 	local sort_by_size=false
 	if [[ "$1" == "-t" || "$1" == "--time" ]]; then
