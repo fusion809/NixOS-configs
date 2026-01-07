@@ -216,7 +216,7 @@ function listVMs {
 		sort_by_size=true
 	fi
 
-	printf "%-35s | %-26s | %s\n" "VM name" "Last boot time" "Size"
+	printf "%-35s | %-26s | %s\n" "VM name" "Latest boot time" "Size"
 	printf "%s\n" "------------------------------------+----------------------------+----------"
 	
 	# Capture data for potentially sorting
