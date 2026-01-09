@@ -203,6 +203,7 @@ declare -A vms=(
     ["opensuse"]="openSUSE Tumbleweed"
     ["pclinuxos"]="PCLinuxOS"
     ["pop"]="Pop!_OS 24.04"
+    ["q4os"]="Q4OS 6.4 TDE"
     ["reactos"]="ReactOS2"
     ["redos"]="RED OS 8"
     ["rhino"]="Rhino Linux"
