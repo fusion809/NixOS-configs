@@ -256,7 +256,7 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	if [[ -n "$latest_marvin_ver" ]] && [[ "$latest_marvin_ver" != "$current_marvin_ver" ]]; then
 		new_url="http://dl.chemaxon.com/marvin/${latest_marvin_ver}/marvin_linux_${latest_marvin_ver}.deb"
 		if retry curl --output /dev/null --silent --head --fail "$new_url"; then
-			new_sri_hash=$(retry nix-prefetch-url --type sha256 --sri "$new_url")
+			new_sri_hash=$(retry nix-prefetch-url --type sha256 "$new_url")
 			if [[ -n "$new_sri_hash" ]]; then
 				add_symbol "󰄻"
 				# NixOS
