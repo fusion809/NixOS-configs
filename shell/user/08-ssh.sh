@@ -212,6 +212,7 @@ declare -A vms=(
     ["slackware"]="Slackware Linux 15.0"
     ["solus"]="Solus Budgie"
     ["ubuntu"]="Ubuntu 26.04"    
+    ["vanilla"]="Vanilla OS 2"
     ["void"]="Void Linux"
     ["zorin"]="Zorin OS 18"
 )
