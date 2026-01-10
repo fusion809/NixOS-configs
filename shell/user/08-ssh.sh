@@ -201,6 +201,7 @@ declare -A vms=(
     ["gentoo"]="Gentoo Linux"
     ["guix"]="Guix System master"
     ["kylin"]="Ubuntu Kylin 25.10"
+    ["mageia"]="Mageia 10"
     ["mint"]="Linux Mint 22.2 Cinnamon"
     ["mocaccino"]="MocaccinoOS"
     ["netbsd"]="NetBSD 10.1"
