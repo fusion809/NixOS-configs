@@ -98,6 +98,8 @@ function start_qemu_vm {
         while [ $port_ready -eq 0 ] && [ $retries -lt $max_retries ]; do
             if nc -z -w 1 "$ip" 22 2>/dev/null; then
                 port_ready=1
+            elif nc -z -w 1 "$ip" 2222 2>/dev/null; then
+                port_ready=1 
             else
                 sleep 1
                 ((retries++))
@@ -120,12 +122,16 @@ function ssh_vm {
     local ip=$(get_vm_ip "$vm_name")
     
     if [ -n "$ip" ]; then
-        if [ -f "$HOME/.config/vm_pass" ]; then
+        if [ -f "$HOME/.config/vm_pass" ] && nc -z -w 1 "$ip" 22 2>/dev/null; then
             # Use -t to force pseudo-terminal allocation if commands are passed
             # Disable StrictHostKeyChecking to avoid interactive prompts for local/ephemeral VMs
             TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
-        else
+        elif [ -f "$HOME/.config/vm_pass" ] && nc -z -w 1 "$ip" 2222 2>/dev/null; then
+            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" -p 2222 "$@"
+        elif nc -z -w 1 "$ip" 22 2>/dev/null; then
             TERM=xterm-256color ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
+        else
+            TERM=xterm-256color ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" -p 2222 "$@"
         fi
     else
         echo "Failed to get IP for $vm_name"
