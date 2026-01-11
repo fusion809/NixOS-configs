@@ -7,7 +7,7 @@ function operating_system {
 
 	OPS=$(uname)
 
-	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g')"
+	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g' | sed 's/NixOS.*//g')"
 }
 
 function user {
@@ -31,7 +31,7 @@ function conditional_newline {
 }
 
 export OPS=$(operating_system)
-PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%l:%M:%S%p, %a %d/%m/%y}|%{$fg_bold[blue]%}${OPS}] $(user) %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)'
+PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%H:%M:%S %d/%m/%y}] $(user) %{$fg_bold[cyan]%}${OPS} %{$fg_bold[blue]%}%(!.%1~.%~)$(git_prompt_info)'
 setopt prompt_subst
 
 PROMPT="${PROMPT_PREFIX}\$(conditional_newline)\$(prompt_char)%{$reset_color%} "
