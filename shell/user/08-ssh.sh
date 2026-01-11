@@ -11,15 +11,15 @@ function get_vm_ip {
 
     # 1. Try generic virsh domifaddr (handles both agent and lease sources if available)
     # We filter for ipv4 and ignore loopback
-    ip=$(sudo virsh domifaddr "$vm_name" --source agent 2>/dev/null | grep -i ipv4 | grep -v "127.0.0.1" | awk '{print $4}' | cut -d'/' -f1 | head -n 1)
+    ip=$(sudo virsh domifaddr "$vm_name" --source agent 2>/dev/null | grep -i ipv4 | grep -v "127.0.0.1" | awk '{print $4}' | cut -d'/' -f1 | tail -n 1)
     
     if [ -z "$ip" ]; then
-        ip=$(sudo virsh domifaddr "$vm_name" --source lease 2>/dev/null | grep -i ipv4 | awk '{print $4}' | cut -d'/' -f1 | head -n 1)
+        ip=$(sudo virsh domifaddr "$vm_name" --source lease 2>/dev/null | grep -i ipv4 | awk '{print $4}' | cut -d'/' -f1 | tail -n 1)
     fi
 
     if [ -z "$ip" ]; then
         # Get MAC address from the first interface found
-        local vm_mac=$(sudo virsh domiflist "$vm_name" | grep -o -E '([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})' | head -n 1)
+        local vm_mac=$(sudo virsh domiflist "$vm_name" | grep -o -E '([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})' | tail -n 1)
 
     if [ -z "$vm_mac" ]; then
         echo "Could not find MAC address for VM: $vm_name" >&2
