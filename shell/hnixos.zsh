@@ -33,7 +33,7 @@ function condensed_pwd {
 	echo "${PWD/#$HOME/~}" | sed 's|/home/fusion809|~|g' | sed 's|/data/GitHub-nixos|~/GitHub|g' | sed 's|~/GitHub/mine/config/NixOS-configs|$NIXCFG|g' | sed 's|~/GitHub/mine/config|$CFG|g' | sed 's|~/GitHub/mine|$GHUBM|g' | sed 's|~/GitHub/others|$GHUBO|g' | sed 's|~/GitHub|$GHUB|g' | sed 's|~/VirtMachines|$VM|g' | sed 's|/arch/home/fusion809/GitHub/mine/config|$ARCHCFG|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites/images|$ARCHIM|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites/fusion809.github.io|$ARCHFGI|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites|$ARCHWEB|g' | sed 's|/arch/home/fusion809/GitHub/mine|$ARCHGBM|g' | sed 's|/arch/home/fusion809/VirtualBox VMs/iso|$ARCHISO|g' | sed 's|/arch/home/fusion809/VirtualBox VMs|$ARCHVM|g' | sed 's|/arch/home/fusion809|$ARCHH|g' | sed 's|/home/fusion809|$HOME|g'
 }
 
-PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%H:%M:%S %d/%m/%y}] $(user) %{$fg_bold[cyan]%}${OPS} %{$fg_bold[blue]%}$(condensed_pwd)$(git_prompt_info)'
+PROMPT_PREFIX='%{$fg_bold[yellow]%}%D{%H:%M:%S %d/%m/%y} $(user) %{$fg_bold[cyan]%}${OPS} %{$fg_bold[blue]%}$(condensed_pwd)$(git_prompt_info)'
 setopt prompt_subst
 
 PROMPT="${PROMPT_PREFIX}\$(conditional_newline)\$(prompt_char)%{$reset_color%} "
