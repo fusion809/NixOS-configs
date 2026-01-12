@@ -11,6 +11,7 @@ export NIXPKGS_ALLOW_INSECURE=1
 export VM=$HOME/VirtMachines
 export ARCH=/arch
 export ARCHH=/arch$HOME
+export ARCHDF=$ARCHH/.files
 export ARCHVM=$ARCHH/"VirtualBox VMs"
 export ARCHCFG=$ARCHH/$CFG
 export ARCHGBM=$ARCHH/$GHUBM
