@@ -1,7 +1,9 @@
 export GHUB=$HOME/GitHub
 export GHUBM=$GHUB/mine
 export WEB=$GHUBM/websites
-export IM=/arch$WEB/images
+export ARCHWEB=/arch$WEB
+export ARCHFGI=$ARCHWEB/fusion809.github.io
+export ARCHIM=$ARCHWEB/images
 export GHUBO=$GHUB/others
 export CFG=$GHUBM/config
 export HCFG=$NIXCFG
