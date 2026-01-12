@@ -31,7 +31,15 @@ function conditional_newline {
 }
 
 export OPS=$(operating_system)
-PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%H:%M:%S %d/%m/%y}] $(user) %{$fg_bold[cyan]%}${OPS} %{$fg_bold[blue]%}%(!.%1~.%~)$(git_prompt_info)'
+function condensed_pwd {
+	if [ $UID -eq 0 ]; then
+		echo "${PWD:t}"
+	else
+		echo "${PWD/#$HOME/~}" | sed 's|~/GitHub/mine/config/NixOS-configs|$NIXCFG|g' | sed 's|~/GitHub/mine/config|$CFG|g' | sed 's|~/GitHub/mine|$GHUBM|g' | sed 's|~/GitHub/others|$GHUBO|g' | sed 's|~/GitHub|$GHUB|g' | sed 's|/arch/home/fusion809|$ARCHH|g' | sed 's|/home/fusion809|$HOME|g'
+	fi
+}
+
+PROMPT_PREFIX='%{$fg_bold[yellow]%}[%D{%H:%M:%S %d/%m/%y}] $(user) %{$fg_bold[cyan]%}${OPS} %{$fg_bold[blue]%}$(condensed_pwd)$(git_prompt_info)'
 setopt prompt_subst
 
 PROMPT="${PROMPT_PREFIX}\$(conditional_newline)\$(prompt_char)%{$reset_color%} "
