@@ -38,12 +38,16 @@ function cdcf {
   cdgm config/$1
 }
 
+function cdfgi {
+  cd $ARCHFGI/$1
+}
+
 function cdhc {
   cdcf hyprland-configs/$1
 }
 
 function cdim {
-  cd /arch$HOME/GitHub/mine/websites/images/$1
+  cd $ARCHIM/$1
 }
 
 function cdnc {
