@@ -297,3 +297,8 @@ function listVMs {
 		echo "$raw_output" | awk -F '|' '{ printf "%-35s | %-26s | %s\n", $2, $3, $4 }'
 	fi
 }
+
+function download {
+	cddf
+	../download.py
+}
