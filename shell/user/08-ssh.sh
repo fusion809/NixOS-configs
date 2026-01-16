@@ -200,6 +200,7 @@ declare -A vms=(
     ["freebsd"]="FreeBSD 15.0"
     ["gentoo"]="Gentoo Linux"
     ["guix"]="Guix System master"
+    ["kdelinux"]="KDE Linux"
     ["kylin"]="Ubuntu Kylin 25.10"
     ["mageia"]="Mageia 10"
     ["mint"]="Linux Mint 22.2 Cinnamon"
