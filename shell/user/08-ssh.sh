@@ -158,10 +158,26 @@ function view_qemu_vm {
     fi
 }
 
-function vm_shutdown {
-    ssh_vm "$1" 'sudo poweroff || sudo shutdown now || sudo shutdown || su -c "poweroff" || su -c "shutdown"'
+function shutdown_command {
+    if cat $HOME/.bashrc | grep "function poweroff" &> /dev/null; then
+        bash -ic "poweroff"
+    elif (which sudo &> /dev/null) && (which poweroff &> /dev/null); then
+        sudo poweroff
+    elif (which sudo &> /dev/null) && (which shutdown &> /dev/null); then
+        if shutdown --help | grep TIME &> /dev/null; then
+            sudo shutdown now
+        else
+            sudo shutdown
+        fi
+    elif which poweroff &> /dev/null; then
+        su -c "poweroff"
+    elif which shutdown &> /dev/null ; then
+        su -c "shutdown"
+    fi
 }
-
+function vm_shutdown {
+    ssh_vm "$1" "$(declare -f shutdown_command); shutdown_command"
+}
 function update_vm_wrapper {
     local vm_name="$1"
     # Check if VM is running using domstate
