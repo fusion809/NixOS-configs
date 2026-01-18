@@ -220,6 +220,7 @@ declare -A vms=(
     ["guix"]="Guix System master"
     ["kdelinux"]="KDE Linux"
     ["kylin"]="Ubuntu Kylin 25.10"
+    ["leap"]="openSUSE Leap 16"
     ["mageia"]="Mageia 10"
     ["mint"]="Linux Mint 22.2 Cinnamon"
     ["mocaccino"]="MocaccinoOS"
