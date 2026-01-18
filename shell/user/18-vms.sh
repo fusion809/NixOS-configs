@@ -71,6 +71,7 @@ function listVMs {
 
 			# Get Disk Size
 			disk_size="N/A"
+			disk_size_kb=0
 			
 			# Parse domblklist output line by line
 			# Skip the first 2 lines (header)
@@ -92,22 +93,49 @@ function listVMs {
 
 			if [ -n "$disk_path" ]; then
 				disk_size=$($cmd_prefix du -hL "$disk_path" | cut -f1)
+				disk_size_kb=$($cmd_prefix du -kL "$disk_path" | cut -f1)
 			fi
 			
-			# Separator: | (Timestamp | Name | Display | Size)
-			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}"
+			# Separator: | (Timestamp | Name | Display | Size | SizeKB)
+			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}|${disk_size_kb}"
 		done
 	)
 
+	# Awk script to print rows and calculate total
+	awk_script='
+	{ 
+		sum += $5 * 1024; 
+		printf fmt, NR, $2, $3, $4 
+	} 
+	END { 
+		print "---+---------------------------------+--------------------------+-----------"
+		
+		val = sum
+		split("B K M G T P", units, " ")
+		u = 1
+		while (val >= 1024 && u < 6) {
+			val /= 1024
+			u += 1
+		}
+		
+		if (val < 10 && u > 1) {
+			human = sprintf("%.1f%s", val, units[u])
+		} else {
+			human = sprintf("%.0f%s", val, units[u])
+		}
+		
+		printf fmt, "", "Total", "", human
+	}'
+
 	if [ "$sort_by_time" = true ]; then
 		# Sort by timestamp (column 1) numerically descending (Newest first)
-		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' -v fmt="$fmt" '{ printf fmt, NR, $2, $3, $4 }'
+		echo "$raw_output" | sort -nr -t '|' -k 1 | awk -F '|' -v fmt="$fmt" "$awk_script"
 	elif [ "$sort_by_size" = true ]; then
 		# Sort by size (column 4) human-readable ascending
-		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' -v fmt="$fmt" '{ printf fmt, NR, $2, $3, $4 }'
+		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' -v fmt="$fmt" "$awk_script"
 	else
 		# Default alphabetical (already sorted by input loop)
-		echo "$raw_output" | awk -F '|' -v fmt="$fmt" '{ printf fmt, NR, $2, $3, $4 }'
+		echo "$raw_output" | awk -F '|' -v fmt="$fmt" "$awk_script"
 	fi
 }
 
