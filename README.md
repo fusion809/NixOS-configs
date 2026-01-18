@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 29 December 2025](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2025-12-29.png)
-**Figure 1: Hyprland NixOS configuration as of 29 December 2025.**
+![Hyprland on NixOS screenshot as of 18 January 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-01-18.png)
+**Figure 1: Hyprland NixOS configuration as of 18 January 2026.**
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
@@ -265,6 +265,9 @@ Left clicking this opens a graph showing the history of the motherboard temperat
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
 <br/><br/>
 Left clicking this opens gtop in Alacritty. Right clicking runs `nixcg` in Alacritty.</li>
+<li>Used space (/arch) on your data file system. 
+<br/><br/>
+If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to &lt;50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to &lt;75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.</li>
 <li>Used space (/data) on your data file system. 
 <br/><br/>
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to &lt;50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to &lt;75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.</li>
