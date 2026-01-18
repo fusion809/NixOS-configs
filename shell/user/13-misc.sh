@@ -324,7 +324,7 @@ function listVMs {
 }
 
 function noVMs {
-	listVMs | grep "\/"
+	listVMs -h | wc -l
 }
 # First argument is file extension
 # Second is either empty or -d for descending order
