@@ -99,7 +99,7 @@ function listVMs {
 	BEGIN { 
 		FS = "|";
 		max_no = 2;  # "No"
-		max_name = 7; # "VM name"
+		max_name = 7; # "Virtual machine name"
 		max_date = 16; # "Latest boot time"
 		max_size = 4; # "Size"
 	}
@@ -129,7 +129,7 @@ function listVMs {
 		
 		# Print Header if not headerless
 		if (headerless != "true") {
-			printf fmt, "No", "VM name", "Latest boot time", "Size"
+			printf fmt, "No", "Virtual machine name", "Latest boot time", "Size"
 			
 			sep_no = ""; for(i=1;i<=max_no;i++) sep_no = sep_no "-";
 			sep_name = ""; for(i=1;i<=max_name;i++) sep_name = sep_name "-";
