@@ -323,14 +323,18 @@ function listVMs {
 	fi
 }
 
+# Count up all VMs
 function noVMs {
 	listVMs -h | wc -l
 }
-# First argument is file extension
-# Second is either empty or -d for descending order
+
+# Sort files by size
+# Arguments:
+# File extension
+# Optional, or -d, --descend or --descending for descending order
 function sortFiles {
 	list=$(find . -maxdepth 1 -name "*.$1" -exec ls -lh {} +)
-	if [[ "$2" == "-d" ]]; then
+	if [[ "$2" == "-d" || "$2" == "--descend" || "$2" == "--descending" ]]; then
 		list=$(echo $list | sort -k5 -rh)
 	else
 		list=$(echo $list | sort -k5 -h)
