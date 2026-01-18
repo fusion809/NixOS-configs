@@ -5,10 +5,10 @@ function aroot {
 function cpHyprNixScr {
 	filename=$(ls $HOME/Pictures/Screenshots/ | grep -v "Pop" | grep -v "Gentoo" | grep "Screenshot_" | sort | tail -n 1)
 	scrnShotDate=$(echo $filename | cut -d '_' -f 2)
-	rm $IM/Hyprland/Hyprland_NixOS_*.png
-	cp $HOME/Pictures/Screenshots/$filename $IM/Hyprland/Hyprland_NixOS_$scrnShotDate.png
-	optipng -o7 $IM/Hyprland/Hyprland_NixOS_$scrnShotDate.png
-	pushd -q $IM
+	rm $ARCHIM/Hyprland/Hyprland_NixOS_*.png
+	cp $HOME/Pictures/Screenshots/$filename $ARCHIM/Hyprland/Hyprland_NixOS_$scrnShotDate.png
+	optipng -o7 $ARCHIM/Hyprland/Hyprland_NixOS_$scrnShotDate.png
+	pushd -q $ARCHIM
 	push "Updating Hyprland NixOS screenshot"
 	popd -q
 }
