@@ -20,22 +20,26 @@ function compactVMs {
 function listVMs {
 	local sort_by_time=false
 	local sort_by_size=false
+	local fmt="%-2s | %-31s | %-24s | %s\n"
 	if ! [[ "$1" == "-h" || "$1" == "--headerless" || "$2" == "-h" || "$2" == "--headerless" ]]; then
-		printf "%-35s | %-26s | %s\n" "VM name" "Latest boot time" "Size"
-		printf "%s\n" "------------------------------------+----------------------------+----------"
+		printf "$fmt" "No" "VM name" "Latest boot time" "Size"
+		# Auto-calculate separator: replace spaces with - and | with +
+		local sep=$(printf "$fmt" "" "" "" "          " | tr ' |' '-+')
+		printf "%s\n" "$sep"
 	fi
 	if [[ "$1" == "-t" || "$1" == "--time" || "$2" == "-t" || "$2" == "--time" ]]; then
 		sort_by_time=true
 	elif [[ "$1" == "-s" || "$1" == "--size" || "$2" == "-s" || "$2" == "--size" ]]; then
 		sort_by_size=true
 	fi
+	count=0;
 
 	# Capture data for potentially sorting
 	raw_output=$(
 		{ sudo virsh list --all --name; virsh list --all --name; } | grep -v "^$" | sort | uniq | while read -r vm_name; do 
 			log_file=""
 			cmd_prefix=""
-
+			count=$((count + 1))
 			# Check system log first
 			if sudo test -f "/var/log/libvirt/qemu/${vm_name}.log"; then
 				log_file="/var/log/libvirt/qemu/${vm_name}.log"
@@ -93,19 +97,19 @@ function listVMs {
 			fi
 			
 			# Separator: | (Time | Name | Display | Size)
-			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}"
+			echo "${count}|${vm_name}|${formatted_date}|${disk_size}"
 		done
 	)
 
 	if [ "$sort_by_time" = true ]; then
 		# Sort by timestamp (column 1) numerically ascending (Oldest first)
-		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' '{ printf "%-35s | %-26s | %s\n", $2, $3, $4 }'
+		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' -v fmt="$fmt" '{ printf fmt, $1, $2, $3, $4 }'
 	elif [ "$sort_by_size" = true ]; then
 		# Sort by size (column 4) human-readable ascending
-		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' '{ printf "%-35s | %-26s | %s\n", $2, $3, $4 }'
+		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' -v fmt="$fmt" '{ printf fmt, $1, $2, $3, $4 }'
 	else
 		# Default alphabetical (already sorted by input loop)
-		echo "$raw_output" | awk -F '|' '{ printf "%-35s | %-26s | %s\n", $2, $3, $4 }'
+		echo "$raw_output" | awk -F '|' -v fmt="$fmt" '{ printf fmt, $1, $2, $3, $4 }'
 	fi
 }
 
