@@ -12,20 +12,13 @@ function compactVMs {
 	done
 }
 
-# List virtual machines in a table
-# Arguments:
-# -h, --headerless: Don't print header
-# -t, --time: Sort by most recent boot time
-# -s, --size: Sort by size
 function listVMs {
+	local headerless=false
 	local sort_by_time=false
 	local sort_by_size=false
-	local fmt="%-2s | %-31s | %-24s | %s\n"
-	if ! [[ "$1" == "-h" || "$1" == "--headerless" || "$2" == "-h" || "$2" == "--headerless" ]]; then
-		printf "$fmt" "No" "VM name" "Latest boot time" "Size"
-		# Auto-calculate separator: replace spaces with - and | with +
-		local sep=$(printf "$fmt" "" "" "" "          " | tr ' |' '-+')
-		printf "%s\n" "$sep"
+
+	if [[ "$1" == "-h" || "$1" == "--headerless" || "$2" == "-h" || "$2" == "--headerless" ]]; then
+		headerless=true
 	fi
 	if [[ "$1" == "-t" || "$1" == "--time" || "$2" == "-t" || "$2" == "--time" ]]; then
 		sort_by_time=true
@@ -101,41 +94,93 @@ function listVMs {
 		done
 	)
 
-	# Awk script to print rows and calculate total
+	# Awk script to calculate widths and print
 	awk_script='
-	{ 
-		sum += $5 * 1024; 
-		printf fmt, NR, $2, $3, $4 
-	} 
-	END { 
-		print "---+---------------------------------+--------------------------+-----------"
+	BEGIN { 
+		FS = "|";
+		max_no = 2;  # "No"
+		max_name = 7; # "VM name"
+		max_date = 16; # "Latest boot time"
+		max_size = 4; # "Size"
+	}
+	{
+		# Helper to calculate length
+		l_name = length($2);
+		l_date = length($3);
+		l_size = length($4);
+
+		if (l_name > max_name) max_name = l_name;
+		if (l_date > max_date) max_date = l_date;
+		if (l_size > max_size) max_size = l_size;
+
+		# Store data
+		rows[NR, "name"] = $2;
+		rows[NR, "date"] = $3;
+		rows[NR, "size"] = $4;
+		rows[NR, "size_kb"] = $5;
+	}
+	END {
+		# Update max_no based on number of rows
+		l_no = length(NR);
+		if (l_no > max_no) max_no = l_no;
+
+		# Construct format string
+		fmt = sprintf("%%-%ds | %%-%ds | %%-%ds | %%s\n", max_no, max_name, max_date);
 		
-		val = sum
-		split("B K M G T P", units, " ")
-		u = 1
-		while (val >= 1024 && u < 6) {
-			val /= 1024
-			u += 1
+		# Print Header if not headerless
+		if (headerless != "true") {
+			printf fmt, "No", "VM name", "Latest boot time", "Size"
+			
+			sep_no = ""; for(i=1;i<=max_no;i++) sep_no = sep_no "-";
+			sep_name = ""; for(i=1;i<=max_name;i++) sep_name = sep_name "-";
+			sep_date = ""; for(i=1;i<=max_date;i++) sep_date = sep_date "-";
+			sep_size = ""; for(i=1;i<=max_size;i++) sep_size = sep_size "-";
+			
+			# Last column width for separator is max_size
+			print sep_no "-+-" sep_name "-+-" sep_date "-+-" sep_size;
 		}
 		
-		if (val < 10 && u > 1) {
-			human = sprintf("%.1f%s", val, units[u])
-		} else {
-			human = sprintf("%.0f%s", val, units[u])
+		# Print Rows
+		for (i = 1; i <= NR; i++) {
+			printf fmt, i, rows[i, "name"], rows[i, "date"], rows[i, "size"];
+			total_kb += rows[i, "size_kb"];
 		}
-		
-		printf fmt, "", "Total", "", human
+
+		# Print Total if not headerless
+		if (headerless != "true") {
+			sep_no = ""; for(i=1;i<=max_no;i++) sep_no = sep_no "-";
+			sep_name = ""; for(i=1;i<=max_name;i++) sep_name = sep_name "-";
+			sep_date = ""; for(i=1;i<=max_date;i++) sep_date = sep_date "-";
+			sep_size = ""; for(i=1;i<=max_size;i++) sep_size = sep_size "-";
+			
+			print sep_no "-+-" sep_name "-+-" sep_date "-+-" sep_size;
+			
+			val = total_kb * 1024
+			split("B K M G T P", units, " ")
+			u = 1
+			while (val >= 1024 && u < 6) {
+				val /= 1024
+				u += 1
+			}
+			if (val < 10 && u > 1) {
+				human = sprintf("%.1f%s", val, units[u])
+			} else {
+				human = sprintf("%.0f%s", val, units[u])
+			}
+			
+			printf fmt, "", "Total", "", human;
+		}
 	}'
 
 	if [ "$sort_by_time" = true ]; then
 		# Sort by timestamp (column 1) numerically descending (Newest first)
-		echo "$raw_output" | sort -nr -t '|' -k 1 | awk -F '|' -v fmt="$fmt" "$awk_script"
+		echo "$raw_output" | sort -n -t '|' -k 1 | awk -v headerless="$headerless" "$awk_script"
 	elif [ "$sort_by_size" = true ]; then
 		# Sort by size (column 4) human-readable ascending
-		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' -v fmt="$fmt" "$awk_script"
+		echo "$raw_output" | sort -h -t '|' -k 4 | awk -v headerless="$headerless" "$awk_script"
 	else
-		# Default alphabetical (already sorted by input loop)
-		echo "$raw_output" | awk -F '|' -v fmt="$fmt" "$awk_script"
+		# Default alphabetical
+		echo "$raw_output" | awk -v headerless="$headerless" "$awk_script"
 	fi
 }
 
