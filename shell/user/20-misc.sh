@@ -2,38 +2,6 @@ function aroot {
 	sudo $HOME/.local/bin/arch-chroot /arch /bin/zsh -c "/bin/su - fusion809"
 }
 
-function clipf {
-	if `ps ax | grep wayland &> /dev/null`; then
-		wl-copy < $1
-	else
-		xclip -sel clip < $1
-	fi
-}
-
-function notif {
-	lenOfStr=$(echo "$1" | awk -F ":" '{print NF-1}')
-	while :
-	do
-		if ( [[ $lenOfStr == 1 ]] && [[ $(date +"%H:%M") == "$1" ]] ); then
-			zenity --error --title="$2" --text "$2" && return
-		elif ( [[ $lenOfStr == 2 ]] && [[ $(date +"$H:$M:$S") == "$1" ]] ); then
-			zenity --error --title="$2" --text "$2" && return
-		fi
-	done
-}
-
-function octe {
-	octave --eval "$@"
-}
-
-function rainbowfastfetch {
-	hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
-}
-
-function sclipf {
-	sudo xclip -sel clip < $1
-}
-
 function cpHyprNixScr {
 	filename=$(ls $HOME/Pictures/Screenshots/ | grep -v "Pop" | grep -v "Gentoo" | grep "Screenshot_" | sort | tail -n 1)
 	scrnShotDate=$(echo $filename | cut -d '_' -f 2)
