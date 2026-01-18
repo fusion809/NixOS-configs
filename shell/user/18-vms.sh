@@ -15,7 +15,7 @@ function compactVMs {
 # List virtual machines in a table
 # Arguments:
 # -h, --headerless: Don't print header
-# -t, --time: Sort by boot time
+# -t, --time: Sort by most recent boot time
 # -s, --size: Sort by size
 function listVMs {
 	local sort_by_time=false
