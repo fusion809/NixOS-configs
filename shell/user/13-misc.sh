@@ -49,10 +49,18 @@ function cpHyprNixScr {
 	popd -q
 }
 
+# Find an old command in zsh_history
+# Arguments:
+# Regex to find the command
 function oldCommands {
 	find ~ -maxdepth 1 -name ".zsh_history*" -exec grep "$@" {} +
 }
 
+# Show the timestamp of the update run
+# Arguments:
+# The format to show the timestamp in. %r is the default and corresponds to the 
+# The update run you want (optional); 1 (default) corresponds to the latest 
+# update run. 
 function latestUpdatesRun {
 	if [[ -n $2 ]]; then
 		filename=$(ls "$HOME/.cache/updates."* | tail -n $2 | head -n 1)
@@ -67,6 +75,10 @@ function latestUpdatesRun {
 	fi
 }
 
+# Show updateLog
+# Arguments:
+# The number of the log to show. 1 is the default and corresponds to the latest 
+# update log file. 2 is the second most recent log file and so far.
 function updateLog {
 	if ( [[ -n $1 ]] && [[ "$1" != "1" ]] ); then
 		latestUpdateLog=$(ls $HOME/.cache/updates.* | tail -n $1 | head -n 1)
@@ -82,6 +94,10 @@ function updateLog {
 	fi
 }
 
+# Log network transfers
+# Arguments:
+# duration in seconds
+# output file (optional)
 function logNetTransfers {
 	duration=$1
 	if [[ -z "$duration" ]]; then
@@ -191,10 +207,13 @@ function logNetTransfers {
 	sed '/--- Raw Nethogs Trace/q' "$outfile"
 }
 
+# Remove the $HOME/.cache/updates.* file for the most recent run of the 
+# shell/hyprland/updates script
 function rmLastUpdatesRun {
 	rm $(ls $HOME/.cache/updates.* | tail -n 1)
 }
 
+# Compactify VMs
 function compactVMs {
 	# Requires psmisc (for fuser)
 	find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
@@ -207,18 +226,24 @@ function compactVMs {
 	done
 }
 
+# List virtual machines in a table
+# Arguments:
+# -h, --headerless: Don't print header
+# -t, --time: Sort by boot time
+# -s, --size: Sort by size
 function listVMs {
 	local sort_by_time=false
 	local sort_by_size=false
-	if [[ "$1" == "-t" || "$1" == "--time" ]]; then
+	if ! [[ "$1" == "-h" || "$1" == "--headerless" || "$2" == "-h" || "$2" == "--headerless" ]]; then
+		printf "%-35s | %-26s | %s\n" "VM name" "Latest boot time" "Size"
+		printf "%s\n" "------------------------------------+----------------------------+----------"
+	fi
+	if [[ "$1" == "-t" || "$1" == "--time" || "$2" == "-t" || "$2" == "--time" ]]; then
 		sort_by_time=true
-	elif [[ "$1" == "-s" || "$1" == "--size" ]]; then
+	elif [[ "$1" == "-s" || "$1" == "--size" || "$2" == "-s" || "$2" == "--size" ]]; then
 		sort_by_size=true
 	fi
 
-	printf "%-35s | %-26s | %s\n" "VM name" "Latest boot time" "Size"
-	printf "%s\n" "------------------------------------+----------------------------+----------"
-	
 	# Capture data for potentially sorting
 	raw_output=$(
 		{ sudo virsh list --all --name; virsh list --all --name; } | grep -v "^$" | sort | uniq | while read -r vm_name; do 
@@ -298,6 +323,9 @@ function listVMs {
 	fi
 }
 
+function noVMs {
+	listVMs | grep "\/"
+}
 # First argument is file extension
 # Second is either empty or -d for descending order
 function sortFiles {
