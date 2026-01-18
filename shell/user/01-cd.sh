@@ -78,8 +78,12 @@ function cdv {
   cd $HOME/Videos/$1
 }
 
+function cdvb {
+  cd $VBM/$1
+}
+
 function cdvi {
-  cd /arch$HOME/'VirtualBox VMs'/iso
+  cd $ISO/$1
 }
 
 function cdvm {
