@@ -27,6 +27,7 @@
     "modules-right": [
         "custom/temperature",
         "custom/root",
+        "custom/arch",
         "custom/data",
         "custom/network-down",
         "custom/network-up",
@@ -174,8 +175,8 @@
         "rewrite": {
             "Google Earth - Google Chrome": "󰊷",
             "(.*) - Google Chrome": " $1",
-	    "(.*) - Brave": " $1",
-	    "(.*) - VSCodium": " $1",
+            "(.*) - Brave": " $1",
+            "(.*) - VSCodium": " $1",
             "fusion809@nixos(.*)": " fusion809@nixos: $1",
             "root@nixos(.*)": " root@nixos: $1",
             "Alacritty(.*)": " $1",
@@ -218,6 +219,14 @@
         "return-type": "json",
         "tooltip": true,
         "tooltip-format": "Root file system usage"
+    },
+    "custom/arch": {
+        "format": "{}",
+        "interval": 5,
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/arch",
+        "return-type": "json",
+        "tooltip": true,
+        "tooltip-format": "Data file system usage"
     },
     "custom/data": {
         "format": "{}",
