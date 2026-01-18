@@ -210,6 +210,7 @@ declare -A vms=(
     ["bedrock"]="Bedrock Linux (Arch Linux base)"
     ["chimera"]="Chimera Linux"
     ["debian"]="Debian 13"
+    ["debiansid"]="Debian unstable"
     ["deepin"]="Deepin 25.0.1"
     ["elementary"]="Elementary OS 8.1"
     ["fedora"]="Fedora Rawhide"
