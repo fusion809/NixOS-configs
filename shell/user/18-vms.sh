@@ -32,14 +32,12 @@ function listVMs {
 	elif [[ "$1" == "-s" || "$1" == "--size" || "$2" == "-s" || "$2" == "--size" ]]; then
 		sort_by_size=true
 	fi
-	count=0;
 
 	# Capture data for potentially sorting
 	raw_output=$(
 		{ sudo virsh list --all --name; virsh list --all --name; } | grep -v "^$" | sort | uniq | while read -r vm_name; do 
 			log_file=""
 			cmd_prefix=""
-			count=$((count + 1))
 			# Check system log first
 			if sudo test -f "/var/log/libvirt/qemu/${vm_name}.log"; then
 				log_file="/var/log/libvirt/qemu/${vm_name}.log"
@@ -96,20 +94,20 @@ function listVMs {
 				disk_size=$($cmd_prefix du -hL "$disk_path" | cut -f1)
 			fi
 			
-			# Separator: | (Time | Name | Display | Size)
-			echo "${count}|${vm_name}|${formatted_date}|${disk_size}"
+			# Separator: | (Timestamp | Name | Display | Size)
+			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}"
 		done
 	)
 
 	if [ "$sort_by_time" = true ]; then
-		# Sort by timestamp (column 1) numerically ascending (Oldest first)
-		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' -v fmt="$fmt" '{ printf fmt, $1, $2, $3, $4 }'
+		# Sort by timestamp (column 1) numerically descending (Newest first)
+		echo "$raw_output" | sort -n -t '|' -k 1 | awk -F '|' -v fmt="$fmt" '{ printf fmt, NR, $2, $3, $4 }'
 	elif [ "$sort_by_size" = true ]; then
 		# Sort by size (column 4) human-readable ascending
-		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' -v fmt="$fmt" '{ printf fmt, $1, $2, $3, $4 }'
+		echo "$raw_output" | sort -h -t '|' -k 4 | awk -F '|' -v fmt="$fmt" '{ printf fmt, NR, $2, $3, $4 }'
 	else
 		# Default alphabetical (already sorted by input loop)
-		echo "$raw_output" | awk -F '|' -v fmt="$fmt" '{ printf fmt, $1, $2, $3, $4 }'
+		echo "$raw_output" | awk -F '|' -v fmt="$fmt" '{ printf fmt, NR, $2, $3, $4 }'
 	fi
 }
 
