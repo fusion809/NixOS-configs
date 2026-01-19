@@ -23,7 +23,7 @@ function get_vm_icon {
 		*4mlinux*) echo "󱓸";; # DW screenshot wallpaper looked like a light pole
 		*mocaccino*) echo "";;
 		*openmamba*) echo "󱔎";; # snake logo as reminds me of black mamba snake
-		*alt*|*pclinuxos*|*openmandriva*) echo "";;
+		*alt*|*pclinuxos*|*openmandriva*|*rosa*) echo "";;
 		*red*) echo "";;
 		*opensuse*|*tumbleweed*|*leap*) echo "" ;;
 		*pop!_os*|*pop-os*) echo "" ;;
