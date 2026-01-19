@@ -120,6 +120,9 @@ function ssh_vm {
     shift
     start_qemu_vm "$vm_name" || return 1
     local ip=$(get_vm_ip "$vm_name")
+    if [[ $vm_name == *"OpenIndiana"* ]]; then
+        USER="fusion89"
+    fi
     
     if [ -n "$ip" ]; then
         if [ -f "$HOME/.config/vm_pass" ] && nc -z -w 1 "$ip" 22 2>/dev/null; then
@@ -226,6 +229,7 @@ declare -A vms=(
     ["mocaccino"]="MocaccinoOS"
     ["netbsd"]="NetBSD 10.1"
     ["openbsd"]="OpenBSD 7.8"
+    ["openindiana"]="OpenIndiana 2025.10"
     ["openmamba"]="openmamba GNU+Linux"
     ["openmandriva"]="OpenMandriva Lx ROME"
     ["pclinuxos"]="PCLinuxOS"
