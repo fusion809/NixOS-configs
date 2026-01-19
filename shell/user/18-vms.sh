@@ -56,6 +56,50 @@ function get_vm_icon {
 	esac
 }
 
+
+function get_vm_category {
+	local name_lower=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+	case "$name_lower" in
+		# BSD
+		*bsd*|*dragonfly*) echo "BSD" ;;
+		
+		# Solaris
+		*solaris*|*illumos*|*omnios*|*smartos*|*openindiana*) echo "Solaris" ;;
+		
+		# Windows-like
+		*windows*|*reactos*) echo "Windows-like" ;;
+
+		# Linux - Debian-based
+		*debian*|*ubuntu*|*mint*|*pop*|*kali*|*deepin*|*devuan*|*elementary*|*raspbian*|*zorin*|*vanilla*|*parrot*|*pureos*|*tails*|*rhino*|*q4os*) echo "Linux~Debian-based" ;;
+		
+		# Linux - Fedora-based
+		*fedora*|*centos*|*rocky*|*alma*|*oracle*|*scientific*|*amazon*|*clear*|*qubes*) echo "Linux~Fedora-based" ;;
+		
+		# Linux - openSUSE-based
+		*opensuse*|*tumbleweed*|*leap*|*gecko*) echo "Linux~OpenSUSE-based" ;;
+		
+		# Linux - Mandriva-based
+		*mageia*|*pclinuxos*|*alt*|*openmandriva*|*red*|*rosa*) echo "Linux~Mandriva-based" ;;
+		
+		# Linux - Others that utilize DNF
+		*openmamba*|*mariner*|*azure*) echo "Linux~Others that utilize DNF" ;;
+
+		# Linux - Independent
+		*arch*|*gentoo*|*slackware*|*nixos*|*void*|*solus*|*alpine*|*bedrock*|*crux*|*kiss*|*lfs*|*chimera*|*4mlinux*|*gobo*|*aeryn*|*mocaccino*|*guix*|*gnome*) echo "Linux~Independent" ;;
+		
+		# Linux - Catch-all for others (assume independent or unknown Linux if it has linux/tux icon but not matched above? Or just 'Linux~Independent' fallback?)
+		# For now, if we missed it but get_vm_icon returns linux icon, maybe?
+		# But better to check name.
+		*linux*|*tux*|*gnu*) echo "Linux~Independent" ;; 
+		
+		# Other Unix-like (Haiki, Redox, Minix)
+		*haiku*|*redox*|*minix*) echo "Other Unix-like" ;;
+
+		# Fallback
+		*) echo "Other Unix-like" ;;
+	esac
+}
+
 function compactVMs {
 	# Requires psmisc (for fuser)
 	find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
@@ -72,15 +116,16 @@ function listVMs {
 	local headerless=false
 	local sort_by_time=false
 	local sort_by_size=false
+	local categorize=false
 
-	if [[ "$1" == "-h" || "$1" == "--headerless" || "$2" == "-h" || "$2" == "--headerless" ]]; then
-		headerless=true
-	fi
-	if [[ "$1" == "-t" || "$1" == "--time" || "$2" == "-t" || "$2" == "--time" ]]; then
-		sort_by_time=true
-	elif [[ "$1" == "-s" || "$1" == "--size" || "$2" == "-s" || "$2" == "--size" ]]; then
-		sort_by_size=true
-	fi
+	for arg in "$@"; do
+		case "$arg" in
+			-h|--headerless) headerless=true ;;
+			-t|--time) sort_by_time=true ;;
+			-s|--size) sort_by_size=true ;;
+			-c|--categorize) categorize=true ;;
+		esac
+	done
 
 	# Capture data for potentially sorting
 	raw_output=$(
@@ -145,9 +190,10 @@ function listVMs {
 				disk_size_kb=$($cmd_prefix du -kL "$disk_path" | cut -f1)
 			fi
 			
-			# Separator: | (Timestamp | Name | Display | Size | SizeKB | Icon)
+			# Separator: | (Timestamp | Name | Display | Size | SizeKB | Icon | Category)
 			icon=$(get_vm_icon "$vm_name")
-			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}|${disk_size_kb}|${icon}"
+			category=$(get_vm_category "$vm_name")
+			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}|${disk_size_kb}|${icon}|${category}"
 		done
 	)
 
@@ -174,11 +220,13 @@ function listVMs {
 		if (l_icon > max_icon) max_icon = l_icon;
 
 		# Store data
+		rows[NR, "ts"] = $1;
 		rows[NR, "name"] = $2;
 		rows[NR, "date"] = $3;
 		rows[NR, "size"] = $4;
 		rows[NR, "size_kb"] = $5;
 		rows[NR, "icon"] = $6;
+		rows[NR, "cat"] = $7;
 	}
 	END {
 		# Update max_no based on number of rows
@@ -188,7 +236,9 @@ function listVMs {
 		# Construct format string
 		fmt = sprintf("%%-%ds | %%-%ds | %%-%ds | %%-%ds | %%s\n", max_no, max_icon, max_name, max_date);
 		
-		# Print Header if not headerless
+		# Print Header if not headerless AND not categorized (categorized has its own headers)
+		# Actually, lets keep main header always, but add category headers if needed?
+		
 		if (headerless != "true") {
 			printf fmt, "No", "OS", "Virtual machine name", "Latest boot time", "Size"
 			
@@ -198,12 +248,33 @@ function listVMs {
 			sep_date = ""; for(i=1;i<=max_date;i++) sep_date = sep_date "-";
 			sep_size = ""; for(i=1;i<=max_size;i++) sep_size = sep_size "-";
 			
-			# Last column width for separator is max_size
 			print sep_no "-+-" sep_icon "-+-" sep_name "-+-" sep_date "-+-" sep_size;
 		}
 		
+		last_top_cat = "";
+		last_sub_cat = "";
+
 		# Print Rows
 		for (i = 1; i <= NR; i++) {
+			if (categorize == "true") {
+				current_cat = rows[i, "cat"]
+				split(current_cat, cat_parts, "~")
+				top_cat = cat_parts[1]
+				sub_cat = cat_parts[2]
+				
+				if (top_cat != last_top_cat) {
+					print ""
+					print "== " top_cat " =="
+					last_top_cat = top_cat
+					last_sub_cat = "" 
+				}
+				
+				if (sub_cat != "" && sub_cat != last_sub_cat) {
+					print "  -- " sub_cat " --"
+					last_sub_cat = sub_cat
+				}
+			}
+
 			printf fmt, i, rows[i, "icon"], rows[i, "name"], rows[i, "date"], rows[i, "size"];
 			total_kb += rows[i, "size_kb"];
 		}
@@ -235,7 +306,12 @@ function listVMs {
 		}
 	}'
 
-	if [ "$sort_by_time" = true ]; then
+
+	if [ "$categorize" = true ]; then
+		# Sort by Category (7), then Name (2). Name is second key.
+		# Sort is alphabetized for categories.
+		echo "$raw_output" | sort -t '|' -k 7,7 -k 2,2 | awk -v headerless="$headerless" -v categorize="true" "$awk_script"
+	elif [ "$sort_by_time" = true ]; then
 		# Sort by timestamp (column 1) numerically descending (Newest first)
 		echo "$raw_output" | sort -n -t '|' -k 1 | awk -v headerless="$headerless" "$awk_script"
 	elif [ "$sort_by_size" = true ]; then
