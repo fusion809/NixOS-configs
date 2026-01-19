@@ -5,6 +5,7 @@ function get_vm_icon {
 	case "$name_lower" in
 		*debian*) echo "" ;;
 		*alpine*) echo "" ;;
+		*alma*) echo "";;
 		*arch*|*bedrock*) echo "" ;;
 		*fedora*) echo "" ;;
 		*freebsd*) echo "" ;;
@@ -17,8 +18,11 @@ function get_vm_icon {
 		*netbsd*) echo "";;
 		*haiku*) echo "󰌪";;
 		*gobo*) echo "";;
+		*dragon*) echo "";;
 		*q4os*) echo "";;
+		*4mlinux*) echo "󱓸";; # DW screenshot wallpaper looked like a light pole
 		*mocaccino*) echo "";;
+		*openmamba*) echo "󱔎";; # snake logo as reminds me of black mamba snake
 		*alt*|*pclinuxos*|*openmandriva*|*red*) echo "";;
 		*opensuse*|*tumbleweed*|*leap*) echo "" ;;
 		*pop!_os*|*pop-os*) echo "" ;;
