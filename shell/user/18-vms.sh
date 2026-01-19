@@ -310,9 +310,16 @@ function listVMs {
 
 
 	if [ "$categorize" = true ]; then
-		# Sort by Category (7), then Name (2). Name is second key.
-		# Sort is alphabetized for categories.
-		echo "$raw_output" | sort -t '|' -k 7,7 -k 2,2 | awk -v headerless="$headerless" -v categorize="true" "$awk_script"
+		if [ "$sort_by_time" = true ]; then
+			# Category (7) -> Timestamp (1)
+			echo "$raw_output" | sort -t '|' -k 7,7 -k 1,1n | awk -v headerless="$headerless" -v categorize="true" "$awk_script"
+		elif [ "$sort_by_size" = true ]; then
+			# Category (7) -> Size (4)
+			echo "$raw_output" | sort -t '|' -k 7,7 -k 4,4h | awk -v headerless="$headerless" -v categorize="true" "$awk_script"
+		else
+			# Category (7) -> Name (2)
+			echo "$raw_output" | sort -t '|' -k 7,7 -k 2,2 | awk -v headerless="$headerless" -v categorize="true" "$awk_script"
+		fi
 	elif [ "$sort_by_time" = true ]; then
 		# Sort by timestamp (column 1) numerically descending (Newest first)
 		echo "$raw_output" | sort -n -t '|' -k 1 | awk -v headerless="$headerless" "$awk_script"
