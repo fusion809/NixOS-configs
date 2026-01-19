@@ -29,6 +29,7 @@ function get_vm_icon {
 		*pop!_os*|*pop-os*) echo "" ;;
 		*rocky*) echo "" ;;
 		*slackware*) echo "" ;;
+		*openindiana*|*smart*) echo "";; # Solaris family denoted with a solar eclipse logo
 		*chimera*) echo "";; # Blender logo as it blends aspects of FreeBSD and Linux
 		*solus*) echo "" ;;
 		*ubuntu*) echo "" ;;
