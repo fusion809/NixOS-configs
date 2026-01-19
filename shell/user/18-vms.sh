@@ -23,7 +23,8 @@ function get_vm_icon {
 		*4mlinux*) echo "󱓸";; # DW screenshot wallpaper looked like a light pole
 		*mocaccino*) echo "";;
 		*openmamba*) echo "󱔎";; # snake logo as reminds me of black mamba snake
-		*alt*|*pclinuxos*|*openmandriva*|*red*) echo "";;
+		*alt*|*pclinuxos*|*openmandriva*) echo "";;
+		*red*) echo "";;
 		*opensuse*|*tumbleweed*|*leap*) echo "" ;;
 		*pop!_os*|*pop-os*) echo "" ;;
 		*rocky*) echo "" ;;
@@ -79,10 +80,10 @@ function get_vm_category {
 		*opensuse*|*tumbleweed*|*leap*|*gecko*) echo "Linux~OpenSUSE-based" ;;
 		
 		# Linux - Mandriva-based
-		*mageia*|*pclinuxos*|*alt*|*openmandriva*|*red*|*rosa*) echo "Linux~Mandriva-based" ;;
+		*mageia*|*pclinuxos*|*alt*|*openmandriva*|*rosa*) echo "Linux~Mandriva-based" ;;
 		
 		# Linux - Others that utilize DNF
-		*openmamba*|*mariner*|*azure*) echo "Linux~Others that utilize DNF" ;;
+		*openmamba*|*mariner*|*azure*|*red*) echo "Linux~Others that utilize DNF" ;;
 
 		# Linux - Independent
 		*arch*|*gentoo*|*slackware*|*nixos*|*void*|*solus*|*alpine*|*bedrock*|*crux*|*kiss*|*lfs*|*chimera*|*4mlinux*|*gobo*|*aeryn*|*mocaccino*|*guix*|*gnome*) echo "Linux~Independent" ;;
