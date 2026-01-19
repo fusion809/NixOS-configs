@@ -1,5 +1,56 @@
 
 # Compactify VMs
+function get_vm_icon {
+	local name_lower=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+	case "$name_lower" in
+		*debian*) echo "" ;;
+		*alpine*) echo "" ;;
+		*arch*|*bedrock*) echo "" ;;
+		*fedora*) echo "" ;;
+		*freebsd*) echo "" ;;
+		*gentoo*) echo "" ;;
+		*linux*mint*) echo "" ;;
+		*mageia*) echo "" ;;
+		*openbsd*) echo "" ;;
+		*aeryn*) echo "";;
+		*rhino*) echo "";;
+		*netbsd*) echo "";;
+		*haiku*) echo "󰌪";;
+		*gobo*) echo "";;
+		*q4os*) echo "";;
+		*mocaccino*) echo "";;
+		*alt*|*pclinuxos*|*openmandriva*|*red*) echo "";;
+		*opensuse*|*tumbleweed*|*leap*) echo "" ;;
+		*pop!_os*|*pop-os*) echo "" ;;
+		*rocky*) echo "" ;;
+		*slackware*) echo "" ;;
+		*solus*) echo "" ;;
+		*ubuntu*) echo "" ;;
+		*void*) echo "" ;;
+		*zorin*) echo "" ;;
+		*nixos*) echo "" ;;
+		*manjaro*) echo "" ;;
+		*kali*) echo "" ;;
+		*centos*) echo "" ;;
+		*raspbian*) echo "" ;;
+		*elementary*) echo "" ;;
+		*guix*) echo "" ;;
+		*deepin*) echo "" ;;
+		*devuan*) echo "" ;;
+		*vanilla*) echo "";;
+		*illumos*) echo "" ;;
+		*redos*) echo "";;
+		*reactos*) echo "";;
+		*sabayon*) echo "" ;;
+		*windows*) echo "" ;;
+		*apple*|*macos*|*osx*) echo "" ;;
+		*android*) echo "" ;;
+		*gnome*) echo "" ;;
+		*kde*) echo "" ;;
+		*) echo "" ;; # Generic Linux/Unix
+	esac
+}
+
 function compactVMs {
 	# Requires psmisc (for fuser)
 	find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
@@ -89,8 +140,9 @@ function listVMs {
 				disk_size_kb=$($cmd_prefix du -kL "$disk_path" | cut -f1)
 			fi
 			
-			# Separator: | (Timestamp | Name | Display | Size | SizeKB)
-			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}|${disk_size_kb}"
+			# Separator: | (Timestamp | Name | Display | Size | SizeKB | Icon)
+			icon=$(get_vm_icon "$vm_name")
+			echo "${ts}|${vm_name}|${formatted_date}|${disk_size}|${disk_size_kb}|${icon}"
 		done
 	)
 
@@ -99,6 +151,7 @@ function listVMs {
 	BEGIN { 
 		FS = "|";
 		max_no = 2;  # "No"
+		max_icon = 2; # "OS"
 		max_name = 7; # "Virtual machine name"
 		max_date = 16; # "Latest boot time"
 		max_size = 4; # "Size"
@@ -108,16 +161,19 @@ function listVMs {
 		l_name = length($2);
 		l_date = length($3);
 		l_size = length($4);
+		l_icon = length($6);
 
 		if (l_name > max_name) max_name = l_name;
 		if (l_date > max_date) max_date = l_date;
 		if (l_size > max_size) max_size = l_size;
+		if (l_icon > max_icon) max_icon = l_icon;
 
 		# Store data
 		rows[NR, "name"] = $2;
 		rows[NR, "date"] = $3;
 		rows[NR, "size"] = $4;
 		rows[NR, "size_kb"] = $5;
+		rows[NR, "icon"] = $6;
 	}
 	END {
 		# Update max_no based on number of rows
@@ -125,35 +181,37 @@ function listVMs {
 		if (l_no > max_no) max_no = l_no;
 
 		# Construct format string
-		fmt = sprintf("%%-%ds | %%-%ds | %%-%ds | %%s\n", max_no, max_name, max_date);
+		fmt = sprintf("%%-%ds | %%-%ds | %%-%ds | %%-%ds | %%s\n", max_no, max_icon, max_name, max_date);
 		
 		# Print Header if not headerless
 		if (headerless != "true") {
-			printf fmt, "No", "Virtual machine name", "Latest boot time", "Size"
+			printf fmt, "No", "OS", "Virtual machine name", "Latest boot time", "Size"
 			
 			sep_no = ""; for(i=1;i<=max_no;i++) sep_no = sep_no "-";
+			sep_icon = ""; for(i=1;i<=max_icon;i++) sep_icon = sep_icon "-";
 			sep_name = ""; for(i=1;i<=max_name;i++) sep_name = sep_name "-";
 			sep_date = ""; for(i=1;i<=max_date;i++) sep_date = sep_date "-";
 			sep_size = ""; for(i=1;i<=max_size;i++) sep_size = sep_size "-";
 			
 			# Last column width for separator is max_size
-			print sep_no "-+-" sep_name "-+-" sep_date "-+-" sep_size;
+			print sep_no "-+-" sep_icon "-+-" sep_name "-+-" sep_date "-+-" sep_size;
 		}
 		
 		# Print Rows
 		for (i = 1; i <= NR; i++) {
-			printf fmt, i, rows[i, "name"], rows[i, "date"], rows[i, "size"];
+			printf fmt, i, rows[i, "icon"], rows[i, "name"], rows[i, "date"], rows[i, "size"];
 			total_kb += rows[i, "size_kb"];
 		}
 
 		# Print Total if not headerless
 		if (headerless != "true") {
 			sep_no = ""; for(i=1;i<=max_no;i++) sep_no = sep_no "-";
+			sep_icon = ""; for(i=1;i<=max_icon;i++) sep_icon = sep_icon "-";
 			sep_name = ""; for(i=1;i<=max_name;i++) sep_name = sep_name "-";
 			sep_date = ""; for(i=1;i<=max_date;i++) sep_date = sep_date "-";
 			sep_size = ""; for(i=1;i<=max_size;i++) sep_size = sep_size "-";
 			
-			print sep_no "-+-" sep_name "-+-" sep_date "-+-" sep_size;
+			print sep_no "-+-" sep_icon "-+-" sep_name "-+-" sep_date "-+-" sep_size;
 			
 			val = total_kb * 1024
 			split("B K M G T P", units, " ")
@@ -168,7 +226,7 @@ function listVMs {
 				human = sprintf("%.0f%s", val, units[u])
 			}
 			
-			printf fmt, "", "Total", "", human;
+			printf fmt, "", "", "Total", "", human;
 		}
 	}'
 
