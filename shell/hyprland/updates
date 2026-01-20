@@ -1,8 +1,7 @@
 #!/run/current-system/sw/bin/zsh
 current_date=$(date +"%s")
 cache_file="$HOME/.cache/update"
-source "${0:a:h}/../user/13-misc.sh"
-log_timestamp=$(latestUpdatesRun)
+source "${0:a:h}/../user/13-update.sh"
 current_min=$(date +"%M")
 current_hour=$(date +"%H")
 
@@ -17,9 +16,15 @@ fi
 # Calculate epoch timestamp for the start of the current 20-minute slot
 slot_start_ts=$(date -d "$current_hour:$slot_min:00" +"%s")
 
-if [[ -n "$log_timestamp" ]]; then
-    # If the last update run was AFTER or AT the start of the current slot, we are done for this slot.
-    if (( log_timestamp >= slot_start_ts )); then
+# Check if we already ran in this slot by looking at the latest log file
+latest_log=$(ls "$HOME/.cache/updates."* 2>/dev/null | tail -n 1)
+if [[ -n "$latest_log" ]]; then
+    # Extract timestamp from filename (format: updates.TIMESTAMP)
+    log_timestamp="${latest_log##*.}"
+    
+    # If the last log file was created during or after the current slot started,
+    # we already ran in this slot
+    if [[ -n "$log_timestamp" ]] && (( log_timestamp >= slot_start_ts )); then
         if [[ -f "$cache_file" ]]; then
             if [[ $(cat "$cache_file" | wc -l) -lt 2 ]]; then
                  echo "" >> "$cache_file"
