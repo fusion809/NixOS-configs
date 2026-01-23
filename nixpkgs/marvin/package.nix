@@ -10,7 +10,7 @@ stdenv.mkDerivation (finalAttrs: {
     name = "marvin-${finalAttrs.version}.deb";
     url =
       "http://dl.chemaxon.com/marvin/${finalAttrs.version}/marvin_linux_${finalAttrs.version}.deb";
-    hash = "sha256-OiTHMGKAuHadoKQMTTPRcYl/zKL+bc0ts/UNsJlHn0Q=";
+    hash = "0i4z8ycv03gmncnwsvgylb67z2bis4rls354l2fpdf40c8qcf91s";
   };
 
   nativeBuildInputs = [ dpkg makeWrapper ];
