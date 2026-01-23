@@ -216,6 +216,7 @@ declare -A vms=(
     ["deepin"]="Deepin 25.0.1"
     ["dragonfly"]="DragonFly BSD 6.4"
     ["elementary"]="elementary OS 8.1"
+    ["exherbo"]="Exherbo Linux"
     ["fedora"]="Fedora Rawhide"
     ["freebsd"]="FreeBSD 15.0"
     ["gentoo"]="Gentoo Linux"
