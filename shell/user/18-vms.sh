@@ -52,6 +52,7 @@ function get_vm_icon {
 		*windows*) echo "" ;;
 		*apple*|*macos*|*osx*) echo "" ;;
 		*android*) echo "" ;;
+		*exherbo*) echo "󰆚";;
 		*gnome*) echo "" ;;
 		*kde*) echo "" ;;
 		*) echo "" ;; # Generic Linux/Unix
