@@ -155,15 +155,15 @@
       },
       "locked": {
         "lastModified": 1769305838,
-        "narHash": "sha256-f052D0lVIKCSiBVcOaw8/L5L8nF1z/WjWOMfkRGQKRo=",
-        "ref": "master",
-        "rev": "962580115a99d5fb29c22ae4098353cf39a56e6f",
-        "revCount": 443,
+        "narHash": "sha256-0gUgUk8XFtu8HWZySFgb4bzvn+MHK9ZEZ1trVU8YfPw=",
+        "ref": "refs/tags/hl0.53.0.1",
+        "rev": "4b42544681f3cab6adf6771faa3e3a20cb09a2c0",
+        "revCount": 442,
         "type": "git",
         "url": "https://github.com/outfoxxed/hy3"
       },
       "original": {
-        "ref": "master",
+        "ref": "refs/tags/hl0.53.0.1",
         "type": "git",
         "url": "https://github.com/outfoxxed/hy3"
       }
