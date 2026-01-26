@@ -249,6 +249,8 @@ if [[ $latestVer != $packagedVer ]]; then
 	
 	if [[ -n "$new_hash" ]]; then
 		sed -i "s|hash = \".*\"|hash = \"$new_hash\"|" "$NIXCFG/nixpkgs/openra/engines/git/default.nix"
+		nix-build "$NIXCFG/nixpkgs/openra/default.nix" --arg pkgs '(import <nixpkgs> {})' --argstr homeDir "$HOME" -A engines.git.fetch-deps
+		./result
 	else
 		echo "Warning: Failed to prefetch OpenRA hash" >&2
 	fi
