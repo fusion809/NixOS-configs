@@ -23,14 +23,14 @@ elif [[ "$MODE" == "memory" ]]; then
     PLOT_TITLE="GPU Memory Usage ($GPU_NAME)"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     # Plot calculated percentage: ($3 / $4) * 100
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory Usage (%)\" with lines lw 3 lc rgb \"blue\""
-    YLABEL="Memory Usage (%)"
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory usage (%)\" with lines lw 3 lc rgb \"blue\""
+    YLABEL="Memory usage (%)"
 else
     mkdir -p "$HOME/.cache/graphs/gpu/combined"
     IMGFILE="$HOME/.cache/graphs/gpu/combined/graph.png"
     PLOT_TITLE="GPU Statistics ($GPU_NAME)"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"Utilization (%)\" with lines lw 3 lc rgb \"green\", \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory Usage (%)\" with lines lw 3 lc rgb \"blue\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"Utilization (%)\" with lines lw 3 lc rgb \"green\", \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory usage (%)\" with lines lw 3 lc rgb \"blue\""
     YLABEL="Percentage (%)"
 fi
 

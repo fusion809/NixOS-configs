@@ -11,7 +11,7 @@ if [[ "$MODE" == "cpu" ]]; then
     # Filter valid timestamps > 2020 (1.6e9)
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     # Plot column 2 (CPU Usage)
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"CPU Usage (%)\" with lines lw 3 lc rgb \"green\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"CPU usage (%)\" with lines lw 3 lc rgb \"green\""
     YLABEL="Usage (%)"
 elif [[ "$MODE" == "memory" ]]; then
     mkdir -p "$HOME/.cache/graphs/system/memory"
@@ -19,7 +19,7 @@ elif [[ "$MODE" == "memory" ]]; then
     PLOT_TITLE="Memory Usage"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     # Plot column 3 (Memory Usage)
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):3 title \"Memory Usage (%)\" with lines lw 3 lc rgb \"blue\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):3 title \"Memory usage (%)\" with lines lw 3 lc rgb \"blue\""
     YLABEL="Usage (%)"
 else
     # Default to CPU
@@ -27,7 +27,7 @@ else
     IMGFILE="$HOME/.cache/graphs/system/cpu/graph.png"
     PLOT_TITLE="CPU Usage"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
-    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"CPU Usage (%)\" with lines lw 3 lc rgb \"green\""
+    PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"CPU usage (%)\" with lines lw 3 lc rgb \"green\""
     YLABEL="Usage (%)"
 fi
 
