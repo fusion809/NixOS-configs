@@ -10,6 +10,7 @@ with pkgs; [
   gimp
   google-chrome
   inkscape
+  krita
   nixfmt-classic # Needed for Nix IDE extension of vscode/antigravity
   pinta
   vlc
