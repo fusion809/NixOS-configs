@@ -114,7 +114,7 @@ function logNetTransfers {
 
 function download {
 	cddf
-	if [[ $1 ~= "tv.com"]]; then
+	if [[ $1 ~= "tv.com" ]]; then
 		../download.py $1
 	elif [[ -z $1 ]]; then
 		../download.py
