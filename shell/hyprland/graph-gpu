@@ -11,7 +11,7 @@ if [[ -z "$GPU_NAME" ]]; then GPU_NAME="NVIDIA GPU"; fi
 if [[ "$MODE" == "utilization" ]]; then
     mkdir -p "$HOME/.cache/graphs/gpu/utilization"
     IMGFILE="$HOME/.cache/graphs/gpu/utilization/graph.png"
-    PLOT_TITLE="GPU Utilization ($GPU_NAME)"
+    PLOT_TITLE="GPU utilization ($GPU_NAME)"
     # Filter valid timestamps > 2020 (1.6e9)
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     # Plot column 2 (Utilization)
@@ -20,7 +20,7 @@ if [[ "$MODE" == "utilization" ]]; then
 elif [[ "$MODE" == "memory" ]]; then
     mkdir -p "$HOME/.cache/graphs/gpu/memory"
     IMGFILE="$HOME/.cache/graphs/gpu/memory/graph.png"
-    PLOT_TITLE="GPU Memory Usage ($GPU_NAME)"
+    PLOT_TITLE="GPU memory usage ($GPU_NAME)"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     # Plot calculated percentage: ($3 / $4) * 100
     PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory usage (%)\" with lines lw 3 lc rgb \"blue\""
@@ -28,7 +28,7 @@ elif [[ "$MODE" == "memory" ]]; then
 else
     mkdir -p "$HOME/.cache/graphs/gpu/combined"
     IMGFILE="$HOME/.cache/graphs/gpu/combined/graph.png"
-    PLOT_TITLE="GPU Statistics ($GPU_NAME)"
+    PLOT_TITLE="GPU statistics ($GPU_NAME)"
     DATA_SRC="< awk '\$1 > 1600000000' $LOGFILE"
     PLOT_CMD="plot \"$DATA_SRC\" using (\$1 + offset_sec):2 title \"Utilization (%)\" with lines lw 3 lc rgb \"green\", \"$DATA_SRC\" using (\$1 + offset_sec):((\$3/\$4)*100) title \"Memory usage (%)\" with lines lw 3 lc rgb \"blue\""
     YLABEL="Percentage (%)"
