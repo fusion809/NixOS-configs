@@ -116,7 +116,7 @@ function download {
 	cddf
 	if [[ $1 ~= "tv.com"]]; then
 		../download.py $1
-	elif ! [[ -n $1 ]]; then
+	elif [[ -z $1 ]]; then
 		../download.py
 	else
 		../other-download.sh $1
