@@ -207,6 +207,7 @@ function update_vm_wrapper {
 }
 
 declare -A vms=(
+    ["adelie"]="Adelie Linux 1.0.0 beta6"
     ["aeryn"]="AerynOS"
     ["alpine"]="Alpine Linux 3.23"
     ["alt"]="ALT Linux 11"
