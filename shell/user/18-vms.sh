@@ -54,6 +54,7 @@ function get_vm_icon {
 		*adelie*) echo "󰻀";;
 		*venom*) echo "";;
 		*pisi*) echo "";;
+		*milis*) echo "󱜛";;
 		*kolibri*) echo "󱗆";;
 		*apple*|*macos*|*osx*) echo "" ;;
 		*android*) echo "" ;;
