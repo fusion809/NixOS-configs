@@ -234,6 +234,7 @@ declare -A vms=(
     ["openmamba"]="openmamba GNU+Linux"
     ["openmandriva"]="OpenMandriva Lx ROME"
     ["pclinuxos"]="PCLinuxOS"
+    ["pisi"]="Pisi Linux 2.4.3"
     ["pop"]="Pop!_OS 24.04"
     ["q4os"]="Q4OS 6.4 TDE"
     ["reactos"]="ReactOS2"
