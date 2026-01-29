@@ -50,6 +50,10 @@ function get_vm_icon {
 		*reactos*) echo "";;
 		*sabayon*) echo "" ;;
 		*windows*) echo "" ;;
+		*vine*) echo "";;
+		*adelie*) echo "󰻀";;
+		*venom*) echo "";;
+		*pisi*) echo "";;
 		*apple*|*macos*|*osx*) echo "" ;;
 		*android*) echo "" ;;
 		*exherbo*) echo "󰆚";;
@@ -88,7 +92,7 @@ function get_vm_category {
 		*openmamba*|*mariner*|*azure*|*red*) echo "Linux~Others that utilize DNF" ;;
 
 		# Linux - Independent
-		*arch*|*gentoo*|*slackware*|*nixos*|*void*|*solus*|*alpine*|*bedrock*|*crux*|*kiss*|*lfs*|*chimera*|*4mlinux*|*gobo*|*aeryn*|*mocaccino*|*guix*|*gnome*) echo "Linux~Independent" ;;
+		*arch*|*gentoo*|*slackware*|*nixos*|*vine*|*pisi*|*venom*|*adelie*|*void*|*solus*|*alpine*|*bedrock*|*crux*|*kiss*|*lfs*|*chimera*|*4mlinux*|*gobo*|*aeryn*|*mocaccino*|*guix*|*gnome*) echo "Linux~Independent" ;;
 		
 		# Linux - Catch-all for others (assume independent or unknown Linux if it has linux/tux icon but not matched above? Or just 'Linux~Independent' fallback?)
 		# For now, if we missed it but get_vm_icon returns linux icon, maybe?
