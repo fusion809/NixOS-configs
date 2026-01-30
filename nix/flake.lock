@@ -731,11 +731,11 @@
       "flake": false,
       "locked": {
         "allRefs": true,
-        "lastModified": 1769714290,
-        "narHash": "sha256-6X0v97kpzEN1fIKVsZeYwhdzTVA9Q/cIut8kDM4i5yU=",
+        "lastModified": 1769765705,
+        "narHash": "sha256-lLqfX0RulW2sKcezNLlEtbi3jYUA3MW6ObS9KJKJI44=",
         "ref": "refs/heads/master",
-        "rev": "0ac59be07128d12327e848264d5a456eb24d7dd0",
-        "revCount": 22846,
+        "rev": "a7c28bd1b98e36bf5df77dedc028ec88685639c2",
+        "revCount": 22847,
         "type": "git",
         "url": "https://github.com/vim/vim.git"
       },
