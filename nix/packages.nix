@@ -7,6 +7,7 @@ with pkgs; [
   antigravity
   brave
   discord
+  filezilla
   gimp
   google-chrome
   inkscape
