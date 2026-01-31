@@ -142,11 +142,11 @@ function listVMs {
 			-*)
 				for (( i=1; i<${#1}; i++ )); do
 					case "${1:$i:1}" in
-						h) headerless=true ;;
-						t) sort_by_time=true ;;
-						s) sort_by_size=true ;;
 						c) categorize=true ;;
 						e) exclude_empty=true ;;
+						h) headerless=true ;;
+						s) sort_by_size=true ;;
+						t) sort_by_time=true ;;
 					esac
 				done
 				;;
