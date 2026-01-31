@@ -211,6 +211,7 @@ declare -A vms=(
     ["aeryn"]="AerynOS"
     ["alpine"]="Alpine Linux 3.23"
     ["alt"]="ALT Linux 11"
+    ["aosc"]="AOSC OS"
     ["bedrock"]="Bedrock Linux (Arch Linux base)"
     ["chimera"]="Chimera Linux"
     ["crux"]="CRUX 3.8"
