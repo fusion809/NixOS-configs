@@ -15,11 +15,13 @@ function get_vm_icon {
 		*mageia*) echo "" ;;
 		*openbsd*) echo "" ;;
 		*aeryn*) echo "";;
+		*pld*) echo "";;
 		*rhino*) echo "";;
 		*netbsd*) echo "";;
 		*haiku*) echo "󰌪";;
 		*gobo*) echo "";;
 		*aosc*) echo "";;
+		*rlxos*) echo "󰬙";;
 		*dragon*) echo "";;
 		*q4os*) echo "";;
 		*4mlinux*) echo "󱓸";; # DW screenshot wallpaper looked like a light pole
