@@ -114,15 +114,40 @@ function get_vm_category {
 }
 
 function compactVMs {
-	# Requires psmisc (for fuser)
-	find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
+	# Helper to perform the compaction
+	local function _compact_disk_image {
+		local file="$1"
+		# Check if in use
 		if sudo fuser "$file" >/dev/null 2>&1; then
 			echo "Skipping being-used image: $file"
 		else
 			echo "Compacting $file..."
 			sudo virt-sparsify --in-place "$file"
 		fi
-	done
+	}
+
+	# Requires psmisc (for fuser)
+	if [ "$#" -eq 0 ]; then
+		find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
+			_compact_disk_image "$file"
+		done
+	else
+		for arg in "$@"; do
+			local vm_name="$arg"
+			# Check if mapping exists in vms array (sourced from 08-ssh.sh)
+			if [ -n "${vms[$arg]}" ]; then
+				vm_name="${vms[$arg]}"
+			fi
+			
+			local file="/data/VirtMachines/${vm_name}.qcow2"
+			if [ ! -f "$file" ]; then
+				echo "Disk image not found: $file"
+				continue
+			fi
+			
+			_compact_disk_image "$file"
+		done
+	fi
 }
 
 function listVMs {
