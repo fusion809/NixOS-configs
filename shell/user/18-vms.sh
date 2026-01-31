@@ -130,14 +130,28 @@ function listVMs {
 	local sort_by_time=false
 	local sort_by_size=false
 	local categorize=false
+	local exclude_empty=false
 
-	for arg in "$@"; do
-		case "$arg" in
-			-h|--headerless) headerless=true ;;
-			-t|--time) sort_by_time=true ;;
-			-s|--size) sort_by_size=true ;;
-			-c|--categorize) categorize=true ;;
+	while [[ "$#" -gt 0 ]]; do
+		case "$1" in
+			--headerless) headerless=true ;;
+			--time) sort_by_time=true ;;
+			--size) sort_by_size=true ;;
+			--categorize) categorize=true ;;
+			--exclude-empty) exclude_empty=true ;;
+			-*)
+				for (( i=1; i<${#1}; i++ )); do
+					case "${1:$i:1}" in
+						h) headerless=true ;;
+						t) sort_by_time=true ;;
+						s) sort_by_size=true ;;
+						c) categorize=true ;;
+						e) exclude_empty=true ;;
+					esac
+				done
+				;;
 		esac
+		shift
 	done
 
 	# Capture data for potentially sorting
@@ -203,6 +217,10 @@ function listVMs {
 				disk_size_kb=$($cmd_prefix du -kL "$disk_path" | cut -f1)
 			fi
 			
+			if [ "$exclude_empty" = true ] && [ "$disk_size_kb" -gt 0 ] && [ "$disk_size_kb" -le 25000 ]; then # 25000KB ~= 24MB, covers the ~21MB empty images
+				continue
+			fi
+
 			# Separator: | (Timestamp | Name | Display | Size | SizeKB | Icon | Category)
 			icon=$(get_vm_icon "$vm_name")
 			category=$(get_vm_category "$vm_name")
