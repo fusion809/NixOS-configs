@@ -98,12 +98,15 @@ function get_vm_category {
 		*openmamba*|*mariner*|*azure*|*red*) echo "Linux~Others that utilize DNF" ;;
 
 		# Linux - Independent
-		*arch*|*gentoo*|*slackware*|*nixos*|*vine*|*pisi*|*venom*|*adelie*|*void*|*solus*|*alpine*|*bedrock*|*crux*|*kiss*|*lfs*|*chimera*|*4mlinux*|*gobo*|*aeryn*|*mocaccino*|*guix*|*gnome*) echo "Linux~Independent" ;;
+		*arch*|*gentoo*|*slackware*|*nixos*|*vine*|*pisi*|*venom*|*adelie*|*void*|*solus*|*alpine*|*bedrock*|*crux*|*kiss*|*lfs*|*aosc*|*rlxos*|*chimera*|*4mlinux*|*gobo*|*aeryn*|*mocaccino*|*guix*|*gnome*) echo "Linux~Independent" ;;
 		
 		# Linux - Catch-all for others (assume independent or unknown Linux if it has linux/tux icon but not matched above? Or just 'Linux~Independent' fallback?)
 		# For now, if we missed it but get_vm_icon returns linux icon, maybe?
 		# But better to check name.
 		*linux*|*tux*|*gnu*) echo "Linux~Independent" ;; 
+		
+		# Other
+		*kolibri*) echo "Other" ;;
 		
 		# Other Unix-like (Haiki, Redox, Minix)
 		*haiku*|*redox*|*minix*) echo "Other Unix-like" ;;
