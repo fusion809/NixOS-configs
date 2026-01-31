@@ -5,6 +5,7 @@
   services = {
     "getty@tty1".enable = false;
     "autovt@tty1".enable = false;
+    firewall.enable = false;
     dev-tpmrm0.enable = false;
   };
   tpm2.enable = false;
