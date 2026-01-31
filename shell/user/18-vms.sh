@@ -89,7 +89,7 @@ function get_vm_category {
 		*fedora*|*centos*|*rocky*|*alma*|*oracle*|*scientific*|*amazon*|*clear*|*qubes*) echo "Linux~Fedora-based" ;;
 		
 		# Linux - openSUSE-based
-		*opensuse*|*tumbleweed*|*leap*|*gecko*) echo "Linux~OpenSUSE-based" ;;
+		*opensuse*|*tumbleweed*|*leap*|*gecko*) echo "Linux~openSUSE-based" ;;
 		
 		# Linux - Mandriva-based
 		*mageia*|*pclinuxos*|*alt*|*openmandriva*|*rosa*) echo "Linux~Mandriva-based" ;;
