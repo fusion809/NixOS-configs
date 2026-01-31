@@ -113,23 +113,23 @@ function get_vm_category {
 	esac
 }
 
-function compactVMs {
-	# Helper to perform the compaction
-	local function _compact_disk_image {
-		local file="$1"
-		# Check if in use
-		if sudo fuser "$file" >/dev/null 2>&1; then
-			echo "Skipping being-used image: $file"
-		else
-			echo "Compacting $file..."
-			sudo virt-sparsify --in-place "$file"
-		fi
-	}
+# Helper to perform the compaction
+function compactVM {
+	local file="$1"
+	# Check if in use
+	if sudo fuser "$file" >/dev/null 2>&1; then
+		echo "Skipping being-used image: $file"
+	else
+		echo "Compacting $file..."
+		sudo virt-sparsify --in-place "$file"
+	fi
+}
 
+function compactVMs {
 	# Requires psmisc (for fuser)
 	if [ "$#" -eq 0 ]; then
 		find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
-			_compact_disk_image "$file"
+			compactVM "$file"
 		done
 	else
 		for arg in "$@"; do
@@ -145,7 +145,7 @@ function compactVMs {
 				continue
 			fi
 			
-			_compact_disk_image "$file"
+			compactVM "$file"
 		done
 	fi
 }
