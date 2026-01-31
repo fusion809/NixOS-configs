@@ -213,6 +213,7 @@ declare -A vms=(
     ["alt"]="ALT Linux 11"
     ["bedrock"]="Bedrock Linux (Arch Linux base)"
     ["chimera"]="Chimera Linux"
+    ["crux"]="CRUX 3.8"
     ["debian"]="Debian 13"
     ["deepin"]="Deepin 25.0.1"
     ["dragonfly"]="DragonFly BSD 6.4"

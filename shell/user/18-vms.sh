@@ -7,6 +7,7 @@ function get_vm_icon {
 		*alpine*) echo "" ;;
 		*alma*) echo "";;
 		*arch*|*bedrock*) echo "" ;;
+		*crux*) echo "󰇥";;
 		*fedora*) echo "" ;;
 		*freebsd*) echo "" ;;
 		*gentoo*) echo "" ;;
