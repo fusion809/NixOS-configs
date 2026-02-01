@@ -17,6 +17,10 @@
         config = config.nixpkgs.config;
         system = "x86_64-linux";
       };
+      pr = import inputs.nixpkgs-pr {
+        config = config.nixpkgs.config;
+        system = "x86_64-linux";
+      };
       oldstable = import inputs.nixpkgs-oldstable {
         config = config.nixpkgs.config;
         system = "x86_64-linux";

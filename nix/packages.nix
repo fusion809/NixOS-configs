@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, ... }:
 
 with pkgs; [
   ###############################################################
@@ -66,7 +66,7 @@ with pkgs; [
   wget
   winetricks
   wineWowPackages.stable
-  inputs.nixpkgs-pr.legacyPackages.${pkgs.system}.yt-dlp
+  pr.yt-dlp
   zenity
   zstd
   ###############################################################
