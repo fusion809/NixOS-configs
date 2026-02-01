@@ -25,6 +25,8 @@
     nixpkgs-oldstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
     nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.11";
+    nixpkgs-pr.url =
+      "git+https://github.com/NixOS/nixpkgs.git?rev=d8052f067412b268c09803be38b382ff62c8cc53";
     nixpkgs-unstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
     # staging-next.url =
