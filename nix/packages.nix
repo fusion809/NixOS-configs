@@ -126,6 +126,7 @@ with pkgs; [
   # Office software
   ###############################################################
   kdePackages.okular
+  languagetool
   onlyoffice-desktopeditors
   texliveFull
   texstudio
