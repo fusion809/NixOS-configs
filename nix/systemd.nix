@@ -20,4 +20,16 @@
       RestartSec = 3;
     };
   };
+  user.services.languagetool = {
+    description = "LanguageTool HTTP Server";
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      ExecStart =
+        "${pkgs.languagetool}/bin/languagetool-http-server --port 8081 --allow-origin '*'";
+      Restart = "always";
+      RestartSec = 3;
+    };
+  };
 }
