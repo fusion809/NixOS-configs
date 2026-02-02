@@ -131,6 +131,8 @@ with pkgs; [
   texliveFull
   texstudio
   zotero
+  hunspell
+  hunspellDicts.en_AU
   ###############################################################
   # Theming
   ###############################################################

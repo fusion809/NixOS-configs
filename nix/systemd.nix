@@ -22,7 +22,7 @@
   };
   user.services.languagetool = {
     description = "LanguageTool HTTP Server";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     partOf = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
     serviceConfig = {
