@@ -28,6 +28,8 @@
     nixpkgs-unstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
     nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
+    nixpkgs-pr.url =
+      "git+https://github.com/NixOS/nixpkgs.git?rev=4fdbc9eff3a9511a8795e13167425cc96f63a946";
     # Vim
     vim-src = {
       url = "git+https://github.com/vim/vim.git?allRefs=1";

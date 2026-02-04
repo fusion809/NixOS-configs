@@ -552,6 +552,22 @@
         "url": "https://github.com/NixOS/nixpkgs.git"
       }
     },
+    "nixpkgs-pr": {
+      "locked": {
+        "lastModified": 1770181254,
+        "narHash": "sha256-0uj9/ue4ul2M3aM4/Ek/9C5OegVZD3laqCrS+LeaZkU=",
+        "ref": "refs/heads/master",
+        "rev": "4fdbc9eff3a9511a8795e13167425cc96f63a946",
+        "revCount": 940061,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      },
+      "original": {
+        "rev": "4fdbc9eff3a9511a8795e13167425cc96f63a946",
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs.git"
+      }
+    },
     "nixpkgs-unstable": {
       "locked": {
         "lastModified": 1770115704,
@@ -660,6 +676,7 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-oldstable": "nixpkgs-oldstable",
+        "nixpkgs-pr": "nixpkgs-pr",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixvim": "nixvim",
         "vim-src": "vim-src"

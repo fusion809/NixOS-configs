@@ -7,6 +7,7 @@
     packageOverrides = pkgs: {
       unstable = inputs.nixpkgs-unstable.legacyPackages.x86_64-linux;
       master = inputs.nixpkgs-master.legacyPackages.x86_64-linux;
+      pr = inputs.nixpkgs-pr.legacyPackages.x86_64-linux;
       oldstable = inputs.nixpkgs-oldstable.legacyPackages.x86_64-linux;
     };
   };
