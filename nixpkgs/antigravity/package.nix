@@ -1,13 +1,23 @@
-{ lib, stdenv, callPackage, vscode-generic, fetchurl, jq, buildFHSEnv
-, writeShellScript, coreutils, curl, openssl, webkitgtk_4_1, libsoup_3
-, commandLineArgs ? "", useVSCodeRipgrep ? stdenv.hostPlatform.isDarwin }:
+{
+  lib,
+  stdenv,
+  buildVscode,
+  fetchurl,
+  jq,
+  writeShellScript,
+  coreutils,
+  commandLineArgs ? "",
+  useVSCodeRipgrep ? stdenv.hostPlatform.isDarwin,
+}:
 
 let
   inherit (stdenv) hostPlatform;
   information = (lib.importJSON ./information.json);
-  source = information.sources."${hostPlatform.system}" or (throw
-    "antigravity: unsupported system ${hostPlatform.system}");
-in (callPackage vscode-generic {
+  source =
+    information.sources."${hostPlatform.system}"
+      or (throw "antigravity: unsupported system ${hostPlatform.system}");
+in
+(buildVscode {
   inherit commandLineArgs useVSCodeRipgrep;
   inherit (information) version vscodeVersion;
   pname = "antigravity";
@@ -20,18 +30,21 @@ in (callPackage vscode-generic {
 
   src = fetchurl { inherit (source) url sha256; };
 
-  sourceRoot =
-    if hostPlatform.isDarwin then "Antigravity.app" else "Antigravity";
+  sourceRoot = if hostPlatform.isDarwin then "Antigravity.app" else "Antigravity";
+
+  tests = { };
+  updateScript = ./update.js;
 
   # When running inside an FHS environment, try linking Google Chrome or Chromium
   # to the hardcoded Playwright search path: /opt/google/chrome/chrome
-  buildFHSEnv = args:
-    buildFHSEnv (args // {
+  customizeFHSEnv =
+    args:
+    args
+    // {
+      extraBwrapArgs = (args.extraBwrapArgs or [ ]) ++ [ "--tmpfs /opt/google/chrome" ];
       extraBuildCommands = (args.extraBuildCommands or "") + ''
         mkdir -p "$out/opt/google/chrome"
       '';
-      extraBwrapArgs = (args.extraBwrapArgs or [ ])
-        ++ [ "--tmpfs /opt/google/chrome" ];
       runScript = writeShellScript "antigravity-wrapper" ''
         for candidate in google-chrome-stable google-chrome chromium-browser chromium; do
           if target=$(command -v "$candidate"); then
@@ -41,41 +54,36 @@ in (callPackage vscode-generic {
         done
         exec ${args.runScript} "$@"
       '';
-    });
-
-  tests = { };
-  updateScript = ./update.js;
+    };
 
   meta = {
     mainProgram = "antigravity";
-    description =
-      "Agentic development platform, evolving the IDE into the agent-first era";
+    description = "Agentic development platform, evolving the IDE into the agent-first era";
     homepage = "https://antigravity.google";
     downloadPage = "https://antigravity.google/download";
     changelog = "https://antigravity.google/changelog";
     license = lib.licenses.unfree;
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-    platforms =
-      [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-    maintainers = with lib.maintainers; [ xiaoxiangmoe Zaczero ];
-  };
-}).overrideAttrs (oldAttrs: {
-  # Disable update checks
-  nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ jq ];
-  runtimeDependencies = (oldAttrs.runtimeDependencies or [ ])
-    ++ [ curl openssl webkitgtk_4_1 libsoup_3 ];
-  autoPatchelfIgnoreMissingDeps =
-    (oldAttrs.autoPatchelfIgnoreMissingDeps or [ ]) ++ [
-      "libcurl.so.4"
-      "libcrypto.so.3"
-      "libwebkit2gtk-4.1.so.0"
-      "libsoup-3.0.so.0"
+    platforms = [
+      "x86_64-linux"
+      "aarch64-linux"
+      "x86_64-darwin"
+      "aarch64-darwin"
     ];
-  postPatch = (oldAttrs.postPatch or "") + ''
-    productJson="${
-      if stdenv.hostPlatform.isDarwin then "Contents/Resources" else "resources"
-    }/app/product.json"
-    data=$(jq 'del(.updateUrl)' "$productJson")
-    echo "$data" > "$productJson"
-  '';
-})
+    maintainers = with lib.maintainers; [
+      xiaoxiangmoe
+      Zaczero
+    ];
+  };
+}).overrideAttrs
+  (oldAttrs: {
+    # Disable update checks
+    nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ jq ];
+    postPatch = (oldAttrs.postPatch or "") + ''
+      productJson="${
+        if stdenv.hostPlatform.isDarwin then "Contents/Resources" else "resources"
+      }/app/product.json"
+      data=$(jq 'del(.updateUrl)' "$productJson")
+      echo "$data" > "$productJson"
+    '';
+  })
