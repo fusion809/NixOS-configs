@@ -17,11 +17,6 @@
       myLib = import ./lib.nix { inherit username; };
       inherit (myLib) homeDir;
 
-      pkgsOld = import inputs.nixpkgs-oldstable {
-        system = pkgs.system;
-        config.allowUnfree = true;
-      };
-
     in with pkgs; {
       openraPackages = import (forkNixpkgsPath + /openra/default.nix) {
         inherit pkgs homeDir;
@@ -37,6 +32,7 @@
         pkgs.callPackage (forkNixpkgsPath + /antigravity/package.nix) {
           vscode-generic = pkgs.path
             + /pkgs/applications/editors/vscode/generic.nix;
+          inherit (pkgs) curl openssl webkitgtk_4_1 libsoup_3;
         };
     })
 ]

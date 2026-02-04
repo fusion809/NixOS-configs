@@ -25,12 +25,8 @@
     nixpkgs-oldstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
     nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.11";
-    nixpkgs-pr.url =
-      "git+https://github.com/NixOS/nixpkgs.git?rev=d8052f067412b268c09803be38b382ff62c8cc53";
     nixpkgs-unstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
-    # staging-next.url =
-    #   "git+https://github.com/NixOS/nixpkgs.git?ref=staging-next";
     nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
     # Vim
     vim-src = {
@@ -41,11 +37,6 @@
       url = "git+https://github.com/nix-community/nixvim.git?ref=nixos-25.11";
       # If using a stable channel you can use `url = "github:nix-community/nixvim/nixos-<version>"`
     };
-    antigravity-pr = {
-      url =
-        "git+https://github.com/NixOS/nixpkgs.git?rev=b6f23f319a7a5977bd8f5c576d37a58545700617";
-    };
-
   };
 
   outputs = { self, nixpkgs, home-manager, hyprland, hy3, nixvim, ... }@inputs:

@@ -66,7 +66,7 @@ with pkgs; [
   wget
   winetricks
   wineWowPackages.stable
-  pr.yt-dlp
+  master.yt-dlp
   zenity
   zstd
   ###############################################################
