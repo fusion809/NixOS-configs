@@ -404,6 +404,7 @@ function noVMs {
 }
 
 function redox {
+	cdvi
 	SDL_VIDEO_X11_DGAMOUSE=0 qemu-system-x86_64 \
 	-d cpu_reset,guest_errors \
 	-enable-kvm \
