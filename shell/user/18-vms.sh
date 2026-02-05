@@ -404,7 +404,6 @@ function noVMs {
 }
 
 function redox {
-	cdvi
 	SDL_VIDEO_X11_DGAMOUSE=0 qemu-system-x86_64 \
 	-d cpu_reset,guest_errors \
 	-enable-kvm \
@@ -421,7 +420,7 @@ function redox {
 	-device e1000,netdev=net0 \
 	-device nec-usb-xhci,id=xhci \
 	-device ich9-ahci,id=sata \
-	-drive file=redox_demo_x86_64_2026-01-30_242_harddrive.img,format=raw,if=none,id=disk0 \
+	-drive file=/data/"VirtualBox VMs"/iso/"Other Unix-like"/redox_demo_x86_64_2026-01-30_242_harddrive.img,format=raw,if=none,id=disk0 \
 	-device virtio-blk-pci,drive=disk0 \
 	-drive file=/data/VirtMachines/'Redox OS.qcow2',format=raw,if=none,id=disk1 \
 	-device virtio-blk-pci,drive=disk1
