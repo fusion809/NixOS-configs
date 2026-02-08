@@ -59,6 +59,21 @@ function cp_from_vm {
     fi
 }
 
+function cp_to_vm {
+    start_qemu_vm "$1" || return 1
+    local ip=$(get_vm_ip "$1")
+    if [ -n "$ip" ]; then
+        if [ -f "$HOME/.config/vm_pass" ]; then
+            sshpass -f "$HOME/.config/vm_pass" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -O -r  "$2" "$USER@$ip:\"$3\""
+        else
+            scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -O -r "$2" "$USER@$ip:\"$3\""
+        fi
+    else
+         echo "Failed to get IP for $1"
+         return 1
+    fi
+}
+
 function start_qemu_vm {
     local vm="$1"
     # Check if VM is running using domstate (robust against special chars in name)
@@ -266,6 +281,7 @@ for short_name in "${short_names[@]}"; do
     full_name="${vms[$short_name]}"
     eval "function ssh_${short_name} { ssh_vm \"$full_name\" \"\$@\"; }"
     eval "function cp_from_${short_name} { cp_from_vm \"$full_name\" \"\$1\" \"\$2\"; }"
+    eval "function cp_to_${short_name} { cp_to_vm \"$full_name\" \"\$1\" \"\$2\"; }"
     eval "function view_${short_name} { view_qemu_vm \"$full_name\"; }"
     # Use single quotes to prevent local expansion of $SHELL, allowing remote shell detection
     eval "function update_${short_name} { update_vm_wrapper \"$full_name\"; }"
