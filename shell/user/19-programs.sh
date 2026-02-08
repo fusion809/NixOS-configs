@@ -29,3 +29,10 @@ function octe {
 function rainbowfastfetch {
 	hyfetch -p rainbow -b fastfetch --args='--localip-show-ipv4 false'
 }
+
+function nix-run {
+	nix-shell -p "$1" --run "$1 $2"
+}
+function gist {
+	nix-run "gist" "$@"
+}
