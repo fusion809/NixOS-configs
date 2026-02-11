@@ -4,10 +4,7 @@ function prompt_char {
 }
 
 function operating_system {
-
-	OPS=$(uname)
-
-	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g' | sed 's/NixOS.*//' | sed 's/Linux From Scratch//g')" | sed 's/Gentoo Linux//'
+	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g' | sed 's/NixOS.*//' | sed 's/Linux From Scratch//g')" | sed 's/Gentoo Linux//' | sed 's/Arch Linux//'
 }
 
 function user {
