@@ -387,3 +387,7 @@ function redox {
 	-drive file=/data/VirtMachines/'Redox OS.qcow2',format=raw,if=none,id=disk1 \
 	-device virtio-blk-pci,drive=disk1
 }
+
+function lfs_updates {
+	$NIXCFG/shell/user/lfs-updates.sh
+}
