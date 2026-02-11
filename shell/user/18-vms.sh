@@ -59,24 +59,54 @@ function get_vm_category {
 
 # Helper to perform the compaction
 function compactVM {
-	local file="$1"
+	local force="$1"
+	local file="$2"
+	local vm_name=$(basename "$file" .qcow2)
+
 	# Check if in use
 	if sudo fuser "$file" >/dev/null 2>&1; then
-		echo "Skipping being-used image: $file"
-	else
-		echo "Compacting $file..."
-		sudo virt-sparsify --in-place "$file"
+		if [ "$force" = "true" ]; then
+			echo "Forcing shutdown of $vm_name..."
+			sudo virsh shutdown "$vm_name" --mode acpi || sudo virsh destroy "$vm_name"
+			# Wait a bit for shutdown (up to 30s)
+			local count=0
+			while sudo fuser "$file" >/dev/null 2>&1 && [ $count -lt 6 ]; do
+				sleep 5
+				((count++))
+			done
+			if sudo fuser "$file" >/dev/null 2>&1; then
+				echo "Failed to shut down $vm_name, skipping."
+				return
+			fi
+		else
+			echo "Skipping being-used image: $file"
+			return
+		fi
 	fi
+
+	echo "Compacting $file..."
+	sudo virt-sparsify --in-place "$file"
 }
 
 function compactVMs {
+	local force=false
+	local targets=()
+
+	for arg in "$@"; do
+		if [[ "$arg" == "-f" ]]; then
+			force=true
+		else
+			targets+=("$arg")
+		fi
+	done
+
 	# Requires psmisc (for fuser)
-	if [ "$#" -eq 0 ]; then
+	if [ ${#targets[@]} -eq 0 ]; then
 		find /data/VirtMachines -name "*.qcow2" -print0 | while IFS= read -r -d '' file; do
-			compactVM "$file"
+			compactVM "$force" "$file"
 		done
 	else
-		for arg in "$@"; do
+		for arg in "${targets[@]}"; do
 			local vm_name="$arg"
 			# Check if mapping exists in vms array (sourced from 08-ssh.sh)
 			if [ -n "${vms[$arg]}" ]; then
@@ -89,7 +119,7 @@ function compactVMs {
 				continue
 			fi
 			
-			compactVM "$file"
+			compactVM "$force" "$file"
 		done
 	fi
 }
