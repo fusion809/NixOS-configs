@@ -7,7 +7,7 @@ function operating_system {
 
 	OPS=$(uname)
 
-	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g' | sed 's/NixOS.*//g')"
+	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g' | sed 's/NixOS.*//' | sed 's/Linux From Scratch/LFS/g')"
 }
 
 function user {
@@ -30,10 +30,10 @@ function conditional_newline {
 
 export OPS=$(operating_system)
 function condensed_pwd {
-	echo "${PWD/#$HOME/~}" | sed 's|/data/GitHub-nixos|~/GitHub|g' | sed 's|~/GitHub/mine/config/NixOS-configs|$NIXCFG|g' | sed 's|~/GitHub/mine/config|$CFG|g' | sed 's|~/GitHub/mine|$GHUBM|g' | sed 's|~/GitHub/others|$GHUBO|g' | sed 's|~/GitHub|$GHUB|g' | sed 's|~/VirtMachines|$VM|g' | sed 's|/arch/home/fusion809/GitHub/mine/config|$ARCHCFG|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites/images|$ARCHIM|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites/fusion809.github.io|$ARCHFGI|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites|$ARCHWEB|g' | sed 's|/arch/home/fusion809/GitHub/mine|$ARCHGBM|g' | sed 's|/data/VirtualBox VMs/iso|$ISO|g' | sed 's|/data/VirtualBox VMs|$VBM|g' | sed 's|/arch/home/fusion809/.files|$ARCHDF|g' | sed 's|/arch/home/fusion809|$ARCHH|g' | sed 's|/home/fusion809|$HOME|g'
+	echo "${PWD/#$HOME/~}" | sed 's|/data/GitHub-nixos|~/GitHub|g' | sed 's|~/GitHub/mine/config/NixOS-configs|$NIXCFG|g' | sed 's|~/GitHub/mine/config|$CFG|g' | sed 's|~/GitHub/mine|$GHUBM|g' | sed 's|~/GitHub/others|$GHUBO|g' | sed 's|~/GitHub|$GHUB|g' | sed 's|~/VirtMachines|$VM|g' | sed 's|/arch/home/fusion809/GitHub/mine/config|$ARCHCFG|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites/images|$ARCHIM|g' | sed 's|/home/fusion809/.oh-my-zsh/custom/plugins|$ZSHCP|g' | sed 's|/home/fusion809/.oh-my-zsh/themes|$ZSHT|g' | sed 's|/home/fusion809/.oh-my-zsh|$ZSH|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites/fusion809.github.io|$ARCHFGI|g' | sed 's|/arch/home/fusion809/GitHub/mine/websites|$ARCHWEB|g' | sed 's|/arch/home/fusion809/GitHub/mine|$ARCHGBM|g' | sed 's|/data/VirtualBox VMs/iso|$ISO|g' | sed 's|/data/VirtualBox VMs|$VBM|g' | sed 's|/arch/home/fusion809/.files|$ARCHDF|g' | sed 's|/arch/home/fusion809|$ARCHH|g' | sed 's|/home/fusion809|$HOME|g' | sed 's|~/.oh-my-zsh/custom/plugins|$ZSHCP|g' | sed 's|~/.oh-my-zsh/themes|$ZSHT|g' | sed 's|~/.oh-my-zsh|$ZSH|g'
 }
 
-PROMPT_PREFIX='%{$fg_bold[yellow]%}%D{%H:%M:%S %d/%m/%y} $(user) %{$fg_bold[cyan]%}${OPS} %{$fg_bold[blue]%}$(condensed_pwd)$(git_prompt_info)'
+PROMPT_PREFIX='%{$fg_bold[yellow]%}%D{%H:%M:%S %d/%m} $(user) %{$fg_bold[cyan]%}${OPS} %{$fg_bold[blue]%}$(condensed_pwd)$(git_prompt_info)'
 setopt prompt_subst
 
 PROMPT="${PROMPT_PREFIX}\$(conditional_newline)\$(prompt_char)%{$reset_color%} "
