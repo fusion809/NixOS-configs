@@ -8,8 +8,8 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 3475 | 100.00% | 425 | 100.00% |
-| **Total** | **3475** | **100.00%** | **425** | **100.00%** |
+| Shell | 3488 | 100.00% | 427 | 100.00% |
+| **Total** | **3488** | **100.00%** | **427** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
