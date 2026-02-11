@@ -28,7 +28,7 @@ function get_vm_icon {
 		*mocaccino*) echo "";;
 		*openmamba*) echo "󱔎";; # snake logo as reminds me of black mamba snake
 		*alt*|*pclinuxos*|*openmandriva*|*rosa*) echo "";;
-		*red*) echo "";;
+		*red*hat*) echo "";;
 		*opensuse*|*tumbleweed*|*leap*) echo "" ;;
 		*pop!_os*|*pop-os*) echo "" ;;
 		*rocky*) echo "" ;;
