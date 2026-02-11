@@ -3,8 +3,11 @@ function prompt_char {
 	if [ $UID -eq 0 ]; then echo "%{$fg_bold[red]%}#"; else echo "%{$fg_bold[green]%}$"; fi
 }
 
+source ${0:A:h}/icons.sh
+
 function operating_system {
-	printf "$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2 | sed 's/ (.*)//g' | sed 's/ Linux//g' | sed 's/NixOS.*//' | sed 's/Linux From Scratch//g')" | sed 's/Gentoo Linux//' | sed 's/Arch.*//' | sed 's/Debian.*//' | sed 's/Ubuntu.*//' | sed 's/Fedora.*//' | sed 's/Alma.*//' | sed 's/CentOS.*//' | sed 's/Red Hat Enterprise Linux.*//' | sed 's/Alpine.*//' | sed 's/openSUSE*//g' | sed 's/Guix*//' | sed 's/Pop!_OS*//' | sed 's/Mageia//'
+	local os_name=$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2)
+	get_os_icon "$os_name"
 }
 
 function user {
