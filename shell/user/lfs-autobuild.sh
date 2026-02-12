@@ -399,6 +399,11 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
     fi
 fi
 
+if [[ "$PACKAGE" == "vim" ]]; then
+    log "Removing /usr/bin/vi symlink creation..."
+    COMMANDS=$(echo "$COMMANDS" | sed '/ln .* \/usr\/bin\/vi/d')
+fi
+
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "------------------------------------------------------------"
     echo "DRY RUN: Commands for $PACKAGE"
