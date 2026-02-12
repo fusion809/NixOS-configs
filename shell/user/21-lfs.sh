@@ -106,7 +106,7 @@ EOF
     fi
 }
 
-lfs_updates_all() {
+lfs_update_all() {
     local dry_run=false
     if [[ "$1" == "--dry-run" ]]; then
         dry_run=true
