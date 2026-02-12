@@ -12,12 +12,14 @@ LFS_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_BOOK="https://linuxfromscratch.org/blfs/view/svn"
 
 DRY_RUN=false
+STRIP=false
 PACKAGE=""
 
 usage() {
     echo "Usage: $0 [options] <package-name>"
     echo "Options:"
     echo "  --dry-run    Show commands without executing them"
+    echo "  --strip      Run stripping commands after build"
     echo "  -h, --help   Show this help message"
     exit 1
 }
@@ -25,6 +27,7 @@ usage() {
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --dry-run) DRY_RUN=true ;;
+        --strip) STRIP=true ;;
         -h|--help) usage ;;
         -*) echo "Unknown option: $1"; usage ;;
         *) PACKAGE="$1" ;;
@@ -170,3 +173,12 @@ EOF
 )
 
 ssh_lfs "$REMOTE_SCRIPT"
+
+if [[ "$STRIP" == "true" ]]; then
+    # lfs_strip is defined in 21-lfs.sh which is sourced by main.sh
+    # or should be sourced here if needed.
+    # Since lfs-autobuild.sh is intended to be run in a shell where main.sh was sourced
+    # or standalone, let's make sure it's available.
+    source "$NIXCFG/shell/user/21-lfs.sh"
+    lfs_strip
+fi
