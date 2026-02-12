@@ -108,7 +108,7 @@ get_commands() {
     ' | perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
         sed 's/^[[:space:]]*//' | \
-        grep -vE "^$|^exec "
+        grep -vE "^$|^exec |vim -c "
 }
 
 log "Extracting build commands..."
@@ -197,7 +197,8 @@ if [[ "$PACKAGE" == "linux" ]]; then
     log "Adding Linux API Headers build steps..."
     HEADER_HTML=$(curl -s "$LFS_BOOK/chapter05/linux-headers.html")
     # In a running system, we don't use $LFS prefix and we install to /usr
-    HEADER_CMDS=$(get_commands "$HEADER_HTML" | sed 's/\$LFS//g')
+    # Filter out block markers that are used for internal processing
+    HEADER_CMDS=$(get_commands "$HEADER_HTML" | sed 's/\$LFS//g' | grep -v "^___BLOCK_")
     COMMANDS="${HEADER_CMDS}
 ${COMMANDS}"
 fi
@@ -212,8 +213,13 @@ if [[ "$UPSTREAM" == "true" ]]; then
         log "Fetching latest mainline Linux kernel version..."
         KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 "mainline:" | grep -oP '[0-9.]+' | head -n 1)
         if [[ -n "$KERNEL_VER" ]]; then
+            # Append .0 if version doesn't have two dots (e.g., 6.19 -> 6.19.0)
+            if [[ $(echo "$KERNEL_VER" | grep -o '\.' | wc -l) -eq 1 ]]; then
+                KERNEL_VER="${KERNEL_VER}.0"
+            fi
             MAJOR=$(echo "$KERNEL_VER" | cut -d. -f1)
             DOWNLOAD_URL="https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VER}.tar.xz"
+            UPSTREAM_VERSION="$KERNEL_VER"  # Store for later replacement
         fi
     elif [[ "$PACKAGE" == "vim" ]]; then
         log "Fetching latest upstream Vim version from GitHub..."
@@ -225,6 +231,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
         
         if [[ -n "$VIM_TAG" ]]; then
             DOWNLOAD_URL="https://github.com/vim/vim/archive/v${VIM_TAG}/vim-${VIM_TAG}.tar.gz"
+            UPSTREAM_VERSION="$VIM_TAG"  # Store for later replacement
         fi
     else
         log "Upstream flag ignored for package '$PACKAGE' (only supported for linux and vim)"
@@ -257,6 +264,94 @@ if [[ -z "$DOWNLOAD_URL" ]]; then
 fi
 
 log "Extracted download URL: $DOWNLOAD_URL"
+
+# Replace hardcoded Vim versions when using --upstream
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from commands (e.g., "9.1.2031")
+    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'vim-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    
+    if [[ -n "$LFS_VERSION" ]]; then
+        log "Replacing LFS version $LFS_VERSION with upstream version $UPSTREAM_VERSION in commands..."
+        # Replace full version strings
+        COMMANDS="${COMMANDS//vim-$LFS_VERSION/vim-$UPSTREAM_VERSION}"
+        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+        
+        # Replace vimXY directory references (e.g., vim91 -> vim92)
+        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2 | tr -d '.')
+        UPSTREAM_MAJOR_MINOR=$(echo "$UPSTREAM_VERSION" | cut -d. -f1-2 | tr -d '.')
+        COMMANDS="${COMMANDS//vim$LFS_MAJOR_MINOR/vim$UPSTREAM_MAJOR_MINOR}"
+    fi
+fi
+
+# Replace hardcoded Linux kernel versions and fix build commands when using --upstream
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]]; then
+    # Fetch LFS release version (e.g., "r12.4-84")
+    log "Fetching LFS release version from systemd manual..."
+    LFS_RELEASE=$(curl -s https://www.linuxfromscratch.org/lfs/view/systemd/chapter10/kernel.html | \
+                  grep "systemd" | head -n 1 | cut -d '"' -f 4 | \
+                  sed 's/lfs-//g' | sed 's/-systemd//g')
+    
+    # Extract LFS kernel version from commands
+    LFS_KERNEL_VER=$(echo "$COMMANDS" | grep -oP 'linux-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    
+    if [[ -n "$LFS_KERNEL_VER" ]]; then
+        log "Processing Linux kernel commands..."
+        log "Replacing LFS kernel version $LFS_KERNEL_VER with upstream version $UPSTREAM_VERSION"
+        if [[ -n "$LFS_RELEASE" ]]; then
+            log "Using LFS release version: $LFS_RELEASE"
+        fi
+        
+        # Replace kernel version strings
+        COMMANDS="${COMMANDS//$LFS_KERNEL_VER/$UPSTREAM_VERSION}"
+        
+        # Replace LFS release version in vmlinuz path (e.g., r12.4-84)
+        if [[ -n "$LFS_RELEASE" ]]; then
+            # Extract old LFS release from commands (pattern: lfs-rX.Y.Z-NN)
+            OLD_LFS_RELEASE=$(echo "$COMMANDS" | grep -oP 'lfs-r[0-9]+\.[0-9]+-[0-9]+' | head -n 1 | sed 's/lfs-//g')
+            if [[ -n "$OLD_LFS_RELEASE" ]]; then
+                COMMANDS="${COMMANDS//$OLD_LFS_RELEASE/$LFS_RELEASE}"
+            fi
+        fi
+        
+        # Remove duplicate make mrproper (keep only first occurrence)
+        # Add config copy after first make mrproper
+        # Remove make menuconfig commands
+        # Remove mount /boot command
+        COMMANDS=$(echo "$COMMANDS" | awk '
+            BEGIN { mrproper_seen=0 }
+            /^make.*mrproper/ {
+                if (mrproper_seen == 0) {
+                    print "make mrproper"
+                    print "cp /boot/config-$(uname -r) .config"
+                    mrproper_seen=1
+                }
+                next
+            }
+            /^make.*menuconfig/ { next }
+            /^mount \/boot/ { next }
+            { print }
+        ')
+        
+        # Add initramfs generation after make modules_install
+        # Add grub-mkconfig after vmlinuz copy
+        COMMANDS=$(echo "$COMMANDS" | awk -v ver="$UPSTREAM_VERSION" -v lfs_rel="$LFS_RELEASE" '
+            /^make modules_install/ {
+                print
+                print ""
+                print "mkinitramfs " ver
+                print "mv initrd.img-" ver " /boot/initramfs-" ver "-lfs-" lfs_rel "-systemd.img"
+                next
+            }
+            /^cp -iv arch\/x86\/boot\/bzImage \/boot\/vmlinuz-/ {
+                print
+                print ""
+                print "grub-mkconfig -o /boot/grub/grub.cfg"
+                next
+            }
+            { print }
+        ')
+    fi
+fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "------------------------------------------------------------"
