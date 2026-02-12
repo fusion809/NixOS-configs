@@ -9,7 +9,7 @@ source "$NIXCFG/shell/user/08-ssh.sh"
 source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
 
 LFS_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
-BLFS_BOOK="https://linuxfromscratch.org/blfs/view/svn"
+BLFS_BOOK="https://linuxfromscratch.org/blfs/view/systemd"
 
 DRY_RUN=false
 STRIP=false
@@ -136,6 +136,7 @@ fi
 
 COMMANDS=""
 CURRENT_BLOCK=""
+configure_seen=false
 while read -r line; do
     if [[ "$line" == "___BLOCK_START___" ]]; then
         CURRENT_BLOCK=""
@@ -151,8 +152,25 @@ while read -r line; do
                 continue
             fi
         fi
+        
+        # 2. Skip duplicate configure blocks (BLFS shows alternatives)
+        # Keep only the first ./configure block encountered
+        if [[ "$CURRENT_BLOCK" =~ ^\./configure ]]; then
+            if [[ "$configure_seen" == "true" ]]; then
+                log "Skipping duplicate configure block (alternative build method)." >&2
+                continue
+            fi
+            configure_seen="true"
+        fi
+        
+        # 3. Skip post-installation configuration blocks
+        # These are blocks that create config files in /etc/ or /var/
+        if grep -qE "^cat[[:space:]]*>[[:space:]]*/etc/|^cat[[:space:]]*>[[:space:]]*/var/" <<< "$CURRENT_BLOCK"; then
+            log "Skipping post-installation configuration block." >&2
+            continue
+        fi
 
-        # 2. Determine if this block is a test suite or related setup
+        # 4. Determine if this block is a test suite or related setup
         # keywords: make/ninja tests, expect scripts, tester user, su to tester, testdir
         if [[ "$CURRENT_BLOCK" =~ (make[[:space:]]+(check|test|tests)|ninja[[:space:]]+test|spawn[[:space:]]+make|expect|tester|su[[:space:]]+.*tester|testdir) ]]; then
             if [[ "$is_critical" == "true" ]]; then
