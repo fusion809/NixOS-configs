@@ -4,6 +4,10 @@
 LFS_DEV_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_SVN_BOOK="https://linuxfromscratch.org/blfs/view/svn"
 
+lfs_autobuild() {
+    "$NIXCFG/shell/user/lfs-autobuild.sh" "$@"
+}
+
 lfs_get_remote_packages() {
     # LFS packages are in links ending in .tar.* or .zip
     local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | \
