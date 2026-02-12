@@ -8,12 +8,12 @@ source ${0:A:h}/icons.sh
 function operating_system {
 	local os_name=$(grep "PRETTY_NAME" < /etc/os-release | cut -d '=' -f 2 | head -n 1 | cut -d '"' -f 2)
 	local icon=$(get_os_icon "$os_name")
-	if [[ "$os_name" == "Linux From Scratch"* ]]; then
-		# Show icon and just the version (e.g., r12.4-84)
-		echo "$icon ${os_name#Linux From Scratch }"
-	else
+	# if [[ "$os_name" == "Linux From Scratch"* ]]; then
+	# 	# Show icon and just the version (e.g., r12.4-84)
+	# 	echo "$icon ${os_name#Linux From Scratch }"
+	# else
 		echo "$icon"
-	fi
+	# fi
 }
 
 function user {
