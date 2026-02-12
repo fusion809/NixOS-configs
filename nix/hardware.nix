@@ -6,4 +6,5 @@
   bluetooth.enable = true;
   graphics.enable = true;
   nvidia.open = false; # Should only be true for newer cards
+  nvidia.gsp.enable = false; # GTX 1050Ti (Pascal) does not support GSP
 }

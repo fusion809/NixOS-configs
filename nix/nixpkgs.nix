@@ -3,6 +3,7 @@
 {
   config = {
     allowUnfree = true;
+    nvidia.acceptLicense = true;
     permittedInsecurePackages = [ "openssl-1.1.1w" "qtwebengine-5.15.19" ];
     packageOverrides = pkgs: {
       unstable = inputs.nixpkgs-unstable.legacyPackages.x86_64-linux;
