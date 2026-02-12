@@ -102,7 +102,7 @@ get_commands() {
     # Extract blocks and clean them individually
     printf '%s' "$html" | awk '
         BEGIN { IGNORECASE=1 }
-        /<pre [^>]*class="userinput"[^>]*>/ { in_block=1; print "___BLOCK_START___" }
+        /<pre [^>]*class="(userinput|root)"[^>]*>/ { in_block=1; print "___BLOCK_START___" }
         in_block { print }
         /<\/pre>/ { in_block=0; print "___BLOCK_END___" }
     ' | perl -0777 -pe 's/<[^>]+>//gs' | \
@@ -155,13 +155,41 @@ while read -r line; do
         
         # 2. Skip duplicate configure blocks (BLFS shows alternatives)
         # Keep only the first ./configure block encountered
-        if [[ "$CURRENT_BLOCK" =~ ^\./configure ]]; then
+        # Note: Match optionally indented ./configure
+        if [[ "$CURRENT_BLOCK" =~ [[:space:]]*\./configure ]]; then
             if [[ "$configure_seen" == "true" ]]; then
                 log "Skipping duplicate configure block (alternative build method)." >&2
                 continue
             fi
             configure_seen="true"
         fi
+
+        # 3. Skip system configuration and service management blocks
+        if grep -qE "(groupadd|useradd|usermod|systemctl)" <<< "$CURRENT_BLOCK"; then
+            log "Skipping system configuration/service management block." >&2
+            continue
+        fi
+
+        # 4. Skip blfs-systemd-units install commands
+        if [[ "$CURRENT_BLOCK" =~ make[[:space:]]+install-dhcpcd ]]; then
+            log "Skipping blfs-systemd-units install command." >&2
+            continue
+        fi
+
+        # 5. Skip OpenSSH configuration blocks
+        # But preserve blocks containing 'make install'
+        if [[ "$PACKAGE" == "openssh" ]]; then
+            if [[ ! "$CURRENT_BLOCK" =~ "make install" ]] && grep -qE "(sshd_config|ssh-keygen|ssh-copy-id)" <<< "$CURRENT_BLOCK"; then
+                log "Skipping OpenSSH configuration block." >&2
+                continue
+            fi
+            # Skip install-sshd (configuration step)
+            if [[ "$CURRENT_BLOCK" =~ "make install-sshd" ]]; then
+                log "Skipping OpenSSH install-sshd block." >&2
+                continue
+            fi
+        fi
+
         
         # 3. Skip post-installation configuration blocks
         # These are blocks that create config files in /etc/ or /var/
