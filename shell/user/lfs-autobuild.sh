@@ -436,6 +436,20 @@ if [ ! -f "$FILENAME" ]; then
     wget "$DOWNLOAD_URL"
 fi
 
+# Cleanup old versions
+echo "Cleaning up old versions..."
+PKG_PREFIX=\$(echo "$FILENAME" | sed 's/[-_]\?[0-9].*//')
+if [ -n "\$PKG_PREFIX" ]; then
+    for f in *; do
+        [ -e "\$f" ] || continue
+        if [[ "\$f" == "$FILENAME" ]]; then continue; fi
+        if [[ "\$f" =~ ^\$PKG_PREFIX[-_]?[0-9] ]]; then
+            echo "Removing old version: \$f"
+            rm "\$f"
+        fi
+    done
+fi
+
 echo "Extracting $FILENAME..."
 rm -rf "/sources/$DIRNAME"
 mkdir -p "/sources/$DIRNAME"
