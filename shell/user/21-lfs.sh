@@ -106,7 +106,7 @@ EOF
         echo "DRY RUN: Would execute the following stripping commands on VM:"
         echo "$strip_script"
     else
-        ssh_lfs "$strip_script"
+        ssh_lfs "sudo bash -c '$(echo "$strip_script" | sed "s/'/'\\\\''/g")'"
     fi
 }
 
