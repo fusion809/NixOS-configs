@@ -457,8 +457,87 @@ tar -xf "$FILENAME" -C "/sources/$DIRNAME" --strip-components=1
 
 cd "/sources/$DIRNAME"
 
+echo "Marking build start time..."
+touch /tmp/build_start_timestamp
+
 echo "Running build commands..."
 $COMMANDS
+
+echo "Performing post-install cleanup of old versions..."
+# Find files installed by this build (newer than timestamp)
+# Limit search to common system directories to avoid scanning /home, /sources, etc.
+SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+EXISTING_DIRS=""
+for d in \$SEARCH_DIRS; do
+    if [ -d "\$d" ]; then
+        EXISTING_DIRS="\$EXISTING_DIRS \$d"
+    fi
+done
+
+NEW_FILES_LIST=\$(mktemp)
+# limit find to xdev to avoid traversing mounts, exclude the list file itself
+find \$EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp ! -name "\$(basename "\$NEW_FILES_LIST")" > "\$NEW_FILES_LIST" 2>/dev/null || true
+
+while read -r line; do
+    [ -e "\$line" ] || continue
+    dirname=\$(dirname "\$line")
+    basename=\$(basename "\$line")
+
+    # 1. Shared Libraries: libfoo.so.1.2.3 -> remove libfoo.so.1.2.2
+    if [[ "\$basename" =~ \.so\.[0-9]+ ]]; then
+        # Extract major version prefix (e.g., libfoo.so.1)
+        major_prefix=\$(echo "\$basename" | grep -oE '^.*\.so\.[0-9]+')
+        if [ -n "\$major_prefix" ]; then
+            # Look for other files starting with this prefix
+            for candidate in "\$dirname"/"\$major_prefix"*; do
+                [ -f "\$candidate" ] || continue
+                # Skip current new file
+                [ "\$candidate" == "\$line" ] && continue
+                
+                # Check timestamp: if older than build start, it's a candidate for deletion
+                if [ ! "\$candidate" -newer /tmp/build_start_timestamp ]; then
+                    echo "Removing old library version: \$candidate"
+                    rm -f "\$candidate"
+                fi
+            done
+        fi
+    fi
+
+    # 2. Versioned Directories
+    if [ -d "\$line" ]; then
+        # Pure version dirs: 1.2.3
+        if [[ "\$basename" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            for candidate in "\$dirname"/*; do
+                [ -d "\$candidate" ] || continue
+                [ "\$candidate" == "\$line" ] && continue
+                cbase=\$(basename "\$candidate")
+                if [[ "\$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+                     if [ ! "\$candidate" -newer /tmp/build_start_timestamp ]; then
+                         echo "Removing old version directory: \$candidate"
+                         rm -rf "\$candidate"
+                     fi
+                fi
+            done
+        # Name+Version dirs: vim91
+        elif [[ "\$basename" =~ ^[a-zA-Z]+[0-9]+(\.[0-9]+)*$ ]]; then
+             # Extract alpha part
+             prefix=\$(echo "\$basename" | sed -E 's/([a-zA-Z]+).*/\1/')
+             for candidate in "\$dirname"/"\$prefix"*; do
+                [ -d "\$candidate" ] || continue
+                [ "\$candidate" == "\$line" ] && continue
+                cbase=\$(basename "\$candidate")
+                if [[ "\$cbase" =~ ^\$prefix[0-9]+(\.[0-9]+)*$ ]]; then
+                     if [ ! "\$candidate" -newer /tmp/build_start_timestamp ]; then
+                         echo "Removing old version directory: \$candidate"
+                         rm -rf "\$candidate"
+                     fi
+                fi
+             done
+        fi
+    fi
+
+done < "\$NEW_FILES_LIST"
+rm -f "\$NEW_FILES_LIST" /tmp/build_start_timestamp
 
 echo "Build and installation complete for $PACKAGE"
 cd /sources
