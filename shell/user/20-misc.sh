@@ -33,3 +33,7 @@ function sortFiles {
 	fi
 	echo $list
 }
+
+function prunedf {
+	find ~/.files/ -name .git -prune -o -type d -print0 | xargs -0 fdupes -d -N
+}
