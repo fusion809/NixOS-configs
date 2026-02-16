@@ -40,6 +40,7 @@ with pkgs; [
   aria2
   dnsmasq
   fastfetch
+  fdupes
   ffmpeg-full
   git
   gnuplot
