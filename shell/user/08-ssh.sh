@@ -248,6 +248,7 @@ declare -A vms=(
     ["mint"]="Linux Mint 22.3 Cinnamon"
     ["mocaccino"]="MocaccinoOS"
     ["netbsd"]="NetBSD 10.1"
+    ["nutyx"]="NuTyX 26.02.2"
     ["openbsd"]="OpenBSD 7.8"
     ["openindiana"]="OpenIndiana 2025.10"
     ["openmamba"]="openmamba GNU+Linux"
