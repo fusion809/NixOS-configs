@@ -402,7 +402,7 @@ fi
 if [[ "$PACKAGE" == "vim" ]]; then
     log "Removing /usr/bin/vi symlink creation..."
     COMMANDS=$(echo "$COMMANDS" | sed '/ln .* \/usr\/bin\/vi/d' | sed '/for L in.*do/d' | sed '/done/d' | sed '/ln -sv vim.1.*vi.1/d')
-    COMMANDS=$(echo "$COMMANDS" | sed "\|ln -sv ../vim/vim91/doc /usr/share/doc/vim-$UPSTREAM_VERSION|i rm -rf /usr/share/doc/vim-*")
+    COMMANDS=$(echo "$COMMANDS" | sed "\|ln -sv ../vim/vim$UPSTREAM_MAJOR_MINOR/doc /usr/share/doc/vim-$UPSTREAM_VERSION|i rm -rf /usr/share/doc/vim-*")
 fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
