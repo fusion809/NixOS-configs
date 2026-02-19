@@ -257,7 +257,7 @@ fi
 if [[ "$UPSTREAM" == "true" ]]; then
     if [[ "$PACKAGE" == "linux" ]]; then
         log "Fetching latest mainline Linux kernel version..."
-        KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 "mainline:" | grep -oP '[0-9.]+' | head -n 1)
+        KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)
         if [[ -n "$KERNEL_VER" ]]; then
             # Append .0 if version doesn't have two dots (e.g., 6.19 -> 6.19.0)
             if [[ $(echo "$KERNEL_VER" | grep -o '\.' | wc -l) -eq 1 ]]; then
