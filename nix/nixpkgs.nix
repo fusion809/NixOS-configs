@@ -5,6 +5,8 @@
     allowUnfree = true;
     nvidia.acceptLicense = true;
     permittedInsecurePackages = [ "openssl-1.1.1w" "qtwebengine-5.15.19" ];
+    allowUnfreePredicate = pkg:
+      builtins.elem (lib.getName pkg) [ "antigravity" ];
     packageOverrides = pkgs: {
       unstable = inputs.nixpkgs-unstable.legacyPackages.x86_64-linux;
       master = inputs.nixpkgs-master.legacyPackages.x86_64-linux;

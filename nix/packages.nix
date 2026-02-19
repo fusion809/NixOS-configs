@@ -4,7 +4,7 @@ with pkgs; [
   ###############################################################
   # Assorted apps
   ###############################################################   
-  antigravity
+  unstable.antigravity
   brave
   discord
   filezilla
