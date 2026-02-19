@@ -1,13 +1,23 @@
-{ lib, stdenv, buildVscode, fetchurl, jq, writeShellScript, coreutils
-, webkitgtk_4_1, libsoup_3, openssl_3, commandLineArgs ? ""
-, useVSCodeRipgrep ? stdenv.hostPlatform.isDarwin, }:
+{
+  lib,
+  stdenv,
+  buildVscode,
+  fetchurl,
+  jq,
+  writeShellScript,
+  coreutils,
+  commandLineArgs ? "",
+  useVSCodeRipgrep ? stdenv.hostPlatform.isDarwin,
+}:
 
 let
   inherit (stdenv) hostPlatform;
   information = (lib.importJSON ./information.json);
-  source = information.sources."${hostPlatform.system}" or (throw
-    "antigravity: unsupported system ${hostPlatform.system}");
-in (buildVscode {
+  source =
+    information.sources."${hostPlatform.system}"
+      or (throw "antigravity: unsupported system ${hostPlatform.system}");
+in
+(buildVscode {
   inherit commandLineArgs useVSCodeRipgrep;
   inherit (information) version vscodeVersion;
   pname = "antigravity";
@@ -20,18 +30,18 @@ in (buildVscode {
 
   src = fetchurl { inherit (source) url sha256; };
 
-  sourceRoot =
-    if hostPlatform.isDarwin then "Antigravity.app" else "Antigravity";
+  sourceRoot = if hostPlatform.isDarwin then "Antigravity.app" else "Antigravity";
 
   tests = { };
   updateScript = ./update.js;
 
   # When running inside an FHS environment, try linking Google Chrome or Chromium
   # to the hardcoded Playwright search path: /opt/google/chrome/chrome
-  customizeFHSEnv = args:
-    args // {
-      extraBwrapArgs = (args.extraBwrapArgs or [ ])
-        ++ [ "--tmpfs /opt/google/chrome" ];
+  customizeFHSEnv =
+    args:
+    args
+    // {
+      extraBwrapArgs = (args.extraBwrapArgs or [ ]) ++ [ "--tmpfs /opt/google/chrome" ];
       extraBuildCommands = (args.extraBuildCommands or "") + ''
         mkdir -p "$out/opt/google/chrome"
       '';
@@ -48,27 +58,32 @@ in (buildVscode {
 
   meta = {
     mainProgram = "antigravity";
-    description =
-      "Agentic development platform, evolving the IDE into the agent-first era";
+    description = "Agentic development platform, evolving the IDE into the agent-first era";
     homepage = "https://antigravity.google";
     downloadPage = "https://antigravity.google/download";
     changelog = "https://antigravity.google/changelog";
     license = lib.licenses.unfree;
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-    platforms =
-      [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-    maintainers = with lib.maintainers; [ xiaoxiangmoe Zaczero ];
+    platforms = [
+      "x86_64-linux"
+      "aarch64-linux"
+      "x86_64-darwin"
+      "aarch64-darwin"
+    ];
+    maintainers = with lib.maintainers; [
+      xiaoxiangmoe
+      Zaczero
+    ];
   };
-}).overrideAttrs (oldAttrs: {
-  # Disable update checks
-  nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ jq ];
-  buildInputs = (oldAttrs.buildInputs or [ ])
-    ++ [ webkitgtk_4_1 libsoup_3 openssl_3 ];
-  postPatch = (oldAttrs.postPatch or "") + ''
-    productJson="${
-      if stdenv.hostPlatform.isDarwin then "Contents/Resources" else "resources"
-    }/app/product.json"
-    data=$(jq 'del(.updateUrl)' "$productJson")
-    echo "$data" > "$productJson"
-  '';
-})
+}).overrideAttrs
+  (oldAttrs: {
+    # Disable update checks
+    nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ jq ];
+    postPatch = (oldAttrs.postPatch or "") + ''
+      productJson="${
+        if stdenv.hostPlatform.isDarwin then "Contents/Resources" else "resources"
+      }/app/product.json"
+      data=$(jq 'del(.updateUrl)' "$productJson")
+      echo "$data" > "$productJson"
+    '';
+  })
