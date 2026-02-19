@@ -28,19 +28,19 @@
         version = "latest";
         src = inputs.vim-src;
       });
-      antigravity = callPackage (forkNixpkgsPath + /antigravity/package.nix) {
-        buildVscode = { customizeFHSEnv ? null, ... }@args:
-          let
-            generic = pkgs.path + /pkgs/applications/editors/vscode/generic.nix;
-            buildFHSEnv = if customizeFHSEnv != null then
-              (fhsArgs: pkgs.buildFHSEnv (customizeFHSEnv fhsArgs))
-            else
-              pkgs.buildFHSEnv;
-          in pkgs.callPackage generic
-          (builtins.removeAttrs args [ "customizeFHSEnv" ] // {
-            inherit buildFHSEnv;
-          });
-      };
+      # antigravity = callPackage (forkNixpkgsPath + /antigravity/package.nix) {
+      #   buildVscode = { customizeFHSEnv ? null, ... }@args:
+      #     let
+      #       generic = pkgs.path + /pkgs/applications/editors/vscode/generic.nix;
+      #       buildFHSEnv = if customizeFHSEnv != null then
+      #         (fhsArgs: pkgs.buildFHSEnv (customizeFHSEnv fhsArgs))
+      #       else
+      #         pkgs.buildFHSEnv;
+      #     in pkgs.callPackage generic
+      #     (builtins.removeAttrs args [ "customizeFHSEnv" ] // {
+      #       inherit buildFHSEnv;
+      #     });
+      # };
       linuxPackages_latest = super.linuxPackages_latest.extend (lfinal: lprev:
         let
           nvidiaRef =
