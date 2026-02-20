@@ -28,8 +28,8 @@ lfs_get_local_packages() {
     source "$NIXCFG/shell/user/08-ssh.sh"
     source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
     
-    ssh_lfs "ls /sources/archives 2>/dev/null" | \
-        sed 's/\.tar.*//; s/\.zip//; s/\.patch//' | \
+    ssh_lfs "find /sources/archives -type f 2>/dev/null" | \
+        sed 's|.*/||; s/\.tar.*//; s/\.zip//; s/\.patch//' | \
         grep -vE "^$|-docs-html|-systemd" | \
         sort -u
 }
