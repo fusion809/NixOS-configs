@@ -57,7 +57,7 @@ find_package_page() {
 
     log "Searching for '$pkg' in LFS book..." >&2
     # Search in LFS chapter 8 (development)
-    local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | grep -iP "href=\"[a-z0-9_\-]*${pkg}[a-z0-9_\-]*\.html\"" | head -n 1 | grep -oP '(?<=href=")[^"]+')
+    local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
     
     if [[ -n "$lfs_page" ]]; then
         echo "$LFS_BOOK/chapter08/$lfs_page"
@@ -66,7 +66,7 @@ find_package_page() {
 
     log "Searching for '$pkg' in BLFS index..." >&2
     # Search in BLFS long index
-    local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | grep -iP "href=\"[^\"]*${pkg}[^\"]*\.html\"" | head -n 1 | grep -oP '(?<=href=")[^"]+')
+    local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
     
     if [[ -n "$blfs_page" ]]; then
         # BLFS links might be relative or absolute-ish depending on where they are
@@ -285,18 +285,28 @@ if [[ "$UPSTREAM" == "true" ]]; then
 fi
 
 if [[ -z "$DOWNLOAD_URL" ]]; then
-    # Strip trailing digits from package name for more flexible search (e.g., python3 -> python)
-    PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
+    # Strip trailing digits only for certain known versioned names (python3, lua5)
+    # For short names like m4, we keep the number to avoid matching 'm' (which matches autoconf, etc)
+    if [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
+        PKG_BASE="$PACKAGE"
+    else
+        PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
+    fi
     log "Package base name for search: $PKG_BASE"
 
     # LFS packages have URLs in Chapter 3
     if [[ "$PAGE_URL" == *"/lfs/"* ]]; then
         log "Fetching download URL from LFS Chapter 3..."
-        DOWNLOAD_URL=$(curl -s "$LFS_BOOK/chapter03/packages.html" | grep -ioP "https?://[^\s\"]*${PKG_BASE}[^\s\"]*\.tar\.[a-z2]+" | head -n 1)
+        # Stricter regex to match package name followed by version-starting digit
+        DOWNLOAD_URL=$(curl -s "$LFS_BOOK/chapter03/packages.html" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-[0-9][^\s\"]*\.tar\.[a-z2]+" | head -n 1)
     else
         # BLFS packages usually have it on the page
         log "Searching for download URL on BLFS page..."
-        DOWNLOAD_URL=$(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*\.tar\.[a-z2]+" | grep -i "${PKG_BASE}" | grep -vE "(-docs|-html)" | head -n 1)
+        # Stricter regex for BLFS too
+        DOWNLOAD_URL=$(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-[0-9][^\s\"]*\.tar\.[a-z2]+" | head -n 1)
+        if [[ -z "$DOWNLOAD_URL" ]]; then
+             DOWNLOAD_URL=$(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*\.tar\.[a-z2]+" | grep -i "${PKG_BASE}" | grep -vE "(-docs|-html)" | head -n 1)
+        fi
     fi
 
     if [[ -z "$DOWNLOAD_URL" ]]; then
@@ -495,7 +505,7 @@ while read -r line; do
                 [ "\$candidate" == "\$line" ] && continue
                 
                 # Check timestamp: if older than build start, it's a candidate for deletion
-                if [ ! "\$candidate" -newer /tmp/build_start_timestamp ]; then
+                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
                     echo "Removing old library version: \$candidate"
                     rm -f "\$candidate"
                 fi
@@ -512,7 +522,7 @@ while read -r line; do
                 [ "\$candidate" == "\$line" ] && continue
                 cbase=\$(basename "\$candidate")
                 if [[ "\$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-                     if [ ! "\$candidate" -newer /tmp/build_start_timestamp ]; then
+                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
                          echo "Removing old version directory: \$candidate"
                          rm -rf "\$candidate"
                      fi
@@ -527,7 +537,7 @@ while read -r line; do
                 [ "\$candidate" == "\$line" ] && continue
                 cbase=\$(basename "\$candidate")
                 if [[ "\$cbase" =~ ^\$prefix[0-9]+(\.[0-9]+)*$ ]]; then
-                     if [ ! "\$candidate" -newer /tmp/build_start_timestamp ]; then
+                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
                          echo "Removing old version directory: \$candidate"
                          rm -rf "\$candidate"
                      fi
