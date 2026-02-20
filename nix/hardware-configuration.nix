@@ -36,7 +36,7 @@
     };
     "/wind" = {
       device = "/dev/disk/by-uuid/125C24165C23F361";
-      fsType = "ntfs";
+      fsType = "ntfs-3g";
     };
   };
   swapDevices = [ ];
