@@ -200,7 +200,7 @@ while read -r line; do
 
         # 4. Determine if this block is a test suite or related setup
         # keywords: make/ninja tests, expect scripts, tester user, su to tester, testdir
-        if [[ "$CURRENT_BLOCK" =~ (make[[:space:]]+(check|test|tests)|ninja[[:space:]]+test|spawn[[:space:]]+make|expect|tester|su[[:space:]]+.*tester|testdir) ]]; then
+        if [[ "$CURRENT_BLOCK" =~ (make[[:space:]]+(check|test|tests)|ninja[[:space:]]+test|spawn[[:space:]]+make|\<expect\>|tester|su[[:space:]]+.*tester|testdir) ]]; then
             if [[ "$is_critical" == "true" ]]; then
                 # Wrap critical test block in prompt
                 # Note: Remove trailing newline for cleaner injection
@@ -253,7 +253,9 @@ if [[ -z "$COMMANDS" ]]; then
     error "Could not extract build commands for '$PACKAGE'"
 fi
 
-# 3. Resolve Download URL
+# 3. Resolve Download URLs
+DOWNLOAD_URLS=()
+
 if [[ "$UPSTREAM" == "true" ]]; then
     if [[ "$PACKAGE" == "linux" ]]; then
         log "Fetching latest mainline Linux kernel version..."
@@ -264,62 +266,95 @@ if [[ "$UPSTREAM" == "true" ]]; then
                 KERNEL_VER="${KERNEL_VER}.0"
             fi
             MAJOR=$(echo "$KERNEL_VER" | cut -d. -f1)
-            DOWNLOAD_URL="https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VER}.tar.xz"
-            UPSTREAM_VERSION="$KERNEL_VER"  # Store for later replacement
+            DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VER}.tar.xz")
+            UPSTREAM_VERSION="$KERNEL_VER"
         fi
     elif [[ "$PACKAGE" == "vim" ]]; then
         log "Fetching latest upstream Vim version from GitHub..."
-        # Robust method for Vim tags from tags page
         VIM_TAG=$(curl -sL https://github.com/vim/vim/tags | grep -oP 'href="/vim/vim/releases/tag/v\K[0-9.]+' | head -n 1)
         if [[ -z "$VIM_TAG" ]]; then
              VIM_TAG=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | grep -oP '(?<="tag_name": "v)[0-9.]+' | head -n 1)
         fi
         
         if [[ -n "$VIM_TAG" ]]; then
-            DOWNLOAD_URL="https://github.com/vim/vim/archive/v${VIM_TAG}/vim-${VIM_TAG}.tar.gz"
-            UPSTREAM_VERSION="$VIM_TAG"  # Store for later replacement
+            DOWNLOAD_URLS+=("https://github.com/vim/vim/archive/v${VIM_TAG}/vim-${VIM_TAG}.tar.gz")
+            UPSTREAM_VERSION="$VIM_TAG"
         fi
     else
         log "Upstream flag ignored for package '$PACKAGE' (only supported for linux and vim)"
     fi
 fi
 
-if [[ -z "$DOWNLOAD_URL" ]]; then
-    # Strip trailing digits only for certain known versioned names (python3, lua5)
-    # For short names like m4, we keep the number to avoid matching 'm' (which matches autoconf, etc)
-    if [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
-        PKG_BASE="$PACKAGE"
-    else
-        PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
-    fi
-    log "Package base name for search: $PKG_BASE"
+# Strip trailing digits only for certain known versioned names (python3, lua5)
+if [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
+    PKG_BASE="$PACKAGE"
+else
+    PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
+fi
+log "Package base name for search: $PKG_BASE"
 
-    # LFS packages have URLs in Chapter 3
+if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
+    # 1. Main Page Links (for both LFS and BLFS)
+    # Extract all archive and patch links
+    mapfile -t PAGE_LINKS < <(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz)" | sort -u)
+    
+    # 2. LFS Patches Page (for LFS packages)
     if [[ "$PAGE_URL" == *"/lfs/"* ]]; then
-        log "Fetching download URL from LFS Chapter 3..."
-        # Stricter regex to match package name followed by version-starting digit
-        DOWNLOAD_URL=$(curl -s "$LFS_BOOK/chapter03/packages.html" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-[0-9][^\s\"]*\.tar\.[a-z2]+" | head -n 1)
-    else
-        # BLFS packages usually have it on the page
-        log "Searching for download URL on BLFS page..."
-        # Stricter regex for BLFS too
-        DOWNLOAD_URL=$(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-[0-9][^\s\"]*\.tar\.[a-z2]+" | head -n 1)
-        if [[ -z "$DOWNLOAD_URL" ]]; then
-             DOWNLOAD_URL=$(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*\.tar\.[a-z2]+" | grep -i "${PKG_BASE}" | grep -vE "(-docs|-html)" | head -n 1)
+        log "Searching LFS Chapter 3 for packages and patches..."
+        # Add main source from chapter 3 if not found on page
+        LFS_PKG_URL=$(curl -s "$LFS_BOOK/chapter03/packages.html" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-?[0-9][^\s\"]*(\.tar\.[a-z2]+|\.zip)" | head -n 1)
+        [[ -n "$LFS_PKG_URL" ]] && DOWNLOAD_URLS+=("$LFS_PKG_URL")
+        
+        # Add patches from chapter 3
+        mapfile -t LFS_PATCH_URLS < <(curl -s "$LFS_BOOK/chapter03/patches.html" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-[^\s\"]*\.patch" | sort -u)
+        DOWNLOAD_URLS+=("${LFS_PATCH_URLS[@]}")
+    fi
+
+    # Filter page links for relevance
+    for link in "${PAGE_LINKS[@]}"; do
+        # Include if it matches package base name (case insensitive)
+        # or if it's explicitly a patch on a package page
+        if grep -qi "${PKG_BASE}" <<< "$(basename "$link")"; then
+            DOWNLOAD_URLS+=("$link")
         fi
-    fi
-
-    if [[ -z "$DOWNLOAD_URL" ]]; then
-        log "Falling back to broader URL search..."
-        DOWNLOAD_URL=$(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*[^\s\"]*\.tar\.[a-z2]+" | grep -i "${PKG_BASE}" | head -n 1)
-    fi
+    done
 fi
 
-if [[ -z "$DOWNLOAD_URL" ]]; then
-    error "Could not find download URL for '$PACKAGE'"
+# Final deduplication and prioritization
+if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
+    error "Could not find any download URLs for '$PACKAGE'"
 fi
 
-log "Extracted download URL: $DOWNLOAD_URL"
+# Remove duplicates while preserving order (to some extent)
+DOWNLOAD_URLS=($(printf "%s\n" "${DOWNLOAD_URLS[@]}" | awk '!x[$0]++'))
+
+# Identify MAIN_DOWNLOAD_URL (the one that looks most like the source archive)
+MAIN_DOWNLOAD_URL=""
+for url in "${DOWNLOAD_URLS[@]}"; do
+    fname=$(basename "$url")
+    # Priority 1: matches package-version.tar.*
+    if [[ "$fname" =~ ^${PKG_BASE}-?[0-9].*\.tar\. ]]; then
+        MAIN_DOWNLOAD_URL="$url"
+        break
+    fi
+done
+
+# Fallback: first one that isn't a patch or docs
+if [[ -z "$MAIN_DOWNLOAD_URL" ]]; then
+    for url in "${DOWNLOAD_URLS[@]}"; do
+        fname=$(basename "$url")
+        if [[ ! "$fname" =~ \.patch$ ]] && [[ ! "$fname" =~ -docs ]]; then
+            MAIN_DOWNLOAD_URL="$url"
+            break
+        fi
+    done
+fi
+
+# Final fallback: first one
+[[ -z "$MAIN_DOWNLOAD_URL" ]] && MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
+
+log "Identified main archive: $MAIN_DOWNLOAD_URL"
+log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 
 # Replace hardcoded Vim versions when using --upstream
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]]; then
@@ -417,6 +452,10 @@ fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "------------------------------------------------------------"
+    echo "DRY RUN: Download URLs for $PACKAGE"
+    echo "------------------------------------------------------------"
+    for url in "${DOWNLOAD_URLS[@]}"; do echo "$url"; done
+    echo "------------------------------------------------------------"
     echo "DRY RUN: Commands for $PACKAGE"
     echo "------------------------------------------------------------"
     echo "$COMMANDS"
@@ -429,8 +468,12 @@ if [[ "$DRY_RUN" == "true" ]]; then
 fi
 
 # 4. Remote Execution
-FILENAME=$(basename "$DOWNLOAD_URL")
-DIRNAME=$(echo "$FILENAME" | sed 's/\.tar.*//; s/\.zip//')
+MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
+DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
+ALL_FILENAMES=()
+for url in "${DOWNLOAD_URLS[@]}"; do
+    ALL_FILENAMES+=("$(basename "$url")")
+done
 
 log "Starting remote build for $PACKAGE..."
 
@@ -441,18 +484,23 @@ set -e
 mkdir -p /sources/archives
 cd /sources/archives
 
-if [ ! -f "$FILENAME" ]; then
-    echo "Downloading $FILENAME..."
-    wget "$DOWNLOAD_URL"
-fi
+# 1. Download all files
+$(for url in "${DOWNLOAD_URLS[@]}"; do
+    fname=$(basename "$url")
+    echo "if [ ! -f '$fname' ]; then echo 'Downloading $fname...'; wget '$url'; fi"
+done)
 
-# Cleanup old versions
+# 2. Cleanup old versions of the main package
 echo "Cleaning up old versions..."
-PKG_PREFIX=\$(echo "$FILENAME" | sed 's/[-_]\?[0-9].*//')
+PKG_PREFIX=\$(echo "$MAIN_FILENAME" | sed 's/[-_]\?[0-9].*//')
 if [ -n "\$PKG_PREFIX" ]; then
     for f in *; do
         [ -e "\$f" ] || continue
-        if [[ "\$f" == "$FILENAME" ]]; then continue; fi
+        # Skip files we just downloaded
+        skip=false
+        for df in ${ALL_FILENAMES[*]}; do [[ "\$f" == "\$df" ]] && skip=true && break; done
+        [[ "\$skip" == "true" ]] && continue
+        
         if [[ "\$f" =~ ^\$PKG_PREFIX[-_]?[0-9] ]]; then
             echo "Removing old version: \$f"
             rm "\$f"
@@ -460,10 +508,20 @@ if [ -n "\$PKG_PREFIX" ]; then
     done
 fi
 
-echo "Extracting $FILENAME..."
+# 3. Clean up /sources/ symlinks from previous runs
+find /sources -maxdepth 1 -type l -delete
+
+# 4. Symlink all downloaded files to /sources/ for easy access (except the main one if extracted)
+for f in ${ALL_FILENAMES[*]}; do
+    [ "\$f" == "$MAIN_FILENAME" ] && continue
+    ln -sf "/sources/archives/\$f" "/sources/\$f"
+done
+
+# 5. Extract main archive
+echo "Extracting $MAIN_FILENAME..."
 rm -rf "/sources/$DIRNAME"
 mkdir -p "/sources/$DIRNAME"
-tar -xf "$FILENAME" -C "/sources/$DIRNAME" --strip-components=1
+tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
 
 cd "/sources/$DIRNAME"
 
@@ -523,8 +581,8 @@ while read -r line; do
                 cbase=\$(basename "\$candidate")
                 if [[ "\$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
                      if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
-                         echo "Removing old version directory: \$candidate"
-                         rm -rf "\$candidate"
+                          echo "Removing old version directory: \$candidate"
+                          rm -rf "\$candidate"
                      fi
                 fi
             done
@@ -538,8 +596,8 @@ while read -r line; do
                 cbase=\$(basename "\$candidate")
                 if [[ "\$cbase" =~ ^\$prefix[0-9]+(\.[0-9]+)*$ ]]; then
                      if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
-                         echo "Removing old version directory: \$candidate"
-                         rm -rf "\$candidate"
+                          echo "Removing old version directory: \$candidate"
+                          rm -rf "\$candidate"
                      fi
                 fi
              done
