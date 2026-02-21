@@ -8,21 +8,29 @@ export NIXCFG="${NIXCFG:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 source "$NIXCFG/shell/user/08-ssh.sh"
 source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
 
-LFS_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
-BLFS_BOOK="https://linuxfromscratch.org/blfs/view/systemd"
+LFS_BOOK_DEFAULT="https://www.linuxfromscratch.org/lfs/view/development"
+BLFS_BOOK_DEFAULT="https://linuxfromscratch.org/blfs/view/systemd"
+LFS_BOOK="$LFS_BOOK_DEFAULT"
+BLFS_BOOK="$BLFS_BOOK_DEFAULT"
 
 DRY_RUN=false
 STRIP=false
 UPSTREAM=false
+SEARCH_LFS=true
+SEARCH_BLFS=true
 PACKAGE=""
 
 usage() {
     echo "Usage: $0 [options] <package-name>"
     echo "Options:"
-    echo "  --dry-run    Show commands without executing them"
-    echo "  --strip      Run stripping commands after build"
-    echo "  --upstream   Attempt to find the latest upstream version (linux and vim only)"
-    echo "  -h, --help   Show this help message"
+    echo "  --dry-run             Show commands without executing them"
+    echo "  --strip               Run stripping commands after build"
+    echo "  --upstream            Attempt to find the latest upstream version (linux and vim only)"
+    echo "  --lfs                 Search only in the LFS book"
+    echo "  --blfs                Search only in the BLFS book"
+    echo "  --lfs-book <book>     Specify LFS book (e.g., development, systemd, stable, or full URL)"
+    echo "  --blfs-book <book>    Specify BLFS book (e.g., systemd, development, stable, or full URL)"
+    echo "  -h, --help            Show this help message"
     exit 1
 }
 
@@ -31,6 +39,34 @@ while [[ "$#" -gt 0 ]]; do
         --dry-run) DRY_RUN=true ;;
         --strip) STRIP=true ;;
         --upstream) UPSTREAM=true ;;
+        --lfs)
+            SEARCH_LFS=true
+            SEARCH_BLFS=false
+            ;;
+        --blfs)
+            SEARCH_LFS=false
+            SEARCH_BLFS=true
+            ;;
+        --lfs-book)
+            LFS_BOOK="$2"
+            shift
+            SEARCH_LFS=true
+            SEARCH_BLFS=false
+            # Handle shorthand names
+            if [[ ! "$LFS_BOOK" =~ ^https?:// ]]; then
+                LFS_BOOK="https://www.linuxfromscratch.org/lfs/view/$LFS_BOOK"
+            fi
+            ;;
+        --blfs-book)
+            BLFS_BOOK="$2"
+            shift
+            SEARCH_LFS=false
+            SEARCH_BLFS=true
+            # Handle shorthand names
+            if [[ ! "$BLFS_BOOK" =~ ^https?:// ]]; then
+                BLFS_BOOK="https://www.linuxfromscratch.org/blfs/view/$BLFS_BOOK"
+            fi
+            ;;
         -h|--help) usage ;;
         -*) echo "Unknown option: $1"; usage ;;
         *) PACKAGE="$1" ;;
@@ -50,33 +86,37 @@ find_package_page() {
     local pkg="$1"
     local found=""
 
-    if [[ "$pkg" == "linux" ]]; then
-        echo "$LFS_BOOK/chapter10/kernel.html"
-        return 0
-    fi
-
-    log "Searching for '$pkg' in LFS book..." >&2
-    # Search in LFS chapter 8 (development)
-    local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
-    
-    if [[ -n "$lfs_page" ]]; then
-        echo "$LFS_BOOK/chapter08/$lfs_page"
-        return 0
-    fi
-
-    log "Searching for '$pkg' in BLFS index..." >&2
-    # Search in BLFS long index
-    local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
-    
-    if [[ -n "$blfs_page" ]]; then
-        # BLFS links might be relative or absolute-ish depending on where they are
-        if [[ "$blfs_page" == ..* ]]; then
-            # Handle relative links like ../general/python3.html
-            echo "$BLFS_BOOK/${blfs_page#../}"
-        else
-            echo "$BLFS_BOOK/$blfs_page"
+    if [[ "$SEARCH_LFS" == "true" ]]; then
+        if [[ "$pkg" == "linux" ]]; then
+            echo "$LFS_BOOK/chapter10/kernel.html"
+            return 0
         fi
-        return 0
+
+        log "Searching for '$pkg' in LFS book..." >&2
+        # Search in LFS chapter 8 (development)
+        local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+        
+        if [[ -n "$lfs_page" ]]; then
+            echo "$LFS_BOOK/chapter08/$lfs_page"
+            return 0
+        fi
+    fi
+
+    if [[ "$SEARCH_BLFS" == "true" ]]; then
+        log "Searching for '$pkg' in BLFS index..." >&2
+        # Search in BLFS long index
+        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+        
+        if [[ -n "$blfs_page" ]]; then
+            # BLFS links might be relative or absolute-ish depending on where they are
+            if [[ "$blfs_page" == ..* ]]; then
+                # Handle relative links like ../general/python3.html
+                echo "$BLFS_BOOK/${blfs_page#../}"
+            else
+                echo "$BLFS_BOOK/$blfs_page"
+            fi
+            return 0
+        fi
     fi
 
     return 1
@@ -108,7 +148,7 @@ get_commands() {
     ' | perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
         sed 's/^[[:space:]]*//' | \
-        grep -vE "^$|^exec |vim -c "
+        grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm"
 }
 
 log "Extracting build commands..."
@@ -121,7 +161,13 @@ is_critical=false
 # 1. Hardcoded critical packages
 for c in $CRITICAL_PKGS; do
     if [[ "$PACKAGE" == "$c" || "$PACKAGE" == "$c-"* ]]; then
-        is_critical=true
+        # GCC tests are only critical in LFS, not BLFS
+        if [[ "$PACKAGE" == "gcc"* && "$SEARCH_BLFS" == "true" ]]; then
+            log "GCC build from BLFS detected: treating tests as non-critical."
+            is_critical=false
+        else
+            is_critical=true
+        fi
         break
     fi
 done
@@ -199,8 +245,8 @@ while read -r line; do
         fi
 
         # 4. Determine if this block is a test suite or related setup
-        # keywords: make/ninja tests, expect scripts, tester user, su to tester, testdir
-        if [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir) ]]; then
+        # keywords: make/ninja tests, expect scripts, tester user, su to tester, testdir, test_summary
+        if [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary) ]]; then
             if [[ "$is_critical" == "true" ]]; then
                 # Wrap critical test block in prompt
                 # Note: Remove trailing newline for cleaner injection
@@ -220,8 +266,15 @@ fi
             else
                 log "Skipping non-critical test block." >&2
             fi
+        elif [[ "$CURRENT_BLOCK" =~ "patch" ]]; then
+            # Resilient patching: Wrap patch commands to ignore failures
+            CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
+            COMMANDS+="
+echo \"Attempting to apply patch...\"
+( $CURRENT_BLOCK ) || echo \"[WARNING] Patch application failed, continuing build...\"
+"
         else
-            # Not a test block, process for parallel make
+            # Not a test or patch block, process for parallel make
             # We decompose block into lines to apply -j$(nproc) safely
             while read -r bline; do
                 if [[ "$bline" =~ ^(make|./configure && make) ]] && \
@@ -287,8 +340,15 @@ if [[ "$UPSTREAM" == "true" ]]; then
             DOWNLOAD_URLS+=("https://github.com/vim/vim/archive/v${VIM_TAG}/vim-${VIM_TAG}.tar.gz")
             UPSTREAM_VERSION="$VIM_TAG"
         fi
+    elif [[ "$PACKAGE" == "firefox" ]]; then
+        log "Fetching latest upstream Firefox version from Mozilla..."
+        FIREFOX_JSON=$(curl -s https://product-details.mozilla.org/1.0/firefox_versions.json)
+        UPSTREAM_VERSION=$(echo "$FIREFOX_JSON" | grep -oP '(?<="LATEST_FIREFOX_VERSION": ")[0-9.]+')
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            DOWNLOAD_URLS+=("https://archive.mozilla.org/pub/firefox/releases/${UPSTREAM_VERSION}/source/firefox-${UPSTREAM_VERSION}.source.tar.xz")
+        fi
     else
-        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux and vim)"
+        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, and firefox)"
     fi
 fi
 
@@ -458,6 +518,21 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
     fi
 fi
 
+# Replace hardcoded Firefox versions when using --upstream
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "firefox" && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from commands (e.g., "140.7.1esr")
+    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'firefox-\K[0-9.]+esr' | head -n 1)
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'firefox-\K[0-9.]+' | head -n 1)
+    fi
+
+    if [[ -n "$LFS_VERSION" ]]; then
+        log "Replacing LFS version $LFS_VERSION with upstream version $UPSTREAM_VERSION in commands..."
+        COMMANDS="${COMMANDS//firefox-$LFS_VERSION/firefox-$UPSTREAM_VERSION}"
+        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+    fi
+fi
+
 if [[ "$PACKAGE" == "vim" ]]; then
     log "Removing /usr/bin/vi symlink creation..."
     COMMANDS=$(echo "$COMMANDS" | sed '/ln .* \/usr\/bin\/vi/d' | sed '/for L in.*do/d' | sed '/done/d' | sed '/ln -sv vim.1.*vi.1/d')
@@ -501,7 +576,12 @@ cd /sources/archives
 # 1. Download all files
 $(for url in "${DOWNLOAD_URLS[@]}"; do
     fname=$(basename "$url")
-    echo "if [ ! -f '$fname' ]; then echo 'Downloading $fname...'; wget '$url'; fi"
+    if [[ "$fname" == *".patch"* ]]; then
+        # Resilient download for patches
+        echo "if [ ! -f '$fname' ]; then echo 'Downloading $fname...'; wget '$url' || echo '[WARNING] Failed to download $fname'; fi"
+    else
+        echo "if [ ! -f '$fname' ]; then echo 'Downloading $fname...'; wget '$url'; fi"
+    fi
 done)
 
 # 2. Cleanup old versions of the main package
