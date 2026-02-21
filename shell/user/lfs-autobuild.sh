@@ -253,6 +253,13 @@ if [[ -z "$COMMANDS" ]]; then
     error "Could not extract build commands for '$PACKAGE'"
 fi
 
+# 2.5 Auto-detect Rust dependency
+if echo "$HTML_CONTENT" | grep -qiE "rust|rustc|cargo"; then
+    log "Rust dependency detected (rust/rustc/cargo found in page content)."
+    COMMANDS="export PATH=\$PATH:/opt/rustc/bin
+$COMMANDS"
+fi
+
 # 3. Resolve Download URLs
 DOWNLOAD_URLS=()
 
@@ -294,6 +301,11 @@ fi
 log "Package base name for search: $PKG_BASE"
 
 if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
+    # 0. Primary Link from Page (Robust Extraction)
+    # The first "Download (HTTP)" link is usually the main one
+    http_download=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (/Download \(HTTP\):\s*<a[^>]+href="([^"]+)"/is) { print $1 }')
+    [[ -n "$http_download" ]] && DOWNLOAD_URLS+=("$http_download")
+
     # 1. Main Page Links (for both LFS and BLFS)
     # Extract all archive and patch links
     mapfile -t PAGE_LINKS < <(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz)" | sort -u)
@@ -314,7 +326,9 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
     for link in "${PAGE_LINKS[@]}"; do
         # Include if it matches package base name (case insensitive)
         # or if it's explicitly a patch on a package page
-        if grep -qi "${PKG_BASE}" <<< "$(basename "$link")"; then
+        # Special case: spidermonkey often uses firefox source
+        if grep -qi "${PKG_BASE}" <<< "$(basename "$link")" || \
+           ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "firefox" <<< "$(basename "$link")"); then
             DOWNLOAD_URLS+=("$link")
         fi
     done
@@ -493,7 +507,8 @@ done)
 # 2. Cleanup old versions of the main package
 echo "Cleaning up old versions..."
 PKG_PREFIX=\$(echo "$MAIN_FILENAME" | sed 's/[-_]\?[0-9].*//')
-if [ -n "\$PKG_PREFIX" ]; then
+PKG_NAME_PREFIX=\$(echo "$PACKAGE" | sed 's/[0-9]*$//')
+if [ -n "\$PKG_PREFIX" ] || [ -n "\$PKG_NAME_PREFIX" ]; then
     for f in *; do
         [ -e "\$f" ] || continue
         # Skip files we just downloaded
@@ -501,7 +516,9 @@ if [ -n "\$PKG_PREFIX" ]; then
         for df in ${ALL_FILENAMES[*]}; do [[ "\$f" == "\$df" ]] && skip=true && break; done
         [[ "\$skip" == "true" ]] && continue
         
-        if [[ "\$f" =~ ^\$PKG_PREFIX[-_]?[0-9] ]]; then
+        # Match archive prefix or package name prefix
+        if ([[ -n "\$PKG_PREFIX" ]] && [[ "\$f" =~ ^\$PKG_PREFIX[-_]?[0-9] ]]) || \
+           ([[ -n "\$PKG_NAME_PREFIX" ]] && [[ "\$f" =~ ^\$PKG_NAME_PREFIX[-_]?[0-9] ]]); then
             echo "Removing old version: \$f"
             rm "\$f"
         fi

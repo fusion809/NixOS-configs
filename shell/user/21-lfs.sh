@@ -17,9 +17,8 @@ lfs_get_remote_packages() {
 
     # BLFS longindex has package-version in <a> tags or before " -- "
     local blfs_remote=$(curl -s "$BLFS_SVN_BOOK/longindex.html" | tr -d '\r' | \
-        grep -oP '(?<=>)[a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+(?=</a>| -- )' | \
+        perl -0777 -ne 'while (/SpiderMonkey:.*?firefox-([0-9.]+)/gs) { print "spidermonkey-$1\n" } while (/>([a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+)<\/a>/gs) { print "$1\n" }' | \
         sort -u)
-
     echo -e "${lfs_remote}\n${blfs_remote}" | sort -u | tr -d '\r'
 }
 
@@ -28,8 +27,9 @@ lfs_get_local_packages() {
     source "$NIXCFG/shell/user/08-ssh.sh"
     source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
     
-    ssh_lfs "find /sources/archives -type f 2>/dev/null | tr -d '\r'" | \
+    ssh_lfs "find /sources/archives -type f ! -name '*.patch*' 2>/dev/null | tr -d '\r'" | \
         sed 's|.*/||; s/\.tar\.[a-z2]\+//; s/\.zip$//; s/\.patch\.[a-z2]\+//; s/\.[a-z2]\+$//; s/-apng$//' | \
+        sed 's/^firefox-\([0-9].*esr\.source\)/spidermonkey-\1/' | \
         grep -vE "^$|-docs-html|-systemd" | \
         sort -u
 }
