@@ -313,6 +313,14 @@ if echo "$HTML_CONTENT" | grep -qiE "rust|rustc|cargo"; then
 $COMMANDS"
 fi
 
+# 2.6 Respect existing Fortran support for GCC
+if [[ "$PACKAGE" == "gcc" ]] && [[ "$COMMANDS" == *"--enable-languages=c,c++"* ]]; then
+    if ssh_lfs "command -v gfortran" &>/dev/null; then
+        log "gfortran detected on target system. Adding Fortran support to GCC build."
+        COMMANDS="${COMMANDS/--enable-languages=c,c++/--enable-languages=c,c++,fortran}"
+    fi
+fi
+
 # 3. Resolve Download URLs
 DOWNLOAD_URLS=()
 
