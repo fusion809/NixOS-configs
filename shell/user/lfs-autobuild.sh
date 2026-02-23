@@ -313,7 +313,24 @@ if echo "$HTML_CONTENT" | grep -qiE "rust|rustc|cargo"; then
 $COMMANDS"
 fi
 
-# 2.6 Respect existing Fortran support for GCC
+# 2.6 Auto-detect TeXLive and set TEXLIVE_PREFIX
+if echo "$HTML_CONTENT" | grep -qiE "texlive"; then
+    # Extract year from the texlive source archive URL (e.g. texlive-20250308-source.tar.xz -> 2025)
+    TEXLIVE_YEAR=$(printf '%s\n' "${DOWNLOAD_URLS[@]}" | grep -ioP 'texlive-\K[0-9]{4}' | head -n 1)
+    if [[ -z "$TEXLIVE_YEAR" ]]; then
+        # Fallback: try to extract from already-identified main filename
+        TEXLIVE_YEAR=$(echo "$MAIN_FILENAME" | grep -oP 'texlive-\K[0-9]{4}')
+    fi
+    if [[ -n "$TEXLIVE_YEAR" ]]; then
+        log "TeXLive detected: setting TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR"
+        COMMANDS="export TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR
+$COMMANDS"
+    else
+        log "TeXLive detected but could not determine year from source filenames."
+    fi
+fi
+
+# 2.7 Respect existing Fortran support for GCC
 if [[ "$PACKAGE" == "gcc" ]] && [[ "$COMMANDS" == *"--enable-languages=c,c++"* ]]; then
     if ssh_lfs "command -v gfortran" &>/dev/null; then
         log "gfortran detected on target system. Adding Fortran support to GCC build."
