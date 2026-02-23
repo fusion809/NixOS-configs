@@ -23,9 +23,13 @@ while read -r local_pkg; do
     if [[ -n "$remote_pkg" ]]; then
         remote_ver=$(echo "$remote_pkg" | sed -E "s/^.{${#name}}-//I" | tr -d '\r')
         
-        if [[ "$local_ver" != "$remote_ver" ]]; then
-            higher=$(echo -e "$local_ver\n$remote_ver" | tr -d '\r' | sort -V | tail -n 1)
-            if [[ "$higher" == "$remote_ver" ]]; then
+        # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
+        local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
+        remote_base=$(echo "$remote_ver" | sed -E 's/-[a-zA-Z]+$//')
+
+        if [[ "$local_base" != "$remote_base" ]]; then
+            higher=$(echo -e "$local_base\n$remote_base" | tr -d '\r' | sort -V | tail -n 1)
+            if [[ "$higher" == "$remote_base" ]]; then
                 printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver"
             fi
         fi
