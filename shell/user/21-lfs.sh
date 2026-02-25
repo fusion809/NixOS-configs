@@ -110,10 +110,66 @@ EOF
     fi
 }
 
+lfs_check_custom_updates() {
+    # Ensure dependencies are available
+    source "$NIXCFG/shell/user/08-ssh.sh"
+    source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+
+    local script=$(cat <<'EOF'
+    sudo mkdir -p /var/lib/lfs-custom-packages 2>/dev/null || true
+    for build_script in $(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null); do
+        pkg_dir=$(dirname "$build_script")
+        pkg_name=$(basename "$pkg_dir")
+        
+        # 1. Get local version
+        local_ver="none"
+        if [ -f "/var/lib/lfs-custom-packages/$pkg_name" ]; then
+            local_ver=$(cat "/var/lib/lfs-custom-packages/$pkg_name" 2>/dev/null || echo "none")
+        fi
+        
+        # 2. Get remote version
+        remote_ver=""
+        # Try to extract VERSION= line and evaluate it
+        version_line=$(grep -E '^[A-Z_]*VERSION=' "$build_script" | head -n 1)
+        if [ -n "$version_line" ]; then
+            var_name=$(echo "$version_line" | cut -d= -f1)
+            echo "$version_line" > /tmp/eval_ver.sh
+            echo "echo \$$var_name" >> /tmp/eval_ver.sh
+            remote_ver=$(bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
+            rm -f /tmp/eval_ver.sh
+        fi
+        
+        # If no VERSION line, try to determine git remote head
+        if [ -z "$remote_ver" ] && grep -q "git clone" "$build_script"; then
+            repo_url=$(grep -oP 'git clone \K[^ ]+' "$build_script" | head -n 1)
+            if [ -n "$repo_url" ]; then
+                remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+            fi
+        fi
+        
+        if [ -n "$remote_ver" ]; then
+            if [ "$local_ver" != "$remote_ver" ]; then
+                # Assume it's an update if they don't match exactly
+                echo "$pkg_name $local_ver $remote_ver"
+            fi
+        fi
+    done
+EOF
+)
+    ssh_lfs "bash -c '$(echo "$script" | sed "s/'/'\\\\''/g")'" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)"
+}
+
 lfs_update_all() {
     local dry_run=false
     if [[ "$1" == "--dry-run" ]]; then
         dry_run=true
+    fi
+
+    echo "Updating Python packages via pip..."
+    if [[ "$dry_run" == "true" ]]; then
+        echo "DRY RUN: sudo pip3 install --upgrade pyparsing attrs numpy sphinx pyqt-builder pyopengl sip pyqt6-sip"
+    else
+        ssh_lfs "sudo pip3 install --upgrade pyparsing attrs numpy sphinx pyqt-builder pyopengl sip pyqt6-sip"
     fi
 
     echo "Fetching remote package list from Development books..."
@@ -147,6 +203,17 @@ lfs_update_all() {
             fi
         fi
     done <<< "$local_list"
+
+    # Also check custom updates
+    local custom_updates=$(lfs_check_custom_updates)
+    while read -r update_line; do
+        [[ -z "$update_line" ]] && continue
+        local name=$(echo "$update_line" | awk '{print $1}')
+        local local_ver=$(echo "$update_line" | awk '{print $2}')
+        local remote_ver=$(echo "$update_line" | awk '{print $3}')
+        echo "Found custom update: $name ($local_ver -> $remote_ver)"
+        updates+=("$name")
+    done <<< "$custom_updates"
 
     if [[ ${#updates[@]} -eq 0 ]]; then
         echo "No updates found."

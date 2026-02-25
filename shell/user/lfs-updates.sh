@@ -35,3 +35,23 @@ while read -r local_pkg; do
         fi
     fi
 done <<< "$LOCAL_PKGS"
+
+CUSTOM_UPDATES=$(lfs_check_custom_updates)
+while read -r update_line; do
+    update_line=$(echo "$update_line" | tr -d '\r')
+    [[ -z "$update_line" ]] && continue
+    # Ensure there are exactly 3 fields (name local_ver remote_ver)
+    fields=($(echo "$update_line"))
+    if [[ ${#fields[@]} -ne 3 ]]; then continue; fi
+
+    # update_line is "pkg_name local_ver remote_ver"
+    name="${fields[0]}"
+    local_ver="${fields[1]}"
+    remote_ver="${fields[2]}"
+    
+    # Format git hashes differently if they are 40 chars long
+    if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
+    if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
+    
+    printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver"
+done <<< "$CUSTOM_UPDATES"

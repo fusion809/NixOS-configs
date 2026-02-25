@@ -81,6 +81,77 @@ fi
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
 error() { echo "[ERROR] $*" >&2; exit 1; }
 
+# 0. Check for custom package in ~/lfs_packaging
+CUSTOM_BUILD_SH=$(ssh_lfs "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -E \"/$PACKAGE/build.sh$\" | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
+if [[ -n "$CUSTOM_BUILD_SH" ]]; then
+    CUSTOM_DIR=$(dirname "$CUSTOM_BUILD_SH")
+    log "Custom package detected at $CUSTOM_DIR"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "DRY RUN: Would execute $CUSTOM_BUILD_SH on VM."
+        exit 0
+    fi
+    
+    log "Starting remote custom build for $PACKAGE..."
+    
+    REMOTE_SCRIPT=$(cat <<'EOF'
+set -e
+cd "$CUSTOM_DIR"
+bash build.sh
+
+# Update registry (needs sudo)
+sudo mkdir -p /var/lib/lfs-custom-packages
+# Try to determine the new version we just installed
+version_line=$(grep -E '^[A-Z_]*VERSION=' build.sh | head -n 1)
+new_ver=""
+if [ -n "$version_line" ]; then
+    var_name=$(echo "$version_line" | cut -d= -f1)
+    echo "$version_line" > /tmp/eval_ver.sh
+    echo "echo \$$var_name" >> /tmp/eval_ver.sh
+    new_ver=$(bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
+    rm -f /tmp/eval_ver.sh
+fi
+
+if [ -z "$new_ver" ]; then
+    # Auto-detect if there's a sub-directory with a git clone
+    subdirs=($(find . -maxdepth 1 -mindepth 1 -type d ! -name ".*"))
+    for dir in "${subdirs[@]}"; do
+        if [ -d "$dir/.git" ]; then
+            cd "$dir"
+            new_ver=$(git rev-parse HEAD 2>/dev/null)
+            cd ..
+            break
+        fi
+    done
+fi
+
+if [ -z "$new_ver" ] && grep -q "git clone" build.sh; then
+    repo_url=$(grep -oP 'git clone \K[^ ]+' build.sh | head -n 1)
+    if [ -n "$repo_url" ]; then
+        new_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+    fi
+fi
+
+if [ -n "$new_ver" ]; then
+    echo "$new_ver" | sudo tee /var/lib/lfs-custom-packages/"$TARGET_PKG" > /dev/null
+    echo "Updated registry for $TARGET_PKG to version $new_ver"
+else
+    echo "Could not determine version for $TARGET_PKG to update registry"
+fi
+EOF
+)
+    ssh_lfs "TARGET_PKG=\"$PACKAGE\" CUSTOM_DIR=\"$CUSTOM_DIR\" bash -c '$(echo "$REMOTE_SCRIPT" | sed "s/'/'\\\\''/g")'"
+
+
+    
+    if [[ "$STRIP" == "true" ]]; then
+        source "$NIXCFG/shell/user/21-lfs.sh"
+        lfs_strip
+    fi
+
+    exit 0
+fi
+
 # 1. Discover package page
 find_package_page() {
     local pkg="$1"
