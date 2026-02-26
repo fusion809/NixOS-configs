@@ -16,6 +16,7 @@ BLFS_BOOK="$BLFS_BOOK_DEFAULT"
 DRY_RUN=false
 STRIP=false
 UPSTREAM=false
+INCLUDE_CONFIG=false
 SEARCH_LFS=true
 SEARCH_BLFS=true
 PACKAGE=""
@@ -26,6 +27,7 @@ usage() {
     echo "  --dry-run             Show commands without executing them"
     echo "  --strip               Run stripping commands after build"
     echo "  --upstream            Attempt to find the latest upstream version (linux and vim only)"
+    echo "  --include-config      Include configuration commands in the LFS/BLFS book entry"
     echo "  --lfs                 Search only in the LFS book"
     echo "  --blfs                Search only in the BLFS book"
     echo "  --lfs-book <book>     Specify LFS book (e.g., development, systemd, stable, or full URL)"
@@ -39,6 +41,7 @@ while [[ "$#" -gt 0 ]]; do
         --dry-run) DRY_RUN=true ;;
         --strip) STRIP=true ;;
         --upstream) UPSTREAM=true ;;
+        --include-config) INCLUDE_CONFIG=true ;;
         --lfs)
             SEARCH_LFS=true
             SEARCH_BLFS=false
@@ -164,8 +167,13 @@ find_package_page() {
         fi
 
         log "Searching for '$pkg' in LFS book..." >&2
-        # Search in LFS chapter 8 (development)
-        local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+        # First try exact match (e.g., /pkg.html)
+        local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/$pkg\.html)\"/is) { print \$1; exit }")
+        
+        # Fallback to partial match
+        if [[ -z "$lfs_page" ]]; then
+            lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+        fi
         
         if [[ -n "$lfs_page" ]]; then
             echo "$LFS_BOOK/chapter08/$lfs_page"
@@ -175,8 +183,13 @@ find_package_page() {
 
     if [[ "$SEARCH_BLFS" == "true" ]]; then
         log "Searching for '$pkg' in BLFS index..." >&2
-        # Search in BLFS long index
-        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+        # First try exact match (e.g., /pkg.html)
+        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/$pkg\.html)\"/is) { print \$1; exit }")
+        
+        # Fallback to partial match
+        if [[ -z "$blfs_page" ]]; then
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+        fi
         
         if [[ -n "$blfs_page" ]]; then
             # BLFS links might be relative or absolute-ish depending on where they are
@@ -216,7 +229,8 @@ get_commands() {
         /<pre [^>]*class="(userinput|root)"[^>]*>/ { in_block=1; print "___BLOCK_START___" }
         in_block { print }
         /<\/pre>/ { in_block=0; print "___BLOCK_END___" }
-    ' | perl -0777 -pe 's/<[^>]+>//gs' | \
+    ' | perl -0777 -pe 's/<code class="literal">.*?<\/code>//gs' | \
+        perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
         sed 's/^[[:space:]]*//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm"
@@ -310,7 +324,7 @@ while read -r line; do
         
         # 3. Skip post-installation configuration blocks
         # These are blocks that create config files in /etc/ or /var/
-        if grep -qE "^cat[[:space:]]*>[[:space:]]*/etc/|^cat[[:space:]]*>[[:space:]]*/var/" <<< "$CURRENT_BLOCK"; then
+        if [[ "$INCLUDE_CONFIG" == "false" ]] && grep -qE "^cat[[:space:]]*>[[:space:]]*/etc/|^cat[[:space:]]*>[[:space:]]*/var/" <<< "$CURRENT_BLOCK"; then
             log "Skipping post-installation configuration block." >&2
             continue
         fi
@@ -401,7 +415,14 @@ $COMMANDS"
     fi
 fi
 
-# 2.7 Respect existing Fortran support for GCC
+# 2.7 Auto-detect Qt6 dependency
+if echo "$HTML_CONTENT" | grep -qiE "qt-6|qt6|qt 6"; then
+    log "Qt6 dependency detected: adding /opt/qt6/bin to PATH."
+    COMMANDS="export PATH=\$PATH:/opt/qt6/bin
+$COMMANDS"
+fi
+
+# 2.8 Respect existing Fortran support for GCC
 if [[ "$PACKAGE" == "gcc" ]] && [[ "$COMMANDS" == *"--enable-languages=c,c++"* ]]; then
     if ssh_lfs "command -v gfortran" &>/dev/null; then
         log "gfortran detected on target system. Adding Fortran support to GCC build."
@@ -415,6 +436,84 @@ if [[ "$PACKAGE" == "llvm" ]] && [[ "$COMMANDS" == *"LLVM_TARGETS_TO_BUILD"* ]];
         log "Adding WebAssembly to LLVM_TARGETS_TO_BUILD."
         COMMANDS=$(echo "$COMMANDS" | sed 's/-D LLVM_TARGETS_TO_BUILD="\([^"]*\)"/-D LLVM_TARGETS_TO_BUILD="\1;WebAssembly"/')
     fi
+fi
+
+# 2.9 Wrap doxygen commands
+if [[ "$COMMANDS" == *"doxygen"* ]]; then
+    log "Wrapping doxygen commands with a PATH check."
+    COMMANDS=$(echo "$COMMANDS" | awk '
+        /^doxygen/ { print "if command -v doxygen &>/dev/null; then"; print; print "fi"; next }
+        { print }
+    ')
+fi
+
+# 2.10 Special handling for KDE frameworks6
+FRAMEWORKS_MODE=false
+if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
+    FRAMEWORKS_MODE=true
+    log "Enabling special frameworks6 mode."
+    
+    # Remove the /opt/kf6 installation commands as user installs to /usr
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^mv .* /opt/kf6")
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^ln -s.* /opt/kf6")
+    
+    if [[ "$INCLUDE_CONFIG" == "true" ]]; then
+        log "Adding kf6-intro.html configuration for /usr installation..."
+        # Note: Depending on BLFS book URL, it could be in /kde/
+        KF6_INTRO_URL=$(echo "$PAGE_URL" | sed 's/frameworks6\.html/kf6-intro.html/')
+        INTRO_HTML=$(curl -s "$KF6_INTRO_URL")
+        
+        # We want the commands under "Installing in /usr"
+        INTRO_CMDS=$(get_commands "$INTRO_HTML" | awk '
+            BEGIN { p=0 }
+            /export KF6_PREFIX=\/usr/ { p=1 }
+            /export KF6_PREFIX=\/opt\/kf6/ { p=0 }
+            p { print }
+        ' | grep -v "^___BLOCK_")
+        
+        COMMANDS="${INTRO_CMDS}
+${COMMANDS}"
+    fi
+
+    # Fix the bash subshell and execution
+    log "Converting frameworks6 build loop into a standalone script..."
+    COMMANDS=$(echo "$COMMANDS" | awk '
+        BEGIN {
+            in_loop = 0
+            in_as_root = 0
+            as_root_content = ""
+            other_cmds = ""
+            loop_content = ""
+        }
+        /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
+        /^bash -e/ { next }
+        /^exit/ { next }
+        /^while read -r line; do/ { in_loop = 1; loop_content = $0; next }
+        {
+            if (in_as_root) {
+                as_root_content = as_root_content "\n" $0
+                if (/export -f as_root/) in_as_root = 0
+            } else if (in_loop) {
+                loop_content = loop_content "\n" $0
+                if (/done < frameworks-.*\.md5/) in_loop = 0
+            } else {
+                other_cmds = other_cmds "\n" $0
+            }
+        }
+        END {
+            sub(/^\n/, "", other_cmds)
+            print other_cmds
+            print "cat > build-frameworks.sh << \"EOF\""
+            print "#!/bin/bash"
+            print "set -e"
+            print ""
+            print as_root_content
+            print ""
+            print loop_content
+            print "EOF"
+            print "bash build-frameworks.sh"
+        }
+    ')
 fi
 
 # 3. Resolve Download URLs
@@ -457,7 +556,10 @@ if [[ "$UPSTREAM" == "true" ]]; then
 fi
 
 # Strip trailing digits only for certain known versioned names (python3, lua5)
-if [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
+if [[ "${PACKAGE,,}" == "liba52" ]]; then
+    # Special case: liba52's archive is named a52dec
+    PKG_BASE="a52dec"
+elif [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
     PKG_BASE="$PACKAGE"
 else
     PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
@@ -499,40 +601,44 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
 fi
 
 # Final deduplication and prioritization
-if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
+if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] && [[ "$FRAMEWORKS_MODE" == "false" ]]; then
     error "Could not find any download URLs for '$PACKAGE'"
 fi
 
 # Remove duplicates while preserving order (to some extent)
 DOWNLOAD_URLS=($(printf "%s\n" "${DOWNLOAD_URLS[@]}" | awk '!x[$0]++'))
 
-# Identify MAIN_DOWNLOAD_URL (the one that looks most like the source archive)
-MAIN_DOWNLOAD_URL=""
-for url in "${DOWNLOAD_URLS[@]}"; do
-    fname=$(basename "$url")
-    # Priority 1: matches package-version.tar.*
-    if [[ "$fname" =~ ^${PKG_BASE}-?[0-9].*\.tar\. ]]; then
-        MAIN_DOWNLOAD_URL="$url"
-        break
-    fi
-done
-
-# Fallback: first one that isn't a patch or docs
-if [[ -z "$MAIN_DOWNLOAD_URL" ]]; then
+if [[ "$FRAMEWORKS_MODE" == "false" ]]; then
+    # Identify MAIN_DOWNLOAD_URL (the one that looks most like the source archive)
+    MAIN_DOWNLOAD_URL=""
     for url in "${DOWNLOAD_URLS[@]}"; do
         fname=$(basename "$url")
-        if [[ ! "$fname" =~ \.patch$ ]] && [[ ! "$fname" =~ -docs ]]; then
+        # Priority 1: matches package-version.tar.*
+        if [[ "$fname" =~ ^${PKG_BASE}-?[0-9].*\.tar\. ]]; then
             MAIN_DOWNLOAD_URL="$url"
             break
         fi
     done
+
+    # Fallback: first one that isn't a patch or docs
+    if [[ -z "$MAIN_DOWNLOAD_URL" ]]; then
+        for url in "${DOWNLOAD_URLS[@]}"; do
+            fname=$(basename "$url")
+            if [[ ! "$fname" =~ \.patch$ ]] && [[ ! "$fname" =~ -docs ]]; then
+                MAIN_DOWNLOAD_URL="$url"
+                break
+            fi
+        done
+    fi
+
+    # Final fallback: first one
+    [[ -z "$MAIN_DOWNLOAD_URL" ]] && MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
+
+    log "Identified main archive: $MAIN_DOWNLOAD_URL"
+    log "Total files to download: ${#DOWNLOAD_URLS[@]}"
+else
+    log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
 fi
-
-# Final fallback: first one
-[[ -z "$MAIN_DOWNLOAD_URL" ]] && MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
-
-log "Identified main archive: $MAIN_DOWNLOAD_URL"
-log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 
 # Replace hardcoded Vim versions when using --upstream
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]]; then
@@ -661,12 +767,18 @@ if [[ "$DRY_RUN" == "true" ]]; then
 fi
 
 # 4. Remote Execution
-MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
-DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
-ALL_FILENAMES=()
-for url in "${DOWNLOAD_URLS[@]}"; do
-    ALL_FILENAMES+=("$(basename "$url")")
-done
+if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
+    MAIN_FILENAME="frameworks6"
+    DIRNAME="frameworks6"
+    ALL_FILENAMES=()
+else
+    MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
+    DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
+    ALL_FILENAMES=()
+    for url in "${DOWNLOAD_URLS[@]}"; do
+        ALL_FILENAMES+=("$(basename "$url")")
+    done
+fi
 
 log "Starting remote build for $PACKAGE..."
 
@@ -719,12 +831,17 @@ for f in ${ALL_FILENAMES[*]}; do
 done
 
 # 5. Extract main archive
-echo "Extracting $MAIN_FILENAME..."
-rm -rf "/sources/$DIRNAME"
-mkdir -p "/sources/$DIRNAME"
-tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
+if [ "$FRAMEWORKS_MODE" == "true" ]; then
+    mkdir -p "/sources/$DIRNAME"
+    cd "/sources/$DIRNAME"
+else
+    echo "Extracting $MAIN_FILENAME..."
+    rm -rf "/sources/$DIRNAME"
+    mkdir -p "/sources/$DIRNAME"
+    tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
 
-cd "/sources/$DIRNAME"
+    cd "/sources/$DIRNAME"
+fi
 
 echo "Marking build start time..."
 touch /tmp/build_start_timestamp
