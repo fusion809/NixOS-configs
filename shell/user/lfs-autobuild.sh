@@ -331,7 +331,7 @@ while read -r line; do
 
         # 4. Determine if this block is a test suite or related setup
         # keywords: make/ninja tests, expect scripts, tester user, su to tester, testdir, test_summary
-        if [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary) ]]; then
+        if [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test|all-headless)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary|cd[[:space:]]+t$) ]]; then
             if [[ "$is_critical" == "true" ]]; then
                 # Wrap critical test block in prompt
                 # Note: Remove trailing newline for cleaner injection
