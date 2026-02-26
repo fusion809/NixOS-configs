@@ -409,6 +409,14 @@ if [[ "$PACKAGE" == "gcc" ]] && [[ "$COMMANDS" == *"--enable-languages=c,c++"* ]
     fi
 fi
 
+# 2.8 Ensure LLVM is built with WebAssembly support (required by Firefox / wasm32-wasi)
+if [[ "$PACKAGE" == "llvm" ]] && [[ "$COMMANDS" == *"LLVM_TARGETS_TO_BUILD"* ]]; then
+    if [[ "$COMMANDS" != *"WebAssembly"* ]]; then
+        log "Adding WebAssembly to LLVM_TARGETS_TO_BUILD."
+        COMMANDS=$(echo "$COMMANDS" | sed 's/-D LLVM_TARGETS_TO_BUILD="\([^"]*\)"/-D LLVM_TARGETS_TO_BUILD="\1;WebAssembly"/')
+    fi
+fi
+
 # 3. Resolve Download URLs
 DOWNLOAD_URLS=()
 
