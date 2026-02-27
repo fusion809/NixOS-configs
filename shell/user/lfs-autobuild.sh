@@ -447,17 +447,29 @@ if [[ "$COMMANDS" == *"doxygen"* ]]; then
     ')
 fi
 
-# 2.10 Special handling for KDE frameworks6
+# 2.10 Special handling for KDE frameworks6 and plasma-all
 FRAMEWORKS_MODE=false
-if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
+if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
     FRAMEWORKS_MODE=true
-    log "Enabling special frameworks6 mode."
+    log "Enabling special KDE frameworks/plasma loop mode."
     
     # Remove the /opt/kf6 installation commands as user installs to /usr
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^mv .* /opt/kf6")
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^ln -s.* /opt/kf6")
     
-    if [[ "$INCLUDE_CONFIG" == "true" ]]; then
+    # Ensure KF6_PREFIX and Qt6 PATH are set for plasma
+    if [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
+        if [[ ! "$COMMANDS" =~ "export KF6_PREFIX=/usr" ]]; then
+            COMMANDS="export KF6_PREFIX=/usr
+$COMMANDS"
+        fi
+        if ! echo "$COMMANDS" | grep -q "PATH.*qt6"; then
+            COMMANDS="export PATH=\$PATH:/opt/qt6/bin
+$COMMANDS"
+        fi
+    fi
+
+    if [[ "$INCLUDE_CONFIG" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks") ]]; then
         log "Adding kf6-intro.html configuration for /usr installation..."
         # Note: Depending on BLFS book URL, it could be in /kde/
         KF6_INTRO_URL=$(echo "$PAGE_URL" | sed 's/frameworks6\.html/kf6-intro.html/')
@@ -476,7 +488,7 @@ ${COMMANDS}"
     fi
 
     # Fix the bash subshell and execution
-    log "Converting frameworks6 build loop into a standalone script..."
+    log "Converting build loop into a standalone script..."
     COMMANDS=$(echo "$COMMANDS" | awk '
         BEGIN {
             in_loop = 0
@@ -495,7 +507,7 @@ ${COMMANDS}"
                 if (/export -f as_root/) in_as_root = 0
             } else if (in_loop) {
                 loop_content = loop_content "\n" $0
-                if (/done < frameworks-.*\.md5/) in_loop = 0
+                if (/done < (frameworks|plasma)-.*\.md5/) in_loop = 0
             } else {
                 other_cmds = other_cmds "\n" $0
             }
@@ -768,8 +780,8 @@ fi
 
 # 4. Remote Execution
 if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
-    MAIN_FILENAME="frameworks6"
-    DIRNAME="frameworks6"
+    MAIN_FILENAME="$PACKAGE"
+    DIRNAME="$PACKAGE"
     ALL_FILENAMES=()
 else
     MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
