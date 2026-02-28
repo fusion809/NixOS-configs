@@ -963,6 +963,15 @@ while read -r line; do
 done < "\$NEW_FILES_LIST"
 rm -f "\$NEW_FILES_LIST" /tmp/build_start_timestamp
 
+# Remove old kernel doc directories (e.g. /usr/share/doc/linux-6.1.10 when 6.1.11 installed)
+for doc_dir in /usr/share/doc/linux-*; do
+    [ -d "\$doc_dir" ] || continue
+    if ! [[ "\$doc_dir" -nt /tmp/build_start_timestamp ]] 2>/dev/null; then
+        echo "Removing old kernel doc directory: \$doc_dir"
+        rm -rf "\$doc_dir"
+    fi
+done
+
 echo "Build and installation complete for $PACKAGE"
 cd /sources
 rm -rf "$DIRNAME"
