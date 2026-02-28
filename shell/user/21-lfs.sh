@@ -9,10 +9,17 @@ lfs_autobuild() {
 }
 
 lfs_get_remote_packages() {
+    KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)
+    VIM_VER=$(curl -sL https://github.com/vim/vim/tags | grep -oP 'href="/vim/vim/releases/tag/v\K[0-9.]+' | head -n 1)
+    if [[ -z "$VIM_VER" ]]; then
+        VIM_VER=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | grep -oP '(?<="tag_name": "v)[0-9.]+' | head -n 1)
+    fi
     # LFS packages are in links ending in .tar.* or .zip
     local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
         grep -oP '[a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+\.(tar\.[a-z2]+|zip)' | \
         sed 's/\.tar.*//; s/\.zip//' | \
+        sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" | \
+        sed "s|^vim-[0-9.]*$|vim-${VIM_VER}|g" | \
         sort -u)
 
     # BLFS longindex has package-version in <a> tags or before " -- "
