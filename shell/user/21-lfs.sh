@@ -142,13 +142,12 @@ lfs_check_custom_updates() {
         
         # 2. Get remote version
         remote_ver=""
-        # Try to extract VERSION= line and evaluate it
-        version_line=$(grep -E '^[A-Z_]*VERSION=' "$build_script" | head -n 1)
-        if [ -n "$version_line" ]; then
-            var_name=$(echo "$version_line" | cut -d= -f1)
-            echo "$version_line" > /tmp/eval_ver.sh
+        version_line_num=$(grep -nE '^[A-Z_]*VERSION=' "$build_script" | head -n 1 | cut -d: -f1)
+        if [ -n "$version_line_num" ]; then
+            head -n "$version_line_num" "$build_script" > /tmp/eval_ver.sh
+            var_name=$(grep -E '^[A-Z_]*VERSION=' "$build_script" | head -n 1 | cut -d= -f1)
             echo "echo \$$var_name" >> /tmp/eval_ver.sh
-            remote_ver=$(bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
+            remote_ver=$(cd "$pkg_dir" && bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
             rm -f /tmp/eval_ver.sh
         fi
         
@@ -161,9 +160,20 @@ lfs_check_custom_updates() {
         fi
         
         if [ -n "$remote_ver" ]; then
+            if [ "$local_ver" == "none" ]; then
+                # Also check by directory basename (fallback for packages that registered under dir name)
+                dir_name=$(basename "$pkg_dir")
+                if [ -f "/var/lib/lfs-custom-packages/$dir_name" ]; then
+                    local_ver=$(cat "/var/lib/lfs-custom-packages/$dir_name" 2>/dev/null || echo "none")
+                fi
+            fi
             if [ "$local_ver" != "$remote_ver" ]; then
-                # Assume it's an update if they don't match exactly
-                echo "$pkg_name $local_ver $remote_ver"
+                # Handle short hash: if local is a prefix of remote, treat as same version
+                if [[ "${#local_ver}" -ge 7 && "${#local_ver}" -le 12 && "${remote_ver#$local_ver}" != "$remote_ver" ]]; then
+                    : # same
+                else
+                    echo "$pkg_name $local_ver $remote_ver"
+                fi
             fi
         fi
     done
@@ -400,7 +410,85 @@ for pkg in sorted_pkgs:
     fi
 
     if [[ ${#custom_updates_list[@]} -gt 0 ]]; then
-        echo "Applying custom updates..."
+        echo "Resolving dependencies for custom packages..."
+
+        # Build a dependency-ordered list using the depends=() in each build.sh
+        # We run a remote script that outputs edges "pkg dep" for deps in the update list,
+        # then topologically sort with tsort.
+        local pkg_list_escaped=$(printf '%s\n' "${custom_updates_list[@]}" | paste -sd',')
+        local dep_script=$(cat <<'DEPEOF'
+pkg_list="__PKG_LIST__"
+IFS=',' read -ra updates <<< "$pkg_list"
+
+# Build association: pkg_name -> dir_name for fallback resolution
+declare -A name_to_dir
+
+for build_script in $(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null); do
+    pkg_dir=$(dirname "$build_script")
+    dir_name=$(basename "$pkg_dir")
+    name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
+    if [ -n "$name_line" ]; then
+        pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
+    else
+        pkg_name="$dir_name"
+    fi
+    name_to_dir["$pkg_name"]="$dir_name"
+    name_to_dir["$dir_name"]="$dir_name"
+done
+
+# For each pkg in updates, find its build.sh and read depends=()
+# Output edges: dep pkg (tsort wants "dependency before dependent")
+printed_self=()
+for u in "${updates[@]}"; do
+    # resolve to dir name
+    dir_name="${name_to_dir[$u]:-$u}"
+    build_script=$(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null | grep -E "/${dir_name}/build.sh$" | head -n 1)
+    [ -z "$build_script" ] && echo "$u $u" && continue
+
+    deps_line=$(grep -E '^depends=' "$build_script" | head -n 1)
+    if [ -z "$deps_line" ]; then
+        echo "$u $u"
+        continue
+    fi
+
+    # Parse the array: depends=(a b c) - strip leading key
+    deps_val=$(echo "$deps_line" | sed -E 's/^[a-zA-Z_]+=\(?//' | sed -E 's/\)$//')
+    eval "deps=($deps_val)"
+
+    has_dep_in_list=false
+    for dep in "${deps[@]}"; do
+        # Check if this dep is in the updates list (by name or dir name)
+        for candidate in "${updates[@]}"; do
+            cdir="${name_to_dir[$candidate]:-$candidate}"
+            if [ "$dep" = "$candidate" ] || [ "$dep" = "$cdir" ]; then
+                echo "$dep $u"
+                has_dep_in_list=true
+            fi
+        done
+    done
+    if ! $has_dep_in_list; then
+        echo "$u $u"
+    fi
+done
+DEPEOF
+)
+        dep_script="${dep_script/__PKG_LIST__/$pkg_list_escaped}"
+
+        local sorted_custom
+        sorted_custom=$(ssh_lfs "bash -c '$(echo "$dep_script" | sed "s/'/'\\''/g")'" 2>/dev/null \
+            | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" \
+            | tsort 2>/dev/null)
+
+        if [[ -n "$sorted_custom" ]]; then
+            mapfile -t custom_updates_list <<< "$sorted_custom"
+        fi
+
+        echo "Applying custom updates in dependency order:"
+        for pkg in "${custom_updates_list[@]}"; do
+            echo "  - $pkg"
+        done
+        echo ""
+
         for pkg in "${custom_updates_list[@]}"; do
             if [[ "$dry_run" == "true" ]]; then
                 echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh --dry-run $pkg"

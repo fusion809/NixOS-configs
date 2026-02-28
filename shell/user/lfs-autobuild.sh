@@ -108,11 +108,11 @@ bash build.sh
 # Update registry (needs sudo)
 sudo mkdir -p /var/lib/lfs-custom-packages
 # Try to determine the new version we just installed
-version_line=$(grep -E '^[A-Z_]*VERSION=' build.sh | head -n 1)
 new_ver=""
-if [ -n "$version_line" ]; then
-    var_name=$(echo "$version_line" | cut -d= -f1)
-    echo "$version_line" > /tmp/eval_ver.sh
+version_line_num=$(grep -nE '^[A-Z_]*VERSION=' build.sh | head -n 1 | cut -d: -f1)
+if [ -n "$version_line_num" ]; then
+    head -n "$version_line_num" build.sh > /tmp/eval_ver.sh
+    var_name=$(grep -E '^[A-Z_]*VERSION=' build.sh | head -n 1 | cut -d= -f1)
     echo "echo \$$var_name" >> /tmp/eval_ver.sh
     new_ver=$(bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
     rm -f /tmp/eval_ver.sh
