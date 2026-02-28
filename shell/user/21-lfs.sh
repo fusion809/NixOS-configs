@@ -2,7 +2,7 @@
 # LFS/BLFS update management logic
 
 LFS_DEV_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
-BLFS_SVN_BOOK="https://linuxfromscratch.org/blfs/view/systemd"
+BLFS_DEV_BOOK="https://linuxfromscratch.org/blfs/view/systemd"
 
 lfs_autobuild() {
     "$NIXCFG/shell/user/lfs-autobuild.sh" "$@"
@@ -23,7 +23,7 @@ lfs_get_remote_packages() {
         sort -u)
 
     # BLFS longindex has package-version in <a> tags or before " -- "
-    local blfs_remote=$(curl -s "$BLFS_SVN_BOOK/longindex.html" | tr -d '\r' | \
+    local blfs_remote=$(curl -s "$BLFS_DEV_BOOK/longindex.html" | tr -d '\r' | \
         perl -0777 -ne 'while (/SpiderMonkey:.*?firefox-([0-9.]+)/gs) { print "spidermonkey-$1\n" } while (/>([a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+)<\/a>/gs) { print "$1\n" }' | \
         sed "/[Vv]im-[0-9.]*$/d" | \
         sort -u)
