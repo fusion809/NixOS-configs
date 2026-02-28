@@ -183,12 +183,18 @@ find_package_page() {
 
     if [[ "$SEARCH_BLFS" == "true" ]]; then
         log "Searching for '$pkg' in BLFS index..." >&2
+
+        local search_pkg="$pkg"
+        if [[ "$pkg" =~ ^gst-plugins-(base|good|bad|ugly)$ ]]; then
+            search_pkg="gst10-plugins-${BASH_REMATCH[1]}"
+        fi
+
         # First try exact match (e.g., /pkg.html)
-        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/$pkg\.html)\"/is) { print \$1; exit }")
+        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/${search_pkg}\.html)\"/is) { print \$1; exit }")
         
         # Fallback to partial match
         if [[ -z "$blfs_page" ]]; then
-            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${search_pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$blfs_page" ]]; then
