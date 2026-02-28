@@ -17,8 +17,9 @@ in {
   hyprland = {
     enable = true;
     package =
-      inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland; # Thought using unstable lead to RS3 bugs, but happens even with stable
-    #package = pkgs.hyprland;
+      pkgs.hyprland; # overrideAttrs in overlays.nix injects glaze 7.0.0 so hyprpm
+    # CMake find_package succeeds without network access
+    #package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
   };
   nano = { enable = false; };
   nixvim = {
