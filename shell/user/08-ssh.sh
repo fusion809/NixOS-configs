@@ -143,13 +143,13 @@ function ssh_vm {
         if [ -f "$HOME/.config/vm_pass" ] && nc -z -w 1 "$ip" 22 2>/dev/null; then
             # Use -t to force pseudo-terminal allocation if commands are passed
             # Disable StrictHostKeyChecking to avoid interactive prompts for local/ephemeral VMs
-            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
+            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
         elif [ -f "$HOME/.config/vm_pass" ] && nc -z -w 1 "$ip" 2222 2>/dev/null; then
-            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" -p 2222 "$@"
+            TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" -p 2222 "$@"
         elif nc -z -w 1 "$ip" 22 2>/dev/null; then
-            TERM=xterm-256color ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
+            TERM=xterm-256color ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" "$@"
         else
-            TERM=xterm-256color ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" -p 2222 "$@"
+            TERM=xterm-256color ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "$USER@$ip" -p 2222 "$@"
         fi
     else
         echo "Failed to get IP for $vm_name"
