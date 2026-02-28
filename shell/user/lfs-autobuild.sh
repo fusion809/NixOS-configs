@@ -943,6 +943,23 @@ while read -r line; do
         fi
     fi
 
+    # 3. Kernel boot files
+    if [[ "\$dirname" == "/boot" ]]; then
+        boot_prefix=\$(echo "\$basename" | grep -oE '^(vmlinuz|System\.map|config|initramfs|initrd\.img)')
+        if [ -n "\$boot_prefix" ]; then
+            for candidate in "\$dirname"/"\$boot_prefix"*; do
+                [ -f "\$candidate" ] || continue
+                [ "\$candidate" == "\$line" ] && continue
+                [ -L "\$candidate" ] && continue
+                
+                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
+                    echo "Removing old kernel file: \$candidate"
+                    rm -f "\$candidate"
+                fi
+            done
+        fi
+    fi
+
 done < "\$NEW_FILES_LIST"
 rm -f "\$NEW_FILES_LIST" /tmp/build_start_timestamp
 
