@@ -27,7 +27,8 @@ while read -r local_pkg; do
             higher=$(echo -e "$local_base\n$remote_base" | tr -d '\r' | sort -V | tail -n 1)
             if [[ "$higher" == "$remote_base" ]]; then
                 j+=1;
-                str+=$(printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver")
+                str+=$(printf "%-30s | %-15s | %-15s [UPDATE]" "$name" "$local_ver" "$remote_ver")
+                str+="\n"
             fi
         fi
     fi
@@ -50,7 +51,8 @@ while read -r update_line; do
     if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
     if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
     
-    str+=$(printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver")
+    str+=$(printf "%-30s | %-15s | %-15s [UPDATE]" "$name" "$local_ver" "$remote_ver")
+    str+="\n"
     j+=1;
 done <<< "$CUSTOM_UPDATES"
 
@@ -60,4 +62,8 @@ if [[ $j -gt 0 ]]; then
     startStr+="\n--------------------------------------------------------------------------------\n"
     str="${startStr}$str"
 fi
-echo -e "$str"
+if [[ -z "$str" ]]; then
+    echo "No updates available"
+else
+    echo -e "$str"
+fi
