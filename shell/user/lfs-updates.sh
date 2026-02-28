@@ -5,11 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/21-lfs.sh"
 REMOTE_LIST=$(lfs_get_remote_packages | tr -d '\r')
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
 
-echo "Checking for updates..."
-echo "--------------------------------------------------------------------------------"
-printf "%-30s | %-15s | %-15s\n" "Package" "Local" "Remote"
-echo "--------------------------------------------------------------------------------"
-
+j=0;
 while read -r local_pkg; do
     [[ -z "$local_pkg" ]] && continue
     
@@ -30,7 +26,8 @@ while read -r local_pkg; do
         if [[ "$local_base" != "$remote_base" ]]; then
             higher=$(echo -e "$local_base\n$remote_base" | tr -d '\r' | sort -V | tail -n 1)
             if [[ "$higher" == "$remote_base" ]]; then
-                printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver"
+                j+=1;
+                str+=$(printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver")
             fi
         fi
     fi
@@ -53,5 +50,14 @@ while read -r update_line; do
     if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
     if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
     
-    printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver"
+    str+=$(printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver")
+    j+=1;
 done <<< "$CUSTOM_UPDATES"
+
+if [[ $j -gt 0 ]]; then
+    startStr="--------------------------------------------------------------------------------\n"
+    startStr+=$(printf "%-30s | %-15s | %-15s\n" "Package" "Local" "Remote")
+    startStr+="\n--------------------------------------------------------------------------------\n"
+    str="${startStr}$str"
+fi
+echo -e "$str"
