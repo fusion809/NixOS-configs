@@ -17,7 +17,7 @@
     };
     # use the github shorthand with the tag; this resolves Git refs more reliably
     hyprland.url =
-      "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.54.0";
+      "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.53.3";
     # where 0.52.1 is the hyprland release version
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
@@ -66,6 +66,15 @@
               # Pass inputs to home-manager modules
               extraSpecialArgs = { inherit inputs username; };
             };
+          }
+          {
+            nixpkgs.overlays = [
+              (final: prev: {
+                hyprlandPlugins = prev.hyprlandPlugins // {
+                  hy3 = hy3.packages.x86_64-linux.hy3;
+                };
+              })
+            ];
           }
 
         ];

@@ -17,9 +17,8 @@ in {
   hyprland = {
     enable = true;
     package =
-      pkgs.hyprland; # overrideAttrs in overlays.nix injects glaze 7.0.0 so hyprpm
-    # CMake find_package succeeds without network access
-    #package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+      inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    #package = pkgs.hyprland;
   };
   nano = { enable = false; };
   nixvim = {
