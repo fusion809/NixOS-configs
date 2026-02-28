@@ -19,7 +19,7 @@ lfs_get_remote_packages() {
         grep -oP '[a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+\.(tar\.[a-z2]+|zip)' | \
         sed 's/\.tar.*//; s/\.zip//' | \
         sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" | \
-        sed "s|^vim-[0-9.]*$|vim-${VIM_VER}|g" | \
+        sed "s|^[Vv]im-[0-9.]*$|vim-${VIM_VER}|g" | \
         sort -u)
 
     # BLFS longindex has package-version in <a> tags or before " -- "
