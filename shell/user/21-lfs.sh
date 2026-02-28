@@ -31,10 +31,6 @@ lfs_get_remote_packages() {
 }
 
 lfs_get_local_packages() {
-    # Ensure dependencies are available
-    source "$NIXCFG/shell/user/08-ssh.sh"
-    source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
-    
     ssh_lfs "find /sources/archives -type f ! -name '*.patch*' 2>/dev/null | tr -d '\r'" | \
         sed 's|.*/||; s/\.tar\.[a-z2]\+//; s/\.zip$//; s/\.patch\.[a-z2]\+//; s/\.[a-z2]\+$//; s/-apng$//' | \
         sed 's/^firefox-\([0-9].*esr\.source\)/spidermonkey-\1/' | \
