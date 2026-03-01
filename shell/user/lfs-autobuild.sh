@@ -466,16 +466,18 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^mv .* /opt/kf6")
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^ln -s.* /opt/kf6")
     
-    # Ensure KF6_PREFIX and Qt6 PATH are set for plasma
-    if [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
-        if [[ ! "$COMMANDS" =~ "export KF6_PREFIX=/usr" ]]; then
-            COMMANDS="export KF6_PREFIX=/usr
+    # Ensure KF6_PREFIX, Qt6 PATH, and Qt6 LD_LIBRARY_PATH are set for all KDE packages
+    if [[ ! "$COMMANDS" =~ "export KF6_PREFIX=/usr" ]]; then
+        COMMANDS="export KF6_PREFIX=/usr
 $COMMANDS"
-        fi
-        if ! echo "$COMMANDS" | grep -q "PATH.*qt6"; then
-            COMMANDS="export PATH=\$PATH:/opt/qt6/bin
+    fi
+    if ! echo "$COMMANDS" | grep -q "LD_LIBRARY_PATH.*qt6"; then
+        COMMANDS="export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/qt6/lib
 $COMMANDS"
-        fi
+    fi
+    if ! echo "$COMMANDS" | grep -q "PATH.*qt6"; then
+        COMMANDS="export PATH=\$PATH:/opt/qt6/bin
+$COMMANDS"
     fi
 
     if [[ "$INCLUDE_CONFIG" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks") ]]; then
