@@ -6,6 +6,9 @@
       package = pkgs.qemu_kvm;
       runAsRoot = true;
       swtpm.enable = true;
+      verbatimConfig = ''
+        virtiofsd_path = "${pkgs.virtiofsd}/bin/virtiofsd"
+      '';
     };
   };
   spiceUSBRedirection.enable = true;
