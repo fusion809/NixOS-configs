@@ -84,6 +84,14 @@ fi
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
 error() { echo "[ERROR] $*" >&2; exit 1; }
 
+# Guard against circular dependencies across recursive invocations
+BUILDING_STACK="${BUILDING_STACK:-}"
+if [[ ":${BUILDING_STACK}:" == *":${PACKAGE}:"* ]]; then
+    log "Skipping '$PACKAGE': already in build stack (circular dependency guard)."
+    exit 0
+fi
+export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
+
 # 0. Check for custom package in ~/lfs_packaging
 CUSTOM_BUILD_SH=$(ssh_lfs "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -l -E \"^[A-Z_]*NAME=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
 if [[ -z "$CUSTOM_BUILD_SH" ]]; then
@@ -228,6 +236,55 @@ HTML_CONTENT=$(curl -s "$PAGE_URL")
 
 if [[ -z "$HTML_CONTENT" ]]; then
     error "Empty content from $PAGE_URL"
+fi
+
+# 2.1 Resolve and build required dependencies before this package
+if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
+    log "Extracting required dependencies from page..."
+    REQUIRED_DEPS=$(printf '%s' "$HTML_CONTENT" | perl -0777 -ne '
+        while (/class="required"(.*?)<\/p>/gs) {
+            my $block = $1;
+            while ($block =~ /href="([^">]+\.html)"/g) {
+                my $href = $1;
+                $href =~ s|.*/||; $href =~ s|\.html$||;
+                print "$href\n";
+            }
+        }
+    ' | sort -u)
+
+    if [[ -n "$REQUIRED_DEPS" ]]; then
+        log "Required deps: $(echo "$REQUIRED_DEPS" | tr '\n' ' ')"
+        while read -r dep; do
+            [[ -z "$dep" ]] && continue
+            # Skip if already being built (circular dep guard)
+            if [[ ":${BUILDING_STACK}:" == *":${dep}:"* ]]; then
+                log "Skipping dep '$dep': already in build stack."
+                continue
+            fi
+            # Check if the dependency is installed on the VM
+            dep_status=$(ssh_lfs "
+                dep='$dep'
+                pkg-config --exists \"\$dep\" 2>/dev/null && echo installed && exit 0
+                command -v \"\$dep\" >/dev/null 2>&1 && echo installed && exit 0
+                dep_u=\$(echo \"\$dep\" | tr '-' '_')
+                ls /usr/lib/lib\${dep_u}*.so* /usr/lib/lib\${dep}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+                ls /sources/archives/\${dep}-*.tar.* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+                echo not_installed
+            " 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r' | tail -n1)
+
+            if [[ "$dep_status" != "installed" ]]; then
+                log "Required dep '$dep' not found — building it first..."
+                DRY_FLAG=""; [[ "$DRY_RUN" == "true" ]] && DRY_FLAG="--dry-run"
+                RESOLVE_DEPS=true BUILDING_STACK="$BUILDING_STACK" \
+                    "$0" $DRY_FLAG "$dep" \
+                    || log "[WARNING] Failed to build dep '$dep'. Continuing with main build..."
+            else
+                log "Dependency '$dep' already installed."
+            fi
+        done <<< "$REQUIRED_DEPS"
+    else
+        log "No required dependencies found on page."
+    fi
 fi
 
 get_commands() {
