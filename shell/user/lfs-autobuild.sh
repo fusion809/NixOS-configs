@@ -268,7 +268,7 @@ if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
                 command -v \"\$dep\" >/dev/null 2>&1 && echo installed && exit 0
                 dep_u=\$(echo \"\$dep\" | tr '-' '_')
                 ls /usr/lib/lib\${dep_u}*.so* /usr/lib/lib\${dep}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-                ls /sources/archives/\${dep}-*.tar.* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+                find /sources/archives -name "\${dep}-*.tar.*" 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
                 echo not_installed
             " 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r' | tail -n1)
 
