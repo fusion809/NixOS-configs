@@ -8,6 +8,7 @@ with pkgs; [
   brave
   discord
   filezilla
+  firefox
   gimp
   google-chrome
   inkscape
