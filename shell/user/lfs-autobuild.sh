@@ -927,7 +927,13 @@ echo "Marking build start time..."
 touch /tmp/build_start_timestamp
 
 echo "Running build commands..."
-$COMMANDS
+cat << 'BUILD_EOF' > /tmp/build-cmds.sh
+#!/bin/bash
+set -e
+BUILD_EOF
+echo "$(echo "$COMMANDS" | base64)" | base64 -d >> /tmp/build-cmds.sh
+chmod +x /tmp/build-cmds.sh
+/tmp/build-cmds.sh
 
 echo "Performing post-install cleanup of old versions..."
 # Find files installed by this build (newer than timestamp)
