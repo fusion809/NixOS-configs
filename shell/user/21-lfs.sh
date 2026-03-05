@@ -14,6 +14,12 @@ lfs_get_remote_packages() {
     if [[ -z "$VIM_VER" ]]; then
         VIM_VER=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | grep -oP '(?<="tag_name": "v)[0-9.]+' | head -n 1)
     fi
+    JDK_MAJOR=$(curl -s https://jdk.java.net/ | grep -oP 'href="\./\K[0-9]+' | sort -rn | head -n 1)
+    if [[ -n "$JDK_MAJOR" ]]; then
+        JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | grep -oP 'https://download.java.net/java/.*?/openjdk-[0-9]+.*?_linux-x64_bin.tar.gz' | head -n 1)
+        JDK_VER=$(echo "$JDK_TARBALL" | grep -oP 'openjdk-\K[0-9a-zA-Z\+\.\-]+(?=_linux-x64_bin)')
+        JDK_REMOTE="openjdk-${JDK_VER}_linux-x64_bin"
+    fi
     # LFS packages are in links ending in .tar.* or .zip
     local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
         grep -oP '[a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+\.(tar\.[a-z2]+|zip)' | \
@@ -27,7 +33,7 @@ lfs_get_remote_packages() {
         perl -0777 -ne 'while (/SpiderMonkey:.*?firefox-([0-9.]+)/gs) { print "spidermonkey-$1\n" } while (/>([a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+)<\/a>/gs) { print "$1\n" }' | \
         sed "/[Vv]im-[0-9.]*$/d" | \
         sort -u)
-    echo -e "${lfs_remote}\n${blfs_remote}" | sort -u | tr -d '\r'
+    echo -e "${lfs_remote}\n${blfs_remote}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r'
 }
 
 lfs_get_local_packages() {

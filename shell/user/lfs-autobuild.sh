@@ -223,6 +223,35 @@ find_package_page() {
     return 1
 }
 
+SKIP_HTML_EXTRACTION=false
+if [[ "$PACKAGE" == "openjdk" ]]; then
+    log "Special case for OpenJDK: Fetching the latest JDK release from jdk.java.net..."
+    JDK_MAJOR=$(curl -s https://jdk.java.net/ | grep -oP 'href="\./\K[0-9]+' | sort -rn | head -n 1)
+    if [[ -z "$JDK_MAJOR" ]]; then
+        error "Could not determine latest JDK major version."
+    fi
+    JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | grep -oP 'https://download.java.net/java/.*?/openjdk-[0-9]+.*?_linux-x64_bin.tar.gz' | head -n 1)
+    if [[ -z "$JDK_TARBALL" ]]; then
+        error "Could not determine latest JDK tarball URL."
+    fi
+    DOWNLOAD_URLS=("$JDK_TARBALL")
+    PKG_BASE="openjdk"
+    MAIN_DOWNLOAD_URL="$JDK_TARBALL"
+    SKIP_HTML_EXTRACTION=true
+
+    COMMANDS="
+install -vdm755 /opt/jdk
+rm -rf /opt/jdk/*
+cp -Rv * /opt/jdk/
+chown -R root:root /opt/jdk
+cat > /etc/profile.d/java.sh << \"EOF\"
+export JAVA_HOME=/opt/jdk
+export PATH=\\\$PATH:\\\$JAVA_HOME/bin
+EOF
+"
+fi
+
+if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
 PAGE_URL=$(find_package_page "$PACKAGE")
 if [[ -z "$PAGE_URL" ]]; then
     error "Could not find page for package '$PACKAGE'"
@@ -596,8 +625,12 @@ ${COMMANDS}"
     ')
 fi
 
+fi # End SKIP_HTML_EXTRACTION block
+
 # 3. Resolve Download URLs
-DOWNLOAD_URLS=()
+if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
+    DOWNLOAD_URLS=()
+fi
 
 if [[ "$UPSTREAM" == "true" ]]; then
     if [[ "$PACKAGE" == "linux" ]]; then
@@ -918,7 +951,11 @@ else
     echo "Extracting $MAIN_FILENAME..."
     rm -rf "/sources/$DIRNAME"
     mkdir -p "/sources/$DIRNAME"
-    tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
+    if [ "$PACKAGE" == "openjdk" ]; then
+        tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
+    else
+        tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
+    fi
 
     cd "/sources/$DIRNAME"
 fi
