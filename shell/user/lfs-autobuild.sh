@@ -119,11 +119,11 @@ sudo mkdir -p /var/lib/lfs-custom-packages
 new_ver=""
 version_line_num=$(grep -nE '^[A-Z_]*VERSION=' build.sh | head -n 1 | cut -d: -f1)
 if [ -n "$version_line_num" ]; then
-    head -n "$version_line_num" build.sh > /tmp/eval_ver.sh
+    head -n "$version_line_num" build.sh > /tmp/eval_ver_${TARGET_PKG}.sh
     var_name=$(grep -E '^[A-Z_]*VERSION=' build.sh | head -n 1 | cut -d= -f1)
-    echo "echo \$$var_name" >> /tmp/eval_ver.sh
-    new_ver=$(bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
-    rm -f /tmp/eval_ver.sh
+    echo "echo \$$var_name" >> /tmp/eval_ver_${TARGET_PKG}.sh
+    new_ver=$(bash /tmp/eval_ver_${TARGET_PKG}.sh 2>/dev/null | tail -n 1)
+    rm -f /tmp/eval_ver_${TARGET_PKG}.sh
 fi
 
 if [ -z "$new_ver" ]; then
@@ -924,16 +924,16 @@ else
 fi
 
 echo "Marking build start time..."
-touch /tmp/build_start_timestamp
+touch /tmp/build_start_timestamp_${PACKAGE}
 
 echo "Running build commands..."
-cat << 'BUILD_EOF' > /tmp/build-cmds.sh
+cat << 'BUILD_EOF' > /tmp/build-cmds-${PACKAGE}.sh
 #!/bin/bash
 set -e
 BUILD_EOF
-echo "$(echo "$COMMANDS" | base64)" | base64 -d >> /tmp/build-cmds.sh
-chmod +x /tmp/build-cmds.sh
-/tmp/build-cmds.sh
+echo "$(echo "$COMMANDS" | base64)" | base64 -d >> /tmp/build-cmds-${PACKAGE}.sh
+chmod +x /tmp/build-cmds-${PACKAGE}.sh
+/tmp/build-cmds-${PACKAGE}.sh
 
 echo "Performing post-install cleanup of old versions..."
 # Find files installed by this build (newer than timestamp)
@@ -948,7 +948,7 @@ done
 
 NEW_FILES_LIST=\$(mktemp)
 # limit find to xdev to avoid traversing mounts, exclude the list file itself
-find \$EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp ! -name "\$(basename "\$NEW_FILES_LIST")" > "\$NEW_FILES_LIST" 2>/dev/null || true
+find \$EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} ! -name "\$(basename "\$NEW_FILES_LIST")" > "\$NEW_FILES_LIST" 2>/dev/null || true
 
 while read -r line; do
     [ -e "\$line" ] || continue
@@ -967,7 +967,7 @@ while read -r line; do
                 [ "\$candidate" == "\$line" ] && continue
                 
                 # Check timestamp: if older than build start, it's a candidate for deletion
-                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
+                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
                     echo "Removing old library version: \$candidate"
                     rm -f "\$candidate"
                 fi
@@ -984,7 +984,7 @@ while read -r line; do
                 [ "\$candidate" == "\$line" ] && continue
                 cbase=\$(basename "\$candidate")
                 if [[ "\$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
+                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
                           echo "Removing old version directory: \$candidate"
                           rm -rf "\$candidate"
                      fi
@@ -999,7 +999,7 @@ while read -r line; do
                 [ "\$candidate" == "\$line" ] && continue
                 cbase=\$(basename "\$candidate")
                 if [[ "\$cbase" =~ ^\$prefix[0-9]+(\.[0-9]+)*$ ]]; then
-                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
+                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
                           echo "Removing old version directory: \$candidate"
                           rm -rf "\$candidate"
                      fi
@@ -1017,7 +1017,7 @@ while read -r line; do
                 [ "\$candidate" == "\$line" ] && continue
                 [ -L "\$candidate" ] && continue
                 
-                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp ]]; then
+                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
                     echo "Removing old kernel file: \$candidate"
                     rm -f "\$candidate"
                 fi
@@ -1026,12 +1026,12 @@ while read -r line; do
     fi
 
 done < "\$NEW_FILES_LIST"
-rm -f "\$NEW_FILES_LIST" /tmp/build_start_timestamp
+rm -f "\$NEW_FILES_LIST" /tmp/build_start_timestamp_${PACKAGE}
 
 # Remove old kernel doc directories (e.g. /usr/share/doc/linux-6.1.10 when 6.1.11 installed)
 for doc_dir in /usr/share/doc/linux-*; do
     [ -d "\$doc_dir" ] || continue
-    if ! [[ "\$doc_dir" -nt /tmp/build_start_timestamp ]] 2>/dev/null; then
+    if ! [[ "\$doc_dir" -nt /tmp/build_start_timestamp_${PACKAGE} ]] 2>/dev/null; then
         echo "Removing old kernel doc directory: \$doc_dir"
         rm -rf "\$doc_dir"
     fi
