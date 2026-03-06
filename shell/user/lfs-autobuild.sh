@@ -718,8 +718,14 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE Plasma version: $UPSTREAM_VERSION"
         fi
+    elif [[ "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ ]]; then
+        log "Fetching latest upstream KDE Application (Gear) version from KDE mirrors..."
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/release-service/ | grep -oP 'href="\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n 1)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream KDE App version: $UPSTREAM_VERSION"
+        fi
     else
-        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, firefox, frameworks, and plasma)"
+        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, firefox, frameworks, plasma, and KDE apps)"
     fi
 fi
 
@@ -931,6 +937,31 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == 
         log "Replacing LFS KDE Plasma version $LFS_VERSION with $UPSTREAM_VERSION in commands..."
         COMMANDS="${COMMANDS//plasma-$LFS_VERSION/plasma-$UPSTREAM_VERSION}"
         COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+    fi
+fi
+
+if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from the identified main download URL (e.g. konsole-24.12.2.tar.xz)
+    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | grep -oP "${PKG_BASE}-\K[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | grep -oP '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    fi
+    if [[ -z "$LFS_VERSION" ]]; then
+        # Fallback
+        LFS_VERSION=$(echo "$COMMANDS" | grep -oP '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    fi
+
+    if [[ -n "$LFS_VERSION" ]]; then
+        log "Replacing LFS KDE App version $LFS_VERSION with $UPSTREAM_VERSION in commands and URLs..."
+        COMMANDS="${COMMANDS//release-service\/$LFS_VERSION/release-service\/$UPSTREAM_VERSION}"
+        COMMANDS="${COMMANDS//${PACKAGE}-$LFS_VERSION/${PACKAGE}-$UPSTREAM_VERSION}"
+        # Also replace standalone instances of the version number just in case
+        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+        
+        # Manually update the download URLs as well since they were parsed before this step
+        for i in "${!DOWNLOAD_URLS[@]}"; do
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
+        done
     fi
 fi
 
