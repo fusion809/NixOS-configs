@@ -77,15 +77,7 @@ for LIB in $save_usrlib; do
 done
 
 online_usrbin="bash find strip"
-online_usrlib="libbfd-2.45.1.so
-               libsframe.so.2.0.0
-               libhistory.so.8.3
-               libncursesw.so.6.6
-               libm.so.6
-               libreadline.so.8.3
-               libz.so.1.3.1
-               libzstd.so.1.5.7
-               $(cd /usr/lib; find libnss*.so* -type f)"
+online_usrlib="$(cd /usr/lib; find libbfd-*.so libsframe.so* libhistory.so* libncursesw.so* libm.so* libreadline.so* libz.so* libzstd.so* libnss*.so* -type f 2>/dev/null)"
 
 for BIN in $online_usrbin; do
     cp /usr/bin/$BIN /tmp/$BIN

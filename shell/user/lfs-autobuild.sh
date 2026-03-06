@@ -291,15 +291,31 @@ if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
                 continue
             fi
             # Check if the dependency is installed on the VM
-            dep_status=$(ssh_lfs "
-                dep='$dep'
-                pkg-config --exists \"\$dep\" 2>/dev/null && echo installed && exit 0
-                command -v \"\$dep\" >/dev/null 2>&1 && echo installed && exit 0
-                dep_u=\$(echo \"\$dep\" | tr '-' '_')
-                ls /usr/lib/lib\${dep_u}*.so* /usr/lib/lib\${dep}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-                find /sources/archives -name "\${dep}-*.tar.*" 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-                echo not_installed
-            " 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r' | tail -n1)
+            # Write check to a temp file to avoid heredoc-in-$() syntax issues
+            _dep_check_script="/tmp/dep_check_${dep//[^a-zA-Z0-9]/_}.sh"
+            cat > "$_dep_check_script" <<DEPCHECK
+dep='$dep'
+pkg-config --exists "\$dep" 2>/dev/null && echo installed && exit 0
+command -v "\$dep" >/dev/null 2>&1 && echo installed && exit 0
+dep_u=\$(echo "\$dep" | tr '-' '_')
+ls /usr/lib/lib\${dep_u}*.so* /usr/lib/lib\${dep}*.so* /usr/lib/\${dep}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+pkg-config --exists "\${dep}-1" "\${dep}-0" 2>/dev/null && echo installed && exit 0
+dep_base=\$(echo "\$dep" | sed -E 's/[0-9]+\$//')
+dep_ver=\$(echo "\$dep" | grep -oE '[0-9]+\$')
+if [ -n "\$dep_ver" ]; then
+    pkg-config --exists "\${dep_base}+-\${dep_ver}.0" "\${dep_base}-\${dep_ver}.0" 2>/dev/null && echo installed && exit 0
+    ls /usr/lib/lib\${dep_base}-\${dep_ver}.so* /usr/lib/lib\${dep_base}\${dep_ver}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+fi
+ls -d /usr/include/\${dep} /usr/include/\${dep_u} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+dep_nodash=\$(echo "\$dep" | tr -d '-')
+find /usr/lib/cmake -maxdepth 1 -iname "\${dep}" -o -iname "\${dep_nodash}" -o -iname "*\${dep_nodash}*" 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+ls -d /usr/share/\${dep} /usr/share/icons/\${dep} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+ls -d /usr/share/doc/\${dep}-* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+echo not_installed
+DEPCHECK
+            dep_status=$(ssh_lfs "bash -s" < "$_dep_check_script" 2>/dev/null | grep -vE '^(Warning:|Connection|IP|SSH|grep:)' | tr -d '\r' | tail -n1)
+            rm -f "$_dep_check_script"
+
 
             if [[ "$dep_status" != "installed" ]]; then
                 log "Required dep '$dep' not found — building it first..."
@@ -551,6 +567,22 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
     # Remove the /opt/kf6 installation commands as user installs to /usr
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^mv .* /opt/kf6")
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^ln -s.* /opt/kf6")
+
+    # Remove ALL ln commands that create self-symlinks when KF6_PREFIX=/usr.
+    # These appear as: ln -sfv /usr/share/foo $KF6_PREFIX/share (same dir),
+    # or: ln -sfv /usr/share/xsessions/foo.desktop ./foo.desktop (relative same file).
+    # Strip any ln where the source starts with /usr/ and destination is $KF6_PREFIX/...
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^ln -sfv /usr/(share|lib|etc)/")
+    # Also remove literal commands linking $KF6_PREFIX/share/... into /usr/share/...
+    # Avoid sed N which breaks on large multi-line COMMANDS strings containing heredocs
+    COMMANDS=$(echo "$COMMANDS" | grep -v '\[ -e plasma.*\.desktop \] ||')
+    COMMANDS=$(echo "$COMMANDS" | grep -v 'ln -sfv .*plasma.*\.desktop')
+    COMMANDS=$(echo "$COMMANDS" | grep -v '\[ -e kde-portals\.conf \] ||')
+    COMMANDS=$(echo "$COMMANDS" | grep -v 'ln -sfv \$KF6_PREFIX/share/xdg-desktop-portal/kde-portals\.conf')
+    COMMANDS=$(echo "$COMMANDS" | grep -v '\[ -e kde\.portal \] ||')
+    COMMANDS=$(echo "$COMMANDS" | grep -v 'ln -sfv \$KF6_PREFIX/share/xdg-desktop-portal/portals/kde\.portal')
+    COMMANDS=$(echo "$COMMANDS" | grep -v "^dbus-launch")
+
     
     # Ensure KF6_PREFIX, Qt6 PATH, and Qt6 LD_LIBRARY_PATH are set for all KDE packages
     if [[ ! "$COMMANDS" =~ "export KF6_PREFIX=/usr" ]]; then
@@ -584,12 +616,17 @@ $COMMANDS"
 ${COMMANDS}"
     fi
 
+    # Strip desktop session testing commands (startx etc) which break SSH builds
+    COMMANDS=$(echo "$COMMANDS" | sed '/cat > ~\/.xinitrc << "EOF"/,/EOF/d')
+    COMMANDS=$(echo "$COMMANDS" | grep -v "^startx")
+
     # Fix the bash subshell and execution
     log "Converting build loop into a standalone script..."
     COMMANDS=$(echo "$COMMANDS" | awk '
         BEGIN {
             in_loop = 0
             in_as_root = 0
+            in_md5 = 0
             as_root_content = ""
             other_cmds = ""
             loop_content = ""
@@ -597,6 +634,7 @@ ${COMMANDS}"
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
         /^bash -e/ { next }
         /^exit/ { next }
+        /^cat > (frameworks|plasma)-.*\.md5 << "EOF"/ { in_md5 = 1; other_cmds = other_cmds "\n" $0; next }
         /^while read -r line; do/ { in_loop = 1; loop_content = $0; next }
         {
             if (in_as_root) {
@@ -605,13 +643,18 @@ ${COMMANDS}"
             } else if (in_loop) {
                 loop_content = loop_content "\n" $0
                 if (/done < (frameworks|plasma)-.*\.md5/) in_loop = 0
+            } else if (in_md5) {
+                other_cmds = other_cmds "\n" $0
+                if (/^EOF$/) in_md5 = 0
             } else {
                 other_cmds = other_cmds "\n" $0
             }
         }
         END {
             sub(/^\n/, "", other_cmds)
+            print "cd /sources/archives"
             print other_cmds
+            print "cd /sources/archives"
             print "cat > build-frameworks.sh << \"EOF\""
             print "#!/bin/bash"
             print "set -e"
@@ -663,8 +706,20 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             DOWNLOAD_URLS+=("https://archive.mozilla.org/pub/firefox/releases/${UPSTREAM_VERSION}/source/firefox-${UPSTREAM_VERSION}.source.tar.xz")
         fi
+    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
+        log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | grep -oP 'href="\K[0-9]+\.[0-9]+' | sort -V | tail -n 1)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream KDE Frameworks version: $UPSTREAM_VERSION"
+        fi
+    elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
+        log "Fetching latest upstream KDE Plasma version from KDE mirrors..."
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/plasma/ | grep -oP 'href="\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n 1)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream KDE Plasma version: $UPSTREAM_VERSION"
+        fi
     else
-        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, and firefox)"
+        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, firefox, frameworks, and plasma)"
     fi
 fi
 
@@ -855,6 +910,37 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "firefox" && -n "$UPSTREAM_VERSION"
         COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
     fi
 fi
+
+if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6") && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from commands (e.g. frameworks-6.23.0.md5)
+    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'frameworks-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    if [[ -n "$LFS_VERSION" ]]; then
+        log "Replacing LFS KDE Frameworks version $LFS_VERSION with $UPSTREAM_VERSION.0 in commands..."
+        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2)
+        # Fix URL: replace only the version number in the path (avoid double-slash)
+        COMMANDS=$(echo "$COMMANDS" | sed "s|/stable/frameworks/${LFS_MAJOR_MINOR}/|/stable/frameworks/${UPSTREAM_VERSION}/|g")
+        COMMANDS="${COMMANDS//frameworks-$LFS_VERSION/frameworks-${UPSTREAM_VERSION}.0}"
+        COMMANDS="${COMMANDS//$LFS_VERSION/${UPSTREAM_VERSION}.0}"
+    fi
+fi
+
+if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all") && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from commands (e.g. plasma-6.6.1.md5)
+    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'plasma-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    if [[ -n "$LFS_VERSION" ]]; then
+        log "Replacing LFS KDE Plasma version $LFS_VERSION with $UPSTREAM_VERSION in commands..."
+        COMMANDS="${COMMANDS//plasma-$LFS_VERSION/plasma-$UPSTREAM_VERSION}"
+        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+    fi
+fi
+
+# For plasma/frameworks, prevent wget -r from re-downloading already-fetched archives
+# when it revisits directory sort-order links (?C=N;O=A etc)
+if [[ "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all" || \
+      "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6" ]]; then
+    COMMANDS=$(echo "$COMMANDS" | sed 's/wget -r /wget -r --no-clobber /g')
+fi
+
 
 if [[ "$PACKAGE" == "vim" ]]; then
     log "Removing /usr/bin/vi symlink creation..."
@@ -1079,6 +1165,9 @@ cd /sources
 rm -rf "$DIRNAME"
 EOF
 )
+
+echo "REMOTE_SCRIPT length: ${#REMOTE_SCRIPT}"
+echo "$REMOTE_SCRIPT" > /tmp/remote_script_debug.sh
 
 # Run with sudo to ensure permissions for /usr, /etc, etc.
 ssh_lfs "sudo bash -c '$(echo "$REMOTE_SCRIPT" | sed "s/'/'\\\\''/g")'"
