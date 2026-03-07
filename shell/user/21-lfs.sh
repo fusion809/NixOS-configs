@@ -16,7 +16,42 @@ lfs_autobuild() {
 }
 
 
+lfs_get_upstream_version() {
+    local pkg="$1"
+    case "$pkg" in
+        rustc)
+            curl -s https://static.rust-lang.org/dist/channel-rust-stable.toml | perl -ne 'if (/^\[pkg\.rust\]/) { $in=1 } elsif ($in && /^version\s*=\s*"([0-9.]+)/) { print $1; exit }'
+            ;;
+        llvm)
+            curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases/latest | perl -nle 'while (m{"tag_name":\s*"llvmorg-([0-9.]+)"}g) { print $1 }' | head -n 1
+            ;;
+        libuv)
+            curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
+            ;;
+        vim)
+            curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{(?<="tag_name": "v)[0-9.]+}g) { print $& }' | head -n 1
+            ;;
+        firefox)
+            curl -s https://product-details.mozilla.org/1.0/firefox_versions.json | perl -nle 'while (m{(?<="LATEST_FIREFOX_VERSION": ")[0-9.]+}g) { print $& }'
+            ;;
+        frameworks|frameworks6)
+            curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
+            ;;
+        plasma|plasma-all)
+            curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
+            ;;
+        konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)
+            curl -sL https://download.kde.org/stable/release-service/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
+            ;;
+    esac
+}
+
 lfs_get_remote_packages() {
+    local upstream=false
+    if [[ "$1" == "--upstream" ]]; then
+        upstream=true
+    fi
+
     KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)
     VIM_VER=$(curl -sL https://github.com/vim/vim/tags | grep -oP 'href="/vim/vim/releases/tag/v\K[0-9.]+' | head -n 1)
     if [[ -z "$VIM_VER" ]]; then
@@ -30,7 +65,7 @@ lfs_get_remote_packages() {
     fi
     # LFS packages are in links ending in .tar.* or .zip
     local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
-        grep -oP '[a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+\.(tar\.[a-z2]+|zip)' | \
+        grep -oP '[a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-]*\.(tar\.[a-z2]+|zip)' | \
         sed 's/\.tar.*//; s/\.zip//' | \
         sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" | \
         sed "s|^[Vv]im-[0-9.]*$|vim-${VIM_VER}|g" | \
@@ -41,7 +76,23 @@ lfs_get_remote_packages() {
         perl -0777 -ne 'while (/SpiderMonkey:.*?firefox-([0-9.]+)/gs) { print "spidermonkey-$1\n" } while (/>([a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+)<\/a>/gs) { print "$1\n" }' | \
         sed "/[Vv]im-[0-9.]*$/d" | \
         sort -u)
-    echo -e "${lfs_remote}\n${blfs_remote}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r'
+    
+    local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
+
+    if [[ "$upstream" == "true" ]]; then
+        local upstream_list="rustc llvm libuv vim firefox frameworks frameworks6 plasma konsole dolphin dolphin-plugins gwenview libkdcraw okular kdenlive"
+        for p in $upstream_list; do
+            local uv=$(lfs_get_upstream_version "$p")
+            if [[ -n "$uv" ]]; then
+                # Remove existing (case-insensitive) and add upstream
+                all_pkgs=$(echo "$all_pkgs" | grep -vEi "^${p}-([0-9])")
+                all_pkgs=$(echo -e "${all_pkgs}\n${p}-${uv}")
+            fi
+        done
+        all_pkgs=$(echo "$all_pkgs" | sort -u)
+    fi
+
+    echo "$all_pkgs" | grep -v "^$"
 }
 
 lfs_get_local_packages() {
@@ -190,14 +241,19 @@ EOF
 
 lfs_update_all() {
     local dry_run=false
-    if [[ "$1" == "--dry-run" ]]; then
-        dry_run=true
-    fi
+    local upstream=false
+    while [[ "$1" == "-"* ]]; do
+        case "$1" in
+            --dry-run) dry_run=true ;;
+            --upstream) upstream=true ;;
+        esac
+        shift
+    done
 
 
 
-    echo "Fetching remote package list from Development books..."
-    local remote_list=$(lfs_get_remote_packages)
+    echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
+    local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream"))
     echo "Fetching local package list from VM..."
     local local_list=$(lfs_get_local_packages)
 
@@ -398,12 +454,16 @@ for pkg in sorted_pkgs:
     echo ""
 
     for pkg in "${updates[@]}"; do
+        local build_args=()
+        [[ "$dry_run" == "true" ]] && build_args+=("--dry-run")
+        [[ "$upstream" == "true" ]] && build_args+=("--upstream")
+        
         if [[ "$dry_run" == "true" ]]; then
-            echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh --dry-run $pkg"
-            "$NIXCFG/shell/user/lfs-autobuild.sh" --dry-run "$pkg"
+            echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh ${build_args[*]} $pkg"
+            "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
         else
             echo "Building $pkg..."
-            "$NIXCFG/shell/user/lfs-autobuild.sh" "$pkg"
+            "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
         fi
     done
     fi
@@ -496,20 +556,17 @@ DEPEOF
         echo ""
 
         for pkg in "${custom_updates_list[@]}"; do
+            local build_args=()
+            [[ "$dry_run" == "true" ]] && build_args+=("--dry-run")
+            [[ "$upstream" == "true" ]] && build_args+=("--upstream")
+
             if [[ "$dry_run" == "true" ]]; then
-                echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh --dry-run $pkg"
-                "$NIXCFG/shell/user/lfs-autobuild.sh" --dry-run "$pkg"
+                echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh ${build_args[*]} $pkg"
+                "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
             else
                 echo "Building custom package $pkg..."
-                "$NIXCFG/shell/user/lfs-autobuild.sh" "$pkg"
+                "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
             fi
         done
-    fi
-
-    # Run stripping commands once at the end if any packages were built
-    if [[ "$dry_run" == "true" ]]; then
-        lfs_strip --dry-run
-    else
-        lfs_strip
     fi
 }

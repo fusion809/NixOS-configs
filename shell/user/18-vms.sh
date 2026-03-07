@@ -389,5 +389,5 @@ function redox {
 }
 
 function lfs_updates {
-	$NIXCFG/shell/user/lfs-updates.sh
+	$NIXCFG/shell/user/lfs-updates.sh "$@"
 }

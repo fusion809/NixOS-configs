@@ -2,7 +2,12 @@
 source "$(dirname "${BASH_SOURCE[0]}")/21-lfs.sh"
 
 # Main
-REMOTE_LIST=$(lfs_get_remote_packages | tr -d '\r')
+upstream=false
+if [[ "$1" == "--upstream" ]]; then
+    upstream=true
+fi
+
+REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream") | tr -d '\r')
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
 
 j=0;

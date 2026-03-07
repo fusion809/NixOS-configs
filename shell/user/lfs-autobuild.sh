@@ -4,12 +4,14 @@
 # Ensure NIXCFG is set
 export NIXCFG="${NIXCFG:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
-# Source dependencies (only available on host)
+# Source SSH helpers if available (only on host)
+HOST_MODE=false
 if [ -f "$NIXCFG/shell/user/08-ssh.sh" ]; then
     source "$NIXCFG/shell/user/08-ssh.sh"
     source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+    HOST_MODE=true
 else
-    # Running inside the VM (piped via bash -s from host).
+    # Running inside the VM (piped via bash -s from host or uploaded).
     # ssh_lfs is a no-op passthrough: just run the command locally.
     ssh_lfs() {
         local cmd="$1"
@@ -97,6 +99,15 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Define a target runner that works locally or via SSH
+target_run() {
+    if [[ "$HOST_MODE" == "true" ]]; then
+        ssh_lfs "$@"
+    else
+        bash -c "$@"
+    fi
+}
+
 if [[ -z "$PACKAGE" ]]; then
     usage
 fi
@@ -113,9 +124,9 @@ fi
 export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
 # 0. Check for custom package in ~/lfs_packaging
-CUSTOM_BUILD_SH=$(ssh_lfs "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -l -E \"^[A-Z_]*NAME=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
+CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -l -E \"^[A-Z_]*NAME=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
 if [[ -z "$CUSTOM_BUILD_SH" ]]; then
-    CUSTOM_BUILD_SH=$(ssh_lfs "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -E \"/$PACKAGE/build.sh$\" | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
+    CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -E \"/$PACKAGE/build.sh$\" | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
 fi
 if [[ -n "$CUSTOM_BUILD_SH" ]]; then
     CUSTOM_DIR=$(dirname "$CUSTOM_BUILD_SH")
@@ -205,9 +216,9 @@ find_package_page() {
         # First try exact match (e.g., /pkg.html)
         local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/$pkg\.html)\"/is) { print \$1; exit }")
         
-        # Fallback to partial match
+        # Fallback to loose match but only at boundaries (e.g. openssl vs nss)
         if [[ -z "$lfs_page" ]]; then
-            lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+            lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*[^a-z]${pkg}\.html|[^\"]*\/$pkg[^a-z0-9][^\"]*\.html)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$lfs_page" ]]; then
@@ -236,9 +247,9 @@ find_package_page() {
         # First try exact match (e.g., /pkg.html)
         local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/${search_pkg}\.html)\"/is) { print \$1; exit }")
         
-        # Fallback to partial match
+        # Fallback to match at boundaries
         if [[ -z "$blfs_page" ]]; then
-            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*${search_pkg}[^\"]*\.html)\"/is) { print \$1; exit }")
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/[^a-z0-9]${search_pkg}[^\"]*\.html|[^\"]*\/$search_pkg[^a-z0-9][^\"]*\.html)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$blfs_page" ]]; then
@@ -351,7 +362,7 @@ ls -d /usr/share/\${dep} /usr/share/icons/\${dep} 2>/dev/null | head -n1 | grep 
 ls -d /usr/share/doc/\${dep}-* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
 echo not_installed
 DEPCHECK
-            dep_status=$(ssh_lfs "bash -s" < "$_dep_check_script" 2>/dev/null | grep -vE '^(Warning:|Connection|IP|SSH|grep:)' | tr -d '\r' | tail -n1)
+            dep_status=$(target_run "bash -s" < "$_dep_check_script" 2>/dev/null | grep -vE '^(Warning:|Connection|IP|SSH|grep:)' | tr -d '\r' | tail -n1)
             rm -f "$_dep_check_script"
 
 
@@ -521,11 +532,13 @@ fi
             [[ "$_eff_type" == "root" ]] && COMMANDS+="# __BEGIN_ROOT__"$'\n'
             [[ "$_eff_type" == "user" ]] && COMMANDS+="# __BEGIN_USER__"$'\n'
             while read -r bline; do
-                if [[ "$bline" =~ ^(make|./configure[[:space:]]&&[[:space:]]make) ]] && \
+                if [[ "$bline" =~ ^(make([[:space:]]|$)|\./configure[[:space:]]&&[[:space:]]make([[:space:]]|$)) ]] && \
                    [[ ! "$bline" =~ "install" ]] && \
                    [[ ! "$bline" =~ "headers" ]] && \
                    [[ ! "$bline" =~ "-j" ]]; then
-                    bline=$(echo "$bline" | sed 's/make/make -j$(nproc)/')
+                    bline=$(echo "$bline" | sed -E 's/\bmake\b/make -j$(nproc)/g')
+                elif [[ "$bline" =~ ^ninja([[:space:]]|$) ]] && [[ ! "$bline" =~ "-j" ]]; then
+                    bline=$(echo "$bline" | sed -E 's/\bninja\b/ninja -j$(nproc)/g')
                 fi
                 COMMANDS+="$bline"$'\n'
             done <<< "$CURRENT_BLOCK"
@@ -585,7 +598,7 @@ fi
 
 # 2.8 Respect existing Fortran support for GCC
 if [[ "$PACKAGE" == "gcc" ]] && [[ "$COMMANDS" == *"--enable-languages=c,c++"* ]]; then
-    if ssh_lfs "command -v gfortran" &>/dev/null; then
+    if target_run "command -v gfortran" &>/dev/null; then
         log "gfortran detected on target system. Adding Fortran support to GCC build."
         COMMANDS="${COMMANDS/--enable-languages=c,c++/--enable-languages=c,c++,fortran}"
     fi
@@ -599,11 +612,34 @@ if [[ "$PACKAGE" == "llvm" ]] && [[ "$COMMANDS" == *"LLVM_TARGETS_TO_BUILD"* ]];
     fi
 fi
 
-# 2.9 Wrap doxygen commands
-if [[ "$COMMANDS" == *"doxygen"* ]]; then
-    log "Wrapping doxygen commands with a PATH check."
+# 2.9 Check for documentation tools and disable if missing
+DOC_TOOLS="doxygen gi-docgen db2html xmlto xsltproc sphinx-build"
+DOC_PATTERNS="-D (docs?|documentation)=(enabled|true)|--enable-(gtk-doc|doxygen-docs|docs)"
+ENABLE_DOC_BUILD=true
+
+if [[ "$COMMANDS" =~ $DOC_PATTERNS ]]; then
+    for tool in $DOC_TOOLS; do
+        if [[ "$COMMANDS" =~ $tool ]] || [[ "$COMMANDS" =~ (docs?|documentation) ]]; then
+            if ! target_run "command -v $tool" &>/dev/null; then
+                log "[WARNING] Documentation tool '$tool' not found on target. Disabling documentation building."
+                ENABLE_DOC_BUILD=false
+                break
+            fi
+        fi
+    done
+fi
+
+if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
+    # Disable docs in meson, cmake, and autotools
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D (docs?|documentation)=enabled/-D \1=disabled/g')
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D (docs?|documentation)=true/-D \1=false/g')
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/--enable-(gtk-doc|doxygen-docs|docs)/--disable-\1/g')
+    # Handle meson configure specifically
+    COMMANDS=$(echo "$COMMANDS" | sed 's/meson configure -D docs=enabled/meson configure -D docs=disabled/g')
+    COMMANDS=$(echo "$COMMANDS" | sed 's/meson configure -D documentation=true/meson configure -D documentation=false/g')
+    # Wrap standalone doxygen/gi-docgen calls
     COMMANDS=$(echo "$COMMANDS" | awk '
-        /^doxygen/ { print "if command -v doxygen &>/dev/null; then"; print; print "fi"; next }
+        /^(doxygen|gi-docgen)/ { print "if command -v " $1 " &>/dev/null; then"; print; print "fi"; next }
         { print }
     ')
 fi
@@ -956,8 +992,15 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
         # Include if it matches package base name (case insensitive)
         # or if it's explicitly a patch on a package page
         # Special case: spidermonkey often uses firefox source
-        if grep -Eiq "${PKG_BASE}" <<< "$(basename "$link")" || \
-           ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "firefox" <<< "$(basename "$link")"); then
+        link_base=$(basename "$link")
+        match_pattern="${PKG_BASE}"
+        # For versioned names like glib2, match 'glib' as well
+        if [[ "$PKG_BASE" =~ [0-9]$ ]]; then
+            match_pattern="${PKG_BASE}|${PKG_BASE%[0-9]}"
+        fi
+
+        if grep -Eiq "${match_pattern}" <<< "$link_base" || \
+           ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "firefox" <<< "$link_base"); then
             DOWNLOAD_URLS+=("$link")
         fi
     done
@@ -1273,15 +1316,19 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" && -n "$UPSTREAM_VERSION" ]]
         # Neutralize redundant extraction/installation/patching steps that are already in the monorepo
         # We replace them with 'true ' to keep the '&&' command chain intact and valid.
         # We use perl for multi-line matching and broad pattern recognition.
-        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "
+        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe '
             s/tar -xf \.\.\/[^ \n]*?(llvm-cmake|llvm-third-party|clang-|compiler-rt-|clang-tools-extra-)[^ \n]*.*?(?=\s*&&|\n|\$)/true /gs;
             s/mv (tools|projects)\/(clang|compiler-rt)-[^ \n]* (tools|projects)\/(clang|compiler-rt)(?=\s*&&|\n|\$)/true /gs;
             # Catch multi-line sed with backslashes specifically for LLVM path adjustments
-            # Matches 'sed' followed by anything containing '../cmake' or '../third-party' up to '-i [file]'
+            # Matches '\''sed'\'' followed by anything containing '\''../cmake'\'' or '\''../third-party'\'' up to '\''-i [file]'\''
             s/sed .*?(\.\.\/cmake|\.\.\/third-party|LLVM_COMMON_CMAKE_UTILS|LLVM_THIRD_PARTY_DIR).*?-i [^ \n]+(?=\s*&&|\n|\$)/true /gs;
-            # Fix component paths for monorepo: e.g. ../projects/compiler-rt -> ../compiler-rt
-            s/\.\.\/(projects|tools)\/(compiler-rt|clang|lld|polly|openmp|libcxx|libcxxabi|libunwind|clang-tools-extra)/..\/\2/g;
-        ")
+            # Fix component paths for monorepo: e.g. ../projects/compiler-rt -> ../../compiler-rt (since we build in llvm/build)
+            s/\.\.\/(projects|tools)\/(compiler-rt|clang|lld|polly|openmp|libcxx|libcxxabi|libunwind|clang-tools-extra)/..\/..\/\2/g;
+            # Enable projects in cmake if not already present
+            s/cmake (?!.*LLVM_ENABLE_PROJECTS)/cmake -D LLVM_ENABLE_PROJECTS="clang;compiler-rt" /g;
+            # Add -j$(nproc) to ninja commands if not already present
+            s/ninja(?!.*-j)/ninja -j\$(nproc)/g;
+        ')
 
         # Filter out 404-prone individual component URLs if we have the monorepo
         log "Filtering redundant LLVM component URLs..."
@@ -1384,10 +1431,13 @@ _gen_build_script() {
         fi
     }
 
+    local current_rel_dir="."
     while IFS= read -r line; do
         if [[ "$line" == "# __BEGIN_ROOT__" ]]; then
             _flush_user
             in_section="root"
+            # Ensure ROOT blocks start in the current relative directory
+            echo "cd \"/sources/${dirname}/${current_rel_dir}\" || cd \"/sources/${dirname}\""
         elif [[ "$line" == "# __END_ROOT__" ]]; then
             in_section=""
         elif [[ "$line" == "# __BEGIN_USER__" ]]; then
@@ -1397,8 +1447,42 @@ _gen_build_script() {
             in_section=""
         elif [[ "$in_section" == "root" ]]; then
             echo "$line"
+            # Track CWD in root blocks too
+            if [[ "$line" =~ \bcd[[:space:]]+([^[:space:]&;\|\(\)\>\!\?]+) ]]; then
+                target="${BASH_REMATCH[1]}"
+                if [[ "$target" == ".." ]]; then
+                    current_rel_dir=$(dirname "$current_rel_dir")
+                elif [[ "$target" == "." ]]; then
+                    :
+                elif [[ "$target" == /* ]]; then
+                    if [[ "$target" == "/sources/${dirname}"* ]]; then
+                         current_rel_dir="${target#/sources/${dirname}/}"
+                    fi
+                else
+                    [[ "$current_rel_dir" == "." ]] && current_rel_dir=""
+                    current_rel_dir="${current_rel_dir}/${target}"
+                    current_rel_dir="${current_rel_dir#/}" # strip leading slash
+                fi
+            fi
         else
             user_lines+=("$line")
+            # Track CWD in user lines to propagate to subsequent blocks
+            if [[ "$line" =~ \bcd[[:space:]]+([^[:space:]&;\|\(\)\>\!\?]+) ]]; then
+                 target="${BASH_REMATCH[1]}"
+                 if [[ "$target" == ".." ]]; then
+                     current_rel_dir=$(dirname "$current_rel_dir")
+                 elif [[ "$target" == "." ]]; then
+                     :
+                 elif [[ "$target" == /* ]]; then
+                     if [[ "$target" == "/sources/${dirname}"* ]]; then
+                          current_rel_dir="${target#/sources/${dirname}/}"
+                     fi
+                 else
+                     [[ "$current_rel_dir" == "." ]] && current_rel_dir=""
+                     current_rel_dir="${current_rel_dir}/${target}"
+                     current_rel_dir="${current_rel_dir#/}" # strip leading slash
+                 fi
+            fi
         fi
     done <<< "$COMMANDS"
     _flush_user
@@ -1445,40 +1529,65 @@ log "Starting remote build for $PACKAGE..."
 # Generate the Privilege-Separated build script locally
 BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER")
 
-# Prepare the build script content to run on the guest
-REMOTE_SCRIPT=$(cat <<EOF
+# Generate the Privilege-Separated build script locally by appending to the file directly for maximum robustness
+RS_FILE="/tmp/remote_script_${PACKAGE}.sh"
+rm -f "$RS_FILE"
+{
+  # 1. Inject static variables from host safely
+  printf 'PACKAGE="%s"\n' "$PACKAGE"
+  printf 'MAIN_FILENAME="%s"\n' "$MAIN_FILENAME"
+  printf 'DIRNAME="%s"\n' "$DIRNAME"
+  printf 'GEN_DIRNAME="%s"\n' "$GEN_DIRNAME"
+  printf 'NORMAL_USER="%s"\n' "$NORMAL_USER"
+  printf 'FRAMEWORKS_MODE="%s"\n' "$FRAMEWORKS_MODE"
+  printf 'XORG_MULTI_MODE="%s"\n' "$XORG_MULTI_MODE"
+  # Inject BS_B64 from a temporary file to avoid shell argument limits
+  printf '%s' "$BUILD_SCRIPT_LOCAL" | base64 -w 0 > /tmp/bs_b64.txt
+  printf 'BS_B64="'
+  cat /tmp/bs_b64.txt
+  printf '"\n'
+  rm -f /tmp/bs_b64.txt
+
+  # 2. Inject arrays safely using declare -p
+  declare -p DOWNLOAD_URLS ALL_FILENAMES
+
+  # 3. Append the main logic using a quoted heredoc
+  cat <<'REMOTE_EOF'
 set -e
 mkdir -p /sources/archives
 cd /sources/archives
 
 # 1. Download all files
-$(for url in "${DOWNLOAD_URLS[@]}"; do
+for url in "${DOWNLOAD_URLS[@]}"; do
     fname=$(basename "$url")
     if [[ "$fname" == *".patch"* ]]; then
         # Resilient download for patches
-        echo "if [ ! -s '$fname' ]; then rm -f '$fname'; echo 'Downloading $fname...'; wget '$url' || echo '[WARNING] Failed to download $fname'; fi"
+        if [ ! -s "$fname" ]; then rm -f "$fname"; echo "Downloading $fname..."; wget "$url" || echo "[WARNING] Failed to download $fname"; fi
     else
-        echo "if [ ! -s '$fname' ]; then rm -f '$fname'; echo 'Downloading $fname...'; wget '$url'; fi"
+        if [ ! -s "$fname" ]; then rm -f "$fname"; echo "Downloading $fname..."; wget "$url"; fi
     fi
-done)
+done
+
+chown -R "${NORMAL_USER}" /sources/archives
+chmod -R a+rX /sources/archives
 
 # 2. Cleanup old versions of the main package
 echo "Cleaning up old versions..."
-PKG_PREFIX=\$(echo "$MAIN_FILENAME" | sed 's/[-_]\?[0-9].*//')
-PKG_NAME_PREFIX=\$(echo "$PACKAGE" | sed 's/[0-9]*$//')
-if [ -n "\$PKG_PREFIX" ] || [ -n "\$PKG_NAME_PREFIX" ]; then
+PKG_PREFIX=$(echo "$MAIN_FILENAME" | sed 's/[-_]\?[0-9].*//')
+PKG_NAME_PREFIX=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
+if [ -n "$PKG_PREFIX" ] || [ -n "$PKG_NAME_PREFIX" ]; then
     for f in *; do
-        [ -e "\$f" ] || continue
+        [ -e "$f" ] || continue
         # Skip files we just downloaded
         skip=false
-        for df in ${ALL_FILENAMES[*]}; do [[ "\$f" == "\$df" ]] && skip=true && break; done
-        [[ "\$skip" == "true" ]] && continue
+        for df in "${ALL_FILENAMES[@]}"; do [[ "$f" == "$df" ]] && skip=true && break; done
+        [[ "$skip" == "true" ]] && continue
         
         # Match archive prefix or package name prefix
-        if ([[ -n "\$PKG_PREFIX" ]] && [[ "\$f" =~ ^\$PKG_PREFIX[-_]?[0-9] ]]) || \
-           ([[ -n "\$PKG_NAME_PREFIX" ]] && [[ "\$f" =~ ^\$PKG_NAME_PREFIX[-_]?[0-9] ]]); then
-            echo "Removing old version: \$f"
-            rm "\$f"
+        if ([[ -n "$PKG_PREFIX" ]] && [[ "$f" =~ ^$PKG_PREFIX[-_]?[0-9] ]]) || \
+           ([[ -n "$PKG_NAME_PREFIX" ]] && [[ "$f" =~ ^$PKG_NAME_PREFIX[-_]?[0-9] ]]); then
+            echo "Removing old version: $f"
+            rm "$f"
         fi
     done
 fi
@@ -1487,9 +1596,10 @@ fi
 find /sources -maxdepth 1 -type l -delete
 
 # 4. Symlink all downloaded files to /sources/ for easy access (except the main one if extracted)
-for f in ${ALL_FILENAMES[*]}; do
-    [ "\$f" == "$MAIN_FILENAME" ] && continue
-    ln -sf "/sources/archives/\$f" "/sources/\$f"
+for f in "${ALL_FILENAMES[@]}"; do
+    [ "$f" == "$MAIN_FILENAME" ] && continue
+    ln -sf "/sources/archives/$f" "/sources/$f"
+    chown -h "${NORMAL_USER}" "/sources/$f"
 done
 
 # 5. Extract main archive
@@ -1502,6 +1612,8 @@ else
     rm -rf "/sources/$DIRNAME"
     mkdir -p "/sources/$DIRNAME"
     tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
+    # Ensure recursive ownership immediately after extraction
+    chown -R "${NORMAL_USER}" "/sources/$DIRNAME"
     cd "/sources/$GEN_DIRNAME"
 fi
 
@@ -1509,113 +1621,118 @@ echo "Marking build start time..."
 touch /tmp/build_start_timestamp_${PACKAGE}
 
 echo "Running build commands (user blocks as ${NORMAL_USER}, root blocks as root)..."
-echo "$(echo "$BUILD_SCRIPT_LOCAL" | base64)" | base64 -d > /tmp/build-cmds-${PACKAGE}.sh
-chmod +x /tmp/build-cmds-${PACKAGE}.sh
-# Run as a regular script (not sudo bash) - su calls inside handle privilege separation
-bash /tmp/build-cmds-${PACKAGE}.sh
-
+# The build script is injected via an environment variable on the guest
+# to avoid quoting issues with base64 embedding inside the remote script.
+if [ -n "$BS_B64" ]; then
+    echo "$BS_B64" | base64 -d > /tmp/build-cmds-${PACKAGE}.sh
+    chmod +x /tmp/build-cmds-${PACKAGE}.sh
+    bash /tmp/build-cmds-${PACKAGE}.sh
+else
+     echo "[ERROR] BUILD_SCRIPT content (BS_B64) not found on guest."
+     exit 1
+fi
 
 echo "Performing post-install cleanup of old versions..."
 # Find files installed by this build (newer than timestamp)
-# Limit search to common system directories to avoid scanning /home, /sources, etc.
 SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
 EXISTING_DIRS=""
-for d in \$SEARCH_DIRS; do
-    [ -d "\$d" ] && EXISTING_DIRS="\$EXISTING_DIRS \$d"
+for d in $SEARCH_DIRS; do
+    [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"
 done
 
-NEW_FILES_LIST=\$(mktemp)
-# limit find to xdev to avoid traversing mounts, exclude the list file itself
-find \$EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} ! -name "\$(basename "\$NEW_FILES_LIST")" > "\$NEW_FILES_LIST" 2>/dev/null || true
+NEW_FILES_LIST=$(mktemp)
+find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} ! -name "$(basename "$NEW_FILES_LIST")" > "$NEW_FILES_LIST" 2>/dev/null || true
 
 while read -r line; do
-    [ -e "\$line" ] || continue
-    dirname=\$(dirname "\$line")
-    basename=\$(basename "\$line")
+    [ -e "$line" ] || continue
+    dirname=$(dirname "$line")
+    basename=$(basename "$line")
 
-    # 1. Shared Libraries: libfoo.so.1.2.3 -> remove libfoo.so.1.2.2
-    if [[ "\$basename" =~ \.so\.[0-9]+ ]]; then
-        # Extract major version prefix (e.g., libfoo.so.1)
-        major_prefix=\$(echo "\$basename" | grep -oE '^.*\.so\.[0-9]+')
-        if [ -n "\$major_prefix" ]; then
-            # Look for other files starting with this prefix
-            for candidate in "\$dirname"/"\$major_prefix"*; do
-                [ -f "\$candidate" ] && [ "\$candidate" != "\$line" ] || continue
-                
-                # Check timestamp: if older than build start, it's a candidate for deletion
-                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                    echo "Removing old library version: \$candidate"
-                    rm -f "\$candidate"
+    if [[ "$basename" =~ \.so\.[0-9]+ ]]; then
+        major_prefix=$(echo "$basename" | grep -oE '^.*\.so\.[0-9]+')
+        if [ -n "$major_prefix" ]; then
+            for candidate in "$dirname"/"$major_prefix"*; do
+                [ -f "$candidate" ] && [ "$candidate" != "$line" ] || continue
+                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                    echo "Removing old library version: $candidate"
+                    rm -f "$candidate"
                 fi
             done
         fi
     fi
 
-    # 2. Versioned Directories
-    if [ -d "\$line" ]; then
-        # Pure version dirs: 1.2.3
-        if [[ "\$basename" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-            for candidate in "\$dirname"/*; do
-                [ -d "\$candidate" ] && [ "\$candidate" != "\$line" ] || continue
-                cbase=\$(basename "\$candidate")
-                if [[ "\$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]] && ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                     echo "Removing old version directory: \$candidate"
-                     rm -rf "\$candidate"
+    if [ -d "$line" ]; then
+        if [[ "$basename" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            for candidate in "$dirname"/*; do
+                [ -d "$candidate" ] && [ "$candidate" != "$line" ] || continue
+                cbase=$(basename "$candidate")
+                if [[ "$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]] && ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                     echo "Removing old version directory: $candidate"
+                     rm -rf "$candidate"
                 fi
             done
-        # Name+Version dirs: vim91
-        elif [[ "\$basename" =~ ^[a-zA-Z]+[0-9]+(\.[0-9]+)*$ ]]; then
-             # Extract alpha part
-             prefix=\$(echo "\$basename" | sed -E 's/([a-zA-Z]+).*/\1/')
-             for candidate in "\$dirname"/"\$prefix"*; do
-                [ -d "\$candidate" ] && [ "\$candidate" != "\$line" ] || continue
-                cbase=\$(basename "\$candidate")
-                if [[ "\$cbase" =~ ^\$prefix[0-9]+(\.[0-9]+)*$ ]] && ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                     echo "Removing old version directory: \$candidate"
-                     rm -rf "\$candidate"
+        elif [[ "$basename" =~ ^[a-zA-Z]+[0-9]+(\.[0-9]+)*$ ]]; then
+             prefix=$(echo "$basename" | sed -E 's/([a-zA-Z]+).*/\1/')
+             for candidate in "$dirname"/"$prefix"*; do
+                [ -d "$candidate" ] && [ "$candidate" != "$line" ] || continue
+                cbase=$(basename "$candidate")
+                if [[ "$cbase" =~ ^$prefix[0-9]+(\.[0-9]+)*$ ]] && ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                     echo "Removing old version directory: $candidate"
+                     rm -rf "$candidate"
                 fi
              done
         fi
     fi
 
-    # 3. Kernel boot files
-    if [[ "\$dirname" == "/boot" ]]; then
-        boot_prefix=\$(echo "\$basename" | grep -oE '^(vmlinuz|System\.map|config|initramfs|initrd\.img)')
-        if [ -n "\$boot_prefix" ]; then
-            for candidate in "\$dirname"/"\$boot_prefix"*; do
-                [ -f "\$candidate" ] && [ "\$candidate" != "\$line" ] && ! [ -L "\$candidate" ] || continue
-                
-                if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                    echo "Removing old kernel file: \$candidate"
-                    rm -f "\$candidate"
+    if [[ "$dirname" == "/boot" ]]; then
+        boot_prefix=$(echo "$basename" | grep -oE '^(vmlinuz|System\.map|config|initramfs|initrd\.img)')
+        if [ -n "$boot_prefix" ]; then
+            for candidate in "$dirname"/"$boot_prefix"*; do
+                [ -f "$candidate" ] && [ "$candidate" != "$line" ] && ! [ -L "$candidate" ] || continue
+                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                    echo "Removing old kernel file: $candidate"
+                    rm -f "$candidate"
                 fi
             done
         fi
     fi
+done < "$NEW_FILES_LIST"
+rm -f "$NEW_FILES_LIST" /tmp/build_start_timestamp_${PACKAGE}
 
-done < "\$NEW_FILES_LIST"
-rm -f "\$NEW_FILES_LIST" /tmp/build_start_timestamp_${PACKAGE}
-
-# Remove old kernel doc directories (e.g. /usr/share/doc/linux-6.1.10 when 6.1.11 installed)
 for doc_dir in /usr/share/doc/linux-*; do
-    [ -d "\$doc_dir" ] || continue
-    if ! [[ "\$doc_dir" -nt /tmp/build_start_timestamp_${PACKAGE} ]] 2>/dev/null; then
-        echo "Removing old kernel doc directory: \$doc_dir"
-        rm -rf "\$doc_dir"
+    [ -d "$doc_dir" ] || continue
+    if ! [[ "$doc_dir" -nt /tmp/build_start_timestamp_${PACKAGE} ]] 2>/dev/null; then
+        echo "Removing old kernel doc directory: $doc_dir"
+        rm -rf "$doc_dir"
     fi
 done
 
 echo "Build and installation complete for $PACKAGE"
 cd /sources
 rm -rf "$GEN_DIRNAME"
-EOF
-)
+REMOTE_EOF
+} > "$RS_FILE"
 
-echo "REMOTE_SCRIPT length: ${#REMOTE_SCRIPT}"
-echo "$REMOTE_SCRIPT" > /tmp/remote_script_debug.sh
+# (REMOTE SCRIPT is already generated at /tmp/remote_script_${PACKAGE}.sh)
 
-# Run with sudo to ensure permissions for /usr, /etc, etc.
-ssh_lfs "sudo bash -c '$(echo "$REMOTE_SCRIPT" | sed "s/'/'\\\\''/g")'"
+# If running on host (identified by HOST_MODE), transfer and run on guest
+if [[ "$HOST_MODE" == "true" ]]; then
+    log "Transferring build script to remote VM..."
+    if ! cp_to_vm "Linux From Scratch" /tmp/remote_script_${PACKAGE}.sh /tmp/remote_script_${PACKAGE}.sh; then
+        error "Failed to transfer build script to remote VM."
+    fi
+    log "Executing remote build script..."
+    ssh_lfs "sudo bash /tmp/remote_script_${PACKAGE}.sh"
+    CODE=$?
+    ssh_lfs "rm -f /tmp/remote_script_${PACKAGE}.sh"
+    if [[ $CODE -ne 0 ]]; then
+        error "Remote build script failed for $PACKAGE."
+    fi
+else
+    # Running on guest already (piped)
+    sudo bash /tmp/remote_script_${PACKAGE}.sh
+fi
+rm -f /tmp/remote_script_${PACKAGE}.sh
 
 if [[ "$STRIP" == "true" ]]; then
     if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
