@@ -1132,9 +1132,9 @@ $(for url in "${DOWNLOAD_URLS[@]}"; do
     fname=$(basename "$url")
     if [[ "$fname" == *".patch"* ]]; then
         # Resilient download for patches
-        echo "if [ ! -f '$fname' ]; then echo 'Downloading $fname...'; wget '$url' || echo '[WARNING] Failed to download $fname'; fi"
+        echo "if [ ! -s '$fname' ]; then rm -f '$fname'; echo 'Downloading $fname...'; wget '$url' || echo '[WARNING] Failed to download $fname'; fi"
     else
-        echo "if [ ! -f '$fname' ]; then echo 'Downloading $fname...'; wget '$url'; fi"
+        echo "if [ ! -s '$fname' ]; then rm -f '$fname'; echo 'Downloading $fname...'; wget '$url'; fi"
     fi
 done)
 
