@@ -5,8 +5,16 @@ LFS_DEV_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_DEV_BOOK="https://linuxfromscratch.org/blfs/view/systemd"
 
 lfs_autobuild() {
-    "$NIXCFG/shell/user/lfs-autobuild.sh" "$@"
+    source "$NIXCFG/shell/user/08-ssh.sh"
+    source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+    # Sync the latest host script to the VM, then execute it there.
+    # This ensures the VM always uses the host's current version,
+    # and also makes lfs_autobuild available natively in the VM's zsh session.
+    ssh_lfs "cat > ~/.lfs_autobuild.sh && chmod +x ~/.lfs_autobuild.sh" \
+        < "$NIXCFG/shell/user/lfs-autobuild.sh"
+    ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")"
 }
+
 
 lfs_get_remote_packages() {
     KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)

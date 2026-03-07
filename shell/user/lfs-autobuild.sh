@@ -4,51 +4,28 @@
 # Ensure NIXCFG is set
 export NIXCFG="${NIXCFG:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
-# 1. Behave as a sourced library if sourced (ZSH or Bash)
-_is_sourced() {
-    if [ -n "$ZSH_VERSION" ]; then
-        case $ZSH_EVAL_CONTEXT in *:file) return 0;; esac
-    else
-        case ${0##*/} in bash|-bash|sh|-sh) return 0;; esac
-        [ "${BASH_SOURCE[0]}" != "$0" ] && return 0
-    fi
-    return 1
-}
-
-if _is_sourced; then
-    lfs_autobuild() {
-        bash ~/.lfs_autobuild.sh "$@"
-    }
-    return 0
-fi
-
-# 2. Host Proxy & Sync: If we're natively on the host, deploy to VM and execute there
-if [ -f "$NIXCFG/shell/user/08-ssh.sh" ] && [ -z "$IN_LFS_VM" ] && [ "$HOSTNAME" != "lfs-kvm" ]; then
+# Source dependencies (only available on host)
+if [ -f "$NIXCFG/shell/user/08-ssh.sh" ]; then
     source "$NIXCFG/shell/user/08-ssh.sh"
     source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
-
-    # Deploy self to VM
-    cat "${BASH_SOURCE[0]}" | ssh_lfs "cat > ~/.lfs_autobuild.sh && chmod +x ~/.lfs_autobuild.sh"
-    
-    # Also sync 21-lfs.sh so the strip function works locally
-    if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
-        cat "$NIXCFG/shell/user/21-lfs.sh" | ssh_lfs "cat > ~/.21-lfs.sh"
-    fi
-
-    # Pass execution to the VM copy!
-    ssh_lfs "IN_LFS_VM=1 bash ~/.lfs_autobuild.sh $(printf "%q " "$@")"
-    exit $?
+else
+    # Running inside the VM (piped via bash -s from host).
+    # ssh_lfs is a no-op passthrough: just run the command locally.
+    ssh_lfs() {
+        local cmd="$1"
+        shift
+        case "$cmd" in
+            "bash -s")
+                # stdin-redirect form: ssh_lfs "bash -s" < script
+                bash -s "$@"
+                ;;
+            *)
+                # eval form: ssh_lfs "cmd args"
+                eval "$cmd" "$@"
+                ;;
+        esac
+    }
 fi
-
-# 3. Native VM Execution (This part runs only inside the VM)
-# Mock ssh_lfs since we are running natively locally
-ssh_lfs() {
-    if [ "$1" = "bash -s" ]; then
-        bash -s
-    else
-        eval "$@"
-    fi
-}
 
 LFS_BOOK_DEFAULT="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_BOOK_DEFAULT="https://linuxfromscratch.org/blfs/view/systemd"
@@ -182,7 +159,7 @@ if [ -z "$new_ver" ]; then
 fi
 
 if [ -z "$new_ver" ] && grep -q "git clone" build.sh; then
-    repo_url=$(grep -oP 'git clone \K[^ ]+' build.sh | head -n 1)
+    repo_url=$(perl -nle 'while (m{git clone \K[^ ]+}g) { print $& }' build.sh | head -n 1)
     if [ -n "$repo_url" ]; then
         new_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
     fi
@@ -272,11 +249,11 @@ find_package_page() {
 SKIP_HTML_EXTRACTION=false
 if [[ "$PACKAGE" == "openjdk" ]]; then
     log "Special case for OpenJDK: Fetching the latest JDK release from jdk.java.net..."
-    JDK_MAJOR=$(curl -s https://jdk.java.net/ | grep -oP 'href="\./\K[0-9]+' | sort -rn | head -n 1)
+    JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href="\./\K[0-9]+}g) { print $& }' | sort -rn | head -n 1)
     if [[ -z "$JDK_MAJOR" ]]; then
         error "Could not determine latest JDK major version."
     fi
-    JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | grep -oP 'https://download.java.net/java/.*?/openjdk-[0-9]+.*?_linux-x64_bin.tar.gz' | head -n 1)
+    JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | perl -nle 'while (m{https://download.java.net/java/.*?/openjdk-[0-9]+.*?_linux-x64_bin\.tar\.gz}g) { print $& }' | head -n 1)
     if [[ -z "$JDK_TARBALL" ]]; then
         error "Could not determine latest JDK tarball URL."
     fi
@@ -380,10 +357,11 @@ fi
 
 get_commands() {
     local html="$1"
-    # Extract blocks and clean them individually
+    # Extract blocks and clean them individually, preserving root vs userinput class
     printf '%s' "$html" | awk '
         BEGIN { IGNORECASE=1 }
-        /<pre [^>]*class="(userinput|root)"[^>]*>/ { in_block=1; print "___BLOCK_START___" }
+        /<pre [^>]*class="root"[^>]*>/ { in_block=1; print "___BLOCK_START_ROOT___" }
+        /<pre [^>]*class="userinput"[^>]*>/ { in_block=1; print "___BLOCK_START_USER___" }
         in_block { print }
         /<\/pre>/ { in_block=0; print "___BLOCK_END___" }
     ' | perl -0777 -pe 's/<code class="literal">.*?<\/code>//gs' | \
@@ -424,17 +402,30 @@ fi
 
 COMMANDS=""
 CURRENT_BLOCK=""
+CURRENT_BLOCK_TYPE="user"
 configure_seen=false
 while read -r line; do
-    if [[ "$line" == "___BLOCK_START___" ]]; then
+    if [[ "$line" == "___BLOCK_START_ROOT___" ]]; then
         CURRENT_BLOCK=""
+        CURRENT_BLOCK_TYPE="root"
+        continue
+    elif [[ "$line" == "___BLOCK_START_USER___" ]]; then
+        CURRENT_BLOCK=""
+        CURRENT_BLOCK_TYPE="user"
         continue
     elif [[ "$line" == "___BLOCK_END___" ]]; then
         [[ -z "$CURRENT_BLOCK" ]] && continue
+
+        # Determine effective type: explicit root, or heuristic for userinput blocks
+        _eff_type="$CURRENT_BLOCK_TYPE"
+        if [[ "$_eff_type" == "user" ]]; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+(install|uninstall)|ninja[[:space:]]+(install|uninstall)|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]]+-[^ ]*[[:space:]]+.*/usr|ln[[:space:]]+-s[^[:space:]]*[[:space:]].*[[:space:]]*/usr|rm[[:space:]]+-rf?[[:space:]]+/usr|cp[[:space:]].*[[:space:]]+/usr)' <<< "$CURRENT_BLOCK"; then
+                _eff_type="root"
+            fi
+        fi
         
         # 1. Block Blacklist (mainly for glibc)
         if [[ "$PACKAGE" == "glibc" ]]; then
-            # Using grep -qi for robust case-insensitive matching
             if grep -qiE "(nscd|gcc[[:space:]]+-print-libgcc-file-name|localedef|localedata/install-locales|nsswitch\.conf|ZONEINFO|tzselect|localtime|ld\.so\.conf)" <<< "$CURRENT_BLOCK"; then
                 log "Skipping unnecessary glibc configuration/maintenance block." >&2
                 continue
@@ -442,8 +433,6 @@ while read -r line; do
         fi
         
         # 2. Skip duplicate configure blocks (BLFS shows alternatives)
-        # Keep only the first ./configure block encountered
-        # Note: Match optionally indented ./configure
         if [[ "$CURRENT_BLOCK" =~ [[:space:]]*\./configure ]]; then
             if [[ "$configure_seen" == "true" ]]; then
                 log "Skipping duplicate configure block (alternative build method)." >&2
@@ -465,35 +454,29 @@ while read -r line; do
         fi
 
         # 5. Skip OpenSSH configuration blocks
-        # But preserve blocks containing 'make install'
         if [[ "$PACKAGE" == "openssh" ]]; then
             if [[ ! "$CURRENT_BLOCK" =~ "make install" ]] && grep -qE "(sshd_config|ssh-keygen|ssh-copy-id)" <<< "$CURRENT_BLOCK"; then
                 log "Skipping OpenSSH configuration block." >&2
                 continue
             fi
-            # Skip install-sshd (configuration step)
             if [[ "$CURRENT_BLOCK" =~ "make install-sshd" ]]; then
                 log "Skipping OpenSSH install-sshd block." >&2
                 continue
             fi
         fi
 
-        
-        # 3. Skip post-installation configuration blocks
-        # These are blocks that create config files in /etc/ or /var/
+        # 6. Skip post-installation configuration blocks
         if [[ "$INCLUDE_CONFIG" == "false" ]] && grep -qE "^cat[[:space:]]*>[[:space:]]*/etc/|^cat[[:space:]]*>[[:space:]]*/var/" <<< "$CURRENT_BLOCK"; then
             log "Skipping post-installation configuration block." >&2
             continue
         fi
 
-        # 4. Determine if this block is a test suite or related setup
-        # keywords: make/ninja tests, expect scripts, tester user, su to tester, testdir, test_summary
+        # 7. Determine if this block is a test suite or related setup
         if [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test|all-headless)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary|cd[[:space:]]+t$) ]]; then
             if [[ "$is_critical" == "true" ]]; then
-                # Wrap critical test block in prompt
-                # Note: Remove trailing newline for cleaner injection
                 CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
                 COMMANDS+="
+# __BEGIN_ROOT__
 if ! (
 $CURRENT_BLOCK
 ); then
@@ -504,22 +487,27 @@ $CURRENT_BLOCK
         exit 1
     fi
 fi
+# __END_ROOT__
 "
             else
                 log "Skipping non-critical test block." >&2
             fi
         elif [[ "$CURRENT_BLOCK" =~ "patch" ]]; then
-            # Resilient patching: Wrap patch commands to ignore failures
             CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
-            COMMANDS+="
-echo \"Attempting to apply patch...\"
-( $CURRENT_BLOCK ) || echo \"[WARNING] Patch application failed, continuing build...\"
+            COMMANDS+="# __BEGIN_ROOT__
+"
+            COMMANDS+="echo \"Attempting to apply patch...\"
+"
+            COMMANDS+="( $CURRENT_BLOCK ) || echo \"[WARNING] Patch application failed, continuing build...\"
+"
+            COMMANDS+="# __END_ROOT__
 "
         else
-            # Not a test or patch block, process for parallel make
-            # We decompose block into lines to apply -j$(nproc) safely
+            # Not a test or patch block - annotate with privilege type
+            [[ "$_eff_type" == "root" ]] && COMMANDS+="# __BEGIN_ROOT__"$'\n'
+            [[ "$_eff_type" == "user" ]] && COMMANDS+="# __BEGIN_USER__"$'\n'
             while read -r bline; do
-                if [[ "$bline" =~ ^(make|./configure && make) ]] && \
+                if [[ "$bline" =~ ^(make|./configure[[:space:]]&&[[:space:]]make) ]] && \
                    [[ ! "$bline" =~ "install" ]] && \
                    [[ ! "$bline" =~ "headers" ]] && \
                    [[ ! "$bline" =~ "-j" ]]; then
@@ -527,6 +515,8 @@ echo \"Attempting to apply patch...\"
                 fi
                 COMMANDS+="$bline"$'\n'
             done <<< "$CURRENT_BLOCK"
+            [[ "$_eff_type" == "root" ]] && COMMANDS+="# __END_ROOT__"$'\n'
+            [[ "$_eff_type" == "user" ]] && COMMANDS+="# __END_USER__"$'\n'
         fi
         continue
     fi
@@ -558,10 +548,10 @@ fi
 # 2.6 Auto-detect TeXLive and set TEXLIVE_PREFIX
 if echo "$HTML_CONTENT" | grep -qiE "texlive"; then
     # Extract year from the texlive source archive URL (e.g. texlive-20250308-source.tar.xz -> 2025)
-    TEXLIVE_YEAR=$(printf '%s\n' "${DOWNLOAD_URLS[@]}" | grep -ioP 'texlive-\K[0-9]{4}' | head -n 1)
+    TEXLIVE_YEAR=$(printf '%s\n' "${DOWNLOAD_URLS[@]}" | perl -nle 'while (m{(?i)texlive-\K[0-9]{4}}g) { print $& }' | head -n 1)
     if [[ -z "$TEXLIVE_YEAR" ]]; then
         # Fallback: try to extract from already-identified main filename
-        TEXLIVE_YEAR=$(echo "$MAIN_FILENAME" | grep -oP 'texlive-\K[0-9]{4}')
+        TEXLIVE_YEAR=$(echo "$MAIN_FILENAME" | perl -nle 'while (m{texlive-\K[0-9]{4}}g) { print $& }')
     fi
     if [[ -n "$TEXLIVE_YEAR" ]]; then
         log "TeXLive detected: setting TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR"
@@ -724,7 +714,7 @@ fi
 if [[ "$UPSTREAM" == "true" ]]; then
     if [[ "$PACKAGE" == "linux" ]]; then
         log "Fetching latest mainline Linux kernel version..."
-        KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)
+        KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1)
         if [[ -n "$KERNEL_VER" ]]; then
             # Append .0 if version doesn't have two dots (e.g., 6.19 -> 6.19.0)
             if [[ $(echo "$KERNEL_VER" | grep -o '\.' | wc -l) -eq 1 ]]; then
@@ -736,9 +726,9 @@ if [[ "$UPSTREAM" == "true" ]]; then
         fi
     elif [[ "$PACKAGE" == "vim" ]]; then
         log "Fetching latest upstream Vim version from GitHub..."
-        VIM_TAG=$(curl -sL https://github.com/vim/vim/tags | grep -oP 'href="/vim/vim/releases/tag/v\K[0-9.]+' | head -n 1)
+        VIM_TAG=$(curl -sL https://github.com/vim/vim/tags | perl -nle 'while (m{href="/vim/vim/releases/tag/v\K[0-9.]+}g) { print $& }' | head -n 1)
         if [[ -z "$VIM_TAG" ]]; then
-             VIM_TAG=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | grep -oP '(?<="tag_name": "v)[0-9.]+' | head -n 1)
+             VIM_TAG=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{(?<="tag_name": "v)[0-9.]+}g) { print $& }' | head -n 1)
         fi
         
         if [[ -n "$VIM_TAG" ]]; then
@@ -748,25 +738,25 @@ if [[ "$UPSTREAM" == "true" ]]; then
     elif [[ "$PACKAGE" == "firefox" ]]; then
         log "Fetching latest upstream Firefox version from Mozilla..."
         FIREFOX_JSON=$(curl -s https://product-details.mozilla.org/1.0/firefox_versions.json)
-        UPSTREAM_VERSION=$(echo "$FIREFOX_JSON" | grep -oP '(?<="LATEST_FIREFOX_VERSION": ")[0-9.]+')
+        UPSTREAM_VERSION=$(echo "$FIREFOX_JSON" | perl -nle 'while (m{(?<="LATEST_FIREFOX_VERSION": ")[0-9.]+}g) { print $& }')
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             DOWNLOAD_URLS+=("https://archive.mozilla.org/pub/firefox/releases/${UPSTREAM_VERSION}/source/firefox-${UPSTREAM_VERSION}.source.tar.xz")
         fi
     elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
-        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | grep -oP 'href="\K[0-9]+\.[0-9]+' | sort -V | tail -n 1)
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE Frameworks version: $UPSTREAM_VERSION"
         fi
     elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
         log "Fetching latest upstream KDE Plasma version from KDE mirrors..."
-        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/plasma/ | grep -oP 'href="\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n 1)
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE Plasma version: $UPSTREAM_VERSION"
         fi
     elif [[ "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ ]]; then
         log "Fetching latest upstream KDE Application (Gear) version from KDE mirrors..."
-        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/release-service/ | grep -oP 'href="\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n 1)
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/release-service/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE App version: $UPSTREAM_VERSION"
         fi
@@ -794,17 +784,17 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
 
     # 1. Main Page Links (for both LFS and BLFS)
     # Extract all archive and patch links
-    mapfile -t PAGE_LINKS < <(printf '%s' "$HTML_CONTENT" | grep -ioP "https?://[^\s\"]*(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz)" | sort -u)
+    mapfile -t PAGE_LINKS < <(printf '%s' "$HTML_CONTENT" | perl -nle 'while (m{(?i)https?://[^\s"]*(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz)}g) { print $& }' | sort -u)
     
     # 2. LFS Patches Page (for LFS packages)
     if [[ "$PAGE_URL" == *"/lfs/"* ]]; then
         log "Searching LFS Chapter 3 for packages and patches..."
         # Add main source from chapter 3 if not found on page
-        LFS_PKG_URL=$(curl -s "$LFS_BOOK/chapter03/packages.html" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-?[0-9][^\s\"]*(\.tar\.[a-z2]+|\.zip)" | head -n 1)
+        LFS_PKG_URL=$(curl -s "$LFS_BOOK/chapter03/packages.html" | perl -nle "while (m{(?i)https?://[^\\s\"]*/${PKG_BASE}-?[0-9][^\\s\"]*(\\.tar\\.[a-z2]+|\\.zip)}g) { print $& }" | head -n 1)
         [[ -n "$LFS_PKG_URL" ]] && DOWNLOAD_URLS+=("$LFS_PKG_URL")
         
         # Add patches from chapter 3
-        mapfile -t LFS_PATCH_URLS < <(curl -s "$LFS_BOOK/chapter03/patches.html" | grep -ioP "https?://[^\s\"]*/${PKG_BASE}-[^\s\"]*\.patch" | sort -u)
+        mapfile -t LFS_PATCH_URLS < <(curl -s "$LFS_BOOK/chapter03/patches.html" | perl -nle "while (m{(?i)https?://[^\\s\"]*/${PKG_BASE}-[^\\s\"]*\\.patch}g) { print $& }" | sort -u)
         DOWNLOAD_URLS+=("${LFS_PATCH_URLS[@]}")
     fi
 
@@ -863,7 +853,7 @@ fi
 # Replace hardcoded Vim versions when using --upstream
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from commands (e.g., "9.1.2031")
-    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'vim-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{vim-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
     
     if [[ -n "$LFS_VERSION" ]]; then
         log "Replacing LFS version $LFS_VERSION with upstream version $UPSTREAM_VERSION in commands..."
@@ -887,7 +877,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
                   sed 's/lfs-//g' | sed 's/-systemd//g')
     
     # Extract LFS kernel version from commands
-    LFS_KERNEL_VER=$(echo "$COMMANDS" | grep -oP 'linux-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    LFS_KERNEL_VER=$(echo "$COMMANDS" | perl -nle 'while (m{linux-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
     
     if [[ -n "$LFS_KERNEL_VER" ]]; then
         log "Processing Linux kernel commands..."
@@ -902,7 +892,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
         # Replace LFS release version in vmlinuz path (e.g., r12.4-84)
         if [[ -n "$LFS_RELEASE" ]]; then
             # Extract old LFS release from commands (pattern: lfs-rX.Y.Z-NN)
-            OLD_LFS_RELEASE=$(echo "$COMMANDS" | grep -oP 'lfs-r[0-9]+\.[0-9]+-[0-9]+' | head -n 1 | sed 's/lfs-//g')
+            OLD_LFS_RELEASE=$(echo "$COMMANDS" | perl -nle 'while (m{lfs-r[0-9]+\.[0-9]+-[0-9]+}g) { print $& }' | head -n 1 | sed 's/lfs-//g')
             if [[ -n "$OLD_LFS_RELEASE" ]]; then
                 COMMANDS="${COMMANDS//$OLD_LFS_RELEASE/$LFS_RELEASE}"
             fi
@@ -951,9 +941,9 @@ fi
 # Replace hardcoded Firefox versions when using --upstream
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "firefox" && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from commands (e.g., "140.7.1esr")
-    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'firefox-\K[0-9.]+esr' | head -n 1)
+    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{firefox-\K[0-9.]+esr}g) { print $& }' | head -n 1)
     if [[ -z "$LFS_VERSION" ]]; then
-        LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'firefox-\K[0-9.]+' | head -n 1)
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{firefox-\K[0-9.]+}g) { print $& }' | head -n 1)
     fi
 
     if [[ -n "$LFS_VERSION" ]]; then
@@ -965,7 +955,7 @@ fi
 
 if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6") && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from commands (e.g. frameworks-6.23.0.md5)
-    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'frameworks-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{frameworks-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
     if [[ -n "$LFS_VERSION" ]]; then
         log "Replacing LFS KDE Frameworks version $LFS_VERSION with $UPSTREAM_VERSION.0 in commands..."
         LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2)
@@ -978,7 +968,7 @@ fi
 
 if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all") && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from commands (e.g. plasma-6.6.1.md5)
-    LFS_VERSION=$(echo "$COMMANDS" | grep -oP 'plasma-\K[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{plasma-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
     if [[ -n "$LFS_VERSION" ]]; then
         log "Replacing LFS KDE Plasma version $LFS_VERSION with $UPSTREAM_VERSION in commands..."
         COMMANDS="${COMMANDS//plasma-$LFS_VERSION/plasma-$UPSTREAM_VERSION}"
@@ -988,13 +978,13 @@ fi
 
 if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from the identified main download URL (e.g. konsole-24.12.2.tar.xz)
-    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | grep -oP "${PKG_BASE}-\K[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle "while (m{${PKG_BASE}-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }" | head -n 1)
     if [[ -z "$LFS_VERSION" ]]; then
-        LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | grep -oP '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+        LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
     fi
     if [[ -z "$LFS_VERSION" ]]; then
         # Fallback
-        LFS_VERSION=$(echo "$COMMANDS" | grep -oP '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
     fi
 
     if [[ -n "$LFS_VERSION" ]]; then
@@ -1025,15 +1015,80 @@ if [[ "$PACKAGE" == "vim" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed "\|ln -sv ../vim/vim$UPSTREAM_MAJOR_MINOR/doc /usr/share/doc/vim-$UPSTREAM_VERSION|i rm -rf /usr/share/doc/vim-*")
 fi
 
+
+# Generate BUILD_SCRIPT from annotated COMMANDS: user blocks run via su, root blocks run as root
+# This runs on the HOST - generates the VM-side build script with privilege separation
+_gen_build_script() {
+    local dirname="$1"
+    local normal_user="$2"
+    local in_section=""
+    local block_n=0
+    local user_lines=()
+    echo "#!/bin/bash"
+    echo "set -e"
+    echo "BUILD_DIR=\"/sources/${dirname}\""
+    echo "# Grant regular user access to build directory for compilation"
+    echo "chown -R '${normal_user}' \"/sources/${dirname}\" 2>/dev/null || true"
+    echo "cd \"\$BUILD_DIR\""
+
+    _flush_user() {
+        if [[ ${#user_lines[@]} -gt 0 ]]; then
+            ((block_n++))
+            local sentinel="__LFS_USER_${block_n}__"
+            echo "su '${normal_user}' -s /bin/bash << '${sentinel}'"
+            echo "set -e"
+            echo "cd \"\$BUILD_DIR\""
+            printf '%s\n' "${user_lines[@]}"
+            echo "${sentinel}"
+            user_lines=()
+        fi
+    }
+
+    while IFS= read -r line; do
+        if [[ "$line" == "# __BEGIN_ROOT__" ]]; then
+            _flush_user
+            in_section="root"
+        elif [[ "$line" == "# __END_ROOT__" ]]; then
+            in_section=""
+        elif [[ "$line" == "# __BEGIN_USER__" ]]; then
+            in_section="user"
+        elif [[ "$line" == "# __END_USER__" ]]; then
+            _flush_user
+            in_section=""
+        elif [[ "$in_section" == "root" ]]; then
+            echo "$line"
+        else
+            user_lines+=("$line")
+        fi
+    done <<< "$COMMANDS"
+    _flush_user
+}
+
+# Detect the normal (non-root) user on the VM for privilege dropping
+# Use the SSH login user (the user who invoked ssh_lfs)
+_VM_NORMAL_USER="${USER:-fusion809}"
+
+BUILD_SCRIPT=$(_gen_build_script "$DIRNAME" "$_VM_NORMAL_USER")
+
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "------------------------------------------------------------"
     echo "DRY RUN: Download URLs for $PACKAGE"
     echo "------------------------------------------------------------"
     for url in "${DOWNLOAD_URLS[@]}"; do echo "$url"; done
     echo "------------------------------------------------------------"
-    echo "DRY RUN: Commands for $PACKAGE"
+    echo "DRY RUN: Commands for $PACKAGE (annotated with privilege level)"
     echo "------------------------------------------------------------"
-    echo "$COMMANDS"
+    # Pretty-print COMMANDS with [USER] and [ROOT] labels
+    _cur_priv="[USER]"
+    while IFS= read -r _line; do
+        case "$_line" in
+            "# __BEGIN_ROOT__") _cur_priv="[ROOT]" ;;
+            "# __END_ROOT__")   _cur_priv="[USER]" ;;
+            "# __BEGIN_USER__") _cur_priv="[USER]" ;;
+            "# __END_USER__")   _cur_priv="[USER]" ;;
+            *) [[ -n "$_line" ]] && echo "${_cur_priv} ${_line}" ;;
+        esac
+    done <<< "$COMMANDS"
     echo "------------------------------------------------------------"
     if [[ "$STRIP" == "true" ]]; then
         if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
@@ -1045,6 +1100,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
     fi
     exit 0
 fi
+
 
 # 4. Remote Execution
 if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
@@ -1130,14 +1186,12 @@ fi
 echo "Marking build start time..."
 touch /tmp/build_start_timestamp_${PACKAGE}
 
-echo "Running build commands..."
-cat << 'BUILD_EOF' > /tmp/build-cmds-${PACKAGE}.sh
-#!/bin/bash
-set -e
-BUILD_EOF
-echo "$(echo "$COMMANDS" | base64)" | base64 -d >> /tmp/build-cmds-${PACKAGE}.sh
+echo "Running build commands (user blocks as ${_VM_NORMAL_USER}, root blocks as root)..."
+echo "$(echo "$BUILD_SCRIPT" | base64)" | base64 -d > /tmp/build-cmds-${PACKAGE}.sh
 chmod +x /tmp/build-cmds-${PACKAGE}.sh
-/tmp/build-cmds-${PACKAGE}.sh
+# Run as a regular script (not sudo bash) - su calls inside handle privilege separation
+bash /tmp/build-cmds-${PACKAGE}.sh
+
 
 echo "Performing post-install cleanup of old versions..."
 # Find files installed by this build (newer than timestamp)
