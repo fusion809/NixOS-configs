@@ -46,7 +46,7 @@ usage() {
     echo "Options:"
     echo "  --dry-run             Show commands without executing them"
     echo "  --strip               Run stripping commands after build"
-    echo "  --upstream            Attempt to find the latest upstream version (linux and vim only)"
+    echo "  --upstream            Attempt to find the latest upstream version (linux, vim, firefox, rustc, and llvm)"
     echo "  --include-config      Include configuration commands in the LFS/BLFS book entry"
     echo "  --lfs                 Search only in the LFS book"
     echo "  --blfs                Search only in the BLFS book"
@@ -229,6 +229,8 @@ find_package_page() {
         local search_pkg="$pkg"
         if [[ "$pkg" =~ ^gst-plugins-(base|good|bad|ugly)$ ]]; then
             search_pkg="gst10-plugins-${BASH_REMATCH[1]}"
+        elif [[ "$pkg" == "rustc" ]]; then
+            search_pkg="rust"
         fi
 
         # First try exact match (e.g., /pkg.html)
@@ -790,7 +792,7 @@ if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
     DOWNLOAD_URLS=()
     if [[ "$XORG_MULTI_MODE" == "true" ]]; then
         # Extract md5 file content and base URL to populate DOWNLOAD_URLS
-        BASE_URL=$(echo "$COMMANDS" | grep -oP ' -B \Khttps?://[^ ]+')
+        BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/ -B\s+(https?:\/\/\S+)/) { print $1; exit }')
         if [[ -z "$BASE_URL" ]]; then
             case "$PACKAGE" in
                 xorg-lib)    BASE_URL="https://www.x.org/pub/individual/lib/" ;;
@@ -865,8 +867,40 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE App version: $UPSTREAM_VERSION"
         fi
+    elif [[ "$PACKAGE" == "rustc" ]]; then
+        log "Fetching latest upstream Rust version..."
+        RUST_TOML=$(curl -s https://static.rust-lang.org/dist/channel-rust-stable.toml)
+        UPSTREAM_VERSION=$(echo "$RUST_TOML" | perl -ne 'if (/^\[pkg\.rust\]/) { $in=1 } elsif ($in && /^version\s*=\s*"([0-9.]+)/) { print $1; exit }')
+        UPSTREAM_DATE=$(echo "$RUST_TOML" | grep "^date =" | cut -d '"' -f 2)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream Rust version: $UPSTREAM_VERSION (date: $UPSTREAM_DATE)"
+            DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/rustc-${UPSTREAM_VERSION}-src.tar.xz")
+            # Automatically identify the required bootstrap binaries (previous stable version)
+            # This prevents x.py from initiating its own downloads during the build phase.
+            PREV_MINOR_VERSION="${UPSTREAM_VERSION%%.*}.$(($(echo "$UPSTREAM_VERSION" | cut -d. -f2) - 1))"
+            log "Fetching previous Rust version info ($PREV_MINOR_VERSION) for bootstrap binaries..."
+            PREV_TOML=$(curl -s "https://static.rust-lang.org/dist/channel-rust-${PREV_MINOR_VERSION}.toml")
+            PREV_VERSION=$(echo "$PREV_TOML" | perl -ne 'if (/^\[pkg\.rust\]/) { $in=1 } elsif ($in && /^version\s*=\s*"([0-9.]+)/) { print $1; exit }')
+            PREV_DATE=$(echo "$PREV_TOML" | grep "^date =" | cut -d'"' -f2)
+            # Addition of these to DOWNLOAD_URLS is postponed until after replacement logic
+        fi
+    elif [[ "$PACKAGE" == "llvm" ]]; then
+        log "Fetching latest upstream LLVM version from GitHub..."
+        UPSTREAM_VERSION=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases/latest | perl -nle 'while (m{"tag_name":\s*"llvmorg-([0-9.]+)"}g) { print $1 }' | head -n 1)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream LLVM version: $UPSTREAM_VERSION"
+            # Prefer monorepo as it simplifies the build structure for newer versions
+            DOWNLOAD_URLS+=("https://github.com/llvm/llvm-project/releases/download/llvmorg-${UPSTREAM_VERSION}/llvm-project-${UPSTREAM_VERSION}.src.tar.xz")
+        fi
+    elif [[ "$PACKAGE" == "libuv" ]]; then
+        log "Fetching latest upstream libuv version from GitHub..."
+        UPSTREAM_VERSION=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream libuv version: $UPSTREAM_VERSION"
+            DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
+        fi
     else
-        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, firefox, frameworks, plasma, and KDE apps)"
+        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, firefox, frameworks, plasma, libuv, and KDE apps)"
     fi
 fi
 
@@ -876,12 +910,14 @@ if [[ "${PACKAGE,,}" == "liba52" ]]; then
     PKG_BASE="a52dec"
 elif [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
     PKG_BASE="$PACKAGE"
+elif [[ "$PACKAGE" == "rustc" ]]; then
+    PKG_BASE="(rustc|rust-std|cargo)"
 else
     PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
 fi
 log "Package base name for search: $PKG_BASE"
 
-if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
+if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
     # 0. Primary Link from Page (Robust Extraction)
     # The first "Download (HTTP)" link is usually the main one
     http_download=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (/Download \(HTTP\):\s*<a[^>]+href="([^"]+)"/is) { print $1 }')
@@ -905,10 +941,22 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
 
     # Filter page links for relevance
     for link in "${PAGE_LINKS[@]}"; do
+        # For Rust upstream, only fetch the source, skip binaries
+        # EXCEPT for the bootstrap binaries we manually added
+        if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" ]] && ! [[ "$(basename "$link")" =~ -src\.tar\. ]]; then
+             # Check if it's one of the bootstrap binaries we added (contains a full date in path or version)
+             # Actually, if it's from PAGE_LINKS, it's NOT one we added manually.
+             # PAGE_LINKS are from the BLFS page.
+             continue
+        fi
+        # For LLVM upstream, if we already have the monorepo, skip individual components from the page
+        if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" ]] && [[ "$(basename "$link")" =~ (llvm-|clang-|cmake-|third-party-|compiler-rt-)[0-9] ]]; then
+            continue
+        fi
         # Include if it matches package base name (case insensitive)
         # or if it's explicitly a patch on a package page
         # Special case: spidermonkey often uses firefox source
-        if grep -qi "${PKG_BASE}" <<< "$(basename "$link")" || \
+        if grep -Eiq "${PKG_BASE}" <<< "$(basename "$link")" || \
            ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "firefox" <<< "$(basename "$link")"); then
             DOWNLOAD_URLS+=("$link")
         fi
@@ -928,6 +976,11 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     MAIN_DOWNLOAD_URL=""
     for url in "${DOWNLOAD_URLS[@]}"; do
         fname=$(basename "$url")
+        # For LLVM, prefer the monorepo if available
+        if [[ "$PACKAGE" == "llvm" ]] && [[ "$fname" == *"llvm-project-"* ]]; then
+            MAIN_DOWNLOAD_URL="$url"
+            break
+        fi
         # Priority 1: matches package-version.tar.*
         if [[ "$fname" =~ ^${PKG_BASE}-?[0-9].*\.tar\. ]]; then
             MAIN_DOWNLOAD_URL="$url"
@@ -1096,7 +1149,6 @@ if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugi
         log "Replacing LFS KDE App version $LFS_VERSION with $UPSTREAM_VERSION in commands and URLs..."
         COMMANDS="${COMMANDS//release-service\/$LFS_VERSION/release-service\/$UPSTREAM_VERSION}"
         COMMANDS="${COMMANDS//${PACKAGE}-$LFS_VERSION/${PACKAGE}-$UPSTREAM_VERSION}"
-        # Also replace standalone instances of the version number just in case
         COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
         
         # Manually update the download URLs as well since they were parsed before this step
@@ -1104,6 +1156,168 @@ if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugi
             DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
         done
     fi
+fi
+
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "libuv" && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from HTML content (before it gets overwritten or supplemented)
+    LFS_VERSION=$(echo "$HTML_CONTENT" | perl -nle 'while (m{libuv-v\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{libuv-v\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+    fi
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{v\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+    fi
+    if [[ -n "$LFS_VERSION" ]]; then
+        log "Replacing LFS libuv version $LFS_VERSION with $UPSTREAM_VERSION in commands and URLs..."
+        COMMANDS="${COMMANDS//v$LFS_VERSION/v$UPSTREAM_VERSION}"
+        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+        for i in "${!DOWNLOAD_URLS[@]}"; do
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
+        done
+    fi
+fi
+
+# Replace hardcoded Rust versions and dates when using --upstream
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$UPSTREAM_VERSION" ]]; then
+    # 1. Replace dates
+    # Find the LFS date in commands or URLs
+    LFS_DATE=$(echo "$COMMANDS" | perl -nle 'if (/([0-9]{4}-[0-9]{2}-[0-9]{2})/) { print $1; exit }')
+    if [[ -z "$LFS_DATE" ]]; then
+         LFS_DATE=$(printf "%s\n" "${DOWNLOAD_URLS[@]}" | perl -nle 'if (/([0-9]{4}-[0-9]{2}-[0-9]{2})/) { print $1; exit }')
+    fi
+    if [[ -n "$LFS_DATE" && -n "$UPSTREAM_DATE" ]]; then
+        log "Replacing LFS Rust date $LFS_DATE with $UPSTREAM_DATE..."
+        COMMANDS=$(echo "$COMMANDS" | sed "s|$LFS_DATE|$UPSTREAM_DATE|g")
+        for i in "${!DOWNLOAD_URLS[@]}"; do
+            # Protect bootstrap URLs (if they were already there, though they shouldn't be yet)
+            if [[ "${DOWNLOAD_URLS[$i]}" =~ /dist/[0-9]{4}-[0-9]{2}-[0-9]{2}/ ]]; then
+                 continue
+            fi
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_DATE/$UPSTREAM_DATE}"
+        done
+    fi
+
+    # 2. Replace all versions (global replacement)
+    # Find all versions appearing in rust-related contexts (e.g. 1.93.1, 1.93.0)
+    # We use perl to extract anything that looks like 1.X.Y
+    mapfile -t FOUND_VERSIONS < <(echo "$COMMANDS ${DOWNLOAD_URLS[*]}" | perl -nle 'while (m{1\.[0-9]+\.[0-9]+}g) { print "$&\n" }' | sort -u)
+    for v in "${FOUND_VERSIONS[@]}"; do
+        [[ -z "$v" ]] && continue
+        if [[ "$v" != "$UPSTREAM_VERSION" ]]; then
+            log "Replacing LFS Rust-related version $v with $UPSTREAM_VERSION in commands..."
+            COMMANDS=$(echo "$COMMANDS" | sed "s|$v|$UPSTREAM_VERSION|g")
+            for i in "${!DOWNLOAD_URLS[@]}"; do
+                # Protect bootstrap URLs from being modified
+                if [[ "${DOWNLOAD_URLS[$i]}" =~ /dist/[0-9]{4}-[0-9]{2}-[0-9]{2}/ ]]; then
+                     continue
+                fi
+                DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$v/$UPSTREAM_VERSION}"
+            done
+        fi
+    done
+fi
+
+# Finally add Rust bootstrap binaries AFTER replacements are complete
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n "$PREV_DATE" ]]; then
+    log "Found bootstrap version $PREV_VERSION (date: $PREV_DATE). Adding to downloads."
+    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rustc-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
+    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rust-std-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
+    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/cargo-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
+fi
+
+# Pre-download Rust bootstrap binaries caching logic
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n "$PREV_DATE" ]]; then
+    log "Injecting Rust bootstrap caching commands for version $PREV_VERSION ($PREV_DATE)..."
+    # ADD the correct bootstrap binaries AFTER global replacement to ensure they are NOT corrupted
+    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rustc-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
+    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rust-std-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
+    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/cargo-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
+
+    CACHE_DIR="build/cache/${PREV_DATE}"
+    # Use absolute paths from /sources for reliable linking
+    CACHE_CMDS="mkdir -pv ${CACHE_DIR} || true
+ln -sf /sources/rustc-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz ${CACHE_DIR}/
+ln -sf /sources/rust-std-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz ${CACHE_DIR}/
+ln -sf /sources/cargo-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz ${CACHE_DIR}/"
+    
+    # Inject before ./x.py build
+    if [[ "$COMMANDS" == *"./x.py build"* ]]; then
+        COMMANDS="${COMMANDS//.\/x.py build/$CACHE_CMDS
+./x.py build}"
+    else
+        # Fallback: prepend to COMMANDS
+        COMMANDS="$CACHE_CMDS
+$COMMANDS"
+    fi
+fi
+
+# Replace hardcoded LLVM versions when using --upstream
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" && -n "$UPSTREAM_VERSION" ]]; then
+    # 1. Broad version replacement
+    mapfile -t FOUND_VERSIONS < <(echo "$COMMANDS ${DOWNLOAD_URLS[*]}" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print "$&\n" }' | sort -u)
+    for v in "${FOUND_VERSIONS[@]}"; do
+        [[ -z "$v" ]] && continue
+        if [[ "$v" != "$UPSTREAM_VERSION" ]]; then
+            log "Replacing LFS LLVM-related version $v with $UPSTREAM_VERSION in commands..."
+            COMMANDS=$(echo "$COMMANDS" | sed "s|$v|$UPSTREAM_VERSION|g")
+            for i in "${!DOWNLOAD_URLS[@]}"; do
+                DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$v/$UPSTREAM_VERSION}"
+            done
+        fi
+    done
+
+    # 2. Adjust for monorepo structure
+    if [[ "$UPSTREAM" == "true" ]] && (printf "%s\n" "${DOWNLOAD_URLS[@]}" | grep -q "llvm-project-"); then
+        log "LLVM monorepo detected. Sterilizing build commands for monorepo structure..."
+        
+        # Neutralize redundant extraction/installation/patching steps that are already in the monorepo
+        # We replace them with 'true ' to keep the '&&' command chain intact and valid.
+        # We use perl for multi-line matching and broad pattern recognition.
+        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "
+            s/tar -xf \.\.\/[^ \n]*?(llvm-cmake|llvm-third-party|clang-|compiler-rt-|clang-tools-extra-)[^ \n]*.*?(?=\s*&&|\n|\$)/true /gs;
+            s/mv (tools|projects)\/(clang|compiler-rt)-[^ \n]* (tools|projects)\/(clang|compiler-rt)(?=\s*&&|\n|\$)/true /gs;
+            # Catch multi-line sed with backslashes specifically for LLVM path adjustments
+            # Matches 'sed' followed by anything containing '../cmake' or '../third-party' up to '-i [file]'
+            s/sed .*?(\.\.\/cmake|\.\.\/third-party|LLVM_COMMON_CMAKE_UTILS|LLVM_THIRD_PARTY_DIR).*?-i [^ \n]+(?=\s*&&|\n|\$)/true /gs;
+            # Fix component paths for monorepo: e.g. ../projects/compiler-rt -> ../compiler-rt
+            s/\.\.\/(projects|tools)\/(compiler-rt|clang|lld|polly|openmp|libcxx|libcxxabi|libunwind|clang-tools-extra)/..\/\2/g;
+        ")
+
+        # Filter out 404-prone individual component URLs if we have the monorepo
+        log "Filtering redundant LLVM component URLs..."
+        NEW_URLS=()
+        for url in "${DOWNLOAD_URLS[@]}"; do
+            # Keep monorepo and patches
+            if [[ "$url" == *"llvm-project-"* ]] || [[ "$url" == *".patch" ]]; then
+                NEW_URLS+=("$url")
+            # Skip individual component tarballs
+            elif [[ "$(basename "$url")" =~ ^(llvm-|clang-|cmake-|third-party-|compiler-rt-|clang-tools-extra-)[0-9] ]]; then
+                continue
+            else
+                NEW_URLS+=("$url")
+            fi
+        done
+        DOWNLOAD_URLS=("${NEW_URLS[@]}")
+    fi
+fi
+
+# Final filtering for Rust upstream to ensure NO redundant binaries are fetched
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" ]]; then
+    log "Finalizing Rust download URLs (keeping only source and bootstrap)..."
+    NEW_URLS=()
+    for url in "${DOWNLOAD_URLS[@]}"; do
+        fname=$(basename "$url")
+        # Keep source, and keep the specific bootstrap binaries we added (they have 1.93.0 or similar)
+        if [[ "$fname" =~ -src\.tar\. ]] || [[ "$url" =~ /dist/[0-9]{4}-[0-9]{2}-[0-9]{2}/ ]]; then
+            NEW_URLS+=("$url")
+        fi
+    done
+    DOWNLOAD_URLS=("${NEW_URLS[@]}")
+fi
+
+# Deduplicate DOWNLOAD_URLS while preserving order as much as possible
+if [[ ${#DOWNLOAD_URLS[@]} -gt 0 ]]; then
+    mapfile -t DOWNLOAD_URLS < <(printf "%s\n" "${DOWNLOAD_URLS[@]}" | awk '!x[$0]++')
 fi
 
 # For plasma/frameworks, prevent wget -r from re-downloading already-fetched archives
@@ -1121,7 +1335,6 @@ if [[ "$PACKAGE" == "vim" ]]; then
 fi
 
 
-# Identify filenames and directory names before build script generation
 if [[ "$FRAMEWORKS_MODE" == "true" || "$XORG_MULTI_MODE" == "true" ]]; then
     MAIN_FILENAME="$PACKAGE"
     DIRNAME="$PACKAGE"
@@ -1135,6 +1348,13 @@ else
     done
 fi
 
+# For LLVM monorepo, the actual build should happen in the llvm/ subdirectory
+# to ensure all relative paths in BLFS instructions work correctly across all blocks.
+# We adjust the DIRNAME variable used for build script generation specifically.
+GEN_DIRNAME="$DIRNAME"
+if [[ "$PACKAGE" == "llvm" && "$MAIN_FILENAME" == *"llvm-project-"* ]]; then
+    GEN_DIRNAME="${DIRNAME}/llvm"
+fi
 
 # Generate BUILD_SCRIPT from annotated COMMANDS: user blocks run via su, root blocks run as root
 # This runs on the HOST - generates the VM-side build script with privilege separation
@@ -1186,10 +1406,9 @@ _gen_build_script() {
 
 # Detect the normal (non-root) user on the VM for privilege dropping
 # Use the SSH login user (the user who invoked ssh_lfs)
-_VM_NORMAL_USER="${USER:-fusion809}"
+NORMAL_USER="${USER:-fusion809}"
 
-BUILD_SCRIPT=$(_gen_build_script "$DIRNAME" "$_VM_NORMAL_USER")
-
+# Final verification of download URLs and filename before syncing to VM
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "------------------------------------------------------------"
     echo "DRY RUN: Download URLs for $PACKAGE"
@@ -1198,7 +1417,6 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "------------------------------------------------------------"
     echo "DRY RUN: Commands for $PACKAGE (annotated with privilege level)"
     echo "------------------------------------------------------------"
-    # Pretty-print COMMANDS with [USER] and [ROOT] labels
     _cur_priv="[USER]"
     while IFS= read -r _line; do
         case "$_line" in
@@ -1221,12 +1439,13 @@ if [[ "$DRY_RUN" == "true" ]]; then
     exit 0
 fi
 
-
 # 4. Remote Execution
 log "Starting remote build for $PACKAGE..."
 
-# Prepare the build script to run on the guest
-# Note: Root execution is handled by running the entire script via sudo
+# Generate the Privilege-Separated build script locally
+BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER")
+
+# Prepare the build script content to run on the guest
 REMOTE_SCRIPT=$(cat <<EOF
 set -e
 mkdir -p /sources/archives
@@ -1279,22 +1498,18 @@ if [ "$FRAMEWORKS_MODE" == "true" ] || [ "$XORG_MULTI_MODE" == "true" ]; then
     cd "/sources/$DIRNAME"
 else
     echo "Extracting $MAIN_FILENAME..."
+    # Always extract to root DIRNAME, but build in GEN_DIRNAME (set to DIRNAME/llvm for monorepo)
     rm -rf "/sources/$DIRNAME"
     mkdir -p "/sources/$DIRNAME"
-    if [ "$PACKAGE" == "openjdk" ]; then
-        tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
-    else
-        tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
-    fi
-
-    cd "/sources/$DIRNAME"
+    tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
+    cd "/sources/$GEN_DIRNAME"
 fi
 
 echo "Marking build start time..."
 touch /tmp/build_start_timestamp_${PACKAGE}
 
-echo "Running build commands (user blocks as ${_VM_NORMAL_USER}, root blocks as root)..."
-echo "$(echo "$BUILD_SCRIPT" | base64)" | base64 -d > /tmp/build-cmds-${PACKAGE}.sh
+echo "Running build commands (user blocks as ${NORMAL_USER}, root blocks as root)..."
+echo "$(echo "$BUILD_SCRIPT_LOCAL" | base64)" | base64 -d > /tmp/build-cmds-${PACKAGE}.sh
 chmod +x /tmp/build-cmds-${PACKAGE}.sh
 # Run as a regular script (not sudo bash) - su calls inside handle privilege separation
 bash /tmp/build-cmds-${PACKAGE}.sh
@@ -1306,9 +1521,7 @@ echo "Performing post-install cleanup of old versions..."
 SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
 EXISTING_DIRS=""
 for d in \$SEARCH_DIRS; do
-    if [ -d "\$d" ]; then
-        EXISTING_DIRS="\$EXISTING_DIRS \$d"
-    fi
+    [ -d "\$d" ] && EXISTING_DIRS="\$EXISTING_DIRS \$d"
 done
 
 NEW_FILES_LIST=\$(mktemp)
@@ -1327,9 +1540,7 @@ while read -r line; do
         if [ -n "\$major_prefix" ]; then
             # Look for other files starting with this prefix
             for candidate in "\$dirname"/"\$major_prefix"*; do
-                [ -f "\$candidate" ] || continue
-                # Skip current new file
-                [ "\$candidate" == "\$line" ] && continue
+                [ -f "\$candidate" ] && [ "\$candidate" != "\$line" ] || continue
                 
                 # Check timestamp: if older than build start, it's a candidate for deletion
                 if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
@@ -1345,14 +1556,11 @@ while read -r line; do
         # Pure version dirs: 1.2.3
         if [[ "\$basename" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
             for candidate in "\$dirname"/*; do
-                [ -d "\$candidate" ] || continue
-                [ "\$candidate" == "\$line" ] && continue
+                [ -d "\$candidate" ] && [ "\$candidate" != "\$line" ] || continue
                 cbase=\$(basename "\$candidate")
-                if [[ "\$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                          echo "Removing old version directory: \$candidate"
-                          rm -rf "\$candidate"
-                     fi
+                if [[ "\$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]] && ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                     echo "Removing old version directory: \$candidate"
+                     rm -rf "\$candidate"
                 fi
             done
         # Name+Version dirs: vim91
@@ -1360,14 +1568,11 @@ while read -r line; do
              # Extract alpha part
              prefix=\$(echo "\$basename" | sed -E 's/([a-zA-Z]+).*/\1/')
              for candidate in "\$dirname"/"\$prefix"*; do
-                [ -d "\$candidate" ] || continue
-                [ "\$candidate" == "\$line" ] && continue
+                [ -d "\$candidate" ] && [ "\$candidate" != "\$line" ] || continue
                 cbase=\$(basename "\$candidate")
-                if [[ "\$cbase" =~ ^\$prefix[0-9]+(\.[0-9]+)*$ ]]; then
-                     if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                          echo "Removing old version directory: \$candidate"
-                          rm -rf "\$candidate"
-                     fi
+                if [[ "\$cbase" =~ ^\$prefix[0-9]+(\.[0-9]+)*$ ]] && ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                     echo "Removing old version directory: \$candidate"
+                     rm -rf "\$candidate"
                 fi
              done
         fi
@@ -1378,9 +1583,7 @@ while read -r line; do
         boot_prefix=\$(echo "\$basename" | grep -oE '^(vmlinuz|System\.map|config|initramfs|initrd\.img)')
         if [ -n "\$boot_prefix" ]; then
             for candidate in "\$dirname"/"\$boot_prefix"*; do
-                [ -f "\$candidate" ] || continue
-                [ "\$candidate" == "\$line" ] && continue
-                [ -L "\$candidate" ] && continue
+                [ -f "\$candidate" ] && [ "\$candidate" != "\$line" ] && ! [ -L "\$candidate" ] || continue
                 
                 if ! [[ "\$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
                     echo "Removing old kernel file: \$candidate"
@@ -1404,7 +1607,7 @@ done
 
 echo "Build and installation complete for $PACKAGE"
 cd /sources
-rm -rf "$DIRNAME"
+rm -rf "$GEN_DIRNAME"
 EOF
 )
 
