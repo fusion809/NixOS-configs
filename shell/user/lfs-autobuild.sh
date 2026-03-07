@@ -1411,6 +1411,79 @@ _gen_build_script() {
     local in_section=""
     local block_n=0
     local user_lines=()
+    local current_rel_dir="."
+    local block_starting_rel_dir="."
+
+    # Internal helper to flush accumulated user commands into an su block
+    _flush_user() {
+        if [[ ${#user_lines[@]} -gt 0 ]]; then
+            ((block_n++))
+            local sentinel="__LFS_USER_${block_n}__"
+            echo "su '${normal_user}' -s /bin/bash << '${sentinel}'"
+            echo "set -e"
+            # Ensure each USER block starts in the tracked directory
+            echo "cd \"/sources/${dirname}/${block_starting_rel_dir}\" || cd \"/sources/${dirname}\""
+            printf '%s\n' "${user_lines[@]}"
+            echo "${sentinel}"
+            user_lines=()
+        fi
+    }
+
+    # Internal helper to track CWD changes across commands
+    _update_cwd() {
+        local line="$1"
+        # 1. Strip carriage returns and leading/trailing whitespace
+        line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # 2. Split line into individual commands by separators (&&, ||, ;)
+        local cmds
+        cmds=$(echo "$line" | sed 's/&&/\n/g; s/||/\n/g; s/;/\n/g')
+        
+        while read -r cmd; do
+            [[ -z "$cmd" ]] && continue
+            # Match 'cd' with various quoting styles. Avoiding \b which is not portable in bash [[ =~ ]].
+            local target=""
+            if [[ "$cmd" =~ (^|[[:space:]])cd[[:space:]]+\"([^\"]+)\" ]]; then
+                target="${BASH_REMATCH[2]}"
+            elif [[ "$cmd" =~ (^|[[:space:]])cd[[:space:]]+\'([^\']+)\' ]]; then
+                target="${BASH_REMATCH[2]}"
+            elif [[ "$cmd" =~ (^|[[:space:]])cd[[:space:]]+([^[:space:]&;\|]+) ]]; then
+                target="${BASH_REMATCH[2]}"
+            fi
+
+            if [[ -n "$target" ]]; then
+                if [[ "$target" == /* ]]; then
+                    # Absolute path
+                    if [[ "$target" == "/sources/${dirname}" ]]; then
+                        current_rel_dir="."
+                    elif [[ "$target" == "/sources/${dirname}/"* ]]; then
+                        current_rel_dir="${target#/sources/${dirname}/}"
+                    else
+                        current_rel_dir="."
+                    fi
+                else
+                    # Relative path (could contain multiple levels or ..)
+                    local IFS='/'
+                    local parts
+                    read -ra parts <<< "$target"
+                    for p in "${parts[@]}"; do
+                        [[ -z "$p" || "$p" == "." ]] && continue
+                        if [[ "$p" == ".." ]]; then
+                            current_rel_dir=$(dirname "$current_rel_dir")
+                        else
+                            [[ "$current_rel_dir" == "." ]] && current_rel_dir=""
+                            current_rel_dir="${current_rel_dir}/${p}"
+                        fi
+                    done
+                fi
+            fi
+        done <<< "$cmds"
+        
+        # 3. Final normalization
+        current_rel_dir=$(echo "$current_rel_dir" | sed 's|//*|/|g; s|^/||; s|/$||')
+        [[ -z "$current_rel_dir" || "$current_rel_dir" == "/" ]] && current_rel_dir="."
+    }
+
     echo "#!/bin/bash"
     echo "set -e"
     echo "BUILD_DIR=\"/sources/${dirname}\""
@@ -1418,71 +1491,26 @@ _gen_build_script() {
     echo "chown -R '${normal_user}' \"/sources/${dirname}\" 2>/dev/null || true"
     echo "cd '/sources/${dirname}'"
 
-    _flush_user() {
-        if [[ ${#user_lines[@]} -gt 0 ]]; then
-            ((block_n++))
-            local sentinel="__LFS_USER_${block_n}__"
-            echo "su '${normal_user}' -s /bin/bash << '${sentinel}'"
-            echo "set -e"
-            echo "cd '/sources/${dirname}'"
-            printf '%s\n' "${user_lines[@]}"
-            echo "${sentinel}"
-            user_lines=()
-        fi
-    }
-
-    local current_rel_dir="."
     while IFS= read -r line; do
         if [[ "$line" == "# __BEGIN_ROOT__" ]]; then
             _flush_user
             in_section="root"
-            # Ensure ROOT blocks start in the current relative directory
+            # Ensure ROOT blocks start in the tracked directory
             echo "cd \"/sources/${dirname}/${current_rel_dir}\" || cd \"/sources/${dirname}\""
         elif [[ "$line" == "# __END_ROOT__" ]]; then
             in_section=""
         elif [[ "$line" == "# __BEGIN_USER__" ]]; then
             in_section="user"
+            block_starting_rel_dir="$current_rel_dir"
         elif [[ "$line" == "# __END_USER__" ]]; then
             _flush_user
             in_section=""
         elif [[ "$in_section" == "root" ]]; then
             echo "$line"
-            # Track CWD in root blocks too
-            if [[ "$line" =~ \bcd[[:space:]]+([^[:space:]&;\|\(\)\>\!\?]+) ]]; then
-                target="${BASH_REMATCH[1]}"
-                if [[ "$target" == ".." ]]; then
-                    current_rel_dir=$(dirname "$current_rel_dir")
-                elif [[ "$target" == "." ]]; then
-                    :
-                elif [[ "$target" == /* ]]; then
-                    if [[ "$target" == "/sources/${dirname}"* ]]; then
-                         current_rel_dir="${target#/sources/${dirname}/}"
-                    fi
-                else
-                    [[ "$current_rel_dir" == "." ]] && current_rel_dir=""
-                    current_rel_dir="${current_rel_dir}/${target}"
-                    current_rel_dir="${current_rel_dir#/}" # strip leading slash
-                fi
-            fi
+            _update_cwd "$line"
         else
             user_lines+=("$line")
-            # Track CWD in user lines to propagate to subsequent blocks
-            if [[ "$line" =~ \bcd[[:space:]]+([^[:space:]&;\|\(\)\>\!\?]+) ]]; then
-                 target="${BASH_REMATCH[1]}"
-                 if [[ "$target" == ".." ]]; then
-                     current_rel_dir=$(dirname "$current_rel_dir")
-                 elif [[ "$target" == "." ]]; then
-                     :
-                 elif [[ "$target" == /* ]]; then
-                     if [[ "$target" == "/sources/${dirname}"* ]]; then
-                          current_rel_dir="${target#/sources/${dirname}/}"
-                     fi
-                 else
-                     [[ "$current_rel_dir" == "." ]] && current_rel_dir=""
-                     current_rel_dir="${current_rel_dir}/${target}"
-                     current_rel_dir="${current_rel_dir#/}" # strip leading slash
-                 fi
-            fi
+            _update_cwd "$line"
         fi
     done <<< "$COMMANDS"
     _flush_user
