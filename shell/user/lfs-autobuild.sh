@@ -39,6 +39,7 @@ INCLUDE_CONFIG=false
 SEARCH_LFS=true
 SEARCH_BLFS=true
 PACKAGE=""
+XORG_MULTI_MODE=false
 
 usage() {
     echo "Usage: $0 [options] <package-name>"
@@ -216,6 +217,13 @@ find_package_page() {
     fi
 
     if [[ "$SEARCH_BLFS" == "true" ]]; then
+        case "$pkg" in
+            xorg-lib)    echo "$BLFS_BOOK/x/x7lib.html"; return 0 ;;
+            xorg-app)    echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
+            xorg-font)   echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
+            xorg-driver) echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
+        esac
+
         log "Searching for '$pkg' in BLFS index..." >&2
 
         local search_pkg="$pkg"
@@ -281,6 +289,11 @@ if [[ -z "$PAGE_URL" ]]; then
 fi
 
 log "Found package page: $PAGE_URL"
+
+if [[ "$PACKAGE" =~ ^xorg-(lib|app|font|driver)$ ]]; then
+    XORG_MULTI_MODE=true
+    log "Enabling Xorg multi-package mode."
+fi
 
 # 2. Extract Download URL and Build Commands
 log "Fetching content from $PAGE_URL..."
@@ -364,8 +377,7 @@ get_commands() {
         /<pre [^>]*class="userinput"[^>]*>/ { in_block=1; print "___BLOCK_START_USER___" }
         in_block { print }
         /<\/pre>/ { in_block=0; print "___BLOCK_END___" }
-    ' | perl -0777 -pe 's/<code class="literal">.*?<\/code>//gs' | \
-        perl -0777 -pe 's/<[^>]+>//gs' | \
+    ' | perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
         sed 's/^[[:space:]]*//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm"
@@ -472,7 +484,7 @@ while read -r line; do
         fi
 
         # 7. Determine if this block is a test suite or related setup
-        if [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test|all-headless)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary|cd[[:space:]]+t$) ]]; then
+        if [[ "$XORG_MULTI_MODE" == "false" ]] && [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test|all-headless)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary|cd[[:space:]]+t$) ]]; then
             if [[ "$is_critical" == "true" ]]; then
                 CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
                 COMMANDS+="
@@ -594,7 +606,75 @@ if [[ "$COMMANDS" == *"doxygen"* ]]; then
     ')
 fi
 
-# 2.10 Special handling for KDE frameworks6 and plasma-all
+# 2.10 Special handling for Xorg multi-package targets (libs, apps, fonts, drivers)
+if [[ "$XORG_MULTI_MODE" == "true" ]]; then
+    log "Enabling Xorg multi-package loop mode."
+    
+    # Ensure XORG_PREFIX and XORG_CONFIG are set
+    if [[ ! "$COMMANDS" =~ "export XORG_PREFIX=/usr" ]]; then
+        COMMANDS="export XORG_PREFIX=/usr
+export XORG_CONFIG=\"--prefix=\$XORG_PREFIX --sysconfdir=/etc --localstatedir=/var --disable-static\"
+$COMMANDS"
+    fi
+
+    # Fix the bash subshell and execution for Xorg loops
+    log "Converting Xorg build loop into a standalone script..."
+    COMMANDS=$(echo "$COMMANDS" | awk '
+        BEGIN {
+            in_loop = 0
+            in_as_root = 0
+            in_md5 = 0
+            as_root_content = ""
+            other_cmds = ""
+            loop_content = ""
+            md5_file = ""
+        }
+        /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
+        /^bash -e/ { next }
+        /^exit/ { next }
+        /^cat > .*\.md5 << "EOF"/ { 
+            in_md5 = 1; 
+            other_cmds = other_cmds "\n" $0; 
+            next 
+        }
+        /^for package in/ { in_loop = 1; loop_content = $0; next }
+        {
+            if (in_as_root) {
+                as_root_content = as_root_content "\n" $0
+                if (/export -f as_root/) in_as_root = 0
+            } else if (in_loop) {
+                loop_content = loop_content "\n" $0
+                if (/done/) in_loop = 0
+            } else if (in_md5) {
+                other_cmds = other_cmds "\n" $0
+                if (/^EOF$/) in_md5 = 0
+            } else {
+                other_cmds = other_cmds "\n" $0
+            }
+        }
+        END {
+            sub(/^\n/, "", other_cmds)
+            print "cd /sources/archives"
+            print other_cmds
+            print "cd /sources/archives"
+            print "cat > build-xorg.sh << \"EOF\""
+            print "#!/bin/bash"
+            print "set -e"
+            print ""
+            print as_root_content
+            print ""
+            # Inject markers for BUILD_SCRIPT generator
+            # The as_root from the book works if sudo is available.
+            # We dont need to override it here.
+            print ""
+            print loop_content
+            print "EOF"
+            print "bash build-xorg.sh"
+        }
+    ')
+fi
+
+# 2.11 Special handling for KDE frameworks6 and plasma-all
 FRAMEWORKS_MODE=false
 if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
     FRAMEWORKS_MODE=true
@@ -706,9 +786,34 @@ fi
 
 fi # End SKIP_HTML_EXTRACTION block
 
-# 3. Resolve Download URLs
 if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
     DOWNLOAD_URLS=()
+    if [[ "$XORG_MULTI_MODE" == "true" ]]; then
+        # Extract md5 file content and base URL to populate DOWNLOAD_URLS
+        BASE_URL=$(echo "$COMMANDS" | grep -oP ' -B \Khttps?://[^ ]+')
+        if [[ -z "$BASE_URL" ]]; then
+            case "$PACKAGE" in
+                xorg-lib)    BASE_URL="https://www.x.org/pub/individual/lib/" ;;
+                xorg-app)    BASE_URL="https://www.x.org/pub/individual/app/" ;;
+                xorg-font)   BASE_URL="https://www.x.org/pub/individual/font/" ;;
+                xorg-driver) BASE_URL="https://www.x.org/pub/individual/driver/" ;;
+            esac
+        fi
+        
+        # Extract filenames from the md5 block
+        # Look for the cat > ...md5 block (robustly)
+        FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /\s(\S+\.tar\.[a-z2]+)/g) { print "$1\n" } }')
+        
+        if [[ -z "$FILENAMES" ]]; then
+            # Second attempt: maybe there are leading spaces in the filenames
+            FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^.*\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
+        fi
+        
+        for f in $FILENAMES; do
+            DOWNLOAD_URLS+=("${BASE_URL}${f}")
+        done
+        MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
+    fi
 fi
 
 if [[ "$UPSTREAM" == "true" ]]; then
@@ -811,14 +916,14 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]]; then
 fi
 
 # Final deduplication and prioritization
-if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] && [[ "$FRAMEWORKS_MODE" == "false" ]]; then
+if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] && [[ "$FRAMEWORKS_MODE" == "false" ]] && [[ "$XORG_MULTI_MODE" == "false" ]]; then
     error "Could not find any download URLs for '$PACKAGE'"
 fi
 
 # Remove duplicates while preserving order (to some extent)
 DOWNLOAD_URLS=($(printf "%s\n" "${DOWNLOAD_URLS[@]}" | awk '!x[$0]++'))
 
-if [[ "$FRAMEWORKS_MODE" == "false" ]]; then
+if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     # Identify MAIN_DOWNLOAD_URL (the one that looks most like the source archive)
     MAIN_DOWNLOAD_URL=""
     for url in "${DOWNLOAD_URLS[@]}"; do
@@ -1017,7 +1122,7 @@ fi
 
 
 # Identify filenames and directory names before build script generation
-if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
+if [[ "$FRAMEWORKS_MODE" == "true" || "$XORG_MULTI_MODE" == "true" ]]; then
     MAIN_FILENAME="$PACKAGE"
     DIRNAME="$PACKAGE"
     ALL_FILENAMES=()
@@ -1169,7 +1274,7 @@ for f in ${ALL_FILENAMES[*]}; do
 done
 
 # 5. Extract main archive
-if [ "$FRAMEWORKS_MODE" == "true" ]; then
+if [ "$FRAMEWORKS_MODE" == "true" ] || [ "$XORG_MULTI_MODE" == "true" ]; then
     mkdir -p "/sources/$DIRNAME"
     cd "/sources/$DIRNAME"
 else
