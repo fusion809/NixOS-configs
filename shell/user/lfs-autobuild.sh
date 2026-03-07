@@ -1016,6 +1016,21 @@ if [[ "$PACKAGE" == "vim" ]]; then
 fi
 
 
+# Identify filenames and directory names before build script generation
+if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
+    MAIN_FILENAME="$PACKAGE"
+    DIRNAME="$PACKAGE"
+    ALL_FILENAMES=()
+else
+    MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
+    DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
+    ALL_FILENAMES=()
+    for url in "${DOWNLOAD_URLS[@]}"; do
+        ALL_FILENAMES+=("$(basename "$url")")
+    done
+fi
+
+
 # Generate BUILD_SCRIPT from annotated COMMANDS: user blocks run via su, root blocks run as root
 # This runs on the HOST - generates the VM-side build script with privilege separation
 _gen_build_script() {
@@ -1029,7 +1044,7 @@ _gen_build_script() {
     echo "BUILD_DIR=\"/sources/${dirname}\""
     echo "# Grant regular user access to build directory for compilation"
     echo "chown -R '${normal_user}' \"/sources/${dirname}\" 2>/dev/null || true"
-    echo "cd \"\$BUILD_DIR\""
+    echo "cd '/sources/${dirname}'"
 
     _flush_user() {
         if [[ ${#user_lines[@]} -gt 0 ]]; then
@@ -1037,7 +1052,7 @@ _gen_build_script() {
             local sentinel="__LFS_USER_${block_n}__"
             echo "su '${normal_user}' -s /bin/bash << '${sentinel}'"
             echo "set -e"
-            echo "cd \"\$BUILD_DIR\""
+            echo "cd '/sources/${dirname}'"
             printf '%s\n' "${user_lines[@]}"
             echo "${sentinel}"
             user_lines=()
@@ -1103,19 +1118,6 @@ fi
 
 
 # 4. Remote Execution
-if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
-    MAIN_FILENAME="$PACKAGE"
-    DIRNAME="$PACKAGE"
-    ALL_FILENAMES=()
-else
-    MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
-    DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
-    ALL_FILENAMES=()
-    for url in "${DOWNLOAD_URLS[@]}"; do
-        ALL_FILENAMES+=("$(basename "$url")")
-    done
-fi
-
 log "Starting remote build for $PACKAGE..."
 
 # Prepare the build script to run on the guest
