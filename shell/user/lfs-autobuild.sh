@@ -4,9 +4,51 @@
 # Ensure NIXCFG is set
 export NIXCFG="${NIXCFG:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
-# Source dependencies
-source "$NIXCFG/shell/user/08-ssh.sh"
-source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+# 1. Behave as a sourced library if sourced (ZSH or Bash)
+_is_sourced() {
+    if [ -n "$ZSH_VERSION" ]; then
+        case $ZSH_EVAL_CONTEXT in *:file) return 0;; esac
+    else
+        case ${0##*/} in bash|-bash|sh|-sh) return 0;; esac
+        [ "${BASH_SOURCE[0]}" != "$0" ] && return 0
+    fi
+    return 1
+}
+
+if _is_sourced; then
+    lfs_autobuild() {
+        bash ~/.lfs_autobuild.sh "$@"
+    }
+    return 0
+fi
+
+# 2. Host Proxy & Sync: If we're natively on the host, deploy to VM and execute there
+if [ -f "$NIXCFG/shell/user/08-ssh.sh" ] && [ -z "$IN_LFS_VM" ] && [ "$HOSTNAME" != "lfs-kvm" ]; then
+    source "$NIXCFG/shell/user/08-ssh.sh"
+    source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+
+    # Deploy self to VM
+    cat "${BASH_SOURCE[0]}" | ssh_lfs "cat > ~/.lfs_autobuild.sh && chmod +x ~/.lfs_autobuild.sh"
+    
+    # Also sync 21-lfs.sh so the strip function works locally
+    if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
+        cat "$NIXCFG/shell/user/21-lfs.sh" | ssh_lfs "cat > ~/.21-lfs.sh"
+    fi
+
+    # Pass execution to the VM copy!
+    ssh_lfs "IN_LFS_VM=1 bash ~/.lfs_autobuild.sh $(printf "%q " "$@")"
+    exit $?
+fi
+
+# 3. Native VM Execution (This part runs only inside the VM)
+# Mock ssh_lfs since we are running natively locally
+ssh_lfs() {
+    if [ "$1" = "bash -s" ]; then
+        bash -s
+    else
+        eval "$@"
+    fi
+}
 
 LFS_BOOK_DEFAULT="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_BOOK_DEFAULT="https://linuxfromscratch.org/blfs/view/systemd"
@@ -159,8 +201,12 @@ EOF
 
     
     if [[ "$STRIP" == "true" ]]; then
-        source "$NIXCFG/shell/user/21-lfs.sh"
-        lfs_strip
+        if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
+            source "$NIXCFG/shell/user/21-lfs.sh"
+            lfs_strip
+        else
+            echo "Warning: STRIP skipped because 21-lfs.sh is not available locally."
+        fi
     fi
 
     exit 0
@@ -990,8 +1036,12 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "$COMMANDS"
     echo "------------------------------------------------------------"
     if [[ "$STRIP" == "true" ]]; then
-        source "$NIXCFG/shell/user/21-lfs.sh"
-        lfs_strip --dry-run
+        if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
+            source "$NIXCFG/shell/user/21-lfs.sh"
+            lfs_strip --dry-run
+        else
+            echo "DRY RUN: STRIP skipped because 21-lfs.sh is not available locally."
+        fi
     fi
     exit 0
 fi
@@ -1204,6 +1254,10 @@ echo "$REMOTE_SCRIPT" > /tmp/remote_script_debug.sh
 ssh_lfs "sudo bash -c '$(echo "$REMOTE_SCRIPT" | sed "s/'/'\\\\''/g")'"
 
 if [[ "$STRIP" == "true" ]]; then
-    source "$NIXCFG/shell/user/21-lfs.sh"
-    lfs_strip
+    if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
+        source "$NIXCFG/shell/user/21-lfs.sh"
+        lfs_strip
+    else
+        echo "Warning: STRIP skipped because 21-lfs.sh is not available locally."
+    fi
 fi
