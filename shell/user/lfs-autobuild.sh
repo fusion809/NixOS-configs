@@ -1445,8 +1445,32 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" ]]; then
     NEW_URLS=()
     for url in "${DOWNLOAD_URLS[@]}"; do
         fname=$(basename "$url")
-        # Keep source, and keep the specific bootstrap binaries we added (they have 1.93.0 or similar)
+        # Keep source, and keep the specific bootstrap binaries we added.
+        # Upstream source has -src.tar. in name. Bootstraps are in /dist/YYYY-MM-DD/ paths.
         if [[ "$fname" =~ -src\.tar\. ]] || [[ "$url" =~ /dist/[0-9]{4}-[0-9]{2}-[0-9]{2}/ ]]; then
+            NEW_URLS+=("$url")
+        fi
+    done
+    DOWNLOAD_URLS=("${NEW_URLS[@]}")
+fi
+
+# Generic filtering for ALL upstream-enabled packages (except Rust which is handled above):
+# Remove archives that do not match the UPSTREAM_VERSION if it is set.
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && "$PACKAGE" != "rustc" ]]; then
+    log "Filtering redundant stable archives (keeping version $UPSTREAM_VERSION)..."
+    NEW_URLS=()
+    for url in "${DOWNLOAD_URLS[@]}"; do
+        fname=$(basename "$url")
+        # If it is an archive for this package but has a different version, skip it.
+        # We check for .tar.*, .zip, .tgz to avoid accidentally skipping patches.
+        if [[ "$fname" =~ ^${PKG_BASE}[-_]?[0-9] ]] && [[ "$fname" =~ \.(tar\.[a-z2]+|zip|tgz)$ ]]; then
+            if [[ "$fname" == *"$UPSTREAM_VERSION"* ]]; then
+                NEW_URLS+=("$url")
+            else
+                log "Pruning redundant stable version: $fname"
+            fi
+        else
+            # Keep patches and anything else
             NEW_URLS+=("$url")
         fi
     done
