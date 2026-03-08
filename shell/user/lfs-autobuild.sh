@@ -229,10 +229,10 @@ find_package_page() {
 
     if [[ "$SEARCH_BLFS" == "true" ]]; then
         case "$pkg" in
-            xorg-lib)    echo "$BLFS_BOOK/x/x7lib.html"; return 0 ;;
-            xorg-app)    echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
-            xorg-font)   echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
-            xorg-driver) echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
+            xorg-lib|x7lib)       echo "$BLFS_BOOK/x/x7lib.html"; return 0 ;;
+            xorg-app|x7app)       echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
+            xorg-font|x7font)     echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
+            xorg-driver|x7driver) echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
         esac
 
         log "Searching for '$pkg' in BLFS index..." >&2
@@ -303,7 +303,7 @@ fi
 
 log "Found package page: $PAGE_URL"
 
-if [[ "$PACKAGE" =~ ^xorg-(lib|app|font|driver)$ ]]; then
+if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font|driver)$ ]]; then
     XORG_MULTI_MODE=true
     log "Enabling Xorg multi-package mode."
 fi
@@ -344,22 +344,50 @@ if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
             _dep_check_script="/tmp/dep_check_${dep//[^a-zA-Z0-9]/_}.sh"
             cat > "$_dep_check_script" <<DEPCHECK
 dep='$dep'
-pkg-config --exists "\$dep" 2>/dev/null && echo installed && exit 0
-command -v "\$dep" >/dev/null 2>&1 && echo installed && exit 0
-dep_u=\$(echo "\$dep" | tr '-' '_')
-ls /usr/lib/lib\${dep_u}*.so* /usr/lib/lib\${dep}*.so* /usr/lib/\${dep}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-pkg-config --exists "\${dep}-1" "\${dep}-0" 2>/dev/null && echo installed && exit 0
-dep_base=\$(echo "\$dep" | sed -E 's/[0-9]+\$//')
-dep_ver=\$(echo "\$dep" | grep -oE '[0-9]+\$')
-if [ -n "\$dep_ver" ]; then
-    pkg-config --exists "\${dep_base}+-\${dep_ver}.0" "\${dep_base}-\${dep_ver}.0" 2>/dev/null && echo installed && exit 0
-    ls /usr/lib/lib\${dep_base}-\${dep_ver}.so* /usr/lib/lib\${dep_base}\${dep_ver}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+# 1. Standard pkg-config check
+pkg-config --exists "$dep" 2>/dev/null && echo installed && exit 0
+pkg-config --exists "${dep}-1" "${dep}-0" 2>/dev/null && echo installed && exit 0
+
+# 2. Xorg special cases
+if [[ "$dep" =~ ^x7(font|lib|app|driver)$ ]]; then
+    # If we have any of the common component dirs, assume it is installed
+    # e.g. for x7font, check if /usr/share/fonts/X11 exists
+    [ "$dep" == "x7font" ] && [ -d /usr/share/fonts/X11 ] && echo installed && exit 0
+    [ "$dep" == "x7lib" ] && [ -d /usr/include/X11 ] && echo installed && exit 0
 fi
-ls -d /usr/include/\${dep} /usr/include/\${dep_u} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-dep_nodash=\$(echo "\$dep" | tr -d '-')
-find /usr/lib/cmake -maxdepth 1 -iname "\${dep}" -o -iname "\${dep_nodash}" -o -iname "*\${dep_nodash}*" 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-ls -d /usr/share/\${dep} /usr/share/icons/\${dep} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-ls -d /usr/share/doc/\${dep}-* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+
+# 3. Mesa special case (often called mesa but provides gbm, egl, gl)
+if [ "$dep" == "mesa" ]; then
+    pkg-config --exists gbm egl gl 2>/dev/null && echo installed && exit 0
+fi
+
+# 4. xcursor-themes special case
+if [ "$dep" == "xcursor-themes" ]; then
+    [ -d /usr/share/icons/whiteglass ] && echo installed && exit 0
+fi
+
+# 5. Executable check
+command -v "$dep" >/dev/null 2>&1 && echo installed && exit 0
+
+# 6. Library search
+dep_u=$(echo "$dep" | tr '-' '_')
+ls /usr/lib/lib${dep_u}*.so* /usr/lib/lib${dep}*.so* /usr/lib/${dep}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+
+# 7. Versioned pkg-config fallback
+dep_base=$(echo "$dep" | sed -E 's/[0-9]+$//')
+dep_ver=$(echo "$dep" | grep -oE '[0-9]+$')
+if [ -n "$dep_ver" ]; then
+    pkg-config --exists "${dep_base}+-${dep_ver}.0" "${dep_base}-${dep_ver}.0" 2>/dev/null && echo installed && exit 0
+    ls /usr/lib/lib${dep_base}-${dep_ver}.so* /usr/lib/lib${dep_base}${dep_ver}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+fi
+
+# 8. Include/Share dir check
+ls -d /usr/include/${dep} /usr/include/${dep_u} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+dep_nodash=$(echo "$dep" | tr -d '-')
+find /usr/lib/cmake -maxdepth 1 -iname "${dep}" -o -iname "${dep_nodash}" -o -iname "*${dep_nodash}*" 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+ls -d /usr/share/${dep} /usr/share/icons/${dep} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+ls -d /usr/share/doc/${dep}-* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+
 echo not_installed
 DEPCHECK
             dep_status=$(target_run "bash -s" < "$_dep_check_script" 2>/dev/null | grep -vE '^(Warning:|Connection|IP|SSH|grep:)' | tr -d '\r' | tail -n1)
@@ -644,16 +672,18 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     ')
 fi
 
-# 2.10 Special handling for Xorg multi-package targets (libs, apps, fonts, drivers)
-if [[ "$XORG_MULTI_MODE" == "true" ]]; then
-    log "Enabling Xorg multi-package loop mode."
-    
-    # Ensure XORG_PREFIX and XORG_CONFIG are set
+# 2.10 ensure XORG_PREFIX and XORG_CONFIG are set if referenced in commands
+if [[ "$COMMANDS" =~ "XORG_PREFIX" || "$COMMANDS" =~ "XORG_CONFIG" ]]; then
     if [[ ! "$COMMANDS" =~ "export XORG_PREFIX=/usr" ]]; then
         COMMANDS="export XORG_PREFIX=/usr
 export XORG_CONFIG=\"--prefix=\$XORG_PREFIX --sysconfdir=/etc --localstatedir=/var --disable-static\"
 $COMMANDS"
     fi
+fi
+
+# Special handling for Xorg multi-package targets (libs, apps, fonts, drivers)
+if [[ "$XORG_MULTI_MODE" == "true" ]]; then
+    log "Enabling Xorg multi-package loop mode."
 
     # Fix the bash subshell and execution for Xorg loops
     log "Converting Xorg build loop into a standalone script..."
@@ -831,10 +861,10 @@ if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
         BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/ -B\s+(https?:\/\/\S+)/) { print $1; exit }')
         if [[ -z "$BASE_URL" ]]; then
             case "$PACKAGE" in
-                xorg-lib)    BASE_URL="https://www.x.org/pub/individual/lib/" ;;
-                xorg-app)    BASE_URL="https://www.x.org/pub/individual/app/" ;;
-                xorg-font)   BASE_URL="https://www.x.org/pub/individual/font/" ;;
-                xorg-driver) BASE_URL="https://www.x.org/pub/individual/driver/" ;;
+                xorg-lib|x7lib)       BASE_URL="https://www.x.org/pub/individual/lib/" ;;
+                xorg-app|x7app)       BASE_URL="https://www.x.org/pub/individual/app/" ;;
+                xorg-font|x7font)     BASE_URL="https://www.x.org/pub/individual/font/" ;;
+                xorg-driver|x7driver) BASE_URL="https://www.x.org/pub/individual/driver/" ;;
             esac
         fi
         
