@@ -242,14 +242,21 @@ find_package_page() {
             search_pkg="gst10-plugins-${BASH_REMATCH[1]}"
         elif [[ "$pkg" == "rustc" ]]; then
             search_pkg="rust"
+        elif [[ "$pkg" == "pygobject" ]]; then
+            search_pkg="pygobject3"
         fi
 
-        # First try exact match (e.g., /pkg.html)
-        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/${search_pkg}\.html)\"/is) { print \$1; exit }")
+        # First try match for pkg.html (with optional fragment)
+        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/$search_pkg\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
         
+        # Second try: match fragment directly (if search_pkg is used as a fragment)
+        if [[ -z "$blfs_page" ]]; then
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]+\.html#$search_pkg)\"/is) { print \$1; exit }")
+        fi
+
         # Fallback to match at boundaries
         if [[ -z "$blfs_page" ]]; then
-            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/[^a-z0-9]${search_pkg}[^\"]*\.html|[^\"]*\/$search_pkg[^a-z0-9][^\"]*\.html)\"/is) { print \$1; exit }")
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/[^a-z0-9]${search_pkg}[^\"]*\.html(?:#[^\"]*)?|[^\"]*\/$search_pkg[^a-z0-9][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$blfs_page" ]]; then
@@ -295,6 +302,8 @@ EOF
 "
 fi
 
+SETUP_COMMANDS=""
+
 if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
 PAGE_URL=$(find_package_page "$PACKAGE")
 if [[ -z "$PAGE_URL" ]]; then
@@ -316,7 +325,25 @@ if [[ -z "$HTML_CONTENT" ]]; then
     error "Empty content from $PAGE_URL"
 fi
 
-# 2.1 Resolve and build required dependencies before this package
+# 2.1 Help extraction by slicing HTML if URL has a fragment (e.g. #pygobject3)
+FRAG=$(echo "$PAGE_URL" | grep -o "#.*$")
+if [[ -n "$FRAG" ]]; then
+    FRAG_ID=${FRAG#\#}
+    log "Slicing HTML content for fragment: $FRAG_ID"
+    # Extract starting from the anchor with the id $FRAG_ID up to the next sect/header
+    HTML_CONTENT=$(printf '%s' "$HTML_CONTENT" | perl -0777 -nse '
+        if (/(<a\s+(?:id|name)="\Q$id\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$id\E)[^"]+")/is) {
+            print $1;
+        } elsif (/(<a\s+(?:id|name)="\Q$id\E"[^>]*>.*)/is) {
+            print $1;
+        }
+    ' -- -id="$FRAG_ID")
+    if [[ -z "$HTML_CONTENT" ]]; then
+         error "Failed to slice HTML for fragment $FRAG_ID in $PAGE_URL"
+    fi
+fi
+
+# 2.2 Resolve and build required dependencies before this package
 if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
     log "Extracting required dependencies from page..."
     REQUIRED_DEPS=$(printf '%s' "$HTML_CONTENT" | perl -0777 -ne '
@@ -424,10 +451,21 @@ get_commands() {
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm"
 }
 
-log "Extracting build commands..."
-RAW_CONTENT=$(get_commands "$HTML_CONTENT")
+    log "Extracting build commands..."
+    RAW_CONTENT=$(get_commands "$HTML_CONTENT")
 
-# Process blocks: Parallel make and Test filtering
+    # Special handling for Linux kernel - include headers
+    if [[ "$PACKAGE" == "linux" ]]; then
+        log "Adding Linux API Headers build steps..."
+        HEADER_HTML=$(curl -s "$LFS_BOOK/chapter05/linux-headers.html")
+        # In a running system, we don't use $LFS prefix and we install to /usr
+        # Prepend header commands to RAW_CONTENT so they get processed by the annotation loop
+        HEADER_CMDS=$(get_commands "$HEADER_HTML" | sed 's/\$LFS//g')
+        RAW_CONTENT="${HEADER_CMDS}
+${RAW_CONTENT}"
+    fi
+
+    # Process blocks: Parallel make and Test filtering
 CRITICAL_PKGS="gcc binutils glibc"
 is_critical=false
 
@@ -472,7 +510,7 @@ while read -r line; do
         # Determine effective type: explicit root, or heuristic for userinput blocks
         _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
-            if grep -qE '^[[:space:]]*(make[[:space:]]+(install|uninstall)|ninja[[:space:]]+(install|uninstall)|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]]+-[^ ]*[[:space:]]+.*/usr|ln[[:space:]]+-s[^[:space:]]*[[:space:]].*[[:space:]]*/usr|rm[[:space:]]+-rf?[[:space:]]+/usr|cp[[:space:]].*[[:space:]]+/usr)' <<< "$CURRENT_BLOCK"; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]].*(/usr|/boot|/etc|/lib|/var)|ln[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]].*(/usr|/boot|/etc|/lib|/var)|cp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|mv[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
             fi
         fi
@@ -578,16 +616,7 @@ fi
     CURRENT_BLOCK+="$line"$'\n'
 done <<< "$RAW_CONTENT"
 
-# Special handling for Linux kernel - include headers
-if [[ "$PACKAGE" == "linux" ]]; then
-    log "Adding Linux API Headers build steps..."
-    HEADER_HTML=$(curl -s "$LFS_BOOK/chapter05/linux-headers.html")
-    # In a running system, we don't use $LFS prefix and we install to /usr
-    # Filter out block markers that are used for internal processing
-    HEADER_CMDS=$(get_commands "$HEADER_HTML" | sed 's/\$LFS//g' | grep -v "^___BLOCK_")
-    COMMANDS="${HEADER_CMDS}
-${COMMANDS}"
-fi
+# (Linux kernel specific headers block removed from here as it is now integrated into RAW_CONTENT above)
 
 if [[ -z "$COMMANDS" ]]; then
     error "Could not extract build commands for '$PACKAGE'"
@@ -596,8 +625,8 @@ fi
 # 2.5 Auto-detect Rust dependency
 if echo "$HTML_CONTENT" | grep -qiE "rust|rustc|cargo"; then
     log "Rust dependency detected (rust/rustc/cargo found in page content)."
-    COMMANDS="export PATH=\$PATH:/opt/rustc/bin
-$COMMANDS"
+    SETUP_COMMANDS+="export PATH=\$PATH:/opt/rustc/bin
+"
 fi
 
 # 2.6 Auto-detect TeXLive and set TEXLIVE_PREFIX
@@ -610,8 +639,8 @@ if echo "$HTML_CONTENT" | grep -qiE "texlive"; then
     fi
     if [[ -n "$TEXLIVE_YEAR" ]]; then
         log "TeXLive detected: setting TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR"
-        COMMANDS="export TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR
-$COMMANDS"
+        SETUP_COMMANDS+="export TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR
+"
     else
         log "TeXLive detected but could not determine year from source filenames."
     fi
@@ -620,8 +649,8 @@ fi
 # 2.7 Auto-detect Qt6 dependency
 if echo "$HTML_CONTENT" | grep -qiE "qt-6|qt6|qt 6"; then
     log "Qt6 dependency detected: adding /opt/qt6/bin to PATH."
-    COMMANDS="export PATH=\$PATH:/opt/qt6/bin
-$COMMANDS"
+    SETUP_COMMANDS+="export PATH=\$PATH:/opt/qt6/bin
+"
 fi
 
 # 2.8 Respect existing Fortran support for GCC
@@ -675,9 +704,9 @@ fi
 # 2.10 ensure XORG_PREFIX and XORG_CONFIG are set if referenced in commands
 if [[ "$COMMANDS" =~ "XORG_PREFIX" || "$COMMANDS" =~ "XORG_CONFIG" ]]; then
     if [[ ! "$COMMANDS" =~ "export XORG_PREFIX=/usr" ]]; then
-        COMMANDS="export XORG_PREFIX=/usr
+        SETUP_COMMANDS+="export XORG_PREFIX=/usr
 export XORG_CONFIG=\"--prefix=\$XORG_PREFIX --sysconfdir=/etc --localstatedir=/var --disable-static\"
-$COMMANDS"
+"
     fi
 fi
 
@@ -770,16 +799,16 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
     
     # Ensure KF6_PREFIX, Qt6 PATH, and Qt6 LD_LIBRARY_PATH are set for all KDE packages
     if [[ ! "$COMMANDS" =~ "export KF6_PREFIX=/usr" ]]; then
-        COMMANDS="export KF6_PREFIX=/usr
-$COMMANDS"
+        SETUP_COMMANDS+="export KF6_PREFIX=/usr
+"
     fi
     if ! echo "$COMMANDS" | grep -q "LD_LIBRARY_PATH.*qt6"; then
-        COMMANDS="export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/qt6/lib
-$COMMANDS"
+        SETUP_COMMANDS+="export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/qt6/lib
+"
     fi
     if ! echo "$COMMANDS" | grep -q "PATH.*qt6"; then
-        COMMANDS="export PATH=\$PATH:/opt/qt6/bin
-$COMMANDS"
+        SETUP_COMMANDS+="export PATH=\$PATH:/opt/qt6/bin
+"
     fi
 
     if [[ "$INCLUDE_CONFIG" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks") ]]; then
@@ -848,15 +877,14 @@ ${COMMANDS}"
             print loop_content
             print "EOF"
             print "bash build-frameworks.sh"
-        }
     ')
 fi
 
-fi # End SKIP_HTML_EXTRACTION block
-
-if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
-    DOWNLOAD_URLS=()
-    if [[ "$XORG_MULTI_MODE" == "true" ]]; then
+# 2.22 Extract Download URL and identify main filename
+if [[ "$SKIP_HTML_EXTRACTION" == "true" ]]; then
+    # Already set by special case
+    :
+elif [[ "$XORG_MULTI_MODE" == "true" ]]; then
         # Extract md5 file content and base URL to populate DOWNLOAD_URLS
         BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/ -B\s+(https?:\/\/\S+)/) { print $1; exit }')
         if [[ -z "$BASE_URL" ]]; then
@@ -985,6 +1013,9 @@ fi
 if [[ "${PACKAGE,,}" == "liba52" ]]; then
     # Special case: liba52's archive is named a52dec
     PKG_BASE="a52dec"
+elif [[ "$PACKAGE" == "libclc" ]]; then
+    # libclc download archive is named llvm-project
+    PKG_BASE="(libclc|llvm-project)"
 elif [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
     PKG_BASE="$PACKAGE"
 elif [[ "$PACKAGE" == "rustc" ]]; then
@@ -1468,6 +1499,7 @@ fi
 _gen_build_script() {
     local dirname="$1"
     local normal_user="$2"
+    local setup_cmds="$3"
     local in_section=""
     local block_n=0
     local user_lines=()
@@ -1481,6 +1513,10 @@ _gen_build_script() {
             local sentinel="__LFS_USER_${block_n}__"
             echo "su '${normal_user}' -s /bin/bash << '${sentinel}'"
             echo "set -e"
+            # Ensure each USER block starts with setup commands
+            if [[ -n "$setup_cmds" ]]; then
+                echo "$setup_cmds"
+            fi
             # Ensure each USER block starts in the tracked directory
             echo "cd \"/sources/${dirname}/${block_starting_rel_dir}\" || cd \"/sources/${dirname}\""
             printf '%s\n' "${user_lines[@]}"
@@ -1555,6 +1591,10 @@ _gen_build_script() {
         if [[ "$line" == "# __BEGIN_ROOT__" ]]; then
             _flush_user
             in_section="root"
+            # Ensure ROOT blocks start with setup commands
+            if [[ -n "$setup_cmds" ]]; then
+                echo "$setup_cmds"
+            fi
             # Ensure ROOT blocks start in the tracked directory
             echo "cd \"/sources/${dirname}/${current_rel_dir}\" || cd \"/sources/${dirname}\""
         elif [[ "$line" == "# __END_ROOT__" ]]; then
@@ -1589,6 +1629,10 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "------------------------------------------------------------"
     echo "DRY RUN: Commands for $PACKAGE (annotated with privilege level)"
     echo "------------------------------------------------------------"
+    if [[ -n "$SETUP_COMMANDS" ]]; then
+        echo "[GLOBAL SETUP]"
+        echo "$SETUP_COMMANDS" | sed 's/^/  /'
+    fi
     _cur_priv="[USER]"
     while IFS= read -r _line; do
         case "$_line" in
@@ -1615,7 +1659,7 @@ fi
 log "Starting remote build for $PACKAGE..."
 
 # Generate the Privilege-Separated build script locally
-BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER")
+BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER" "$SETUP_COMMANDS")
 
 # Generate the Privilege-Separated build script locally by appending to the file directly for maximum robustness
 RS_FILE="/tmp/remote_script_${PACKAGE}.sh"
