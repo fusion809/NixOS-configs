@@ -911,14 +911,25 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream Rust version: $UPSTREAM_VERSION (date: $UPSTREAM_DATE)"
             DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/rustc-${UPSTREAM_VERSION}-src.tar.xz")
-            # Automatically identify the required bootstrap binaries (previous stable version)
-            # This prevents x.py from initiating its own downloads during the build phase.
+            # Rust releases occur every 6 weeks (42 days).
             PREV_MINOR_VERSION="${UPSTREAM_VERSION%%.*}.$(($(echo "$UPSTREAM_VERSION" | cut -d. -f2) - 1))"
-            log "Fetching previous Rust version info ($PREV_MINOR_VERSION) for bootstrap binaries..."
-            PREV_TOML=$(curl -s "https://static.rust-lang.org/dist/channel-rust-${PREV_MINOR_VERSION}.toml")
-            PREV_VERSION=$(echo "$PREV_TOML" | perl -ne 'if (/^\[pkg\.rust\]/) { $in=1 } elsif ($in && /^version\s*=\s*"([0-9.]+)/) { print $1; exit }')
-            PREV_DATE=$(echo "$PREV_TOML" | grep "^date =" | cut -d'"' -f2)
-            # Addition of these to DOWNLOAD_URLS is postponed until after replacement logic
+            FALLBACK_VERSION="${PREV_MINOR_VERSION}.0"
+            FALLBACK_DATE=$(date -d "${UPSTREAM_DATE} - 42 days" +%Y-%m-%d 2>/dev/null || date -d "${UPSTREAM_DATE} 42 days ago" +%Y-%m-%d)
+            
+            # Prioritize same-version binaries if already available (avoids confusing rolled-back downloads)
+            # Check availability with a quick HEAD request
+            if curl -sfI "https://static.rust-lang.org/dist/${UPSTREAM_DATE}/rustc-${UPSTREAM_VERSION}-x86_64-unknown-linux-gnu.tar.xz" -o /dev/null; then
+                BOOTSTRAP_VERSION="$UPSTREAM_VERSION"
+                BOOTSTRAP_DATE="$UPSTREAM_DATE"
+                log "Using same-version bootstrap binaries: $BOOTSTRAP_VERSION (date: $BOOTSTRAP_DATE)"
+            else
+                BOOTSTRAP_VERSION="$FALLBACK_VERSION"
+                BOOTSTRAP_DATE="$FALLBACK_DATE"
+                log "Primary target binaries not found; falling back to bootstrap version $BOOTSTRAP_VERSION (date: $BOOTSTRAP_DATE)"
+            fi
+            # Use these variables for addition to DOWNLOAD_URLS later
+            PREV_VERSION="$BOOTSTRAP_VERSION"
+            PREV_DATE="$BOOTSTRAP_DATE"
         fi
     elif [[ "$PACKAGE" == "llvm" ]]; then
         log "Fetching latest upstream LLVM version from GitHub..."
@@ -1268,24 +1279,43 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n
     DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/cargo-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
 fi
 
-# Pre-download Rust bootstrap binaries caching logic
-if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n "$PREV_DATE" ]]; then
-    log "Injecting Rust bootstrap caching commands for version $PREV_VERSION ($PREV_DATE)..."
-    # ADD the correct bootstrap binaries AFTER global replacement to ensure they are NOT corrupted
-    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rustc-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
-    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rust-std-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
-    DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/cargo-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
-
-    CACHE_DIR="build/cache/${PREV_DATE}"
-    # Use absolute paths from /sources for reliable linking
-    CACHE_CMDS="mkdir -pv ${CACHE_DIR} || true
-ln -sf /sources/rustc-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz ${CACHE_DIR}/
-ln -sf /sources/rust-std-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz ${CACHE_DIR}/
-ln -sf /sources/cargo-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz ${CACHE_DIR}/"
+# Pre-download Rust bootstrap binaries caching logic (Dynamic Detection on Guest)
+if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" ]]; then
+    log "Injecting dynamic Rust bootstrap detection and caching logic..."
     
+    # We inject a shell block that will run on the guest AFTER extraction.
+    # It parses src/stage0.json to find the EXACT version and date x.py expects.
+    CACHE_CMDS="
+# Dynamic Rust Bootstrap Helper
+if [ -f \"src/stage0.json\" ]; then
+    # Try parsing with python3 (reliable) or grep/sed (fallback)
+    BT_VER=\$(python3 -c \"import json; print(json.load(open('src/stage0.json'))['compiler']['version'])\" 2>/dev/null || \
+             grep -A 5 '\"compiler\":' src/stage0.json | grep '\"version\":' | cut -d'\"' -f4 | head -n 1)
+    BT_DATE=\$(python3 -c \"import json; print(json.load(open('src/stage0.json'))['compiler']['date'])\" 2>/dev/null || \
+              grep -A 5 '\"compiler\":' src/stage0.json | grep '\"date\":' | cut -d'\"' -f4 | head -n 1)
+    
+    if [ -n \"\$BT_VER\" ] && [ -n \"\$BT_DATE\" ]; then
+        echo \"[LFS-AUTOBUILD] Detected required bootstrap: \$BT_VER (\$BT_DATE)\"
+        CACHE_DIR=\"build/cache/\$BT_DATE\"
+        mkdir -pv \"\$CACHE_DIR\"
+        for comp in rustc rust-std cargo; do
+            fname=\"\${comp}-\${BT_VER}-x86_64-unknown-linux-gnu.tar.xz\"
+            if [ ! -f \"/sources/\$fname\" ]; then
+                echo \"[LFS-AUTOBUILD] Downloading missing bootstrap component: \$fname\"
+                wget -nc \"https://static.rust-lang.org/dist/\${BT_DATE}/\${fname}\" -P /sources/
+            fi
+            ln -sf \"/sources/\$fname\" \"\$CACHE_DIR/\"
+        done
+    else
+        echo \"[WARNING] Could not detect bootstrap version from src/stage0.json\"
+    fi
+fi"
+
     # Inject before ./x.py build
     if [[ "$COMMANDS" == *"./x.py build"* ]]; then
-        COMMANDS="${COMMANDS//.\/x.py build/$CACHE_CMDS
+        # Escape ampersands in replacement string to prevent bash's ${var//pat/repl} from mangling them
+        CACHE_CMDS_ESC="${CACHE_CMDS//&/\\&}"
+        COMMANDS="${COMMANDS//.\/x.py build/$CACHE_CMDS_ESC
 ./x.py build}"
     else
         # Fallback: prepend to COMMANDS
