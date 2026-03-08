@@ -448,7 +448,16 @@ get_commands() {
     ' | perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
         sed 's/^[[:space:]]*//' | \
-        grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm"
+        grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
+        perl -0777 -pe '
+            # 1. Remove trailing && before block ends or start of next markers
+            s/\s*&&\s*\n\s*?___BLOCK_END___/\n___BLOCK_END___/gs;
+            s/\s*&&\s*\n\s*?___BLOCK_START_/\n___BLOCK_START_/gs;
+            # 2. Remove empty blocks
+            s/___BLOCK_START_(ROOT|USER)___\s*___BLOCK_END___\s*//gs;
+            # 3. Final cleanup of any trailing && at end of file
+            s/\s*&&\s*$//gs;
+        '
 }
 
     log "Extracting build commands..."
