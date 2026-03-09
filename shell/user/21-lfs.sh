@@ -107,6 +107,38 @@ lfs_get_local_packages() {
         sort -u
 }
 
+lfs_map_bin_to_pkg() {
+    local bin_path="$1"
+    local bin_name=$(basename "$bin_path")
+    
+    # Heuristic 1: Exact match with bin name
+    local local_pkgs=$(lfs_get_local_packages)
+    local match=$(echo "$local_pkgs" | grep -Ei "^${bin_name}-([0-9])" | head -n 1 | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
+    if [[ -n "$match" ]]; then
+        echo "$match"
+        return 0
+    fi
+    
+    # Heuristic 2: Strip common suffixes/prefixes and match
+    local base_name=$(echo "$bin_name" | sed -E 's/^lib//; s/\.so(\.[0-9]+)*$//; s/[-.0-9]+$//')
+    if [[ -n "$base_name" ]]; then
+        match=$(echo "$local_pkgs" | grep -Ei "^${base_name}[a-zA-Z0-9_\+\-]*-[0-9]" | head -n 1 | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
+        if [[ -n "$match" ]]; then
+            echo "$match"
+            return 0
+        fi
+    fi
+
+    # Heuristic 3: Special cases
+    case "$bin_name" in
+        gnome-terminal) echo "gnome-terminal" ;;
+        vte-*) echo "vte" ;;
+        python*) echo "python" ;;
+        perl*) echo "perl" ;;
+        *) echo "" ;;
+    esac
+}
+
 lfs_strip() {
     local dry_run=false
     if [[ "$1" == "--dry-run" ]]; then
@@ -465,7 +497,53 @@ for pkg in sorted_pkgs:
             echo "Building $pkg..."
             "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
         fi
+
+        # Check for preserved libraries that might require dependent rebuilds
+        local preserved_file="/tmp/preserved_libs_${pkg}.txt"
+        if ssh_lfs "[ -f $preserved_file ]"; then
+            echo "Preserved libraries detected after updating $pkg. Searching for dependents..."
+            local libs=$(ssh_lfs "cat $preserved_file && sudo rm -f $preserved_file")
+            while read -r lib; do
+                [[ -z "$lib" ]] && continue
+                echo "  Checking dependents for $(basename "$lib")..."
+                local dependents=$(ssh_lfs "missing_search $(basename "$lib")" 2>/dev/null)
+                while read -r dep_bin; do
+                    [[ -z "$dep_bin" ]] && continue
+                    local dep_pkg=$(lfs_map_bin_to_pkg "$dep_bin")
+                    if [[ -n "$dep_pkg" ]]; then
+                        # Add to updates if not already there and not the current package
+                        local already_in=false
+                        for p in "${updates[@]}"; do
+                            if [[ "$p" == "$dep_pkg" ]]; then already_in=true; break; fi
+                        done
+                        if [[ "$already_in" == "false" && "$dep_pkg" != "$pkg" ]]; then
+                            echo "    -> Found dependent: $dep_pkg (needs rebuild)"
+                            updates+=("$dep_pkg")
+                        fi
+                    fi
+                done <<< "$dependents"
+                
+                # Register for final cleanup
+                echo "$lib" | sudo tee -a /tmp/lfs_preserved_cleanup_list.txt > /dev/null
+            done <<< "$libs"
+        fi
     done
+
+    # Final cleanup of preserved libraries that are no longer needed
+    if ssh_lfs "[ -f /tmp/lfs_preserved_cleanup_list.txt ]"; then
+        echo "Performing final cleanup of preserved libraries..."
+        ssh_lfs 'while read -r lib; do
+            if [ -f "$lib" ]; then
+                dependents=$(missing_search "$(basename "$lib")" 2>/dev/null)
+                if [ -z "$dependents" ]; then
+                    echo "  Removing no longer needed preserved library: $lib"
+                    sudo rm -f "$lib"
+                else
+                    echo "  Preserving $lib: still has dependents"
+                fi
+            fi
+        done < /tmp/lfs_preserved_cleanup_list.txt && sudo rm -f /tmp/lfs_preserved_cleanup_list.txt'
+    fi
     fi
 
     echo "Updating Python packages via pip..."

@@ -1824,6 +1824,19 @@ while read -r line; do
                 fi
             done
         fi
+
+        # Track preserved libraries with different major versions
+        lib_base=$(echo "$basename" | sed 's/\.so\.[0-9].*//')
+        if [ -n "$lib_base" ]; then
+            for candidate in "$dirname"/"$lib_base".so.*; do
+                [ -f "$candidate" ] || continue
+                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]] && \
+                   [[ "$candidate" != "$dirname/$major_prefix"* ]]; then
+                    echo "Found preserved library: $candidate"
+                    echo "$candidate" | sudo tee -a "/tmp/preserved_libs_${PACKAGE}.txt" > /dev/null
+                fi
+            done
+        fi
     fi
 
     if [ -d "$line" ]; then
