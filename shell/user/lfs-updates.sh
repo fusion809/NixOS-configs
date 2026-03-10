@@ -56,7 +56,14 @@ while read -r update_line; do
     if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
     if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
     
-    str+=$(printf "%-30s | %-15s | %-15s [UPDATE]" "$name" "$local_ver" "$remote_ver")
+    label="[UPDATE]"
+    if [[ "$remote_ver" == "FAILED" ]]; then
+        label="[FAILED]"
+    elif [[ "$remote_ver" == "MISSING" ]]; then
+        label="[MISSING]"
+    fi
+    
+    str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
     str+="\n"
     j+=1;
 done <<< "$CUSTOM_UPDATES"

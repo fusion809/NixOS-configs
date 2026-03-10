@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
 # LFS/BLFS update management logic
+export NIXCFG="${NIXCFG:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
 LFS_DEV_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_DEV_BOOK="https://linuxfromscratch.org/blfs/view/systemd"
@@ -29,7 +29,11 @@ lfs_get_upstream_version() {
             curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
         vim)
-            curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{(?<="tag_name": "v)[0-9.]+}g) { print $& }' | head -n 1
+            VIM_TAG=$(curl -sL -H "User-Agent: bash" https://github.com/vim/vim/tags | perl -nle 'while (m{href="/vim/vim/releases/tag/v\K[0-9.]+}g) { print $& }' | head -n 1)
+            if [[ -z "$VIM_TAG" ]]; then
+                VIM_TAG=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{(?<="tag_name": "v)[0-9.]+}g) { print $& }' | head -n 1)
+            fi
+            echo "$VIM_TAG"
             ;;
         firefox)
             curl -s https://product-details.mozilla.org/1.0/firefox_versions.json | perl -nle 'while (m{(?<="LATEST_FIREFOX_VERSION": ")[0-9.]+}g) { print $& }'
@@ -52,8 +56,8 @@ lfs_get_remote_packages() {
         upstream=true
     fi
 
-    KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)
-    VIM_VER=$(curl -sL https://github.com/vim/vim/tags | grep -oP 'href="/vim/vim/releases/tag/v\K[0-9.]+' | head -n 1)
+    KERNEL_VER=$(curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)
+    VIM_VER=$(curl -sL -H "User-Agent: bash" https://github.com/vim/vim/tags | grep -oP 'href="/vim/vim/releases/tag/v\K[0-9.]+' | head -n 1)
     if [[ -z "$VIM_VER" ]]; then
         VIM_VER=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | grep -oP '(?<="tag_name": "v)[0-9.]+' | head -n 1)
     fi
@@ -231,24 +235,37 @@ lfs_check_custom_updates() {
         
         # 2. Get remote version
         remote_ver=""
-        version_line_num=$(grep -nE '^[A-Z_]*VERSION=' "$build_script" | head -n 1 | cut -d: -f1)
+        status="OK"
+        version_line_num=$(grep -nE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
         if [ -n "$version_line_num" ]; then
             head -n "$version_line_num" "$build_script" > /tmp/eval_ver.sh
-            var_name=$(grep -E '^[A-Z_]*VERSION=' "$build_script" | head -n 1 | cut -d= -f1)
+            var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
             echo "echo \$$var_name" >> /tmp/eval_ver.sh
             remote_ver=$(cd "$pkg_dir" && bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
             rm -f /tmp/eval_ver.sh
-        fi
-        
-        # If no VERSION line, try to determine git remote head
-        if [ -z "$remote_ver" ] && grep -q "git clone" "$build_script"; then
-            repo_url=$(grep -oP 'git clone \K[^ ]+' "$build_script" | head -n 1)
-            if [ -n "$repo_url" ]; then
-                remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+            if [ -z "$remote_ver" ]; then
+                status="FAILED"
             fi
         fi
         
-        if [ -n "$remote_ver" ]; then
+        # If no version line, try to determine git remote head
+        if [ -z "$remote_ver" ] && [ "$status" == "OK" ] && grep -q "git clone" "$build_script"; then
+            repo_url=$(grep -oP 'git clone \K[^ ]+' "$build_script" | head -n 1)
+            if [ -n "$repo_url" ]; then
+                remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+                if [ -z "$remote_ver" ]; then
+                    status="FAILED"
+                fi
+            fi
+        fi
+
+        if [ -z "$remote_ver" ] && [ "$status" == "OK" ]; then
+            status="MISSING"
+        fi
+        
+        if [ "$status" != "OK" ]; then
+            echo "$pkg_name $status $status"
+        elif [ -n "$remote_ver" ]; then
             if [ "$local_ver" == "none" ]; then
                 # Also check by directory basename (fallback for packages that registered under dir name)
                 dir_name=$(basename "$pkg_dir")

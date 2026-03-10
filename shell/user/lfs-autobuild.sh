@@ -1500,8 +1500,12 @@ fi
 
 
 if [[ "$PACKAGE" == "vim" ]]; then
-    log "Removing /usr/bin/vi symlink creation..."
-    COMMANDS=$(echo "$COMMANDS" | sed '/ln .* \/usr\/bin\/vi/d' | sed '/for L in.*do/d' | sed '/done/d' | sed '/ln -sv vim.1.*vi.1/d')
+    log "Removing /usr/bin/vi symlink creation and cleaning up docs..."
+    # Remove symlink creation for vi that often appears in the book
+    COMMANDS=$(echo "$COMMANDS" | grep -v "ln -sv .* /usr/bin/vi")
+    # Also remove the loop that links vi.1 and other man pages
+    COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's/for L in.*?do.*?ln -sv vim\.1.*?done//gs')
+    # Clean up old documentation before linking the new one
     COMMANDS=$(echo "$COMMANDS" | sed "\|ln -sv ../vim/vim$UPSTREAM_MAJOR_MINOR/doc /usr/share/doc/vim-$UPSTREAM_VERSION|i rm -rf /usr/share/doc/vim-*")
 fi
 
