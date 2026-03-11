@@ -9,18 +9,26 @@
     };
     # Hyprland
     hy3 = {
-      url = "git+https://github.com/outfoxxed/hy3?ref=refs/tags/hl0.54.2";
+      url = "github:outfoxxed/hy3";
       #refs/tags/hl0.52.0"; # where {version} is the hyprland release version
       # or "github:outfoxxed/hy3" to follow the development branch.
       # (you may encounter issues if you dont do the same for hyprland)
       inputs.hyprland.follows = "hyprland";
     };
     # use the github shorthand with the tag; this resolves Git refs more reliably
-    hyprland.url =
-      "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.54.2";
+    hyprland.url = "github:hyprwm/Hyprland?submodules=1";
     # where 0.52.1 is the hyprland release version
     # or "github:hyprwm/Hyprland?submodules=1" to follow the development branch
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
+
+    hyprland-guiutils.url = "github:hyprwm/hyprland-guiutils";
+    hyprland-guiutils.inputs.nixpkgs.follows = "nixpkgs";
+    hyprtoolkit.url = "github:hyprwm/hyprtoolkit";
+    hyprtoolkit.inputs.nixpkgs.follows = "nixpkgs";
+
+    hyprland.inputs.hyprland-guiutils.follows = "hyprland-guiutils";
+    hyprland-guiutils.inputs.hyprtoolkit.follows = "hyprtoolkit";
+
     # nixpkgs
     nixpkgs-oldstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
