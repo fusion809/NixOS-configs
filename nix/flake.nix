@@ -77,6 +77,8 @@
           }
           {
             nixpkgs.overlays = [
+              inputs.hyprtoolkit.overlays.default
+              inputs.hyprland-guiutils.overlays.default
               (final: prev: {
                 hyprlandPlugins = prev.hyprlandPlugins // {
                   hy3 = hy3.packages.x86_64-linux.hy3;
