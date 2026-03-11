@@ -81,11 +81,15 @@
           }
           {
             nixpkgs.overlays = [
-              inputs.hyprtoolkit.overlays.default
-              inputs.hyprland-guiutils.overlays.default
+              inputs.hyprland.overlays.glaze
+              inputs.hyprland.overlays.hyprland-packages
+              inputs.hyprland-guiutils.overlays.hyprland-guiutils-with-deps
               (final: prev: {
+                hyprland = prev.hyprland.override {
+                  hyprland-guiutils = final.hyprland-guiutils;
+                };
                 hyprlandPlugins = prev.hyprlandPlugins // {
-                  hy3 = hy3.packages.x86_64-linux.hy3;
+                  hy3 = hy3.packages.${prev.stdenv.hostPlatform.system}.hy3;
                 };
               })
             ];
