@@ -54,6 +54,10 @@
     in {
       # expose the hy3 package from the hy3 input so it can be built directly
       packages.x86_64-linux.hy3 = hy3.packages.x86_64-linux.hy3;
+      packages.x86_64-linux.hyprland-guiutils =
+        inputs.hyprland-guiutils.packages.x86_64-linux.hyprland-guiutils;
+      packages.x86_64-linux.hyprtoolkit =
+        inputs.hyprtoolkit.packages.x86_64-linux.hyprtoolkit;
 
       # also set the defaultPackage for this system to hy3 for convenience
       defaultPackage.x86_64-linux = hy3.packages.x86_64-linux.hy3;

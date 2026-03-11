@@ -1817,8 +1817,8 @@ while read -r line; do
     dirname=$(dirname "$line")
     basename=$(basename "$line")
 
-    if [[ "$basename" =~ \.so\.[0-9]+ ]]; then
-        major_prefix=$(echo "$basename" | grep -oE '^.*\.so\.[0-9]+')
+    if [[ "$basename" =~ \.so\.[0-9]+ || "$basename" =~ -[0-9].*\.so$ ]]; then
+        major_prefix=$(echo "$basename" | grep -oE '^.*\.so\.[0-9]+|^[a-zA-Z0-9_]+-')
         if [ -n "$major_prefix" ]; then
             for candidate in "$dirname"/"$major_prefix"*; do
                 [ -f "$candidate" ] && [ "$candidate" != "$line" ] || continue

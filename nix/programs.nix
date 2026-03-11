@@ -16,9 +16,9 @@ in {
   firefox = { enable = false; };
   hyprland = {
     enable = true;
-    package =
-      inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    #package = pkgs.hyprland;
+    # package =
+    #   inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    package = pkgs.hyprland;
   };
   nano = { enable = false; };
   nixvim = {
