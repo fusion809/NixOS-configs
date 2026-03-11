@@ -9,7 +9,7 @@
     };
     # Hyprland
     hy3 = {
-      url = "git+https://github.com/outfoxxed/hy3?ref=refs/tags/hl0.53.0.1";
+      url = "git+https://github.com/outfoxxed/hy3?ref=refs/tags/hl0.54.2";
       #refs/tags/hl0.52.0"; # where {version} is the hyprland release version
       # or "github:outfoxxed/hy3" to follow the development branch.
       # (you may encounter issues if you dont do the same for hyprland)
