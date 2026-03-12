@@ -437,11 +437,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1772459629,
-        "narHash": "sha256-/iwvNUYShmmnwmz/czEUh6+0eF5vCMv0xtDW0STPIuM=",
+        "lastModified": 1771866172,
+        "narHash": "sha256-fYFoXhQLrm1rD8vSFKQBOEX4OGCuJdLt1amKfHd5GAw=",
         "owner": "hyprwm",
         "repo": "hyprlang",
-        "rev": "7615ee388de18239a4ab1400946f3d0e498a8186",
+        "rev": "0b219224910e7642eb0ed49f0db5ec3d008e3e41",
         "type": "github"
       },
       "original": {
@@ -760,11 +760,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1773307411,
-        "narHash": "sha256-myP874O7Q/lllqKT8w2xPVcV5oVFrXosetGMgxs82wM=",
+        "lastModified": 1773308241,
+        "narHash": "sha256-7viTPMRKiGfsyj3kWdk6m8ah9eBq50Pmc+gLporCWCU=",
         "ref": "master",
-        "rev": "4c7a21a55705b9d9e48ce13ccc3ce3b50456ff5c",
-        "revCount": 962363,
+        "rev": "9aa8fa66b104a46b7be979192b1fee4a11220d8d",
+        "revCount": 962365,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
