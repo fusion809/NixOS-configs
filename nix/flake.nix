@@ -27,6 +27,14 @@
     hyprlang.inputs.nixpkgs.follows = "nixpkgs";
     hyprtoolkit.url = "github:hyprwm/hyprtoolkit";
     hyprtoolkit.inputs.nixpkgs.follows = "nixpkgs";
+    hyprutils.url = "github:hyprwm/hyprutils";
+    hyprutils.inputs.nixpkgs.follows = "nixpkgs";
+    aquamarine.url = "github:hyprwm/aquamarine";
+    aquamarine.inputs.nixpkgs.follows = "nixpkgs";
+    hyprwayland-scanner.url = "github:hyprwm/hyprwayland-scanner";
+    hyprwayland-scanner.inputs.nixpkgs.follows = "nixpkgs";
+    hyprgraphics.url = "github:hyprwm/hyprgraphics";
+    hyprgraphics.inputs.nixpkgs.follows = "nixpkgs";
 
     hyprland.inputs.hyprland-guiutils.follows = "hyprland-guiutils";
     hyprland-guiutils.inputs.hyprtoolkit.follows = "hyprtoolkit";
@@ -34,6 +42,25 @@
     hyprland.inputs.hyprlang.follows = "hyprlang";
     hyprland-guiutils.inputs.hyprlang.follows = "hyprlang";
     hyprtoolkit.inputs.hyprlang.follows = "hyprlang";
+
+    hyprland.inputs.hyprutils.follows = "hyprutils";
+    hyprland-guiutils.inputs.hyprutils.follows = "hyprutils";
+    hyprtoolkit.inputs.hyprutils.follows = "hyprutils";
+    hyprlang.inputs.hyprutils.follows = "hyprutils";
+
+    hyprland.inputs.aquamarine.follows = "aquamarine";
+    hyprland-guiutils.inputs.aquamarine.follows = "aquamarine";
+    hyprtoolkit.inputs.aquamarine.follows = "aquamarine";
+
+    hyprland.inputs.hyprwayland-scanner.follows = "hyprwayland-scanner";
+    hyprland-guiutils.inputs.hyprwayland-scanner.follows =
+      "hyprwayland-scanner";
+    hyprtoolkit.inputs.hyprwayland-scanner.follows = "hyprwayland-scanner";
+    aquamarine.inputs.hyprwayland-scanner.follows = "hyprwayland-scanner";
+
+    hyprland.inputs.hyprgraphics.follows = "hyprgraphics";
+    hyprland-guiutils.inputs.hyprgraphics.follows = "hyprgraphics";
+    hyprtoolkit.inputs.hyprgraphics.follows = "hyprgraphics";
 
     # nixpkgs
     nixpkgs-oldstable.url =
