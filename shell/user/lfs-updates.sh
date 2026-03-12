@@ -51,7 +51,7 @@ wait
 # Collect results
 for f in "$tmp_lfs"/*; do
     if [[ -f "$f" ]]; then
-        str+=$(cat "$f")
+        str+="$(cat "$f")"$'\n'
         j=$((j + 1))
     fi
 done

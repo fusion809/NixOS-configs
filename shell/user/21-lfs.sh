@@ -61,6 +61,9 @@ lfs_get_upstream_version() {
         konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)
             curl -sL https://download.kde.org/stable/release-service/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
             ;;
+        linux)
+            curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1
+            ;;
     esac
 }
 
@@ -98,7 +101,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("rustc" "llvm" "libuv" "vim" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "vim" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)

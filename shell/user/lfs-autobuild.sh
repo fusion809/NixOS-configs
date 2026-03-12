@@ -1189,7 +1189,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
             /^make.*mrproper/ {
                 if (mrproper_seen == 0) {
                     print "make mrproper"
-                    print "cp /boot/config-$(uname -r) .config"
+                    print "cat /boot/config-$(uname -r) > .config"
                     mrproper_seen=1
                 }
                 next
