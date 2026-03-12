@@ -23,7 +23,7 @@
 
     hyprland-guiutils.url = "github:hyprwm/hyprland-guiutils";
     hyprland-guiutils.inputs.nixpkgs.follows = "nixpkgs";
-    hyprtoolkit.url = "github:hyprwm/hyprtoolkit";
+    hyprtoolkit.url = "github:hyprwm/hyprtoolkit/v0.5.3";
     hyprtoolkit.inputs.nixpkgs.follows = "nixpkgs";
 
     hyprland.inputs.hyprland-guiutils.follows = "hyprland-guiutils";
