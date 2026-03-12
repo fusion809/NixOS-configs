@@ -23,11 +23,17 @@
 
     hyprland-guiutils.url = "github:hyprwm/hyprland-guiutils";
     hyprland-guiutils.inputs.nixpkgs.follows = "nixpkgs";
-    hyprtoolkit.url = "github:hyprwm/hyprtoolkit/v0.5.3";
+    hyprlang.url = "github:hyprwm/hyprlang";
+    hyprlang.inputs.nixpkgs.follows = "nixpkgs";
+    hyprtoolkit.url = "github:hyprwm/hyprtoolkit";
     hyprtoolkit.inputs.nixpkgs.follows = "nixpkgs";
 
     hyprland.inputs.hyprland-guiutils.follows = "hyprland-guiutils";
     hyprland-guiutils.inputs.hyprtoolkit.follows = "hyprtoolkit";
+
+    hyprland.inputs.hyprlang.follows = "hyprlang";
+    hyprland-guiutils.inputs.hyprlang.follows = "hyprlang";
+    hyprtoolkit.inputs.hyprlang.follows = "hyprlang";
 
     # nixpkgs
     nixpkgs-oldstable.url =
