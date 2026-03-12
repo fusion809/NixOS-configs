@@ -204,66 +204,6 @@ if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
 	fi
 fi
 
-if ( [[ -n $HY3_TAG ]] && [[ $HY3_TAG != "null" ]] && [[ $HY3_TAG != $HY3_INST ]] && [[ -n $HY3_INST ]] ); then
-	add_symbol "󱇛"
-	sed -i \
-        -e "s|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_INST|https://github.com/outfoxxed/hy3?ref=refs/tags/$HY3_TAG|" "$FLAKE_FILE"
-	if [[ ${#pushStr} -gt 0 ]]; then
-		pushStr+="; "
-	fi
-	pushStr+="hy3: $HY3_INST->$HY3_TAG"
-fi
-
-echo "Hyprland: $HYPR_INST->$HYPR_TAG" 
-if ( [[ $HYPR_INST != $HYPR_TAG ]] && [[ $HYPR_TAG != "null" ]] && [[ -n $HYPR_TAG ]] ); then
-	# Only update Hyprland if hy3 already has a release targeting the same
-	# major.minor (e.g. hl0.54.x for Hyprland v0.54.0). This prevents
-	# updating to a version that hy3 is incompatible with.
-	hypr_major_minor=$(echo "$HYPR_TAG" | sed 's/^v//' | cut -d. -f1,2)
-	hy3_expected_prefix="hl${hypr_major_minor}"
-	if [[ "$HY3_TAG" == "${hy3_expected_prefix}"* ]]; then
-		add_symbol ""
-		sed -i -e "s|https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/$HYPR_INST|https://github.com/hyprwm/Hyprland?submodules=1\&ref=refs/tags/$HYPR_TAG|" "$FLAKE_FILE"
-		if [[ ${#pushStr} -gt 0 ]]; then
-			pushStr+="; "
-		fi
-		pushStr+="hyprland: $HYPR_INST->$HYPR_TAG"
-	else
-		echo "Skipping Hyprland update to $HYPR_TAG: waiting for hy3 tag ${hy3_expected_prefix}.x (latest hy3: $HY3_TAG)"
-	fi
-fi
-
-if ( [[ $vim_instver != $vim_upver ]] && [[ -n $vim_upver ]] && [[ -f /run/current-system/sw/bin/vim ]] ); then
-	add_symbol ""
-fi
-
-retry git -C $GHUBO/OpenRA pull origin bleed -q
-latestRev=$(git -C $GHUBO/OpenRA log | head -n 1 | cut -d ' ' -f 2)
-upno=$(git -C $GHUBO/OpenRA rev-list --count HEAD)
-uphash=$(echo $latestRev | head -c 7)
-packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
-latestVer="$upno.git.$uphash"
-if [[ $latestVer != $packagedVer ]]; then
-	add_symbol "󱢇"
-	
-	if [[ ${#pushStr} -gt 0 ]]; then
-		pushStr+="; "
-	fi
-	pushStr+="openra: $packagedVer->$latestVer"
-	
-	# Prefetch the new hash
-	# We use the local repo path to be consistent with the fetchGit in default.nix, but prefetch needs the hash of the *content* at that revision.
-	# Using the file URL ensures we get the hash of the tree.
-	new_hash=$(nix-prefetch-git --url "file://$GHUBO/OpenRA" --rev "$latestRev" --quiet | jq -r '.hash')
-	
-	if [[ -n "$new_hash" ]]; then
-		sed -i "s|hash = \".*\"|hash = \"$new_hash\"|" "$NIXCFG/nixpkgs/openra/engines/git/default.nix"
-		nix-build "$NIXCFG/nixpkgs/openra/default.nix" --arg pkgs '(import <nixpkgs> {})' --argstr homeDir "$HOME" -A engines.git.fetch-deps
-		./result
-	else
-		echo "Warning: Failed to prefetch OpenRA hash" >&2
-	fi
-fi
 if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	marvin_pkg_file="$NIXCFG/nixpkgs/marvin/package.nix"
 	current_marvin_ver=$(grep -o 'version = ".*"' "$marvin_pkg_file" | cut -d '"' -f 2)
