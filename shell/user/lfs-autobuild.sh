@@ -1190,6 +1190,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
                 if (mrproper_seen == 0) {
                     print "make mrproper"
                     print "cat /boot/config-$(uname -r) > .config"
+                    print "make olddefconfig"
                     mrproper_seen=1
                 }
                 next
@@ -1636,6 +1637,7 @@ _gen_build_script() {
             echo "cd \"/sources/${dirname}/${current_rel_dir}\" || cd \"/sources/${dirname}\""
         elif [[ "$line" == "# __END_ROOT__" ]]; then
             in_section=""
+            echo "chown -R '${normal_user}' \"/sources/${dirname}\" 2>/dev/null || true"
         elif [[ "$line" == "# __BEGIN_USER__" ]]; then
             in_section="user"
             block_starting_rel_dir="$current_rel_dir"
