@@ -33,7 +33,7 @@
     in {
       # also set the defaultPackage for this system to hy3 for convenience
       defaultPackage.x86_64-linux =
-        inputs.nixpkgs-unstable.legacyPackages.x86_64-linux.hyprlandPlugins.hy3;
+        inputs.nixpkgs-master.legacyPackages.x86_64-linux.hyprlandPlugins.hy3;
 
       nixosConfigurations."nixos" = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs username; };
@@ -55,9 +55,9 @@
           {
             nixpkgs.overlays = [
               (final: prev: {
-                hyprland = final.unstable.hyprland;
+                hyprland = final.master.hyprland;
                 hyprlandPlugins = prev.hyprlandPlugins // {
-                  hy3 = final.unstable.hyprlandPlugins.hy3;
+                  hy3 = final.master.hyprlandPlugins.hy3;
                 };
               })
             ];
