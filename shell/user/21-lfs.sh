@@ -16,6 +16,20 @@ lfs_autobuild() {
 }
 
 
+lfs_progress_bar() {
+    local current=$1
+    local total=$2
+    local prefix=$3
+    local width=30
+    local percent=$(( 100 * current / total ))
+    local filled=$(( width * current / total ))
+    local empty=$(( width - filled ))
+    local bar=$(printf "%${filled}s" | tr ' ' '#')$(printf "%${empty}s" | tr ' ' '-')
+    # Use fixed-width prefix and clear to end of line
+    printf "\r%-45s [%s] %3d%% \033[K" "$prefix" "$bar" "$percent" >&2
+}
+
+
 lfs_get_upstream_version() {
     local pkg="$1"
     case "$pkg" in
@@ -84,15 +98,37 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list="rustc llvm libuv vim firefox frameworks frameworks6 plasma konsole dolphin dolphin-plugins gwenview libkdcraw okular kdenlive"
-        for p in $upstream_list; do
-            local uv=$(lfs_get_upstream_version "$p")
-            if [[ -n "$uv" ]]; then
-                # Remove existing (case-insensitive) and add upstream
+        local upstream_list=("rustc" "llvm" "libuv" "vim" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive")
+        local total=${#upstream_list[@]}
+        local count=0
+        local tmp_upstream=$(mktemp -d)
+        
+        for p in "${upstream_list[@]}"; do
+            (
+                uv=$(lfs_get_upstream_version "$p")
+                if [[ -n "$uv" ]]; then
+                    echo "${p}-${uv}" > "$tmp_upstream/$p"
+                fi
+            ) &
+            
+            # Show progress based on jobs started
+            count=$((count + 1))
+            lfs_progress_bar "$count" "$total" "Starting upstream check: $p" >&2
+        done
+        wait
+        
+        # Update progress to 100% on the SAME line
+        lfs_progress_bar "$total" "$total" "Upstream checks complete" >&2
+        echo "" >&2
+        
+        for p in "${upstream_list[@]}"; do
+            if [[ -f "$tmp_upstream/$p" ]]; then
+                local res=$(cat "$tmp_upstream/$p")
                 all_pkgs=$(echo "$all_pkgs" | grep -vEi "^${p}-([0-9])")
-                all_pkgs=$(echo -e "${all_pkgs}\n${p}-${uv}")
+                all_pkgs=$(echo -e "${all_pkgs}\n${res}")
             fi
         done
+        rm -rf "$tmp_upstream"
         all_pkgs=$(echo "$all_pkgs" | sort -u)
     fi
 
@@ -218,83 +254,118 @@ lfs_check_custom_updates() {
 
     local script=$(cat <<'EOF'
     sudo mkdir -p /var/lib/lfs-custom-packages 2>/dev/null || true
-    for build_script in $(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null); do
-        pkg_dir=$(dirname "$build_script")
-        name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
-        if [ -n "$name_line" ]; then
-            pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
-        else
-            pkg_name=$(basename "$pkg_dir")
-        fi
-        
-        # 1. Get local version
-        local_ver="none"
-        if [ -f "/var/lib/lfs-custom-packages/$pkg_name" ]; then
-            local_ver=$(cat "/var/lib/lfs-custom-packages/$pkg_name" 2>/dev/null || echo "none")
-        fi
-        
-        # 2. Get remote version
-        remote_ver=""
-        status="OK"
-        version_line_num=$(grep -nE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
-        var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
-        if [ -n "$version_line_num" ]; then
-            head -n "$version_line_num" "$build_script" > /tmp/eval_ver.sh
-            var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
-            echo "echo \$$var_name" >> /tmp/eval_ver.sh
-            for attempt in 1 2 3; do
-                remote_ver=$(cd "$pkg_dir" && bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
-                [ -n "$remote_ver" ] && break
-                [ "$attempt" -lt 3 ] && sleep 2
-            done
-            rm -f /tmp/eval_ver.sh
-            if [ -z "$remote_ver" ]; then
-                status="FAILED"
+    
+    scripts=($(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null))
+    total=${#scripts[@]}
+    echo "TOTAL:$total"
+    count=0
+    max_jobs=100
+    
+    # We need a shared counter and results file
+    mkdir -p /tmp/lfs_updates_parallel
+    rm -f /tmp/lfs_updates_parallel/*
+    echo 0 > /tmp/lfs_updates_parallel/counter
+
+    for build_script in "${scripts[@]}"; do
+        (
+            pkg_dir=$(dirname "$build_script")
+            pkg_basename=$(basename "$pkg_dir")
+            
+            # Output progress marker for local script to intercept
+            echo "PROGRESS:$pkg_basename" >&2
+
+            name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
+            if [ -n "$name_line" ]; then
+                pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
+            else
+                pkg_name="$pkg_basename"
             fi
-        fi
-        
-        # If no version line, try to determine git remote head
-        if [ -z "$remote_ver" ] && [ "$status" == "OK" ] && grep -q "git clone" "$build_script"; then
-            repo_url=$(grep -oP 'git clone \K[^ ]+' "$build_script" | head -n 1)
-            if [ -n "$repo_url" ]; then
+            
+            local_ver="none"
+            if [ -f "/var/lib/lfs-custom-packages/$pkg_name" ]; then
+                local_ver=$(cat "/var/lib/lfs-custom-packages/$pkg_name" 2>/dev/null || echo "none")
+            fi
+            
+            remote_ver=""
+            status="OK"
+            version_line_num=$(grep -nE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
+            var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
+            if [ -n "$version_line_num" ]; then
+                eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
+                head -n "$version_line_num" "$build_script" > "$eval_script"
+                echo "echo \$$var_name" >> "$eval_script"
                 for attempt in 1 2 3; do
-                    remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+                    remote_ver=$(cd "$pkg_dir" && bash "$eval_script" 2>/dev/null | tail -n 1)
                     [ -n "$remote_ver" ] && break
                     [ "$attempt" -lt 3 ] && sleep 2
                 done
-                if [ -z "$remote_ver" ]; then
-                    status="FAILED"
+                rm -f "$eval_script"
+                if [ -z "$remote_ver" ]; then status="FAILED"; fi
+            fi
+            
+            if [ -z "$remote_ver" ] && [ "$status" == "OK" ] && grep -q "git clone" "$build_script"; then
+                repo_url=$(grep -oP 'git clone \K[^ ]+' "$build_script" | head -n 1)
+                if [ -n "$repo_url" ]; then
+                    for attempt in 1 2 3; do
+                        remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+                        [ -n "$remote_ver" ] && break
+                        [ "$attempt" -lt 3 ] && sleep 2
+                    done
+                    if [ -z "$remote_ver" ]; then status="FAILED"; fi
                 fi
             fi
-        fi
 
-        if [ -z "$remote_ver" ] && [ "$status" == "OK" ]; then
-            status="MISSING"
-        fi
+            if [ -z "$remote_ver" ] && [ "$status" == "OK" ]; then status="MISSING"; fi
+            
+            if [ "$status" != "OK" ]; then
+                echo "RESULT:$pkg_name $status $status"
+            elif [ -n "$remote_ver" ]; then
+                if [ "$local_ver" == "none" ]; then
+                    if [ -f "/var/lib/lfs-custom-packages/$pkg_basename" ]; then
+                        local_ver=$(cat "/var/lib/lfs-custom-packages/$pkg_basename" 2>/dev/null || echo "none")
+                    fi
+                fi
+                if [ "$local_ver" != "$remote_ver" ]; then
+                    if [[ "${#local_ver}" -ge 7 && "${#local_ver}" -le 12 && "${remote_ver#$local_ver}" != "$remote_ver" ]]; then
+                        : # same
+                    else
+                        echo "RESULT:$pkg_name $local_ver $remote_ver"
+                    fi
+                fi
+            fi
+        ) &
         
-        if [ "$status" != "OK" ]; then
-            echo "$pkg_name $status $status"
-        elif [ -n "$remote_ver" ]; then
-            if [ "$local_ver" == "none" ]; then
-                # Also check by directory basename (fallback for packages that registered under dir name)
-                dir_name=$(basename "$pkg_dir")
-                if [ -f "/var/lib/lfs-custom-packages/$dir_name" ]; then
-                    local_ver=$(cat "/var/lib/lfs-custom-packages/$dir_name" 2>/dev/null || echo "none")
-                fi
-            fi
-            if [ "$local_ver" != "$remote_ver" ]; then
-                # Handle short hash: if local is a prefix of remote, treat as same version
-                if [[ "${#local_ver}" -ge 7 && "${#local_ver}" -le 12 && "${remote_ver#$local_ver}" != "$remote_ver" ]]; then
-                    : # same
-                else
-                    echo "$pkg_name $local_ver $remote_ver"
-                fi
-            fi
-        fi
+        # Limit jobs
+        while [ $(jobs -r | wc -l) -ge $max_jobs ]; do
+            sleep 0.1
+        done
     done
+    wait
+    rm -rf /tmp/lfs_updates_parallel
 EOF
 )
-    ssh_lfs "bash -c '$(echo "$script" | sed "s/'/'\\\\''/g")'" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)"
+    local results=""
+    local total=0
+    local count=0
+
+    while read -r line; do
+        line=$(echo "$line" | tr -d '\r')
+        if [[ $line == TOTAL:* ]]; then
+            total="${line#TOTAL:}"
+        elif [[ $line == PROGRESS:* ]]; then
+            count=$((count + 1))
+            local n="${line#PROGRESS:}"
+            lfs_progress_bar "$count" "$total" "Checking custom $n" >&2
+        elif [[ $line == RESULT:* ]]; then
+            results+="${line#RESULT:}\n"
+        fi
+    done < <(ssh_lfs "bash -c '$(echo "$script" | sed "s/'/'\\\\''/g")'" 2>/dev/null)
+    
+    if [ "$total" -gt 0 ]; then
+        lfs_progress_bar "$total" "$total" "Custom checks complete" >&2
+        echo "" >&2
+    fi
+    echo -e "$results"
 }
 
 lfs_update_all() {
