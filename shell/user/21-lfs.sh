@@ -237,11 +237,16 @@ lfs_check_custom_updates() {
         remote_ver=""
         status="OK"
         version_line_num=$(grep -nE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
+        var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
         if [ -n "$version_line_num" ]; then
             head -n "$version_line_num" "$build_script" > /tmp/eval_ver.sh
             var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
             echo "echo \$$var_name" >> /tmp/eval_ver.sh
-            remote_ver=$(cd "$pkg_dir" && bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
+            for attempt in 1 2 3; do
+                remote_ver=$(cd "$pkg_dir" && bash /tmp/eval_ver.sh 2>/dev/null | tail -n 1)
+                [ -n "$remote_ver" ] && break
+                [ "$attempt" -lt 3 ] && sleep 2
+            done
             rm -f /tmp/eval_ver.sh
             if [ -z "$remote_ver" ]; then
                 status="FAILED"
@@ -252,7 +257,11 @@ lfs_check_custom_updates() {
         if [ -z "$remote_ver" ] && [ "$status" == "OK" ] && grep -q "git clone" "$build_script"; then
             repo_url=$(grep -oP 'git clone \K[^ ]+' "$build_script" | head -n 1)
             if [ -n "$repo_url" ]; then
-                remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+                for attempt in 1 2 3; do
+                    remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+                    [ -n "$remote_ver" ] && break
+                    [ "$attempt" -lt 3 ] && sleep 2
+                done
                 if [ -z "$remote_ver" ]; then
                     status="FAILED"
                 fi
