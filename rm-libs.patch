@@ -1,0 +1,247 @@
+diff --git a/nix/flake.lock b/nix/flake.lock
+index 27f6862..95b6e30 100644
+--- a/nix/flake.lock
++++ b/nix/flake.lock
+@@ -106,11 +106,11 @@
+     },
+     "nixpkgs-master": {
+       "locked": {
+-        "lastModified": 1773396872,
+-        "narHash": "sha256-Xuk7yUhsNm4zXBvBCYwy5sPXmacNwPgL6C2lY/EB8jc=",
++        "lastModified": 1773400974,
++        "narHash": "sha256-aPHZWPChpuQ/hbe6i9fLTxDfQMYb5OJdCVT7uHyXPWk=",
+         "ref": "master",
+-        "rev": "b8d457ebbf38c7177ef7645a5530c892ac620f05",
+-        "revCount": 962860,
++        "rev": "ea5f21f20569fc4782f78e0b0dfea028fa7404dc",
++        "revCount": 962894,
+         "type": "git",
+         "url": "https://github.com/NixOS/nixpkgs.git"
+       },
+diff --git a/shell/user/21-lfs.sh b/shell/user/21-lfs.sh
+index abb20d7..5f6f9ea 100644
+--- a/shell/user/21-lfs.sh
++++ b/shell/user/21-lfs.sh
+@@ -777,7 +777,10 @@ DEPEOF
+             | tsort 2>/dev/null)
+ 
+         if [[ -n "$sorted_custom" ]]; then
+-            mapfile -t custom_updates_list <<< "$sorted_custom"
++            custom_updates_list=()
++            while IFS= read -r pkg; do
++                [[ -n "$pkg" ]] && custom_updates_list+=("$pkg")
++            done <<< "$sorted_custom"
+         fi
+ 
+         echo "Applying custom updates in dependency order:"
+@@ -792,12 +795,120 @@ DEPEOF
+             [[ "$upstream" == "true" ]] && build_args+=("--upstream")
+ 
+             if [[ "$dry_run" == "true" ]]; then
+-                echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh ${build_args[*]} $pkg"
+-                "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
++                echo "DRY RUN: lfs_autobuild ${build_args[*]} $pkg"
++                lfs_autobuild "${build_args[@]}" "$pkg"
+             else
+                 echo "Building custom package $pkg..."
+-                "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
++                lfs_autobuild "${build_args[@]}" "$pkg"
+             fi
+         done
+     fi
+ }
++
++lfs_cleanup_old_libs() {
++    # Only source SSH helpers when running on the host
++    [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
++    [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
++
++    echo "Scanning /usr/lib on VM for old library versions..."
++    local old_libs=$(ssh_lfs "cat > /tmp/find_old_libs.py << 'EOF'
++import os
++import re
++from collections import defaultdict
++
++lib_dir = '/usr/lib'
++libs = defaultdict(list)
++
++# Find all .so files
++for f in os.listdir(lib_dir):
++    if '.so.' in f and not os.path.islink(os.path.join(lib_dir, f)):
++        m = re.match(r'^(.*?\.so)\.(.+)$', f)
++        if m:
++            base, ver = m.groups()
++            version_parts = []
++            valid_version = True
++            for part in ver.split('.'):
++                if part.isdigit():
++                    version_parts.append(int(part))
++                else:
++                    valid_version = False
++                    break
++            if valid_version and version_parts:
++                libs[base].append((version_parts, f))
++
++old_libs = []
++for base, versions in libs.items():
++    if len(versions) > 1:
++        sorted_versions = sorted(versions, key=lambda x: x[0])
++        # Only the highest version is the 'current' one
++        for ver_tuple, f in sorted_versions[:-1]:
++            old_libs.append(os.path.join(lib_dir, f))
++
++for lib in sorted(old_libs):
++    print(lib)
++EOF
++python3 /tmp/find_old_libs.py && rm -f /tmp/find_old_libs.py")
++
++    if [[ -z "$old_libs" ]]; then
++        echo "No old libraries found."
++        return 0
++    fi
++
++    local old_libs_arr=()
++    while IFS= read -r lib; do
++        [[ -n "$lib" ]] && old_libs_arr+=("$lib")
++    done <<< "$old_libs"
++
++    echo "Found ${#old_libs_arr[@]} old libraries. Checking for dependents..."
++    local pkgs_to_rebuild=()
++    local libs_to_delete=()
++
++    for lib in "${old_libs_arr[@]}"; do
++        local lib_name=$(basename "$lib")
++        local dependents=$(ssh_lfs "missing_search \"$lib_name\" 2>/dev/null")
++        
++        if [[ -n "$dependents" ]]; then
++            echo "  $lib_name is in use by dependents. Added to rebuild queue."
++            while IFS= read -r dep_bin; do
++                [[ -z "$dep_bin" ]] && continue
++                local dep_pkg=$(lfs_map_bin_to_pkg "$dep_bin")
++                if [[ -n "$dep_pkg" ]]; then
++                    # Add to array if not already there
++                    local already_in=false
++                    for p in "${pkgs_to_rebuild[@]}"; do
++                        if [[ "$p" == "$dep_pkg" ]]; then already_in=true; break; fi
++                    done
++                    if [[ "$already_in" == "false" ]]; then
++                        echo "    Requires rebuild: $dep_pkg"
++                        pkgs_to_rebuild+=("$dep_pkg")
++                    fi
++                fi
++            done <<< "$dependents"
++        else
++            echo "  $lib_name has no dependents. Safe to delete."
++        fi
++        libs_to_delete+=("$lib")
++    done
++
++    if [[ ${#pkgs_to_rebuild[@]} -gt 0 ]]; then
++        echo ""
++        echo "Rebuilding required packages (${#pkgs_to_rebuild[@]})..."
++        lfs_autobuild "${pkgs_to_rebuild[@]}"
++    fi
++
++    if [[ ${#libs_to_delete[@]} -gt 0 ]]; then
++        echo ""
++        echo "Verifying it is safe to delete old libraries..."
++        for lib in "${libs_to_delete[@]}"; do
++            local lib_name=$(basename "$lib")
++            local dependents=$(ssh_lfs "missing_search \"$lib_name\" 2>/dev/null")
++            if [[ -z "$dependents" ]]; then
++                echo "  Deleting $lib..."
++                ssh_lfs "sudo rm -f \"$lib\""
++            else
++                echo "  WARNING: $lib is STILL in use by $(echo "$dependents" | wc -w) binaries. Keeping it."
++            fi
++        done
++    fi
++    echo "Old library cleanup complete."
++}
+diff --git a/shell/user/lfs-autobuild.sh b/shell/user/lfs-autobuild.sh
+index 31d9160..3c7c212 100755
+--- a/shell/user/lfs-autobuild.sh
++++ b/shell/user/lfs-autobuild.sh
+@@ -1826,27 +1826,39 @@ while read -r line; do
+     dirname=$(dirname "$line")
+     basename=$(basename "$line")
+ 
+-    if [[ "$basename" =~ \.so\.[0-9]+ || "$basename" =~ -[0-9].*\.so$ ]]; then
+-        major_prefix=$(echo "$basename" | grep -oE '^.*\.so\.[0-9]+|^[a-zA-Z0-9_]+-')
+-        if [ -n "$major_prefix" ]; then
+-            for candidate in "$dirname"/"$major_prefix"*; do
+-                [ -f "$candidate" ] && [ "$candidate" != "$line" ] || continue
+-                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+-                    echo "Removing old library version: $candidate"
+-                    rm -f "$candidate"
+-                fi
+-            done
++    if [[ "$basename" =~ \.so\.[0-9]+ || "$basename" =~ -[0-9][^/]*\.so$ ]]; then
++        # Compute lib_base: the library name without any version suffix.
++        # e.g. libgnome-autoar-0.so.0.2.1 -> libgnome-autoar-0
++        #      libgnome-autoar-0.so.0     -> libgnome-autoar-0
++        #      libgnome-autoar-0.so       -> libgnome-autoar-0 (bare symlink)
++        lib_base=$(echo "$basename" | sed 's/\.so\.[0-9].*//')
++        [[ "$lib_base" == "$basename" ]] && lib_base="${basename%.so}"
++
++        # For versioned .so files, also capture the major-version prefix so we can
++        # distinguish same-major (old micro — remove) vs different-major (preserved).
++        # For bare .so symlinks there's no meaningful version, so skip removal entirely.
++        if [[ "$basename" =~ \.so\.[0-9]+ ]]; then
++            major_prefix=$(echo "$basename" | grep -oE '^.*\.so\.[0-9]+')
++        else
++            major_prefix=""  # bare .so symlink — skip old-version removal
+         fi
+ 
+-        # Track preserved libraries with different major versions
+-        lib_base=$(echo "$basename" | sed 's/\.so\.[0-9].*//')
+         if [ -n "$lib_base" ]; then
++            # Use lib_base.so.* — this glob is STRICTLY bounded to the same library.
++            # It cannot match libgnome-desktop-* when processing libgnome-autoar-*.
+             for candidate in "$dirname"/"$lib_base".so.*; do
+-                [ -f "$candidate" ] || continue
+-                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]] && \
+-                   [[ "$candidate" != "$dirname/$major_prefix"* ]]; then
+-                    echo "Found preserved library: $candidate"
+-                    echo "$candidate" | sudo tee -a "/tmp/preserved_libs_${PACKAGE}.txt" > /dev/null
++                [ -f "$candidate" ] && [ "$candidate" != "$line" ] || continue
++                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
++                    cand_base=$(basename "$candidate")
++                    if [ -n "$major_prefix" ] && [[ "$cand_base" == "${major_prefix##*/}"* ]]; then
++                        # Same major version family → old micro version, remove it
++                        echo "Removing old library version: $candidate"
++                        rm -f "$candidate"
++                    else
++                        # Different major version → preserved (another pkg may need it)
++                        echo "Found preserved library: $candidate"
++                        echo "$candidate" | sudo tee -a "/tmp/preserved_libs_${PACKAGE}.txt" > /dev/null
++                    fi
+                 fi
+             done
+         fi
+@@ -1862,7 +1874,9 @@ while read -r line; do
+                      rm -rf "$candidate"
+                 fi
+             done
+-        elif [[ "$basename" =~ ^[a-zA-Z]+[0-9]+(\.[0-9]+)*$ ]]; then
++        elif [[ "$basename" =~ ^[a-zA-Z]+[0-9]+(\.[0-9]+)*$ ]] && \
++             [[ "$dirname" != "/usr/share/man" && "$dirname" != "/usr/share/info" && \
++                "$dirname" != "/usr/share/gtk-doc" && "$dirname" != "/usr/share/perl5" ]]; then
+              prefix=$(echo "$basename" | sed -E 's/([a-zA-Z]+).*/\1/')
+              for candidate in "$dirname"/"$prefix"*; do
+                 [ -d "$candidate" ] && [ "$candidate" != "$line" ] || continue
+diff --git a/shell/user/lfs-vm-bootstrap.sh b/shell/user/lfs-vm-bootstrap.sh
+index 6e6918a..8c5f8da 100644
+--- a/shell/user/lfs-vm-bootstrap.sh
++++ b/shell/user/lfs-vm-bootstrap.sh
+@@ -38,3 +38,10 @@ update() {
+     lfs_update_all "$@"
+ }
+ export -f update
++
++# `cleanup_libs` = lfs_cleanup_old_libs
++cleanup_libs() {
++    lfs_cleanup_old_libs "$@"
++}
++export -f cleanup_libs
++

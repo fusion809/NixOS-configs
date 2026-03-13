@@ -1833,7 +1833,7 @@ while read -r line; do
                 [ -f "$candidate" ] && [ "$candidate" != "$line" ] || continue
                 if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
                     echo "Removing old library version: $candidate"
-                    rm -f "$candidate"
+                    #rm -f "$candidate"
                 fi
             done
         fi
