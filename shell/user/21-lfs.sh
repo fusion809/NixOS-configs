@@ -49,9 +49,6 @@ lfs_get_upstream_version() {
             fi
             echo "$VIM_TAG"
             ;;
-        firefox)
-            curl -s https://product-details.mozilla.org/1.0/firefox_versions.json | perl -nle 'while (m{(?<="LATEST_FIREFOX_VERSION": ")[0-9.]+}g) { print $& }'
-            ;;
         frameworks|frameworks6)
             curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
             ;;
