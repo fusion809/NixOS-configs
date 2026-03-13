@@ -4,13 +4,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "marvin";
-  version = "25.3.6";
+  version = "25.5.0";
 
   src = fetchurl {
     name = "marvin-${finalAttrs.version}.deb";
     url =
       "http://dl.chemaxon.com/marvin/${finalAttrs.version}/marvin_linux_${finalAttrs.version}.deb";
-    hash = "sha256-GuQo1Y0iP3sh3jZc83e2x52+tnZEmUZr+ErL0anbVSE=";
+    hash = "sha256-+fTO6cEJL4QRFpLQ9CXZFt7Jg3otR3ZMWN5vH+3QXmA=";
   };
 
   nativeBuildInputs = [ dpkg makeWrapper ];
