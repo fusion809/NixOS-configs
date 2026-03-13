@@ -365,7 +365,7 @@ EOF
     done < <(ssh_lfs "bash -c '$(echo "$script" | sed "s/'/'\\\\''/g")'" 2>/dev/null)
     
     if [ "$total" -gt 0 ]; then
-        lfs_progress_bar "$total" "$total" "Custom checks complete" >&2
+        lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete" >&2
         echo "" >&2
     fi
     echo -e "$results"
@@ -651,6 +651,13 @@ for pkg in sorted_pkgs:
         echo "DRY RUN: sudo pip3 install --upgrade pyparsing attrs numpy sphinx pyqt-builder pyopengl sip pyqt6-sip"
     else
         ssh_lfs "sudo pip3 install --upgrade pyparsing attrs numpy sphinx pyqt-builder pyopengl sip pyqt6-sip"
+    fi
+
+    echo "Updating Julia with juliaup..."
+    if [[ "$dry_run" == "true" ]]; then
+        echo "DRY RUN: juliaup update"
+    else
+        ssh_lfs "juliaup update"
     fi
 
     if [[ ${#custom_updates_list[@]} -gt 0 ]]; then
