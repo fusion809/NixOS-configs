@@ -1,0 +1,1967 @@
+[    0.411391] pci 0000:00:02.7: BAR 0 [mem 0xfea18000-0xfea18fff]
+[    0.411454] pci 0000:00:02.7: PCI bridge to [bus 08]
+[    0.411546] pci 0000:00:02.7:   bridge window [mem 0xfda00000-0xfdbfffff]
+[    0.414836] pci 0000:00:02.7:   bridge window [mem 0xe0c00000000-0xe0dffffffff 64bit pref]
+[    0.414996] pci 0000:00:02.7: enabling Extended Tags
+[    0.416672] pci 0000:00:03.0: [1b36:000c] type 01 class 0x060400 PCIe Root Port
+[    0.419309] pci 0000:00:03.0: BAR 0 [mem 0xfea19000-0xfea19fff]
+[    0.419368] pci 0000:00:03.0: PCI bridge to [bus 09]
+[    0.419452] pci 0000:00:03.0:   bridge window [mem 0xfd800000-0xfd9fffff]
+[    0.420433] pci 0000:00:03.0:   bridge window [mem 0xe0a00000000-0xe0bffffffff 64bit pref]
+[    0.420596] pci 0000:00:03.0: enabling Extended Tags
+[    0.422267] pci 0000:00:03.1: [1b36:000c] type 01 class 0x060400 PCIe Root Port
+[    0.427388] pci 0000:00:03.1: BAR 0 [mem 0xfea1a000-0xfea1afff]
+[    0.427450] pci 0000:00:03.1: PCI bridge to [bus 0a]
+[    0.427533] pci 0000:00:03.1:   bridge window [mem 0xfd600000-0xfd7fffff]
+[    0.428432] pci 0000:00:03.1:   bridge window [mem 0xe0800000000-0xe09ffffffff 64bit pref]
+[    0.428594] pci 0000:00:03.1: enabling Extended Tags
+[    0.430285] pci 0000:00:03.2: [1b36:000c] type 01 class 0x060400 PCIe Root Port
+[    0.433386] pci 0000:00:03.2: BAR 0 [mem 0xfea1b000-0xfea1bfff]
+[    0.433436] pci 0000:00:03.2: PCI bridge to [bus 0b]
+[    0.433521] pci 0000:00:03.2:   bridge window [mem 0xfd400000-0xfd5fffff]
+[    0.434428] pci 0000:00:03.2:   bridge window [mem 0xe0600000000-0xe07ffffffff 64bit pref]
+[    0.434582] pci 0000:00:03.2: enabling Extended Tags
+[    0.436145] pci 0000:00:03.3: [1b36:000c] type 01 class 0x060400 PCIe Root Port
+[    0.439371] pci 0000:00:03.3: BAR 0 [mem 0xfea1c000-0xfea1cfff]
+[    0.439423] pci 0000:00:03.3: PCI bridge to [bus 0c]
+[    0.439500] pci 0000:00:03.3:   bridge window [mem 0xfd200000-0xfd3fffff]
+[    0.440428] pci 0000:00:03.3:   bridge window [mem 0xe0400000000-0xe05ffffffff 64bit pref]
+[    0.440579] pci 0000:00:03.3: enabling Extended Tags
+[    0.442120] pci 0000:00:03.4: [1b36:000c] type 01 class 0x060400 PCIe Root Port
+[    0.445387] pci 0000:00:03.4: BAR 0 [mem 0xfea1d000-0xfea1dfff]
+[    0.445436] pci 0000:00:03.4: PCI bridge to [bus 0d]
+[    0.445513] pci 0000:00:03.4:   bridge window [mem 0xfd000000-0xfd1fffff]
+[    0.449415] pci 0000:00:03.4:   bridge window [mem 0xe0200000000-0xe03ffffffff 64bit pref]
+[    0.449575] pci 0000:00:03.4: enabling Extended Tags
+[    0.451150] pci 0000:00:03.5: [1b36:000c] type 01 class 0x060400 PCIe Root Port
+[    0.454390] pci 0000:00:03.5: BAR 0 [mem 0xfea1e000-0xfea1efff]
+[    0.454442] pci 0000:00:03.5: PCI bridge to [bus 0e]
+[    0.454520] pci 0000:00:03.5:   bridge window [mem 0xfce00000-0xfcffffff]
+[    0.455428] pci 0000:00:03.5:   bridge window [mem 0xe0000000000-0xe01ffffffff 64bit pref]
+[    0.455579] pci 0000:00:03.5: enabling Extended Tags
+[    0.464048] pci 0000:00:1f.0: [8086:2918] type 00 class 0x060100 conventional PCI endpoint
+[    0.464048] pci 0000:00:1f.0: calling  quirk_ich7_lpc+0x0/0x70 @ 1
+[    0.464048] pci 0000:00:1f.0: quirk: [io  0x0600-0x067f] claimed by ICH6 ACPI/GPIO/TCO
+[    0.464048] pci 0000:00:1f.0: quirk_ich7_lpc+0x0/0x70 took 0 usecs
+[    0.464048] pci 0000:00:1f.0: calling  quirk_igfx_skip_te_disable+0x0/0x80 @ 1
+[    0.464048] pci 0000:00:1f.0: quirk_igfx_skip_te_disable+0x0/0x80 took 0 usecs
+[    0.464318] pci 0000:00:1f.2: [8086:2922] type 00 class 0x010601 conventional PCI endpoint
+[    0.467450] pci 0000:00:1f.2: BAR 4 [io  0xc040-0xc05f]
+[    0.467473] pci 0000:00:1f.2: BAR 5 [mem 0xfea1f000-0xfea1ffff]
+[    0.467538] pci 0000:00:1f.2: calling  quirk_igfx_skip_te_disable+0x0/0x80 @ 1
+[    0.467546] pci 0000:00:1f.2: quirk_igfx_skip_te_disable+0x0/0x80 took 0 usecs
+[    0.468237] pci 0000:00:1f.3: [8086:2930] type 00 class 0x0c0500 conventional PCI endpoint
+[    0.469526] pci 0000:00:1f.3: BAR 4 [io  0x0700-0x073f]
+[    0.469599] pci 0000:00:1f.3: calling  quirk_igfx_skip_te_disable+0x0/0x80 @ 1
+[    0.469607] pci 0000:00:1f.3: quirk_igfx_skip_te_disable+0x0/0x80 took 0 usecs
+[    0.470712] acpiphp: Slot [0] registered
+[    0.472522] pci 0000:01:00.0: [1af4:1041] type 00 class 0x020000 PCIe Endpoint
+[    0.474403] pci 0000:01:00.0: BAR 1 [mem 0xfe840000-0xfe840fff]
+[    0.474468] pci 0000:01:00.0: BAR 4 [mem 0xe1a00000000-0xe1a00003fff 64bit pref]
+[    0.474486] pci 0000:01:00.0: ROM [mem 0xfe800000-0xfe83ffff pref]
+[    0.474580] pci 0000:01:00.0: enabling Extended Tags
+[    0.477552] pci 0000:00:02.0: PCI bridge to [bus 01]
+[    0.478710] acpiphp: Slot [0-2] registered
+[    0.478955] pci 0000:02:00.0: [1b36:000d] type 00 class 0x0c0330 PCIe Endpoint
+[    0.480213] pci 0000:02:00.0: BAR 0 [mem 0xfe600000-0xfe603fff 64bit]
+[    0.480383] pci 0000:02:00.0: enabling Extended Tags
+[    0.484148] pci 0000:00:02.1: PCI bridge to [bus 02]
+[    0.485094] acpiphp: Slot [0-3] registered
+[    0.485425] pci 0000:03:00.0: [1af4:1043] type 00 class 0x078000 PCIe Endpoint
+[    0.488407] pci 0000:03:00.0: BAR 1 [mem 0xfe400000-0xfe400fff]
+[    0.488476] pci 0000:03:00.0: BAR 4 [mem 0xe1600000000-0xe1600003fff 64bit pref]
+[    0.488599] pci 0000:03:00.0: enabling Extended Tags
+[    0.491519] pci 0000:00:02.2: PCI bridge to [bus 03]
+[    0.492728] acpiphp: Slot [0-4] registered
+[    0.493087] pci 0000:04:00.0: [1af4:1048] type 00 class 0x010000 PCIe Endpoint
+[    0.496405] pci 0000:04:00.0: BAR 1 [mem 0xfe200000-0xfe200fff]
+[    0.496484] pci 0000:04:00.0: BAR 4 [mem 0xe1400000000-0xe1400003fff 64bit pref]
+[    0.496603] pci 0000:04:00.0: enabling Extended Tags
+[    0.499994] pci 0000:00:02.3: PCI bridge to [bus 04]
+[    0.501316] acpiphp: Slot [0-5] registered
+[    0.501688] pci 0000:05:00.0: [1af4:1045] type 00 class 0x00ff00 PCIe Endpoint
+[    0.504406] pci 0000:05:00.0: BAR 1 [mem 0xfe000000-0xfe000fff]
+[    0.504479] pci 0000:05:00.0: BAR 4 [mem 0xe1200000000-0xe1200003fff 64bit pref]
+[    0.504605] pci 0000:05:00.0: enabling Extended Tags
+[    0.508329] pci 0000:00:02.4: PCI bridge to [bus 05]
+[    0.509749] acpiphp: Slot [0-6] registered
+[    0.510123] pci 0000:06:00.0: [1af4:1044] type 00 class 0x00ff00 PCIe Endpoint
+[    0.512409] pci 0000:06:00.0: BAR 1 [mem 0xfde00000-0xfde00fff]
+[    0.512493] pci 0000:06:00.0: BAR 4 [mem 0xe1000000000-0xe1000003fff 64bit pref]
+[    0.512632] pci 0000:06:00.0: enabling Extended Tags
+[    0.517192] pci 0000:00:02.5: PCI bridge to [bus 06]
+[    0.518280] acpiphp: Slot [0-7] registered
+[    0.518551] pci 0000:00:02.6: PCI bridge to [bus 07]
+[    0.519735] acpiphp: Slot [0-8] registered
+[    0.519979] pci 0000:00:02.7: PCI bridge to [bus 08]
+[    0.522144] acpiphp: Slot [0-9] registered
+[    0.522395] pci 0000:00:03.0: PCI bridge to [bus 09]
+[    0.523713] acpiphp: Slot [0-10] registered
+[    0.524028] pci 0000:00:03.1: PCI bridge to [bus 0a]
+[    0.525268] acpiphp: Slot [0-11] registered
+[    0.525541] pci 0000:00:03.2: PCI bridge to [bus 0b]
+[    0.528380] acpiphp: Slot [0-12] registered
+[    0.528639] pci 0000:00:03.3: PCI bridge to [bus 0c]
+[    0.529742] acpiphp: Slot [0-13] registered
+[    0.530007] pci 0000:00:03.4: PCI bridge to [bus 0d]
+[    0.532283] acpiphp: Slot [0-14] registered
+[    0.532540] pci 0000:00:03.5: PCI bridge to [bus 0e]
+[    0.566142] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    0.566309] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    0.566470] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    0.566629] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    0.566775] ACPI: PCI: Interrupt link LNKE configured for IRQ 10
+[    0.566933] ACPI: PCI: Interrupt link LNKF configured for IRQ 10
+[    0.567087] ACPI: PCI: Interrupt link LNKG configured for IRQ 11
+[    0.567245] ACPI: PCI: Interrupt link LNKH configured for IRQ 11
+[    0.567311] ACPI: PCI: Interrupt link GSIA configured for IRQ 16
+[    0.567322] ACPI: PCI: Interrupt link GSIB configured for IRQ 17
+[    0.567331] ACPI: PCI: Interrupt link GSIC configured for IRQ 18
+[    0.567340] ACPI: PCI: Interrupt link GSID configured for IRQ 19
+[    0.567353] ACPI: PCI: Interrupt link GSIE configured for IRQ 20
+[    0.567368] ACPI: PCI: Interrupt link GSIF configured for IRQ 21
+[    0.567377] ACPI: PCI: Interrupt link GSIG configured for IRQ 22
+[    0.567386] ACPI: PCI: Interrupt link GSIH configured for IRQ 23
+[    0.567963] initcall acpi_init+0x0/0x510 returned 0 after 246000 usecs
+[    0.567999] calling  hmat_init+0x0/0x3f0 @ 1
+[    0.568014] initcall hmat_init+0x0/0x3f0 returned 0 after 0 usecs
+[    0.568016] calling  acpi_hed_driver_init+0x0/0x20 @ 1
+[    0.568035] initcall acpi_hed_driver_init+0x0/0x20 returned 0 after 0 usecs
+[    0.568037] calling  pnp_init+0x0/0x20 @ 1
+[    0.568048] initcall pnp_init+0x0/0x20 returned 0 after 0 usecs
+[    0.568051] calling  balloon_init+0x0/0x210 @ 1
+[    0.568055] initcall balloon_init+0x0/0x210 returned -19 after 0 usecs
+[    0.568058] calling  xen_setup_shutdown_event+0x0/0x40 @ 1
+[    0.568070] initcall xen_setup_shutdown_event+0x0/0x40 returned -19 after 0 usecs
+[    0.568072] calling  xenbus_probe_backend_init+0x0/0xa0 @ 1
+[    0.568096] initcall xenbus_probe_backend_init+0x0/0xa0 returned 0 after 0 usecs
+[    0.568099] calling  xenbus_probe_frontend_init+0x0/0x70 @ 1
+[    0.568115] initcall xenbus_probe_frontend_init+0x0/0x70 returned 0 after 0 usecs
+[    0.568121] calling  xen_acpi_pad_init+0x0/0x50 @ 1
+[    0.568126] initcall xen_acpi_pad_init+0x0/0x50 returned -19 after 0 usecs
+[    0.568128] calling  init_sysrq_sysctl+0x0/0x30 @ 1
+[    0.568165] initcall init_sysrq_sysctl+0x0/0x30 returned 0 after 0 usecs
+[    0.568168] calling  misc_init+0x0/0xb0 @ 1
+[    0.568192] initcall misc_init+0x0/0xb0 returned 0 after 0 usecs
+[    0.568194] calling  tpm_init+0x0/0xd0 @ 1
+[    0.569373] initcall tpm_init+0x0/0xd0 returned 0 after 1000 usecs
+[    0.569377] calling  iommu_subsys_init+0x0/0x120 @ 1
+[    0.569384] iommu: Default domain type: Translated
+[    0.569389] iommu: DMA domain TLB invalidation policy: lazy mode
+[    0.569393] initcall iommu_subsys_init+0x0/0x120 returned 0 after 0 usecs
+[    0.569396] calling  cn_init+0x0/0xf0 @ 1
+[    0.569484] initcall cn_init+0x0/0xf0 returned 0 after 0 usecs
+[    0.569487] calling  register_cpu_capacity_sysctl+0x0/0x40 @ 1
+[    0.569504] initcall register_cpu_capacity_sysctl+0x0/0x40 returned 0 after 0 usecs
+[    0.569504] calling  pm860x_i2c_init+0x0/0x40 @ 1
+[    0.569504] initcall pm860x_i2c_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569504] calling  wm8400_driver_init+0x0/0x40 @ 1
+[    0.569504] initcall wm8400_driver_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569504] calling  wm831x_i2c_init+0x0/0x40 @ 1
+[    0.569504] initcall wm831x_i2c_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569504] calling  wm831x_spi_init+0x0/0x30 @ 1
+[    0.569504] initcall wm831x_spi_init+0x0/0x30 returned 0 after 0 usecs
+[    0.569504] calling  wm8350_i2c_init+0x0/0x20 @ 1
+[    0.569504] initcall wm8350_i2c_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569504] calling  tps65910_i2c_init+0x0/0x20 @ 1
+[    0.569504] initcall tps65910_i2c_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569504] calling  ezx_pcap_init+0x0/0x20 @ 1
+[    0.569504] initcall ezx_pcap_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569504] calling  da903x_init+0x0/0x20 @ 1
+[    0.569504] initcall da903x_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569504] calling  da9052_spi_init+0x0/0x40 @ 1
+[    0.569504] initcall da9052_spi_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569504] calling  da9052_i2c_init+0x0/0x40 @ 1
+[    0.569504] initcall da9052_i2c_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569504] calling  lp8788_init+0x0/0x20 @ 1
+[    0.569504] initcall lp8788_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569504] calling  da9055_i2c_init+0x0/0x40 @ 1
+[    0.569504] initcall da9055_i2c_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569504] calling  max77843_i2c_init+0x0/0x20 @ 1
+[    0.569505] initcall max77843_i2c_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569507] calling  max8925_i2c_init+0x0/0x40 @ 1
+[    0.569514] initcall max8925_i2c_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569516] calling  max8997_i2c_init+0x0/0x20 @ 1
+[    0.569520] initcall max8997_i2c_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569521] calling  max8998_i2c_init+0x0/0x20 @ 1
+[    0.569526] initcall max8998_i2c_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569528] calling  tps6586x_init+0x0/0x20 @ 1
+[    0.569536] initcall tps6586x_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569538] calling  tps65090_init+0x0/0x20 @ 1
+[    0.569542] initcall tps65090_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569543] calling  aat2870_init+0x0/0x20 @ 1
+[    0.569547] initcall aat2870_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569549] calling  rc5t583_i2c_init+0x0/0x20 @ 1
+[    0.569556] initcall rc5t583_i2c_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569558] calling  as3711_i2c_init+0x0/0x20 @ 1
+[    0.569562] initcall as3711_i2c_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569564] calling  dax_core_init+0x0/0x100 @ 1
+[    0.569681] initcall dax_core_init+0x0/0x100 returned 0 after 0 usecs
+[    0.569684] calling  dma_buf_init+0x0/0xc0 @ 1
+[    0.569729] initcall dma_buf_init+0x0/0xc0 returned 0 after 0 usecs
+[    0.569733] calling  dma_fence_init_stub+0x0/0xc0 @ 1
+[    0.569739] initcall dma_fence_init_stub+0x0/0xc0 returned 0 after 0 usecs
+[    0.569743] calling  dma_heap_init+0x0/0x90 @ 1
+[    0.569756] initcall dma_heap_init+0x0/0x90 returned 0 after 0 usecs
+[    0.569758] calling  init_scsi+0x0/0x90 @ 1
+[    0.569830] SCSI subsystem initialized
+[    0.569833] initcall init_scsi+0x0/0x90 returned 0 after 0 usecs
+[    0.569835] calling  ata_init+0x0/0x330 @ 1
+[    0.569848] libata version 3.00 loaded.
+[    0.569848] initcall ata_init+0x0/0x330 returned 0 after 0 usecs
+[    0.569848] calling  usb_common_init+0x0/0x30 @ 1
+[    0.569848] initcall usb_common_init+0x0/0x30 returned 0 after 0 usecs
+[    0.569848] calling  usb_init+0x0/0x160 @ 1
+[    0.569848] ACPI: bus type USB registered
+[    0.569848] usbcore: registered new interface driver usbfs
+[    0.569848] usbcore: registered new interface driver hub
+[    0.569848] usbcore: registered new device driver usb
+[    0.569848] initcall usb_init+0x0/0x160 returned 0 after 0 usecs
+[    0.569848] calling  xdbc_init+0x0/0x160 @ 1
+[    0.569848] initcall xdbc_init+0x0/0x160 returned 0 after 0 usecs
+[    0.569848] calling  serio_init+0x0/0x40 @ 1
+[    0.569848] initcall serio_init+0x0/0x40 returned 0 after 0 usecs
+[    0.569848] calling  input_init+0x0/0x100 @ 1
+[    0.569848] initcall input_init+0x0/0x100 returned 0 after 0 usecs
+[    0.569848] calling  rtc_init+0x0/0x30 @ 1
+[    0.569848] initcall rtc_init+0x0/0x30 returned 0 after 0 usecs
+[    0.569848] calling  dw_i2c_init_driver+0x0/0x20 @ 1
+[    0.569848] initcall dw_i2c_init_driver+0x0/0x20 returned 0 after 0 usecs
+[    0.569848] calling  rc_core_init+0x0/0x80 @ 1
+[    0.569848] initcall rc_core_init+0x0/0x80 returned 0 after 0 usecs
+[    0.569848] calling  power_supply_class_init+0x0/0x20 @ 1
+[    0.569848] initcall power_supply_class_init+0x0/0x20 returned 0 after 0 usecs
+[    0.569848] calling  hwmon_init+0x0/0x110 @ 1
+[    0.569848] initcall hwmon_init+0x0/0x110 returned 0 after 0 usecs
+[    0.569848] calling  edac_init+0x0/0x80 @ 1
+[    0.569848] EDAC MC: Ver: 3.0.0
+[    0.571432] initcall edac_init+0x0/0x80 returned 0 after 1000 usecs
+[    0.571432] calling  dmi_init+0x0/0x120 @ 1
+[    0.571432] initcall dmi_init+0x0/0x120 returned 0 after 0 usecs
+[    0.571432] calling  efisubsys_init+0x0/0x5e0 @ 1
+[    0.571432] initcall efisubsys_init+0x0/0x5e0 returned 0 after 0 usecs
+[    0.571432] calling  intel_scu_ipc_init+0x0/0x20 @ 1
+[    0.571432] initcall intel_scu_ipc_init+0x0/0x20 returned 0 after 0 usecs
+[    0.571435] calling  remoteproc_init+0x0/0x80 @ 1
+[    0.571458] initcall remoteproc_init+0x0/0x80 returned 0 after 0 usecs
+[    0.571461] calling  devfreq_init+0x0/0xe0 @ 1
+[    0.571482] initcall devfreq_init+0x0/0xe0 returned 0 after 0 usecs
+[    0.571482] calling  devfreq_event_init+0x0/0x60 @ 1
+[    0.571482] initcall devfreq_event_init+0x0/0x60 returned 0 after 0 usecs
+[    0.571482] calling  ras_init+0x0/0x20 @ 1
+[    0.571482] initcall ras_init+0x0/0x20 returned 0 after 0 usecs
+[    0.571482] calling  nvmem_init+0x0/0x20 @ 1
+[    0.571482] initcall nvmem_init+0x0/0x20 returned 0 after 0 usecs
+[    0.571482] calling  hte_subsys_dbgfs_init+0x0/0x30 @ 1
+[    0.571482] initcall hte_subsys_dbgfs_init+0x0/0x30 returned 0 after 0 usecs
+[    0.571482] calling  proto_init+0x0/0x20 @ 1
+[    0.571482] initcall proto_init+0x0/0x20 returned 0 after 0 usecs
+[    0.571482] calling  net_dev_init+0x0/0x350 @ 1
+[    0.571735] initcall net_dev_init+0x0/0x350 returned 0 after 0 usecs
+[    0.571738] calling  neigh_init+0x0/0x30 @ 1
+[    0.571746] initcall neigh_init+0x0/0x30 returned 0 after 0 usecs
+[    0.571748] calling  fib_notifier_init+0x0/0x20 @ 1
+[    0.571751] initcall fib_notifier_init+0x0/0x20 returned 0 after 0 usecs
+[    0.571753] calling  netdev_genl_init+0x0/0x50 @ 1
+[    0.571783] initcall netdev_genl_init+0x0/0x50 returned 0 after 0 usecs
+[    0.571785] calling  page_pool_user_init+0x0/0x20 @ 1
+[    0.571787] initcall page_pool_user_init+0x0/0x20 returned 0 after 0 usecs
+[    0.571789] calling  fib_rules_init+0x0/0x70 @ 1
+[    0.571795] initcall fib_rules_init+0x0/0x70 returned 0 after 0 usecs
+[    0.571797] calling  init_cgroup_netprio+0x0/0x20 @ 1
+[    0.571807] initcall init_cgroup_netprio+0x0/0x20 returned 0 after 0 usecs
+[    0.571809] calling  bpf_lwt_init+0x0/0x20 @ 1
+[    0.571811] initcall bpf_lwt_init+0x0/0x20 returned 0 after 0 usecs
+[    0.571811] calling  pktsched_init+0x0/0xa0 @ 1
+[    0.571811] initcall pktsched_init+0x0/0xa0 returned 0 after 0 usecs
+[    0.571811] calling  tc_filter_init+0x0/0x90 @ 1
+[    0.571811] initcall tc_filter_init+0x0/0x90 returned 0 after 0 usecs
+[    0.571811] calling  tc_action_init+0x0/0x30 @ 1
+[    0.571811] initcall tc_action_init+0x0/0x30 returned 0 after 0 usecs
+[    0.571811] calling  ethnl_init+0x0/0x60 @ 1
+[    0.571811] initcall ethnl_init+0x0/0x60 returned 0 after 0 usecs
+[    0.571811] calling  nexthop_init+0x0/0x40 @ 1
+[    0.571811] initcall nexthop_init+0x0/0x40 returned 0 after 0 usecs
+[    0.571811] calling  cipso_v4_init+0x0/0x70 @ 1
+[    0.571811] initcall cipso_v4_init+0x0/0x70 returned 0 after 0 usecs
+[    0.571811] calling  psp_init+0x0/0x30 @ 1
+[    0.571811] initcall psp_init+0x0/0x30 returned 0 after 0 usecs
+[    0.571811] calling  wireless_nlevent_init+0x0/0x50 @ 1
+[    0.571811] initcall wireless_nlevent_init+0x0/0x50 returned 0 after 0 usecs
+[    0.571811] calling  netlbl_init+0x0/0x90 @ 1
+[    0.571811] NetLabel: Initializing
+[    0.571811] NetLabel:  domain hash size = 128
+[    0.571811] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    0.571811] NetLabel:  unlabeled traffic allowed by default
+[    0.571811] initcall netlbl_init+0x0/0x90 returned 0 after 0 usecs
+[    0.571811] calling  ncsi_init_netlink+0x0/0x20 @ 1
+[    0.571811] initcall ncsi_init_netlink+0x0/0x20 returned 0 after 0 usecs
+[    0.571811] calling  mctp_init+0x0/0x90 @ 1
+[    0.571811] mctp: management component transport protocol core
+[    0.571811] NET: Registered PF_MCTP protocol family
+[    0.571811] initcall mctp_init+0x0/0x90 returned 0 after 0 usecs
+[    0.571811] calling  pci_subsys_init+0x0/0x80 @ 1
+[    0.571811] PCI: Using ACPI for IRQ routing
+[    0.751190] PCI: pci_cache_line_size set to 64 bytes
+[    0.752144] e820: reserve RAM buffer [mem 0x0009fc00-0x0009ffff]
+[    0.752200] e820: reserve RAM buffer [mem 0x7ffde000-0x7fffffff]
+[    0.752210] initcall pci_subsys_init+0x0/0x80 returned 0 after 179000 usecs
+[    0.752219] calling  sys_info_sysctl_init+0x0/0x30 @ 1
+[    0.752243] initcall sys_info_sysctl_init+0x0/0x30 returned 0 after 0 usecs
+[    0.752246] calling  vsprintf_init_hashval+0x0/0x20 @ 1
+[    0.752255] initcall vsprintf_init_hashval+0x0/0x20 returned 0 after 0 usecs
+[    0.752258] calling  efi_runtime_map_init+0x0/0x1b0 @ 1
+[    0.752282] initcall efi_runtime_map_init+0x0/0x1b0 returned 0 after 0 usecs
+[    0.752285] calling  vga_arb_device_init+0x0/0xa0 @ 1
+[    0.752555] pci 0000:00:01.0: vgaarb: setting as boot VGA device
+[    0.752555] pci 0000:00:01.0: vgaarb: bridge control possible
+[    0.752555] pci 0000:00:01.0: vgaarb: VGA device added: decodes=io+mem,owns=io+mem,locks=none
+[    0.752555] vgaarb: loaded
+[    0.752555] initcall vga_arb_device_init+0x0/0xa0 returned 0 after 0 usecs
+[    0.752555] calling  intel_idle_init+0x0/0xbf0 @ 1
+[    0.752555] initcall intel_idle_init+0x0/0xbf0 returned -19 after 0 usecs
+[    0.752555] calling  watchdog_init+0x0/0xe0 @ 1
+[    0.752569] initcall watchdog_init+0x0/0xe0 returned 0 after 0 usecs
+[    0.752596] entering initcall level: fs
+[    0.752597] calling  nmi_warning_debugfs+0x0/0x30 @ 1
+[    0.752623] initcall nmi_warning_debugfs+0x0/0x30 returned 0 after 0 usecs
+[    0.752625] calling  hpet_late_init+0x0/0x390 @ 1
+[    0.752633] initcall hpet_late_init+0x0/0x390 returned -19 after 0 usecs
+[    0.752635] calling  init_amd_nbs+0x0/0x2e0 @ 1
+[    0.752647] initcall init_amd_nbs+0x0/0x2e0 returned 0 after 0 usecs
+[    0.752650] calling  amd_smn_init+0x0/0x280 @ 1
+[    0.752654] initcall amd_smn_init+0x0/0x280 returned -19 after 0 usecs
+[    0.752656] calling  iomem_init_inode+0x0/0x90 @ 1
+[    0.752681] initcall iomem_init_inode+0x0/0x90 returned 0 after 0 usecs
+[    0.752683] calling  init_lockevent_counts+0x0/0x100 @ 1
+[    0.752871] initcall init_lockevent_counts+0x0/0x100 returned 0 after 0 usecs
+[    0.752876] calling  em_debug_init+0x0/0x30 @ 1
+[    0.752884] initcall em_debug_init+0x0/0x30 returned 0 after 0 usecs
+[    0.752887] calling  kho_init+0x0/0x220 @ 1
+[    0.752891] initcall kho_init+0x0/0x220 returned 0 after 0 usecs
+[    0.752894] calling  clocksource_done_booting+0x0/0x50 @ 1
+[    0.753367] clocksource: Switched to clocksource kvm-clock
+[    0.753367] initcall clocksource_done_booting+0x0/0x50 returned 0 after 1016 usecs
+[    0.753367] calling  tracer_init_tracefs+0x0/0xb0 @ 1
+[    0.753582] initcall tracer_init_tracefs+0x0/0xb0 returned 0 after 193 usecs
+[    0.753591] calling  init_trace_printk_function_export+0x0/0x30 @ 1
+[    0.753624] initcall init_trace_printk_function_export+0x0/0x30 returned 0 after 29 usecs
+[    0.753629] calling  init_graph_tracefs+0x0/0x30 @ 1
+[    0.753639] initcall init_graph_tracefs+0x0/0x30 returned 0 after 6 usecs
+[    0.755296] calling  trace_events_synth_init+0x0/0x50 @ 1
+[    0.755313] initcall trace_events_synth_init+0x0/0x50 returned 0 after 5 usecs
+[    0.755317] calling  trace_events_user_init+0x0/0x230 @ 1
+[    0.755338] initcall trace_events_user_init+0x0/0x230 returned 0 after 19 usecs
+[    0.755340] calling  bpf_event_init+0x0/0x20 @ 1
+[    0.755342] initcall bpf_event_init+0x0/0x20 returned 0 after 0 usecs
+[    0.755344] calling  init_kprobe_trace+0x0/0x180 @ 1
+[    0.755357] initcall init_kprobe_trace+0x0/0x180 returned 0 after 10 usecs
+[    0.755359] calling  init_dynamic_event+0x0/0x30 @ 1
+[    0.755363] initcall init_dynamic_event+0x0/0x30 returned 0 after 2 usecs
+[    0.755365] calling  init_uprobe_trace+0x0/0x60 @ 1
+[    0.755372] initcall init_uprobe_trace+0x0/0x60 returned 0 after 5 usecs
+[    0.755374] calling  bpf_init+0x0/0x50 @ 1
+[    0.755393] initcall bpf_init+0x0/0x50 returned 0 after 17 usecs
+[    0.755395] calling  secretmem_init+0x0/0x40 @ 1
+[    0.755427] initcall secretmem_init+0x0/0x40 returned 0 after 24 usecs
+[    0.755430] calling  init_fs_stat_sysctls+0x0/0x40 @ 1
+[    0.755445] initcall init_fs_stat_sysctls+0x0/0x40 returned 0 after 12 usecs
+[    0.755448] calling  init_fs_exec_sysctls+0x0/0x30 @ 1
+[    0.755452] initcall init_fs_exec_sysctls+0x0/0x30 returned 0 after 1 usecs
+[    0.755455] calling  init_pipe_fs+0x0/0x70 @ 1
+[    0.755471] initcall init_pipe_fs+0x0/0x70 returned 0 after 12 usecs
+[    0.755477] calling  init_fs_namei_sysctls+0x0/0x30 @ 1
+[    0.755495] initcall init_fs_namei_sysctls+0x0/0x30 returned 0 after 13 usecs
+[    0.755499] calling  init_fs_dcache_sysctls+0x0/0x50 @ 1
+[    0.755512] initcall init_fs_dcache_sysctls+0x0/0x50 returned 0 after 10 usecs
+[    0.755515] calling  init_fs_namespace_sysctls+0x0/0x30 @ 1
+[    0.755521] initcall init_fs_namespace_sysctls+0x0/0x30 returned 0 after 3 usecs
+[    0.755524] calling  cgroup_writeback_init+0x0/0x40 @ 1
+[    0.755530] initcall cgroup_writeback_init+0x0/0x40 returned 0 after 4 usecs
+[    0.755533] calling  inotify_user_setup+0x0/0x110 @ 1
+[    0.755550] initcall inotify_user_setup+0x0/0x110 returned 0 after 15 usecs
+[    0.755552] calling  eventpoll_init+0x0/0x140 @ 1
+[    0.755578] initcall eventpoll_init+0x0/0x140 returned 0 after 23 usecs
+[    0.755579] calling  anon_inode_init+0x0/0x70 @ 1
+[    0.755590] initcall anon_inode_init+0x0/0x70 returned 0 after 8 usecs
+[    0.755592] calling  init_dax_wait_table+0x0/0x40 @ 1
+[    0.755652] initcall init_dax_wait_table+0x0/0x40 returned 0 after 58 usecs
+[    0.755654] calling  proc_locks_init+0x0/0x30 @ 1
+[    0.755661] initcall proc_locks_init+0x0/0x30 returned 0 after 4 usecs
+[    0.755662] calling  backing_aio_init+0x0/0x80 @ 1
+[    0.755669] initcall backing_aio_init+0x0/0x80 returned 0 after 4 usecs
+[    0.755673] calling  init_fs_coredump_sysctls+0x0/0x30 @ 1
+[    0.755683] initcall init_fs_coredump_sysctls+0x0/0x30 returned 0 after 5 usecs
+[    0.755686] calling  init_vm_drop_caches_sysctls+0x0/0x30 @ 1
+[    0.755690] initcall init_vm_drop_caches_sysctls+0x0/0x30 returned 0 after 1 usecs
+[    0.755692] calling  iomap_ioend_init+0x0/0x30 @ 1
+[    0.755873] initcall iomap_ioend_init+0x0/0x30 returned 0 after 178 usecs
+[    0.755879] calling  dquot_init+0x0/0x1a0 @ 1
+[    0.755882] VFS: Disk quotas dquot_6.6.0
+[    0.755900] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    0.756106] initcall dquot_init+0x0/0x1a0 returned 0 after 224 usecs
+[    0.756111] calling  quota_init+0x0/0x30 @ 1
+[    0.756133] initcall quota_init+0x0/0x30 returned 0 after 19 usecs
+[    0.756135] calling  proc_cmdline_init+0x0/0x40 @ 1
+[    0.756139] initcall proc_cmdline_init+0x0/0x40 returned 0 after 2 usecs
+[    0.756142] calling  proc_consoles_init+0x0/0x30 @ 1
+[    0.756149] initcall proc_consoles_init+0x0/0x30 returned 0 after 5 usecs
+[    0.756151] calling  proc_cpuinfo_init+0x0/0x30 @ 1
+[    0.756156] initcall proc_cpuinfo_init+0x0/0x30 returned 0 after 2 usecs
+[    0.756158] calling  proc_devices_init+0x0/0x40 @ 1
+[    0.756160] initcall proc_devices_init+0x0/0x40 returned 0 after 0 usecs
+[    0.756163] calling  proc_interrupts_init+0x0/0x30 @ 1
+[    0.756165] initcall proc_interrupts_init+0x0/0x30 returned 0 after 0 usecs
+[    0.756167] calling  proc_loadavg_init+0x0/0x40 @ 1
+[    0.756170] initcall proc_loadavg_init+0x0/0x40 returned 0 after 0 usecs
+[    0.756172] calling  proc_meminfo_init+0x0/0x40 @ 1
+[    0.756174] initcall proc_meminfo_init+0x0/0x40 returned 0 after 0 usecs
+[    0.756176] calling  proc_stat_init+0x0/0x30 @ 1
+[    0.756179] initcall proc_stat_init+0x0/0x30 returned 0 after 0 usecs
+[    0.756181] calling  proc_uptime_init+0x0/0x40 @ 1
+[    0.756183] initcall proc_uptime_init+0x0/0x40 returned 0 after 0 usecs
+[    0.756185] calling  proc_version_init+0x0/0x40 @ 1
+[    0.756188] initcall proc_version_init+0x0/0x40 returned 0 after 0 usecs
+[    0.756190] calling  proc_softirqs_init+0x0/0x40 @ 1
+[    0.756192] initcall proc_softirqs_init+0x0/0x40 returned 0 after 0 usecs
+[    0.756194] calling  proc_kcore_init+0x0/0x100 @ 1
+[    0.756267] initcall proc_kcore_init+0x0/0x100 returned 0 after 70 usecs
+[    0.756272] calling  vmcore_init+0x0/0x540 @ 1
+[    0.756277] initcall vmcore_init+0x0/0x540 returned 0 after 3 usecs
+[    0.756279] calling  proc_kmsg_init+0x0/0x30 @ 1
+[    0.756282] initcall proc_kmsg_init+0x0/0x30 returned 0 after 1 usecs
+[    0.756285] calling  proc_page_init+0x0/0x60 @ 1
+[    0.756288] initcall proc_page_init+0x0/0x60 returned 0 after 1 usecs
+[    0.756290] calling  proc_boot_config_init+0x0/0x90 @ 1
+[    0.756301] initcall proc_boot_config_init+0x0/0x90 returned 0 after 8 usecs
+[    0.756304] calling  init_ramfs_fs+0x0/0x20 @ 1
+[    0.756309] initcall init_ramfs_fs+0x0/0x20 returned 0 after 2 usecs
+[    0.756311] calling  init_hugetlbfs_fs+0x0/0x170 @ 1
+[    0.756358] initcall init_hugetlbfs_fs+0x0/0x170 returned 0 after 40 usecs
+[    0.756361] calling  security_initcall_fs+0x0/0xa0 @ 1
+[    0.756371] initcall security_initcall_fs+0x0/0xa0 returned 0 after 5 usecs
+[    0.756373] calling  dynamic_debug_init_control+0x0/0x90 @ 1
+[    0.756391] initcall dynamic_debug_init_control+0x0/0x90 returned 0 after 14 usecs
+[    0.756394] calling  acpi_event_init+0x0/0x40 @ 1
+[    0.756402] initcall acpi_event_init+0x0/0x40 returned 0 after 5 usecs
+[    0.756405] calling  acpi_init_fpdt+0x0/0x330 @ 1
+[    0.756410] initcall acpi_init_fpdt+0x0/0x330 returned 0 after 2 usecs
+[    0.756414] calling  pnp_system_init+0x0/0x20 @ 1
+[    0.756439] initcall pnp_system_init+0x0/0x20 returned 0 after 21 usecs
+[    0.756441] calling  pnpacpi_init+0x0/0x80 @ 1
+[    0.756443] pnp: PnP ACPI init
+[    0.756781] system 00:04: [mem 0xb0000000-0xbfffffff window] has been reserved
+[    0.756793] probe of 00:04 returned 0 after 62 usecs
+[    0.757210] pnp: PnP ACPI: found 5 devices
+[    0.757217] initcall pnpacpi_init+0x0/0x80 returned 0 after 773 usecs
+[    0.757223] calling  reg_event_init+0x0/0x30 @ 1
+[    0.757234] initcall reg_event_init+0x0/0x30 returned 0 after 6 usecs
+[    0.757237] calling  chr_dev_init+0x0/0x90 @ 1
+[    0.759903] initcall chr_dev_init+0x0/0x90 returned 0 after 2661 usecs
+[    0.759915] calling  hwrng_modinit+0x0/0xa0 @ 1
+[    0.759960] initcall hwrng_modinit+0x0/0xa0 returned 0 after 42 usecs
+[    0.759963] calling  firmware_class_init+0x0/0x100 @ 1
+[    0.759986] initcall firmware_class_init+0x0/0x100 returned 0 after 15 usecs
+[    0.759989] calling  map_properties+0x0/0x550 @ 1
+[    0.759997] initcall map_properties+0x0/0x550 returned 0 after 4 usecs
+[    0.759999] calling  efi_mokvar_sysfs_init+0x0/0x190 @ 1
+[    0.760002] initcall efi_mokvar_sysfs_init+0x0/0x190 returned -2 after 0 usecs
+[    0.760005] calling  init_acpi_pm_clocksource+0x0/0x100 @ 1
+[    0.764748] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    0.764762] initcall init_acpi_pm_clocksource+0x0/0x100 returned 0 after 4754 usecs
+[    0.764772] calling  powercap_init+0x0/0x260 @ 1
+[    0.764830] initcall powercap_init+0x0/0x260 returned 0 after 55 usecs
+[    0.764834] calling  sysctl_core_init+0x0/0x40 @ 1
+[    0.764869] initcall sysctl_core_init+0x0/0x40 returned 0 after 32 usecs
+[    0.764871] calling  eth_offload_init+0x0/0x20 @ 1
+[    0.764875] initcall eth_offload_init+0x0/0x20 returned 0 after 2 usecs
+[    0.764878] calling  ipv4_offload_init+0x0/0xc0 @ 1
+[    0.764884] initcall ipv4_offload_init+0x0/0xc0 returned 0 after 3 usecs
+[    0.764886] calling  inet_init+0x0/0x2e0 @ 1
+[    0.764934] NET: Registered PF_INET protocol family
+[    0.766373] IP idents hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.769471] tcp_listen_portaddr_hash hash table entries: 8192 (order: 5, 131072 bytes, linear)
+[    0.769635] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.770274] TCP established hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    0.771719] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)
+[    0.771889] TCP: Hash tables configured (established 131072 bind 65536)
+[    0.772407] MPTCP token hash table entries: 16384 (order: 7, 393216 bytes, linear)
+[    0.772780] UDP hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    0.773141] UDP-Lite hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    0.773254] initcall inet_init+0x0/0x2e0 returned 0 after 8365 usecs
+[    0.773262] calling  af_unix_init+0x0/0xe0 @ 1
+[    0.773269] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.773298] initcall af_unix_init+0x0/0xe0 returned 0 after 33 usecs
+[    0.773301] calling  ipv6_offload_init+0x0/0xd0 @ 1
+[    0.773306] initcall ipv6_offload_init+0x0/0xd0 returned 0 after 2 usecs
+[    0.773308] calling  vlan_offload_init+0x0/0x30 @ 1
+[    0.773310] initcall vlan_offload_init+0x0/0x30 returned 0 after 0 usecs
+[    0.773312] calling  xsk_init+0x0/0x100 @ 1
+[    0.773314] NET: Registered PF_XDP protocol family
+[    0.773321] initcall xsk_init+0x0/0x100 returned 0 after 7 usecs
+[    0.773323] calling  pcibios_assign_resources+0x0/0xd0 @ 1
+[    0.773340] pci 0000:00:02.0: bridge window [io  0x1000-0x0fff] to [bus 01] add_size 1000
+[    0.773345] pci 0000:00:02.1: bridge window [io  0x1000-0x0fff] to [bus 02] add_size 1000
+[    0.773348] pci 0000:00:02.2: bridge window [io  0x1000-0x0fff] to [bus 03] add_size 1000
+[    0.773350] pci 0000:00:02.3: bridge window [io  0x1000-0x0fff] to [bus 04] add_size 1000
+[    0.773352] pci 0000:00:02.4: bridge window [io  0x1000-0x0fff] to [bus 05] add_size 1000
+[    0.773355] pci 0000:00:02.5: bridge window [io  0x1000-0x0fff] to [bus 06] add_size 1000
+[    0.773357] pci 0000:00:02.6: bridge window [io  0x1000-0x0fff] to [bus 07] add_size 1000
+[    0.773359] pci 0000:00:02.7: bridge window [io  0x1000-0x0fff] to [bus 08] add_size 1000
+[    0.773361] pci 0000:00:03.0: bridge window [io  0x1000-0x0fff] to [bus 09] add_size 1000
+[    0.773363] pci 0000:00:03.1: bridge window [io  0x1000-0x0fff] to [bus 0a] add_size 1000
+[    0.773365] pci 0000:00:03.2: bridge window [io  0x1000-0x0fff] to [bus 0b] add_size 1000
+[    0.773366] pci 0000:00:03.3: bridge window [io  0x1000-0x0fff] to [bus 0c] add_size 1000
+[    0.773368] pci 0000:00:03.4: bridge window [io  0x1000-0x0fff] to [bus 0d] add_size 1000
+[    0.773370] pci 0000:00:03.5: bridge window [io  0x1000-0x0fff] to [bus 0e] add_size 1000
+[    0.773388] pci 0000:00:02.0: bridge window [io  0x1000-0x1fff]: assigned
+[    0.773391] pci 0000:00:02.1: bridge window [io  0x2000-0x2fff]: assigned
+[    0.773395] pci 0000:00:02.2: bridge window [io  0x3000-0x3fff]: assigned
+[    0.773397] pci 0000:00:02.3: bridge window [io  0x4000-0x4fff]: assigned
+[    0.773399] pci 0000:00:02.4: bridge window [io  0x5000-0x5fff]: assigned
+[    0.773401] pci 0000:00:02.5: bridge window [io  0x6000-0x6fff]: assigned
+[    0.773403] pci 0000:00:02.6: bridge window [io  0x7000-0x7fff]: assigned
+[    0.773405] pci 0000:00:02.7: bridge window [io  0x8000-0x8fff]: assigned
+[    0.773407] pci 0000:00:03.0: bridge window [io  0x9000-0x9fff]: assigned
+[    0.773409] pci 0000:00:03.1: bridge window [io  0xa000-0xafff]: assigned
+[    0.773411] pci 0000:00:03.2: bridge window [io  0xb000-0xbfff]: assigned
+[    0.773413] pci 0000:00:03.3: bridge window [io  0xd000-0xdfff]: assigned
+[    0.773415] pci 0000:00:03.4: bridge window [io  0xe000-0xefff]: assigned
+[    0.773417] pci 0000:00:03.5: bridge window [io  0xf000-0xffff]: assigned
+[    0.773423] pci 0000:00:02.0: PCI bridge to [bus 01]
+[    0.773463] pci 0000:00:02.0:   bridge window [io  0x1000-0x1fff]
+[    0.776839] pci 0000:00:02.0:   bridge window [mem 0xfe800000-0xfe9fffff]
+[    0.778905] pci 0000:00:02.0:   bridge window [mem 0xe1a00000000-0xe1bffffffff 64bit pref]
+[    0.783268] pci 0000:00:02.1: PCI bridge to [bus 02]
+[    0.783298] pci 0000:00:02.1:   bridge window [io  0x2000-0x2fff]
+[    0.787187] pci 0000:00:02.1:   bridge window [mem 0xfe600000-0xfe7fffff]
+[    0.788248] pci 0000:00:02.1:   bridge window [mem 0xe1800000000-0xe19ffffffff 64bit pref]
+[    0.790579] pci 0000:00:02.2: PCI bridge to [bus 03]
+[    0.790605] pci 0000:00:02.2:   bridge window [io  0x3000-0x3fff]
+[    0.792548] pci 0000:00:02.2:   bridge window [mem 0xfe400000-0xfe5fffff]
+[    0.794727] pci 0000:00:02.2:   bridge window [mem 0xe1600000000-0xe17ffffffff 64bit pref]
+[    0.799760] pci 0000:00:02.3: PCI bridge to [bus 04]
+[    0.799786] pci 0000:00:02.3:   bridge window [io  0x4000-0x4fff]
+[    0.801234] pci 0000:00:02.3:   bridge window [mem 0xfe200000-0xfe3fffff]
+[    0.802227] pci 0000:00:02.3:   bridge window [mem 0xe1400000000-0xe15ffffffff 64bit pref]
+[    0.804323] pci 0000:00:02.4: PCI bridge to [bus 05]
+[    0.804347] pci 0000:00:02.4:   bridge window [io  0x5000-0x5fff]
+[    0.806429] pci 0000:00:02.4:   bridge window [mem 0xfe000000-0xfe1fffff]
+[    0.808489] pci 0000:00:02.4:   bridge window [mem 0xe1200000000-0xe13ffffffff 64bit pref]
+[    0.812997] pci 0000:00:02.5: PCI bridge to [bus 06]
+[    0.813025] pci 0000:00:02.5:   bridge window [io  0x6000-0x6fff]
+[    0.814770] pci 0000:00:02.5:   bridge window [mem 0xfde00000-0xfdffffff]
+[    0.815868] pci 0000:00:02.5:   bridge window [mem 0xe1000000000-0xe11ffffffff 64bit pref]
+[    0.818110] pci 0000:00:02.6: PCI bridge to [bus 07]
+[    0.818135] pci 0000:00:02.6:   bridge window [io  0x7000-0x7fff]
+[    0.819990] pci 0000:00:02.6:   bridge window [mem 0xfdc00000-0xfddfffff]
+[    0.821516] pci 0000:00:02.6:   bridge window [mem 0xe0e00000000-0xe0fffffffff 64bit pref]
+[    0.825324] pci 0000:00:02.7: PCI bridge to [bus 08]
+[    0.825351] pci 0000:00:02.7:   bridge window [io  0x8000-0x8fff]
+[    0.827027] pci 0000:00:02.7:   bridge window [mem 0xfda00000-0xfdbfffff]
+[    0.828053] pci 0000:00:02.7:   bridge window [mem 0xe0c00000000-0xe0dffffffff 64bit pref]
+[    0.830278] pci 0000:00:03.0: PCI bridge to [bus 09]
+[    0.830304] pci 0000:00:03.0:   bridge window [io  0x9000-0x9fff]
+[    0.832135] pci 0000:00:03.0:   bridge window [mem 0xfd800000-0xfd9fffff]
+[    0.833477] pci 0000:00:03.0:   bridge window [mem 0xe0a00000000-0xe0bffffffff 64bit pref]
+[    0.837062] pci 0000:00:03.1: PCI bridge to [bus 0a]
+[    0.837087] pci 0000:00:03.1:   bridge window [io  0xa000-0xafff]
+[    0.838589] pci 0000:00:03.1:   bridge window [mem 0xfd600000-0xfd7fffff]
+[    0.839538] pci 0000:00:03.1:   bridge window [mem 0xe0800000000-0xe09ffffffff 64bit pref]
+[    0.841665] pci 0000:00:03.2: PCI bridge to [bus 0b]
+[    0.841688] pci 0000:00:03.2:   bridge window [io  0xb000-0xbfff]
+[    0.843313] pci 0000:00:03.2:   bridge window [mem 0xfd400000-0xfd5fffff]
+[    0.844557] pci 0000:00:03.2:   bridge window [mem 0xe0600000000-0xe07ffffffff 64bit pref]
+[    0.850556] pci 0000:00:03.3: PCI bridge to [bus 0c]
+[    0.850579] pci 0000:00:03.3:   bridge window [io  0xd000-0xdfff]
+[    0.852031] pci 0000:00:03.3:   bridge window [mem 0xfd200000-0xfd3fffff]
+[    0.853034] pci 0000:00:03.3:   bridge window [mem 0xe0400000000-0xe05ffffffff 64bit pref]
+[    0.854971] pci 0000:00:03.4: PCI bridge to [bus 0d]
+[    0.855002] pci 0000:00:03.4:   bridge window [io  0xe000-0xefff]
+[    0.856419] pci 0000:00:03.4:   bridge window [mem 0xfd000000-0xfd1fffff]
+[    0.857337] pci 0000:00:03.4:   bridge window [mem 0xe0200000000-0xe03ffffffff 64bit pref]
+[    0.863684] pci 0000:00:03.5: PCI bridge to [bus 0e]
+[    0.863710] pci 0000:00:03.5:   bridge window [io  0xf000-0xffff]
+[    0.865163] pci 0000:00:03.5:   bridge window [mem 0xfce00000-0xfcffffff]
+[    0.866074] pci 0000:00:03.5:   bridge window [mem 0xe0000000000-0xe01ffffffff 64bit pref]
+[    0.867907] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    0.867912] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    0.867914] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    0.867916] pci_bus 0000:00: resource 7 [mem 0x80000000-0xafffffff window]
+[    0.867917] pci_bus 0000:00: resource 8 [mem 0xc0000000-0xfebfffff window]
+[    0.867919] pci_bus 0000:00: resource 9 [mem 0xe0000000000-0xe1c00003fff window]
+[    0.867921] pci_bus 0000:01: resource 0 [io  0x1000-0x1fff]
+[    0.867922] pci_bus 0000:01: resource 1 [mem 0xfe800000-0xfe9fffff]
+[    0.867924] pci_bus 0000:01: resource 2 [mem 0xe1a00000000-0xe1bffffffff 64bit pref]
+[    0.867926] pci_bus 0000:02: resource 0 [io  0x2000-0x2fff]
+[    0.867927] pci_bus 0000:02: resource 1 [mem 0xfe600000-0xfe7fffff]
+[    0.867928] pci_bus 0000:02: resource 2 [mem 0xe1800000000-0xe19ffffffff 64bit pref]
+[    0.867930] pci_bus 0000:03: resource 0 [io  0x3000-0x3fff]
+[    0.867931] pci_bus 0000:03: resource 1 [mem 0xfe400000-0xfe5fffff]
+[    0.867933] pci_bus 0000:03: resource 2 [mem 0xe1600000000-0xe17ffffffff 64bit pref]
+[    0.867934] pci_bus 0000:04: resource 0 [io  0x4000-0x4fff]
+[    0.867936] pci_bus 0000:04: resource 1 [mem 0xfe200000-0xfe3fffff]
+[    0.867937] pci_bus 0000:04: resource 2 [mem 0xe1400000000-0xe15ffffffff 64bit pref]
+[    0.867939] pci_bus 0000:05: resource 0 [io  0x5000-0x5fff]
+[    0.867940] pci_bus 0000:05: resource 1 [mem 0xfe000000-0xfe1fffff]
+[    0.867941] pci_bus 0000:05: resource 2 [mem 0xe1200000000-0xe13ffffffff 64bit pref]
+[    0.867943] pci_bus 0000:06: resource 0 [io  0x6000-0x6fff]
+[    0.867944] pci_bus 0000:06: resource 1 [mem 0xfde00000-0xfdffffff]
+[    0.867945] pci_bus 0000:06: resource 2 [mem 0xe1000000000-0xe11ffffffff 64bit pref]
+[    0.867947] pci_bus 0000:07: resource 0 [io  0x7000-0x7fff]
+[    0.867948] pci_bus 0000:07: resource 1 [mem 0xfdc00000-0xfddfffff]
+[    0.867949] pci_bus 0000:07: resource 2 [mem 0xe0e00000000-0xe0fffffffff 64bit pref]
+[    0.867951] pci_bus 0000:08: resource 0 [io  0x8000-0x8fff]
+[    0.867952] pci_bus 0000:08: resource 1 [mem 0xfda00000-0xfdbfffff]
+[    0.867953] pci_bus 0000:08: resource 2 [mem 0xe0c00000000-0xe0dffffffff 64bit pref]
+[    0.867955] pci_bus 0000:09: resource 0 [io  0x9000-0x9fff]
+[    0.867956] pci_bus 0000:09: resource 1 [mem 0xfd800000-0xfd9fffff]
+[    0.867957] pci_bus 0000:09: resource 2 [mem 0xe0a00000000-0xe0bffffffff 64bit pref]
+[    0.867959] pci_bus 0000:0a: resource 0 [io  0xa000-0xafff]
+[    0.867960] pci_bus 0000:0a: resource 1 [mem 0xfd600000-0xfd7fffff]
+[    0.867961] pci_bus 0000:0a: resource 2 [mem 0xe0800000000-0xe09ffffffff 64bit pref]
+[    0.867963] pci_bus 0000:0b: resource 0 [io  0xb000-0xbfff]
+[    0.867964] pci_bus 0000:0b: resource 1 [mem 0xfd400000-0xfd5fffff]
+[    0.867965] pci_bus 0000:0b: resource 2 [mem 0xe0600000000-0xe07ffffffff 64bit pref]
+[    0.867977] pci_bus 0000:0c: resource 0 [io  0xd000-0xdfff]
+[    0.867978] pci_bus 0000:0c: resource 1 [mem 0xfd200000-0xfd3fffff]
+[    0.867979] pci_bus 0000:0c: resource 2 [mem 0xe0400000000-0xe05ffffffff 64bit pref]
+[    0.867981] pci_bus 0000:0d: resource 0 [io  0xe000-0xefff]
+[    0.867982] pci_bus 0000:0d: resource 1 [mem 0xfd000000-0xfd1fffff]
+[    0.867983] pci_bus 0000:0d: resource 2 [mem 0xe0200000000-0xe03ffffffff 64bit pref]
+[    0.867985] pci_bus 0000:0e: resource 0 [io  0xf000-0xffff]
+[    0.867986] pci_bus 0000:0e: resource 1 [mem 0xfce00000-0xfcffffff]
+[    0.867990] pci_bus 0000:0e: resource 2 [mem 0xe0000000000-0xe01ffffffff 64bit pref]
+[    0.868026] initcall pcibios_assign_resources+0x0/0xd0 returned 0 after 94699 usecs
+[    0.868034] calling  pci_apply_final_quirks+0x0/0x140 @ 1
+[    0.868389] pci 0000:02:00.0: calling  quirk_usb_early_handoff+0x0/0x770 @ 1
+[    0.868706] ACPI: \_SB_.GSIG: Enabled at IRQ 22
+[    0.870629] pci 0000:02:00.0: quirk_usb_early_handoff+0x0/0x770 took 2167 usecs
+[    0.870751] PCI: CLS 0 bytes, default 64
+[    0.870760] initcall pci_apply_final_quirks+0x0/0x140 returned 0 after 2723 usecs
+[    0.870767] calling  acpi_reserve_resources+0x0/0x100 @ 1
+[    0.870776] initcall acpi_reserve_resources+0x0/0x100 returned 0 after 4 usecs
+[    0.870779] calling  p2sb_fs_init+0x0/0x150 @ 1
+[    0.870892] initcall p2sb_fs_init+0x0/0x150 returned -2 after 109 usecs
+[    0.870897] calling  populate_rootfs+0x0/0x50 @ 1
+[    0.871020] Unpacking initramfs...
+[    0.871883] initcall populate_rootfs+0x0/0x50 returned 0 after 976 usecs
+[    0.871896] calling  pci_iommu_init+0x0/0x40 @ 1
+[    0.871920] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    0.871926] software IO TLB: mapped [mem 0x000000007bfde000-0x000000007ffde000] (64MB)
+[    0.871935] initcall pci_iommu_init+0x0/0x40 returned 0 after 20 usecs
+[    0.871942] calling  ir_dev_scope_init+0x0/0x40 @ 1
+[    0.871956] initcall ir_dev_scope_init+0x0/0x40 returned 0 after 8 usecs
+[    0.872013] entering initcall level: device
+[    0.872015] calling  snp_init_platform_device+0x0/0xe0 @ 1
+[    0.872026] initcall snp_init_platform_device+0x0/0xe0 returned -19 after 4 usecs
+[    0.872042] calling  ia32_binfmt_init+0x0/0x30 @ 1
+[    0.872053] initcall ia32_binfmt_init+0x0/0x30 returned 0 after 5 usecs
+[    0.872059] calling  amd_ibs_init+0x0/0x2a0 @ 1
+[    0.872069] initcall amd_ibs_init+0x0/0x2a0 returned -19 after 4 usecs
+[    0.872076] calling  amd_iommu_pc_init+0x0/0x250 @ 1
+[    0.872086] initcall amd_iommu_pc_init+0x0/0x250 returned -19 after 4 usecs
+[    0.872092] calling  msr_init+0x0/0x60 @ 1
+[    0.872140] initcall msr_init+0x0/0x60 returned 0 after 42 usecs
+[    0.872147] calling  register_kernel_offset_dumper+0x0/0x30 @ 1
+[    0.872153] initcall register_kernel_offset_dumper+0x0/0x30 returned 0 after 1 usecs
+[    0.872157] calling  i8259A_init_ops+0x0/0x30 @ 1
+[    0.872162] initcall i8259A_init_ops+0x0/0x30 returned 0 after 0 usecs
+[    0.872167] calling  init_tsc_clocksource+0x0/0xd0 @ 1
+[    0.872177] initcall init_tsc_clocksource+0x0/0xd0 returned 0 after 4 usecs
+[    0.872183] calling  add_rtc_cmos+0x0/0xa0 @ 1
+[    0.872199] initcall add_rtc_cmos+0x0/0xa0 returned 0 after 6 usecs
+[    0.872205] calling  i8237A_init_ops+0x0/0x50 @ 1
+[    0.872250] initcall i8237A_init_ops+0x0/0x50 returned 0 after 40 usecs
+[    0.872258] calling  umwait_init+0x0/0xa0 @ 1
+[    0.872267] initcall umwait_init+0x0/0xa0 returned -19 after 4 usecs
+[    0.872272] calling  sgx_init+0x0/0x4a0 @ 1
+[    0.872287] initcall sgx_init+0x0/0x4a0 returned -19 after 4 usecs
+[    0.872292] calling  msr_init+0x0/0xc0 @ 1
+[    0.874954] initcall msr_init+0x0/0xc0 returned 0 after 2655 usecs
+[    0.874962] calling  cpuid_init+0x0/0xc0 @ 1
+[    0.875187] initcall cpuid_init+0x0/0xc0 returned 0 after 222 usecs
+[    0.875192] calling  ioapic_init_ops+0x0/0x20 @ 1
+[    0.875199] initcall ioapic_init_ops+0x0/0x20 returned 0 after 3 usecs
+[    0.875202] calling  add_pcspkr+0x0/0x80 @ 1
+[    0.875232] initcall add_pcspkr+0x0/0x80 returned 0 after 27 usecs
+[    0.875235] calling  start_periodic_check_for_corruption+0x0/0x40 @ 1
+[    0.875257] initcall start_periodic_check_for_corruption+0x0/0x40 returned 0 after 2 usecs
+[    0.875261] calling  audit_classes_init+0x0/0xc0 @ 1
+[    0.875268] initcall audit_classes_init+0x0/0xc0 returned 0 after 4 usecs
+[    0.875271] calling  pt_dump_init+0x0/0x60 @ 1
+[    0.875276] initcall pt_dump_init+0x0/0x60 returned 0 after 2 usecs
+[    0.875278] calling  iosf_mbi_init+0x0/0x30 @ 1
+[    0.875315] initcall iosf_mbi_init+0x0/0x30 returned 0 after 34 usecs
+[    0.875321] calling  proc_execdomains_init+0x0/0x30 @ 1
+[    0.875327] initcall proc_execdomains_init+0x0/0x30 returned 0 after 3 usecs
+[    0.875330] calling  register_warn_debugfs+0x0/0x30 @ 1
+[    0.875345] initcall register_warn_debugfs+0x0/0x30 returned 0 after 12 usecs
+[    0.875349] calling  cpuhp_sysfs_init+0x0/0xe0 @ 1
+[    0.875363] initcall cpuhp_sysfs_init+0x0/0xe0 returned 0 after 11 usecs
+[    0.875367] calling  ioresources_init+0x0/0x60 @ 1
+[    0.875371] initcall ioresources_init+0x0/0x60 returned 0 after 1 usecs
+[    0.875373] calling  psi_proc_init+0x0/0x90 @ 1
+[    0.875381] initcall psi_proc_init+0x0/0x90 returned 0 after 5 usecs
+[    0.875384] calling  snapshot_device_init+0x0/0x20 @ 1
+[    0.875490] initcall snapshot_device_init+0x0/0x20 returned 0 after 102 usecs
+[    0.875494] calling  irq_pm_init_ops+0x0/0x20 @ 1
+[    0.875499] initcall irq_pm_init_ops+0x0/0x20 returned 0 after 3 usecs
+[    0.875501] calling  module_debugfs_init+0x0/0x30 @ 1
+[    0.875522] initcall module_debugfs_init+0x0/0x30 returned 0 after 6 usecs
+[    0.875525] calling  proc_modules_init+0x0/0x30 @ 1
+[    0.875531] initcall proc_modules_init+0x0/0x30 returned 0 after 3 usecs
+[    0.875534] calling  unloaded_tainted_modules_init+0x0/0x40 @ 1
+[    0.875540] initcall unloaded_tainted_modules_init+0x0/0x40 returned 0 after 3 usecs
+[    0.875542] calling  timer_sysctl_init+0x0/0x30 @ 1
+[    0.875549] initcall timer_sysctl_init+0x0/0x30 returned 0 after 4 usecs
+[    0.875551] calling  timekeeping_init_ops+0x0/0x20 @ 1
+[    0.875554] initcall timekeeping_init_ops+0x0/0x20 returned 0 after 0 usecs
+[    0.875559] calling  init_clocksource_sysfs+0x0/0x30 @ 1
+[    0.875585] initcall init_clocksource_sysfs+0x0/0x30 returned 0 after 23 usecs
+[    0.875588] calling  init_timer_list_procfs+0x0/0x40 @ 1
+[    0.875592] initcall init_timer_list_procfs+0x0/0x40 returned 0 after 0 usecs
+[    0.875595] calling  alarmtimer_init+0x0/0xd0 @ 1
+[    0.875611] initcall alarmtimer_init+0x0/0xd0 returned 0 after 13 usecs
+[    0.875614] calling  clockevents_init_sysfs+0x0/0xd0 @ 1
+[    0.875674] initcall clockevents_init_sysfs+0x0/0xd0 returned 0 after 57 usecs
+[    0.875678] calling  proc_dma_init+0x0/0x30 @ 1
+[    0.875681] initcall proc_dma_init+0x0/0x30 returned 0 after 0 usecs
+[    0.875684] calling  kallsyms_init+0x0/0x30 @ 1
+[    0.875692] initcall kallsyms_init+0x0/0x30 returned 0 after 5 usecs
+[    0.875695] calling  pid_namespaces_init+0x0/0xd0 @ 1
+[    0.875716] initcall pid_namespaces_init+0x0/0xd0 returned 0 after 19 usecs
+[    0.875718] calling  ikconfig_init+0x0/0x50 @ 1
+[    0.875723] initcall ikconfig_init+0x0/0x50 returned 0 after 2 usecs
+[    0.875725] calling  audit_watch_init+0x0/0x50 @ 1
+[    0.875727] initcall audit_watch_init+0x0/0x50 returned 0 after 0 usecs
+[    0.875738] calling  audit_fsnotify_init+0x0/0x50 @ 1
+[    0.875740] initcall audit_fsnotify_init+0x0/0x50 returned 0 after 0 usecs
+[    0.875742] calling  audit_tree_init+0x0/0xc0 @ 1
+[    0.875748] initcall audit_tree_init+0x0/0xc0 returned 0 after 3 usecs
+[    0.875750] calling  seccomp_sysctl_init+0x0/0x30 @ 1
+[    0.875760] initcall seccomp_sysctl_init+0x0/0x30 returned 0 after 6 usecs
+[    0.875762] calling  utsname_sysctl_init+0x0/0x30 @ 1
+[    0.875772] initcall utsname_sysctl_init+0x0/0x30 returned 0 after 7 usecs
+[    0.875775] calling  init_tracepoints+0x0/0x30 @ 1
+[    0.875779] initcall init_tracepoints+0x0/0x30 returned 0 after 1 usecs
+[    0.875781] calling  stack_trace_init+0x0/0xb0 @ 1
+[    0.875832] initcall stack_trace_init+0x0/0xb0 returned 0 after 47 usecs
+[    0.875836] calling  init_mmio_trace+0x0/0x10 @ 1
+[    0.875841] initcall init_mmio_trace+0x0/0x10 returned 0 after 1 usecs
+[    0.875844] calling  init_blk_tracer+0x0/0x60 @ 1
+[    0.875890] initcall init_blk_tracer+0x0/0x60 returned 0 after 43 usecs
+[    0.875893] calling  perf_event_sysfs_init+0x0/0x90 @ 1
+[    0.876016] initcall perf_event_sysfs_init+0x0/0x90 returned 0 after 119 usecs
+[    0.876020] calling  rseq_debugfs_init+0x0/0x40 @ 1
+[    0.876039] initcall rseq_debugfs_init+0x0/0x40 returned 0 after 16 usecs
+[    0.876042] calling  system_trusted_keyring_init+0x0/0x100 @ 1
+[    0.876048] Initialise system trusted keyrings
+[    0.876076] initcall system_trusted_keyring_init+0x0/0x100 returned 0 after 27 usecs
+[    0.876079] calling  blacklist_init+0x0/0xd0 @ 1
+[    0.876082] Key type blacklist registered
+[    0.876086] initcall blacklist_init+0x0/0xd0 returned 0 after 4 usecs
+[    0.876089] calling  kswapd_init+0x0/0x90 @ 1
+[    0.876173] initcall kswapd_init+0x0/0x90 returned 0 after 81 usecs
+[    0.876180] calling  extfrag_debug_init+0x0/0x70 @ 1
+[    0.876192] initcall extfrag_debug_init+0x0/0x70 returned 0 after 9 usecs
+[    0.876195] calling  mm_compute_batch_init+0x0/0x30 @ 1
+[    0.876203] initcall mm_compute_batch_init+0x0/0x30 returned 0 after 4 usecs
+[    0.876207] calling  slab_proc_init+0x0/0x30 @ 1
+[    0.876212] initcall slab_proc_init+0x0/0x30 returned 0 after 3 usecs
+[    0.876214] calling  workingset_init+0x0/0xb0 @ 1
+[    0.876216] workingset: timestamp_bits=36 max_order=22 bucket_order=0
+[    0.876222] initcall workingset_init+0x0/0xb0 returned 0 after 5 usecs
+[    0.876224] calling  proc_vmalloc_init+0x0/0x30 @ 1
+[    0.876231] initcall proc_vmalloc_init+0x0/0x30 returned 0 after 4 usecs
+[    0.876233] calling  memblock_init_debugfs+0x0/0x70 @ 1
+[    0.876247] initcall memblock_init_debugfs+0x0/0x70 returned 0 after 10 usecs
+[    0.876249] calling  slab_debugfs_init+0x0/0x60 @ 1
+[    0.876258] initcall slab_debugfs_init+0x0/0x60 returned 0 after 6 usecs
+[    0.876261] calling  procswaps_init+0x0/0x30 @ 1
+[    0.876265] initcall procswaps_init+0x0/0x30 returned 0 after 1 usecs
+[    0.876267] calling  zs_init+0x0/0x60 @ 1
+[    0.876280] initcall zs_init+0x0/0x60 returned 0 after 10 usecs
+[    0.876282] calling  damon_reclaim_init+0x0/0x70 @ 1
+[    0.876296] initcall damon_reclaim_init+0x0/0x70 returned 0 after 11 usecs
+[    0.876300] calling  damon_lru_sort_init+0x0/0x70 @ 1
+[    0.876302] initcall damon_lru_sort_init+0x0/0x70 returned 0 after 0 usecs
+[    0.876305] calling  damon_stat_init+0x0/0x50 @ 1
+[    0.876308] initcall damon_stat_init+0x0/0x50 returned 0 after 0 usecs
+[    0.876310] calling  ptdump_debugfs_init+0x0/0x30 @ 1
+[    0.876335] initcall ptdump_debugfs_init+0x0/0x30 returned 0 after 8 usecs
+[    0.876338] calling  fcntl_init+0x0/0x70 @ 1
+[    0.876343] initcall fcntl_init+0x0/0x70 returned 0 after 2 usecs
+[    0.876345] calling  proc_filesystems_init+0x0/0x30 @ 1
+[    0.876349] initcall proc_filesystems_init+0x0/0x30 returned 0 after 0 usecs
+[    0.876352] calling  start_dirtytime_writeback+0x0/0x60 @ 1
+[    0.876357] initcall start_dirtytime_writeback+0x0/0x60 returned 0 after 2 usecs
+[    0.876360] calling  dnotify_init+0x0/0xf0 @ 1
+[    0.876374] initcall dnotify_init+0x0/0xf0 returned 0 after 11 usecs
+[    0.876377] calling  fanotify_user_setup+0x0/0x200 @ 1
+[    0.876388] initcall fanotify_user_setup+0x0/0x200 returned 0 after 9 usecs
+[    0.876391] calling  userfaultfd_init+0x0/0xb0 @ 1
+[    0.876457] initcall userfaultfd_init+0x0/0xb0 returned 0 after 64 usecs
+[    0.876460] calling  aio_setup+0x0/0xf0 @ 1
+[    0.876490] initcall aio_setup+0x0/0xf0 returned 0 after 28 usecs
+[    0.876493] calling  mbcache_init+0x0/0x80 @ 1
+[    0.876500] initcall mbcache_init+0x0/0x80 returned 0 after 4 usecs
+[    0.876502] calling  init_devpts_fs+0x0/0x40 @ 1
+[    0.876512] initcall init_devpts_fs+0x0/0x40 returned 0 after 7 usecs
+[    0.876515] calling  ext4_init_fs+0x0/0x1c0 @ 1
+[    0.876632] initcall ext4_init_fs+0x0/0x1c0 returned 0 after 115 usecs
+[    0.876638] calling  journal_init+0x0/0x180 @ 1
+[    0.876666] initcall journal_init+0x0/0x180 returned 0 after 25 usecs
+[    0.876669] calling  init_nls_cp437+0x0/0x20 @ 1
+[    0.876674] initcall init_nls_cp437+0x0/0x20 returned 0 after 2 usecs
+[    0.876677] calling  init_nls_ascii+0x0/0x20 @ 1
+[    0.876680] initcall init_nls_ascii+0x0/0x20 returned 0 after 0 usecs
+[    0.876683] calling  init_autofs_fs+0x0/0x30 @ 1
+[    0.876768] initcall init_autofs_fs+0x0/0x30 returned 0 after 82 usecs
+[    0.876772] calling  fuse_init+0x0/0x1a0 @ 1
+[    0.876775] fuse: init (API version 7.45)
+[    0.876871] initcall fuse_init+0x0/0x1a0 returned 0 after 95 usecs
+[    0.876878] calling  virtio_fs_init+0x0/0x90 @ 1
+[    0.876888] initcall virtio_fs_init+0x0/0x90 returned 0 after 8 usecs
+[    0.876894] calling  efivarfs_init+0x0/0x20 @ 1
+[    0.876901] initcall efivarfs_init+0x0/0x20 returned 0 after 4 usecs
+[    0.876904] calling  ipc_init+0x0/0x30 @ 1
+[    0.876922] initcall ipc_init+0x0/0x30 returned 0 after 15 usecs
+[    0.876925] calling  ipc_sysctl_init+0x0/0x40 @ 1
+[    0.876945] initcall ipc_sysctl_init+0x0/0x40 returned 0 after 17 usecs
+[    0.876947] calling  init_mqueue_fs+0x0/0xf0 @ 1
+[    0.876983] initcall init_mqueue_fs+0x0/0xf0 returned 0 after 34 usecs
+[    0.876986] calling  key_proc_init+0x0/0x70 @ 1
+[    0.876989] initcall key_proc_init+0x0/0x70 returned 0 after 1 usecs
+[    0.876991] calling  security_initcall_device+0x0/0xa0 @ 1
+[    0.876995] initcall security_initcall_device+0x0/0xa0 returned 0 after 0 usecs
+[    0.876997] calling  platform_keyring_init+0x0/0x30 @ 1
+[    0.877007] integrity: Platform Keyring initialized
+[    0.877010] initcall platform_keyring_init+0x0/0x30 returned 0 after 9 usecs
+[    0.877013] calling  machine_keyring_init+0x0/0x30 @ 1
+[    0.877018] integrity: Machine keyring initialized
+[    0.877019] initcall machine_keyring_init+0x0/0x30 returned 0 after 2 usecs
+[    0.877022] calling  bpf_crypto_skcipher_init+0x0/0x20 @ 1
+[    0.877027] initcall bpf_crypto_skcipher_init+0x0/0x20 returned 0 after 2 usecs
+[    0.877030] calling  dh_init+0x0/0x50 @ 1
+[    0.877044] initcall dh_init+0x0/0x50 returned 0 after 11 usecs
+[    0.877047] calling  rsa_init+0x0/0x60 @ 1
+[    0.877051] initcall rsa_init+0x0/0x60 returned 0 after 0 usecs
+[    0.877053] calling  ecdsa_init+0x0/0xd0 @ 1
+[    0.877058] initcall ecdsa_init+0x0/0xd0 returned 0 after 1 usecs
+[    0.877060] calling  cryptomgr_init+0x0/0x20 @ 1
+[    0.877063] initcall cryptomgr_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877067] calling  hmac_module_init+0x0/0x20 @ 1
+[    0.877071] initcall hmac_module_init+0x0/0x20 returned 0 after 2 usecs
+[    0.877074] calling  crypto_md5_mod_init+0x0/0x20 @ 1
+[    0.877082] initcall crypto_md5_mod_init+0x0/0x20 returned 0 after 5 usecs
+[    0.877085] calling  crypto_sha1_mod_init+0x0/0x20 @ 1
+[    0.877091] initcall crypto_sha1_mod_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877094] calling  crypto_sha256_mod_init+0x0/0x20 @ 1
+[    0.877101] initcall crypto_sha256_mod_init+0x0/0x20 returned 0 after 4 usecs
+[    0.877104] calling  crypto_sha512_mod_init+0x0/0x20 @ 1
+[    0.877109] initcall crypto_sha512_mod_init+0x0/0x20 returned 0 after 2 usecs
+[    0.877112] calling  crypto_sha3_mod_init+0x0/0x20 @ 1
+[    0.877120] initcall crypto_sha3_mod_init+0x0/0x20 returned 0 after 4 usecs
+[    0.877123] calling  crypto_blake2b_mod_init+0x0/0x20 @ 1
+[    0.877128] initcall crypto_blake2b_mod_init+0x0/0x20 returned 0 after 2 usecs
+[    0.877131] calling  crypto_ecb_module_init+0x0/0x20 @ 1
+[    0.877138] initcall crypto_ecb_module_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877142] calling  crypto_cbc_module_init+0x0/0x20 @ 1
+[    0.877145] initcall crypto_cbc_module_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877148] calling  crypto_cts_module_init+0x0/0x20 @ 1
+[    0.877151] initcall crypto_cts_module_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877155] calling  xts_module_init+0x0/0x20 @ 1
+[    0.877159] initcall xts_module_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877162] calling  crypto_ctr_module_init+0x0/0x20 @ 1
+[    0.877166] initcall crypto_ctr_module_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877170] calling  aes_init+0x0/0x20 @ 1
+[    0.877174] initcall aes_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877178] calling  crc32c_mod_init+0x0/0x20 @ 1
+[    0.877184] initcall crc32c_mod_init+0x0/0x20 returned 0 after 2 usecs
+[    0.877187] calling  lzo_mod_init+0x0/0x20 @ 1
+[    0.877193] initcall lzo_mod_init+0x0/0x20 returned 0 after 2 usecs
+[    0.877196] calling  lzorle_mod_init+0x0/0x20 @ 1
+[    0.877200] initcall lzorle_mod_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877203] calling  xxhash_mod_init+0x0/0x20 @ 1
+[    0.877205] initcall xxhash_mod_init+0x0/0x20 returned 0 after 0 usecs
+[    0.877210] calling  drbg_init+0x0/0x90 @ 1
+[    0.877243] initcall drbg_init+0x0/0x90 returned 0 after 31 usecs
+[    0.877246] calling  jent_mod_init+0x0/0xe0 @ 1
+[    0.893222] initcall jent_mod_init+0x0/0xe0 returned 0 after 15972 usecs
+[    0.893235] calling  zstd_mod_init+0x0/0x20 @ 1
+[    0.893242] initcall zstd_mod_init+0x0/0x20 returned 0 after 3 usecs
+[    0.893244] calling  ecdh_init+0x0/0x70 @ 1
+[    0.893250] initcall ecdh_init+0x0/0x70 returned 0 after 4 usecs
+[    0.893253] calling  calibrate_xor_blocks+0x0/0x130 @ 1
+[    0.893255] xor: automatically using best checksumming function   avx       
+[    0.893259] initcall calibrate_xor_blocks+0x0/0x130 returned 0 after 4 usecs
+[    0.893262] calling  asymmetric_key_init+0x0/0x20 @ 1
+[    0.893268] Key type asymmetric registered
+[    0.893269] initcall asymmetric_key_init+0x0/0x20 returned 0 after 4 usecs
+[    0.893271] calling  x509_key_init+0x0/0x20 @ 1
+[    0.893275] Asymmetric key parser 'x509' registered
+[    0.893277] initcall x509_key_init+0x0/0x20 returned 0 after 3 usecs
+[    0.893280] calling  crypto_kdf108_init+0x0/0x10 @ 1
+[    0.893284] initcall crypto_kdf108_init+0x0/0x10 returned 0 after 0 usecs
+[    0.893287] calling  blkdev_init+0x0/0x30 @ 1
+[    0.893321] initcall blkdev_init+0x0/0x30 returned 0 after 32 usecs
+[    0.893324] calling  proc_genhd_init+0x0/0x50 @ 1
+[    0.893330] initcall proc_genhd_init+0x0/0x50 returned 0 after 4 usecs
+[    0.893333] calling  bsg_init+0x0/0xa0 @ 1
+[    0.893350] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 245)
+[    0.893354] initcall bsg_init+0x0/0xa0 returned 0 after 19 usecs
+[    0.893357] calling  throtl_init+0x0/0x40 @ 1
+[    0.893543] initcall throtl_init+0x0/0x40 returned 0 after 183 usecs
+[    0.893547] calling  ioprio_init+0x0/0x20 @ 1
+[    0.893558] initcall ioprio_init+0x0/0x20 returned 0 after 8 usecs
+[    0.893561] calling  iolatency_init+0x0/0x20 @ 1
+[    0.893564] initcall iolatency_init+0x0/0x20 returned 0 after 1 usecs
+[    0.893567] calling  ioc_init+0x0/0x20 @ 1
+[    0.893579] initcall ioc_init+0x0/0x20 returned 0 after 9 usecs
+[    0.893581] calling  deadline_init+0x0/0x20 @ 1
+[    0.893585] io scheduler mq-deadline registered
+[    0.893587] initcall deadline_init+0x0/0x20 returned 0 after 3 usecs
+[    0.893589] calling  kyber_init+0x0/0x20 @ 1
+[    0.893591] io scheduler kyber registered
+[    0.893592] initcall kyber_init+0x0/0x20 returned 0 after 1 usecs
+[    0.893595] calling  bfq_init+0x0/0xd0 @ 1
+[    0.893614] io scheduler bfq registered
+[    0.893615] initcall bfq_init+0x0/0xd0 returned 0 after 18 usecs
+[    0.893618] calling  io_uring_init+0x0/0xd0 @ 1
+[    0.893644] initcall io_uring_init+0x0/0xd0 returned 0 after 24 usecs
+[    0.893647] calling  chacha20poly1305_init+0x0/0x10 @ 1
+[    0.893650] initcall chacha20poly1305_init+0x0/0x10 returned 0 after 0 usecs
+[    0.893652] calling  percpu_counter_startup+0x0/0x60 @ 1
+[    0.893740] initcall percpu_counter_startup+0x0/0x60 returned 0 after 84 usecs
+[    0.893744] calling  phy_core_init+0x0/0x50 @ 1
+[    0.893762] initcall phy_core_init+0x0/0x50 returned 0 after 15 usecs
+[    0.893766] calling  amd_gpio_driver_init+0x0/0x20 @ 1
+[    0.893786] initcall amd_gpio_driver_init+0x0/0x20 returned 0 after 17 usecs
+[    0.893790] calling  crystalcove_gpio_driver_init+0x0/0x20 @ 1
+[    0.893816] initcall crystalcove_gpio_driver_init+0x0/0x20 returned 0 after 23 usecs
+[    0.893820] calling  crystalcove_pwm_driver_init+0x0/0x20 @ 1
+[    0.893827] initcall crystalcove_pwm_driver_init+0x0/0x20 returned 0 after 4 usecs
+[    0.893830] calling  ledtrig_disk_init+0x0/0x50 @ 1
+[    0.893835] initcall ledtrig_disk_init+0x0/0x50 returned 0 after 2 usecs
+[    0.893838] calling  ledtrig_cpu_init+0x0/0xf0 @ 1
+[    0.893886] ledtrig-cpu: registered to indicate activity on CPUs
+[    0.893887] initcall ledtrig_cpu_init+0x0/0xf0 returned 0 after 46 usecs
+[    0.893891] calling  ledtrig_panic_init+0x0/0x50 @ 1
+[    0.893895] initcall ledtrig_panic_init+0x0/0x50 returned 0 after 1 usecs
+[    0.893901] calling  pcie_portdrv_init+0x0/0x60 @ 1
+[    0.903076] pcieport 0000:00:02.0: PME: Signaling with IRQ 24
+[    0.903144] probe of 0000:00:02.0:pcie001 returned 0 after 267 usecs
+[    0.903451] pcieport 0000:00:02.0: AER: enabled with IRQ 24
+[    0.903458] probe of 0000:00:02.0:pcie002 returned 0 after 295 usecs
+[    0.903590] probe of 0000:00:02.0:pcie010 returned 0 after 110 usecs
+[    0.904217] probe of 0000:00:02.0 returned 0 after 10278 usecs
+[    0.905989] pcieport 0000:00:02.1: PME: Signaling with IRQ 25
+[    0.906047] probe of 0000:00:02.1:pcie001 returned 0 after 226 usecs
+[    0.906354] pcieport 0000:00:02.1: AER: enabled with IRQ 25
+[    0.906361] probe of 0000:00:02.1:pcie002 returned 0 after 290 usecs
+[    0.906492] probe of 0000:00:02.1:pcie010 returned 0 after 114 usecs
+[    0.907087] probe of 0000:00:02.1 returned 0 after 2866 usecs
+[    0.911846] pcieport 0000:00:02.2: PME: Signaling with IRQ 26
+[    0.911906] probe of 0000:00:02.2:pcie001 returned 0 after 1610 usecs
+[    0.912195] pcieport 0000:00:02.2: AER: enabled with IRQ 26
+[    0.912201] probe of 0000:00:02.2:pcie002 returned 0 after 279 usecs
+[    0.912331] probe of 0000:00:02.2:pcie010 returned 0 after 102 usecs
+[    0.912909] probe of 0000:00:02.2 returned 0 after 5817 usecs
+[    0.915073] pcieport 0000:00:02.3: PME: Signaling with IRQ 27
+[    0.915134] probe of 0000:00:02.3:pcie001 returned 0 after 218 usecs
+[    0.915422] pcieport 0000:00:02.3: AER: enabled with IRQ 27
+[    0.915428] probe of 0000:00:02.3:pcie002 returned 0 after 279 usecs
+[    0.915554] probe of 0000:00:02.3:pcie010 returned 0 after 112 usecs
+[    0.916310] probe of 0000:00:02.3 returned 0 after 3396 usecs
+[    0.921495] pcieport 0000:00:02.4: PME: Signaling with IRQ 28
+[    0.921616] probe of 0000:00:02.4:pcie001 returned 0 after 503 usecs
+[    0.923235] pcieport 0000:00:02.4: AER: enabled with IRQ 28
+[    0.923249] probe of 0000:00:02.4:pcie002 returned 0 after 1588 usecs
+[    0.923528] probe of 0000:00:02.4:pcie010 returned 0 after 247 usecs
+[    0.924966] probe of 0000:00:02.4 returned 0 after 8646 usecs
+[    0.929965] pcieport 0000:00:02.5: PME: Signaling with IRQ 29
+[    0.930110] probe of 0000:00:02.5:pcie001 returned 0 after 607 usecs
+[    0.930867] pcieport 0000:00:02.5: AER: enabled with IRQ 29
+[    0.930882] probe of 0000:00:02.5:pcie002 returned 0 after 714 usecs
+[    0.931181] probe of 0000:00:02.5:pcie010 returned 0 after 263 usecs
+[    0.932685] probe of 0000:00:02.5 returned 0 after 7710 usecs
+[    0.937318] pcieport 0000:00:02.6: PME: Signaling with IRQ 30
+[    0.937369] probe of 0000:00:02.6:pcie001 returned 0 after 252 usecs
+[    0.937642] pcieport 0000:00:02.6: AER: enabled with IRQ 30
+[    0.937648] probe of 0000:00:02.6:pcie002 returned 0 after 258 usecs
+[    0.937796] probe of 0000:00:02.6:pcie010 returned 0 after 120 usecs
+[    0.938399] probe of 0000:00:02.6 returned 0 after 5704 usecs
+[    0.940559] pcieport 0000:00:02.7: PME: Signaling with IRQ 31
+[    0.940613] probe of 0000:00:02.7:pcie001 returned 0 after 215 usecs
+[    0.940922] pcieport 0000:00:02.7: AER: enabled with IRQ 31
+[    0.940929] probe of 0000:00:02.7:pcie002 returned 0 after 297 usecs
+[    0.941056] probe of 0000:00:02.7:pcie010 returned 0 after 108 usecs
+[    0.941643] probe of 0000:00:02.7 returned 0 after 3240 usecs
+[    0.941948] ACPI: \_SB_.GSIH: Enabled at IRQ 23
+[    0.945830] pcieport 0000:00:03.0: PME: Signaling with IRQ 32
+[    0.945928] probe of 0000:00:03.0:pcie001 returned 0 after 309 usecs
+[    0.946234] pcieport 0000:00:03.0: AER: enabled with IRQ 32
+[    0.946240] probe of 0000:00:03.0:pcie002 returned 0 after 296 usecs
+[    0.946370] probe of 0000:00:03.0:pcie010 returned 0 after 114 usecs
+[    0.946979] probe of 0000:00:03.0 returned 0 after 5331 usecs
+[    0.949632] pcieport 0000:00:03.1: PME: Signaling with IRQ 33
+[    0.949686] probe of 0000:00:03.1:pcie001 returned 0 after 222 usecs
+[    0.949979] pcieport 0000:00:03.1: AER: enabled with IRQ 33
+[    0.949985] probe of 0000:00:03.1:pcie002 returned 0 after 276 usecs
+[    0.950121] probe of 0000:00:03.1:pcie010 returned 0 after 120 usecs
+[    0.950701] probe of 0000:00:03.1 returned 0 after 3718 usecs
+[    0.953239] pcieport 0000:00:03.2: PME: Signaling with IRQ 34
+[    0.953290] probe of 0000:00:03.2:pcie001 returned 0 after 220 usecs
+[    0.953539] pcieport 0000:00:03.2: AER: enabled with IRQ 34
+[    0.953546] probe of 0000:00:03.2:pcie002 returned 0 after 240 usecs
+[    0.953687] probe of 0000:00:03.2:pcie010 returned 0 after 109 usecs
+[    0.954284] probe of 0000:00:03.2 returned 0 after 3573 usecs
+[    0.959484] pcieport 0000:00:03.3: PME: Signaling with IRQ 35
+[    0.959534] probe of 0000:00:03.3:pcie001 returned 0 after 211 usecs
+[    0.959826] pcieport 0000:00:03.3: AER: enabled with IRQ 35
+[    0.959833] probe of 0000:00:03.3:pcie002 returned 0 after 275 usecs
+[    0.959951] probe of 0000:00:03.3:pcie010 returned 0 after 104 usecs
+[    0.960519] probe of 0000:00:03.3 returned 0 after 6231 usecs
+[    0.962768] pcieport 0000:00:03.4: PME: Signaling with IRQ 36
+[    0.962831] probe of 0000:00:03.4:pcie001 returned 0 after 242 usecs
+[    0.963085] pcieport 0000:00:03.4: AER: enabled with IRQ 36
+[    0.963091] probe of 0000:00:03.4:pcie002 returned 0 after 244 usecs
+[    0.963216] probe of 0000:00:03.4:pcie010 returned 0 after 110 usecs
+[    0.963817] probe of 0000:00:03.4 returned 0 after 3294 usecs
+[    0.966219] pcieport 0000:00:03.5: PME: Signaling with IRQ 37
+[    0.966277] probe of 0000:00:03.5:pcie001 returned 0 after 226 usecs
+[    0.966551] pcieport 0000:00:03.5: AER: enabled with IRQ 37
+[    0.966557] probe of 0000:00:03.5:pcie002 returned 0 after 264 usecs
+[    0.966675] probe of 0000:00:03.5:pcie010 returned 0 after 103 usecs
+[    0.967282] probe of 0000:00:03.5 returned 0 after 3460 usecs
+[    0.967298] initcall pcie_portdrv_init+0x0/0x60 returned 0 after 73391 usecs
+[    0.967306] calling  pci_proc_init+0x0/0x80 @ 1
+[    0.967339] initcall pci_proc_init+0x0/0x80 returned 0 after 30 usecs
+[    0.967341] calling  pci_hotplug_init+0x0/0x40 @ 1
+[    0.967343] initcall pci_hotplug_init+0x0/0x40 returned 0 after 0 usecs
+[    0.967345] calling  shpcd_init+0x0/0x20 @ 1
+[    0.967362] initcall shpcd_init+0x0/0x20 returned 0 after 16 usecs
+[    0.967368] calling  pci_stub_init+0x0/0x180 @ 1
+[    0.967376] initcall pci_stub_init+0x0/0x180 returned 0 after 6 usecs
+[    0.967378] calling  dw_plat_pcie_driver_init+0x0/0x20 @ 1
+[    0.967386] initcall dw_plat_pcie_driver_init+0x0/0x20 returned 0 after 5 usecs
+[    0.967388] calling  vesafb_driver_init+0x0/0x20 @ 1
+[    0.967393] initcall vesafb_driver_init+0x0/0x20 returned 0 after 3 usecs
+[    0.967395] calling  efifb_driver_init+0x0/0x20 @ 1
+[    0.967399] initcall efifb_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    0.967401] calling  ged_driver_init+0x0/0x20 @ 1
+[    0.967408] initcall ged_driver_init+0x0/0x20 returned 0 after 3 usecs
+[    0.967410] calling  mrrm_init+0x0/0x170 @ 1
+[    0.967414] initcall mrrm_init+0x0/0x170 returned -19 after 1 usecs
+[    0.967416] calling  acpi_ac_init+0x0/0x50 @ 1
+[    0.967464] initcall acpi_ac_init+0x0/0x50 returned 0 after 45 usecs
+[    0.967465] calling  acpi_button_driver_init+0x0/0x60 @ 1
+[    0.967521] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    0.970857] ACPI: button: Power Button [PWRF]
+[    0.970863] probe of LNXPWRBN:00 returned 0 after 3386 usecs
+[    0.970869] initcall acpi_button_driver_init+0x0/0x60 returned 0 after 3401 usecs
+[    0.970874] calling  acpi_fan_driver_init+0x0/0x20 @ 1
+[    0.970881] initcall acpi_fan_driver_init+0x0/0x20 returned 0 after 5 usecs
+[    0.970883] calling  acpi_processor_driver_init+0x0/0xc0 @ 1
+[    0.970911] probe of cpu0 returned 0 after 19 usecs
+[    0.970925] probe of cpu1 returned 0 after 12 usecs
+[    0.970938] probe of cpu2 returned 0 after 11 usecs
+[    0.971102] initcall acpi_processor_driver_init+0x0/0xc0 returned 0 after 217 usecs
+[    0.971106] calling  acpi_thermal_init+0x0/0x80 @ 1
+[    0.971198] initcall acpi_thermal_init+0x0/0x80 returned 0 after 90 usecs
+[    0.971201] calling  acpi_battery_init+0x0/0x40 @ 1
+[    0.971221] initcall acpi_battery_init+0x0/0x40 returned 0 after 17 usecs
+[    0.971223] calling  bgrt_init+0x0/0xc0 @ 1
+[    0.971225] initcall bgrt_init+0x0/0xc0 returned -19 after 0 usecs
+[    0.971227] calling  erst_init+0x0/0x300 @ 1
+[    0.971229] initcall erst_init+0x0/0x300 returned 0 after 0 usecs
+[    0.971231] calling  intel_crc_pmic_opregion_driver_init+0x0/0x20 @ 1
+[    0.971236] initcall intel_crc_pmic_opregion_driver_init+0x0/0x20 returned 0 after 3 usecs
+[    0.971239] calling  intel_chtcrc_pmic_opregion_driver_init+0x0/0x20 @ 1
+[    0.971243] initcall intel_chtcrc_pmic_opregion_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    0.971245] calling  intel_cht_wc_pmic_opregion_driver_init+0x0/0x20 @ 1
+[    0.971253] initcall intel_cht_wc_pmic_opregion_driver_init+0x0/0x20 returned 0 after 6 usecs
+[    0.971255] calling  gpio_clk_driver_init+0x0/0x20 @ 1
+[    0.971260] initcall gpio_clk_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    0.971262] calling  gated_fixed_clk_driver_init+0x0/0x20 @ 1
+[    0.971267] initcall gated_fixed_clk_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    0.971269] calling  fch_clk_driver_init+0x0/0x20 @ 1
+[    0.971273] initcall fch_clk_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    0.971275] calling  plt_clk_driver_init+0x0/0x20 @ 1
+[    0.971282] initcall plt_clk_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    0.971284] calling  dw_pci_driver_init+0x0/0x20 @ 1
+[    0.971300] initcall dw_pci_driver_init+0x0/0x20 returned 0 after 14 usecs
+[    0.971302] calling  intel_ldma_driver_init+0x0/0x20 @ 1
+[    0.971310] initcall intel_ldma_driver_init+0x0/0x20 returned 0 after 5 usecs
+[    0.971312] calling  virtio_pci_driver_init+0x0/0x20 @ 1
+[    0.971555] ACPI: \_SB_.GSIF: Enabled at IRQ 21
+[    0.974500] probe of 0000:00:01.0 returned 0 after 3183 usecs
+[    0.979007] probe of 0000:01:00.0 returned 0 after 4499 usecs
+[    0.981613] probe of 0000:03:00.0 returned 0 after 2601 usecs
+[    0.983831] probe of 0000:04:00.0 returned 0 after 2213 usecs
+[    0.985929] probe of 0000:05:00.0 returned 0 after 2092 usecs
+[    0.987984] probe of 0000:06:00.0 returned 0 after 2050 usecs
+[    0.987996] initcall virtio_pci_driver_init+0x0/0x20 returned 0 after 16681 usecs
+[    0.988003] calling  xenbus_probe_initcall+0x0/0xb0 @ 1
+[    0.988007] initcall xenbus_probe_initcall+0x0/0xb0 returned -19 after 0 usecs
+[    0.988009] calling  xenbus_init+0x0/0x40 @ 1
+[    0.988012] initcall xenbus_init+0x0/0x40 returned -19 after 0 usecs
+[    0.988014] calling  xenbus_backend_init+0x0/0x50 @ 1
+[    0.988016] initcall xenbus_backend_init+0x0/0x50 returned -19 after 0 usecs
+[    0.988018] calling  hyper_sysfs_init+0x0/0x230 @ 1
+[    0.988021] initcall hyper_sysfs_init+0x0/0x230 returned -19 after 0 usecs
+[    0.988023] calling  hypervisor_subsys_init+0x0/0x30 @ 1
+[    0.988026] initcall hypervisor_subsys_init+0x0/0x30 returned -19 after 0 usecs
+[    0.988028] calling  platform_driver_init+0x0/0x20 @ 1
+[    0.988054] initcall platform_driver_init+0x0/0x20 returned 0 after 23 usecs
+[    0.988056] calling  xen_late_init_mcelog+0x0/0x60 @ 1
+[    0.988059] initcall xen_late_init_mcelog+0x0/0x60 returned -19 after 0 usecs
+[    0.988062] calling  n_null_init+0x0/0x30 @ 1
+[    0.988067] initcall n_null_init+0x0/0x30 returned 0 after 3 usecs
+[    0.988070] calling  pty_init+0x0/0x1f0 @ 1
+[    0.988143] initcall pty_init+0x0/0x1f0 returned 0 after 70 usecs
+[    0.988147] calling  sysrq_init+0x0/0x70 @ 1
+[    0.988152] initcall sysrq_init+0x0/0x70 returned 0 after 2 usecs
+[    0.988155] calling  xen_hvc_init+0x0/0x200 @ 1
+[    0.988157] initcall xen_hvc_init+0x0/0x200 returned -19 after 0 usecs
+[    0.988158] calling  serial8250_init+0x0/0x110 @ 1
+[    0.988164] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    0.988251] probe of 00:00:0 returned 0 after 3 usecs
+[    0.988281] probe of 00:00:0.0 returned 0 after 4 usecs
+[    0.988893] 00:00: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    0.989035] probe of 00:00 returned 0 after 824 usecs
+[    0.989078] probe of serial8250:0 returned 0 after 2 usecs
+[    0.989091] probe of serial8250:0.1 returned 0 after 2 usecs
+[    0.989243] probe of serial8250:0.2 returned 0 after 3 usecs
+[    0.989376] probe of serial8250:0.3 returned 0 after 3 usecs
+[    0.989512] probe of serial8250:0.4 returned 0 after 3 usecs
+[    0.989596] probe of serial8250:0.5 returned 0 after 2 usecs
+[    0.989670] probe of serial8250:0.6 returned 0 after 2 usecs
+[    0.989760] probe of serial8250:0.7 returned 0 after 3 usecs
+[    0.989854] probe of serial8250:0.8 returned 0 after 3 usecs
+[    0.990041] probe of serial8250:0.9 returned 0 after 3 usecs
+[    0.990128] probe of serial8250:0.10 returned 0 after 3 usecs
+[    0.990206] probe of serial8250:0.11 returned 0 after 3 usecs
+[    0.990283] probe of serial8250:0.12 returned 0 after 3 usecs
+[    0.990353] probe of serial8250:0.13 returned 0 after 3 usecs
+[    0.990420] probe of serial8250:0.14 returned 0 after 2 usecs
+[    0.990508] probe of serial8250:0.15 returned 0 after 3 usecs
+[    0.990580] probe of serial8250:0.16 returned 0 after 2 usecs
+[    0.990655] probe of serial8250:0.17 returned 0 after 2 usecs
+[    0.990724] probe of serial8250:0.18 returned 0 after 2 usecs
+[    0.990823] probe of serial8250:0.19 returned 0 after 3 usecs
+[    0.990899] probe of serial8250:0.20 returned 0 after 3 usecs
+[    0.990976] probe of serial8250:0.21 returned 0 after 2 usecs
+[    0.991048] probe of serial8250:0.22 returned 0 after 2 usecs
+[    0.991135] probe of serial8250:0.23 returned 0 after 3 usecs
+[    0.991211] probe of serial8250:0.24 returned 0 after 2 usecs
+[    0.991289] probe of serial8250:0.25 returned 0 after 3 usecs
+[    0.991366] probe of serial8250:0.26 returned 0 after 3 usecs
+[    0.991436] probe of serial8250:0.27 returned 0 after 3 usecs
+[    0.991507] probe of serial8250:0.28 returned 0 after 3 usecs
+[    0.991577] probe of serial8250:0.29 returned 0 after 3 usecs
+[    0.991661] probe of serial8250:0.30 returned 0 after 3 usecs
+[    0.991747] probe of serial8250:0.31 returned 0 after 3 usecs
+[    0.991846] probe of serial8250 returned 0 after 6 usecs
+[    0.991854] initcall serial8250_init+0x0/0x110 returned 0 after 3694 usecs
+[    0.991859] calling  serial_pci_driver_init+0x0/0x20 @ 1
+[    0.991903] initcall serial_pci_driver_init+0x0/0x20 returned 0 after 41 usecs
+[    0.991906] calling  random_sysctls_init+0x0/0x30 @ 1
+[    0.991914] initcall random_sysctls_init+0x0/0x30 returned 0 after 5 usecs
+[    0.991917] calling  virtio_console_init+0x0/0xe0 @ 1
+[    1.011999] probe of virtio2 returned 0 after 20057 usecs
+[    1.012023] initcall virtio_console_init+0x0/0xe0 returned 0 after 20103 usecs
+[    1.012031] calling  hpet_init+0x0/0x80 @ 1
+[    1.012566] initcall hpet_init+0x0/0x80 returned 0 after 532 usecs
+[    1.012571] calling  nvram_module_init+0x0/0x90 @ 1
+[    1.012609] Non-volatile memory driver v1.3
+[    1.012614] initcall nvram_module_init+0x0/0x90 returned 0 after 41 usecs
+[    1.012617] calling  agp_init+0x0/0x30 @ 1
+[    1.012620] Linux agpgart interface v0.103
+[    1.012621] initcall agp_init+0x0/0x30 returned 0 after 1 usecs
+[    1.012623] calling  init_tis+0x0/0xe0 @ 1
+[    1.012645] initcall init_tis+0x0/0xe0 returned 0 after 20 usecs
+[    1.012652] calling  crb_acpi_driver_init+0x0/0x20 @ 1
+[    1.012663] initcall crb_acpi_driver_init+0x0/0x20 returned 0 after 8 usecs
+[    1.012665] calling  drm_core_init+0x0/0xa0 @ 1
+[    1.012680] ACPI: bus type drm_connector registered
+[    1.012707] initcall drm_core_init+0x0/0xa0 returned 0 after 39 usecs
+[    1.012711] calling  simpledrm_platform_driver_init+0x0/0x20 @ 1
+[    1.012719] initcall simpledrm_platform_driver_init+0x0/0x20 returned 0 after 5 usecs
+[    1.012723] calling  bochs_pci_driver_init+0x0/0x50 @ 1
+[    1.012763] initcall bochs_pci_driver_init+0x0/0x50 returned 0 after 37 usecs
+[    1.012767] calling  cn_proc_init+0x0/0x40 @ 1
+[    1.012770] initcall cn_proc_init+0x0/0x40 returned 0 after 0 usecs
+[    1.012772] calling  topology_sysfs_init+0x0/0x30 @ 1
+[    1.012823] initcall topology_sysfs_init+0x0/0x30 returned 0 after 46 usecs
+[    1.012827] calling  cacheinfo_sysfs_init+0x0/0x30 @ 1
+[    1.013174] initcall cacheinfo_sysfs_init+0x0/0x30 returned 0 after 343 usecs
+[    1.013182] calling  devcoredump_init+0x0/0x20 @ 1
+[    1.013189] initcall devcoredump_init+0x0/0x20 returned 0 after 5 usecs
+[    1.013191] calling  virtio_blk_init+0x0/0x90 @ 1
+[    1.013210] initcall virtio_blk_init+0x0/0x90 returned 0 after 17 usecs
+[    1.013212] calling  twl_driver_init+0x0/0x20 @ 1
+[    1.013222] initcall twl_driver_init+0x0/0x20 returned 0 after 8 usecs
+[    1.013223] calling  twl4030_audio_driver_init+0x0/0x20 @ 1
+[    1.013228] initcall twl4030_audio_driver_init+0x0/0x20 returned 0 after 3 usecs
+[    1.013230] calling  twl6040_driver_init+0x0/0x20 @ 1
+[    1.013234] initcall twl6040_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    1.013236] calling  adp5520_driver_init+0x0/0x20 @ 1
+[    1.013239] initcall adp5520_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    1.013241] calling  crystal_cove_i2c_driver_init+0x0/0x20 @ 1
+[    1.013248] initcall crystal_cove_i2c_driver_init+0x0/0x20 returned 0 after 5 usecs
+[    1.013250] calling  cht_wc_driver_init+0x0/0x20 @ 1
+[    1.013254] initcall cht_wc_driver_init+0x0/0x20 returned 0 after 2 usecs
+[    1.013256] calling  system_heap_create+0x0/0x70 @ 1
+[    1.013316] initcall system_heap_create+0x0/0x70 returned 0 after 57 usecs
+[    1.013320] calling  add_cma_heaps+0x0/0x80 @ 1
+[    1.013322] initcall add_cma_heaps+0x0/0x80 returned 0 after 0 usecs
+[    1.013324] calling  udmabuf_dev_init+0x0/0x90 @ 1
+[    1.013364] initcall udmabuf_dev_init+0x0/0x90 returned 0 after 37 usecs
+[    1.013367] calling  virtio_scsi_init+0x0/0x110 @ 1
+[    1.013833] virtio_scsi virtio3: 3/0/0 default/read/poll queues
+[    1.016273] scsi host0: Virtio SCSI HBA
+[    1.017489] probe of virtio3 returned 0 after 4093 usecs
+[    1.017497] initcall virtio_scsi_init+0x0/0x110 returned 0 after 4127 usecs
+[    1.017502] calling  init_sd+0x0/0x110 @ 1
+[    1.017581] initcall init_sd+0x0/0x110 returned 0 after 76 usecs
+[    1.017585] calling  ahci_pci_driver_init+0x0/0x20 @ 1
+[    1.018017] ACPI: \_SB_.GSIA: Enabled at IRQ 16
+[    1.019379] ahci 0000:00:1f.2: AHCI vers 0001.0000, 32 command slots, 1.5 Gbps, SATA mode
+[    1.019389] ahci 0000:00:1f.2: 6/6 ports implemented (port mask 0x3f)
+[    1.019391] ahci 0000:00:1f.2: flags: 64bit ncq only 
+[    1.023365] scsi host1: ahci
+[    1.023704] scsi host2: ahci
+[    1.024758] scsi host3: ahci
+[    1.024995] scsi host4: ahci
+[    1.025313] scsi host5: ahci
+[    1.025616] scsi host6: ahci
+[    1.025714] ata1: SATA max UDMA/133 abar m4096@0xfea1f000 port 0xfea1f100 irq 46 lpm-pol 1
+[    1.025736] ata2: SATA max UDMA/133 abar m4096@0xfea1f000 port 0xfea1f180 irq 46 lpm-pol 1
+[    1.025749] ata3: SATA max UDMA/133 abar m4096@0xfea1f000 port 0xfea1f200 irq 46 lpm-pol 1
+[    1.025763] ata4: SATA max UDMA/133 abar m4096@0xfea1f000 port 0xfea1f280 irq 46 lpm-pol 1
+[    1.025776] ata5: SATA max UDMA/133 abar m4096@0xfea1f000 port 0xfea1f300 irq 46 lpm-pol 1
+[    1.025788] ata6: SATA max UDMA/133 abar m4096@0xfea1f000 port 0xfea1f380 irq 46 lpm-pol 1
+[    1.025972] probe of 0000:00:1f.2 returned 0 after 8335 usecs
+[    1.026053] initcall ahci_pci_driver_init+0x0/0x20 returned 0 after 8465 usecs
+[    1.026062] calling  blackhole_netdev_init+0x0/0x80 @ 1
+[    1.026274] initcall blackhole_netdev_init+0x0/0x80 returned 0 after 208 usecs
+[    1.026282] calling  netkit_init+0x0/0x20 @ 1
+[    1.026287] initcall netkit_init+0x0/0x20 returned 0 after 2 usecs
+[    1.026294] calling  virtio_net_driver_init+0x0/0xa0 @ 1
+[    1.031831] probe of virtio1 returned 0 after 5524 usecs
+[    1.031842] initcall virtio_net_driver_init+0x0/0xa0 returned 0 after 5545 usecs
+[    1.031857] calling  net_failover_init+0x0/0x10 @ 1
+[    1.031860] initcall net_failover_init+0x0/0x10 returned 0 after 0 usecs
+[    1.031863] calling  ehci_hcd_init+0x0/0xf0 @ 1
+[    1.031871] initcall ehci_hcd_init+0x0/0xf0 returned 0 after 6 usecs
+[    1.031874] calling  ehci_pci_init+0x0/0x60 @ 1
+[    1.031906] initcall ehci_pci_init+0x0/0x60 returned 0 after 30 usecs
+[    1.031909] calling  ohci_hcd_mod_init+0x0/0x80 @ 1
+[    1.031915] initcall ohci_hcd_mod_init+0x0/0x80 returned 0 after 3 usecs
+[    1.031917] calling  ohci_pci_init+0x0/0x60 @ 1
+[    1.031934] initcall ohci_pci_init+0x0/0x60 returned 0 after 11 usecs
+[    1.031936] calling  uhci_hcd_init+0x0/0x120 @ 1
+[    1.031970] initcall uhci_hcd_init+0x0/0x120 returned 0 after 32 usecs
+[    1.031973] calling  xhci_hcd_init+0x0/0x30 @ 1
+[    1.031989] initcall xhci_hcd_init+0x0/0x30 returned 0 after 14 usecs
+[    1.031992] calling  xhci_pci_init+0x0/0x70 @ 1
+[    1.033264] xhci_hcd 0000:02:00.0: xHCI Host Controller
+[    1.033275] xhci_hcd 0000:02:00.0: new USB bus registered, assigned bus number 1
+[    1.034593] xhci_hcd 0000:02:00.0: hcc params 0x00087001 hci version 0x100 quirks 0x0000000000000010
+[    1.037741] xhci_hcd 0000:02:00.0: xHCI Host Controller
+[    1.037746] xhci_hcd 0000:02:00.0: new USB bus registered, assigned bus number 2
+[    1.037754] xhci_hcd 0000:02:00.0: Host supports USB 3.0 SuperSpeed
+[    1.037979] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.19
+[    1.037983] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    1.037987] usb usb1: Product: xHCI Host Controller
+[    1.037989] usb usb1: Manufacturer: Linux 6.19.7 xhci-hcd
+[    1.037992] usb usb1: SerialNumber: 0000:02:00.0
+[    1.038211] hub 1-0:1.0: USB hub found
+[    1.038427] hub 1-0:1.0: 15 ports detected
+[    1.040501] probe of 1-0:1.0 returned 0 after 2297 usecs
+[    1.040532] probe of usb1 returned 0 after 2393 usecs
+[    1.040591] usb usb2: We don't know the algorithms for LPM for this host, disabling LPM.
+[    1.040614] usb usb2: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 6.19
+[    1.040624] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    1.040625] usb usb2: Product: xHCI Host Controller
+[    1.040626] usb usb2: Manufacturer: Linux 6.19.7 xhci-hcd
+[    1.040628] usb usb2: SerialNumber: 0000:02:00.0
+[    1.040779] hub 2-0:1.0: USB hub found
+[    1.041268] hub 2-0:1.0: 15 ports detected
+[    1.043003] probe of 2-0:1.0 returned 0 after 2228 usecs
+[    1.043017] probe of usb2 returned 0 after 2307 usecs
+[    1.043039] probe of 0000:02:00.0 returned 0 after 11035 usecs
+[    1.043051] initcall xhci_pci_init+0x0/0x70 returned 0 after 11057 usecs
+[    1.043087] calling  usb_serial_init+0x0/0x140 @ 1
+[    1.043135] usbcore: registered new interface driver usbserial_generic
+[    1.043143] usbserial: USB Serial support registered for generic
+[    1.043148] initcall usb_serial_init+0x0/0x140 returned 0 after 57 usecs
+[    1.043151] calling  i8042_init+0x0/0x660 @ 1
+[    1.043201] probe of 00:01 returned 0 after 11 usecs
+[    1.043212] probe of 00:02 returned 0 after 4 usecs
+[    1.043215] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.046288] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.046374] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.046398] probe of i8042 returned 0 after 2218 usecs
+[    1.046401] initcall i8042_init+0x0/0x660 returned 0 after 3248 usecs
+[    1.046404] calling  input_leds_init+0x0/0x20 @ 1
+[    1.046409] initcall input_leds_init+0x0/0x20 returned 0 after 3 usecs
+[    1.046412] calling  evdev_init+0x0/0x20 @ 1
+[    1.046482] initcall evdev_init+0x0/0x20 returned 0 after 67 usecs
+[    1.046485] calling  atkbd_init+0x0/0x30 @ 1
+[    1.046603] initcall atkbd_init+0x0/0x30 returned 0 after 115 usecs
+[    1.046608] calling  uinput_misc_init+0x0/0x20 @ 1
+[    1.046815] initcall uinput_misc_init+0x0/0x20 returned 0 after 204 usecs
+[    1.046957] calling  cmos_init+0x0/0x80 @ 1
+[    1.046978] rtc_cmos 00:03: RTC can wake from S4
+[    1.048068] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+[    1.048224] probe of alarmtimer.0.auto returned 0 after 4 usecs
+[    1.048275] probe of serio0 returned 0 after 1771 usecs
+[    1.048403] rtc_cmos 00:03: registered as rtc0
+[    1.048839] rtc_cmos 00:03: setting system clock to 2026-03-13T14:58:44 UTC (1773413924)
+[    1.048969] probe of serio1 returned 19 after 689 usecs
+[    1.049042] rtc_cmos 00:03: alarms up to one day, y3k, 242 bytes nvram
+[    1.049050] probe of 00:03 returned 0 after 2084 usecs
+[    1.049055] initcall cmos_init+0x0/0x80 returned 0 after 2093 usecs
+[    1.049058] calling  dw_i2c_driver_init+0x0/0x20 @ 1
+[    1.049150] initcall dw_i2c_driver_init+0x0/0x20 returned 0 after 77 usecs
+[    1.049153] calling  restart_poweroff_driver_init+0x0/0x20 @ 1
+[    1.049161] initcall restart_poweroff_driver_init+0x0/0x20 returned 0 after 5 usecs
+[    1.049164] calling  thermal_throttle_init_device+0x0/0x50 @ 1
+[    1.049166] initcall thermal_throttle_init_device+0x0/0x50 returned 0 after 0 usecs
+[    1.049169] calling  watchdog_gov_panic_register+0x0/0x20 @ 1
+[    1.049174] initcall watchdog_gov_panic_register+0x0/0x20 returned 0 after 3 usecs
+[    1.049204] calling  ghes_edac_init+0x0/0x3f0 @ 1
+[    1.049211] initcall ghes_edac_init+0x0/0x3f0 returned -19 after 3 usecs
+[    1.049215] calling  amd_pstate_init+0x0/0x2c0 @ 1
+[    1.049218] initcall amd_pstate_init+0x0/0x2c0 returned -95 after 0 usecs
+[    1.049220] calling  intel_pstate_init+0x0/0x7f0 @ 1
+[    1.049222] initcall intel_pstate_init+0x0/0x7f0 returned -19 after 0 usecs
+[    1.049224] calling  dmi_sysfs_init+0x0/0x100 @ 1
+[    1.049339] initcall dmi_sysfs_init+0x0/0x100 returned 0 after 112 usecs
+[    1.049375] calling  sysfb_init+0x0/0x210 @ 1
+[    1.049431] initcall sysfb_init+0x0/0x210 returned 0 after 53 usecs
+[    1.049434] calling  esrt_sysfs_init+0x0/0x320 @ 1
+[    1.049436] initcall esrt_sysfs_init+0x0/0x320 returned -38 after 0 usecs
+[    1.049438] calling  efivars_pstore_init+0x0/0xb0 @ 1
+[    1.049482] initcall efivars_pstore_init+0x0/0xb0 returned 0 after 23 usecs
+[    1.049485] calling  hid_init+0x0/0x60 @ 1
+[    1.049499] hid: raw HID events driver (C) Jiri Kosina
+[    1.049543] initcall hid_init+0x0/0x60 returned 0 after 56 usecs
+[    1.049546] calling  hid_generic_init+0x0/0x20 @ 1
+[    1.049591] initcall hid_generic_init+0x0/0x20 returned 0 after 42 usecs
+[    1.049594] calling  hid_init+0x0/0x70 @ 1
+[    1.049607] usbcore: registered new interface driver usbhid
+[    1.049608] usbhid: USB HID core driver
+[    1.049609] initcall hid_init+0x0/0x70 returned 0 after 12 usecs
+[    1.049638] calling  amd_hfi_init+0x0/0xd0 @ 1
+[    1.049640] initcall amd_hfi_init+0x0/0xd0 returned -19 after 0 usecs
+[    1.049643] calling  intel_scu_pci_driver_init+0x0/0x20 @ 1
+[    1.049654] initcall intel_scu_pci_driver_init+0x0/0x20 returned 0 after 8 usecs
+[    1.049657] calling  pmc_atom_init+0x0/0x280 @ 1
+[    1.049664] initcall pmc_atom_init+0x0/0x280 returned -19 after 5 usecs
+[    1.049693] calling  rproc_virtio_driver_init+0x0/0x20 @ 1
+[    1.049701] initcall rproc_virtio_driver_init+0x0/0x20 returned 0 after 5 usecs
+[    1.049704] calling  vmgenid_plaform_driver_init+0x0/0x20 @ 1
+[    1.049716] initcall vmgenid_plaform_driver_init+0x0/0x20 returned 0 after 10 usecs
+[    1.049718] calling  tsm_init+0x0/0x40 @ 1
+[    1.049722] initcall tsm_init+0x0/0x40 returned 0 after 1 usecs
+[    1.049727] calling  extcon_class_init+0x0/0x40 @ 1
+[    1.049772] initcall extcon_class_init+0x0/0x40 returned 0 after 25 usecs
+[    1.049775] calling  icc_init+0x0/0x80 @ 1
+[    1.049788] initcall icc_init+0x0/0x80 returned 0 after 10 usecs
+[    1.049791] calling  sock_diag_init+0x0/0x40 @ 1
+[    1.049850] initcall sock_diag_init+0x0/0x40 returned 0 after 57 usecs
+[    1.049853] calling  init_net_drop_monitor+0x0/0xf0 @ 1
+[    1.049855] drop_monitor: Initializing network drop monitor service
+[    1.049904] initcall init_net_drop_monitor+0x0/0xf0 returned 0 after 49 usecs
+[    1.049907] calling  failover_init+0x0/0x20 @ 1
+[    1.049913] initcall failover_init+0x0/0x20 returned 0 after 3 usecs
+[    1.049915] calling  blackhole_init+0x0/0x20 @ 1
+[    1.049917] initcall blackhole_init+0x0/0x20 returned 0 after 0 usecs
+[    1.049919] calling  fq_codel_module_init+0x0/0x20 @ 1
+[    1.049920] initcall fq_codel_module_init+0x0/0x20 returned 0 after 0 usecs
+[    1.049922] calling  gre_offload_init+0x0/0x60 @ 1
+[    1.049926] initcall gre_offload_init+0x0/0x60 returned 0 after 0 usecs
+[    1.049927] calling  sysctl_ipv4_init+0x0/0x70 @ 1
+[    1.050066] initcall sysctl_ipv4_init+0x0/0x70 returned 0 after 128 usecs
+[    1.050069] calling  cubictcp_register+0x0/0x80 @ 1
+[    1.050081] initcall cubictcp_register+0x0/0x80 returned 0 after 9 usecs
+[    1.050085] calling  inet6_init+0x0/0x3c0 @ 1
+[    1.050088] IPv6: Loaded, but administratively disabled, reboot required to enable
+[    1.050091] initcall inet6_init+0x0/0x3c0 returned 0 after 3 usecs
+[    1.050093] calling  packet_init+0x0/0x80 @ 1
+[    1.050102] NET: Registered PF_PACKET protocol family
+[    1.050129] initcall packet_init+0x0/0x80 returned 0 after 34 usecs
+[    1.050132] calling  strp_dev_init+0x0/0x40 @ 1
+[    1.050196] initcall strp_dev_init+0x0/0x40 returned 0 after 62 usecs
+[    1.050198] calling  dcbnl_init+0x0/0x40 @ 1
+[    1.050205] initcall dcbnl_init+0x0/0x40 returned 0 after 4 usecs
+[    1.050207] calling  pm_check_save_msr+0x0/0xd0 @ 1
+[    1.050217] initcall pm_check_save_msr+0x0/0xd0 returned 0 after 6 usecs
+[    1.050226] calling  mcheck_init_device+0x0/0x150 @ 1
+[    1.050431] initcall mcheck_init_device+0x0/0x150 returned 0 after 200 usecs
+[    1.050466] entering initcall level: late
+[    1.050468] calling  kernel_do_mounts_initrd_sysctls_init+0x0/0x30 @ 1
+[    1.050478] initcall kernel_do_mounts_initrd_sysctls_init+0x0/0x30 returned 0 after 7 usecs
+[    1.050527] calling  intel_epb_init+0x0/0x90 @ 1
+[    1.050532] initcall intel_epb_init+0x0/0x90 returned -19 after 2 usecs
+[    1.050535] calling  print_s5_reset_status_mmio+0x0/0xa0 @ 1
+[    1.050566] initcall print_s5_reset_status_mmio+0x0/0xa0 returned 0 after 28 usecs
+[    1.050570] calling  mcheck_late_init+0x0/0x70 @ 1
+[    1.050615] initcall mcheck_late_init+0x0/0x70 returned 0 after 42 usecs
+[    1.050618] calling  severities_debugfs_init+0x0/0x40 @ 1
+[    1.050624] initcall severities_debugfs_init+0x0/0x40 returned 0 after 3 usecs
+[    1.050626] calling  microcode_init+0x0/0x170 @ 1
+[    1.050632] initcall microcode_init+0x0/0x170 returned -22 after 2 usecs
+[    1.050662] calling  resctrl_arch_late_init+0x0/0x570 @ 1
+[    1.050670] initcall resctrl_arch_late_init+0x0/0x570 returned -19 after 4 usecs
+[    1.050672] calling  cpu_init_debugfs+0x0/0xf0 @ 1
+[    1.050723] initcall cpu_init_debugfs+0x0/0xf0 returned 0 after 49 usecs
+[    1.050726] calling  sld_mitigate_sysctl_init+0x0/0x30 @ 1
+[    1.050741] initcall sld_mitigate_sysctl_init+0x0/0x30 returned 0 after 4 usecs
+[    1.050743] calling  hpet_insert_resource+0x0/0x30 @ 1
+[    1.050749] initcall hpet_insert_resource+0x0/0x30 returned 1 after 3 usecs
+[    1.050751] calling  start_sync_check_timer+0x0/0x60 @ 1
+[    1.050756] initcall start_sync_check_timer+0x0/0x60 returned 0 after 2 usecs
+[    1.050758] calling  update_mp_table+0x0/0x570 @ 1
+[    1.050763] initcall update_mp_table+0x0/0x570 returned 0 after 1 usecs
+[    1.050765] calling  lapic_insert_resource+0x0/0x50 @ 1
+[    1.050767] initcall lapic_insert_resource+0x0/0x50 returned 0 after 0 usecs
+[    1.050769] calling  print_ipi_mode+0x0/0x40 @ 1
+[    1.050772] IPI shorthand broadcast: enabled
+[    1.050820] initcall print_ipi_mode+0x0/0x40 returned 0 after 49 usecs
+[    1.050822] calling  print_ICs+0x0/0x1f0 @ 1
+[    1.050825] initcall print_ICs+0x0/0x1f0 returned 0 after 0 usecs
+[    1.050826] calling  setup_efi_kvm_sev_migration+0x0/0x160 @ 1
+[    1.050829] initcall setup_efi_kvm_sev_migration+0x0/0x160 returned 0 after 0 usecs
+[    1.050831] calling  arch_uprobes_init+0x0/0x50 @ 1
+[    1.050861] initcall arch_uprobes_init+0x0/0x50 returned 0 after 20 usecs
+[    1.050864] calling  create_tlb_single_page_flush_ceiling+0x0/0x40 @ 1
+[    1.050873] initcall create_tlb_single_page_flush_ceiling+0x0/0x40 returned 0 after 7 usecs
+[    1.050876] calling  cpa_stats_init+0x0/0x40 @ 1
+[    1.050878] initcall cpa_stats_init+0x0/0x40 returned 0 after 1 usecs
+[    1.050880] calling  pat_memtype_list_init+0x0/0x40 @ 1
+[    1.050885] initcall pat_memtype_list_init+0x0/0x40 returned 0 after 3 usecs
+[    1.050913] calling  create_init_pkru_value+0x0/0x40 @ 1
+[    1.050916] initcall create_init_pkru_value+0x0/0x40 returned 0 after 0 usecs
+[    1.050918] calling  kernel_panic_sysctls_init+0x0/0x30 @ 1
+[    1.050927] initcall kernel_panic_sysctls_init+0x0/0x30 returned 0 after 6 usecs
+[    1.050929] calling  kernel_panic_sysfs_init+0x0/0x30 @ 1
+[    1.050936] initcall kernel_panic_sysfs_init+0x0/0x30 returned 0 after 1 usecs
+[    1.050938] calling  kernel_exit_sysctls_init+0x0/0x30 @ 1
+[    1.050965] initcall kernel_exit_sysctls_init+0x0/0x30 returned 0 after 24 usecs
+[    1.050967] calling  kernel_exit_sysfs_init+0x0/0x30 @ 1
+[    1.050970] initcall kernel_exit_sysfs_init+0x0/0x30 returned 0 after 1 usecs
+[    1.050974] calling  param_sysfs_builtin_init+0x0/0x1d0 @ 1
+[    1.053272] initcall param_sysfs_builtin_init+0x0/0x1d0 returned 0 after 2295 usecs
+[    1.053277] calling  reboot_ksysfs_init+0x0/0x80 @ 1
+[    1.053288] initcall reboot_ksysfs_init+0x0/0x80 returned 0 after 9 usecs
+[    1.053291] calling  sched_core_sysctl_init+0x0/0x30 @ 1
+[    1.053295] initcall sched_core_sysctl_init+0x0/0x30 returned 0 after 2 usecs
+[    1.053300] calling  sched_fair_sysctl_init+0x0/0x30 @ 1
+[    1.053303] initcall sched_fair_sysctl_init+0x0/0x30 returned 0 after 1 usecs
+[    1.053305] calling  sched_rt_sysctl_init+0x0/0x30 @ 1
+[    1.053309] initcall sched_rt_sysctl_init+0x0/0x30 returned 0 after 1 usecs
+[    1.053311] calling  sched_dl_sysctl_init+0x0/0x30 @ 1
+[    1.053314] initcall sched_dl_sysctl_init+0x0/0x30 returned 0 after 1 usecs
+[    1.053316] calling  sched_clock_init_late+0x0/0xb0 @ 1
+[    1.053319] sched_clock: Marking stable (1025002062, 27805806)->(1082669805, -29861937)
+[    1.053369] initcall sched_clock_init_late+0x0/0xb0 returned 0 after 51 usecs
+[    1.053371] calling  sched_init_debug+0x0/0x330 @ 1
+[    1.053448] initcall sched_init_debug+0x0/0x330 returned 0 after 74 usecs
+[    1.053451] calling  sched_energy_aware_sysctl_init+0x0/0x30 @ 1
+[    1.053454] initcall sched_energy_aware_sysctl_init+0x0/0x30 returned 0 after 0 usecs
+[    1.053456] calling  cpu_latency_qos_init+0x0/0x40 @ 1
+[    1.053518] initcall cpu_latency_qos_init+0x0/0x40 returned 0 after 60 usecs
+[    1.053521] calling  pm_debugfs_init+0x0/0x30 @ 1
+[    1.053525] initcall pm_debugfs_init+0x0/0x30 returned 0 after 1 usecs
+[    1.053527] calling  printk_late_init+0x0/0x150 @ 1
+[    1.053533] initcall printk_late_init+0x0/0x150 returned 0 after 4 usecs
+[    1.053534] calling  init_srcu_module_notifier+0x0/0x30 @ 1
+[    1.053538] initcall init_srcu_module_notifier+0x0/0x30 returned 0 after 1 usecs
+[    1.053540] calling  kernel_rcu_stall_sysfs_init+0x0/0x30 @ 1
+[    1.053542] initcall kernel_rcu_stall_sysfs_init+0x0/0x30 returned 0 after 0 usecs
+[    1.053544] calling  swiotlb_create_default_debugfs+0x0/0xb0 @ 1
+[    1.053555] initcall swiotlb_create_default_debugfs+0x0/0xb0 returned 0 after 8 usecs
+[    1.053557] calling  module_decompress_sysfs_init+0x0/0x40 @ 1
+[    1.053560] initcall module_decompress_sysfs_init+0x0/0x40 returned 0 after 1 usecs
+[    1.053562] calling  tk_aux_sysfs_init+0x0/0xd0 @ 1
+[    1.053575] initcall tk_aux_sysfs_init+0x0/0xd0 returned 0 after 10 usecs
+[    1.053578] calling  tmigr_init_isolation+0x0/0xc0 @ 1
+[    1.053604] initcall tmigr_init_isolation+0x0/0xc0 returned 0 after 23 usecs
+[    1.053606] calling  tk_debug_sleep_time_init+0x0/0x30 @ 1
+[    1.053616] initcall tk_debug_sleep_time_init+0x0/0x30 returned 0 after 7 usecs
+[    1.053619] calling  bpf_ksym_iter_register+0x0/0x20 @ 1
+[    1.053622] initcall bpf_ksym_iter_register+0x0/0x20 returned 0 after 0 usecs
+[    1.053624] calling  kernel_acct_sysctls_init+0x0/0x30 @ 1
+[    1.053628] initcall kernel_acct_sysctls_init+0x0/0x30 returned 0 after 1 usecs
+[    1.053630] calling  kexec_core_sysctl_init+0x0/0x30 @ 1
+[    1.053636] initcall kexec_core_sysctl_init+0x0/0x30 returned 0 after 3 usecs
+[    1.053639] calling  bpf_rstat_kfunc_init+0x0/0x20 @ 1
+[    1.053641] initcall bpf_rstat_kfunc_init+0x0/0x20 returned 0 after 0 usecs
+[    1.053644] calling  debugfs_kprobe_init+0x0/0x90 @ 1
+[    1.053654] initcall debugfs_kprobe_init+0x0/0x90 returned 0 after 8 usecs
+[    1.053655] calling  kernel_hardlockup_sysfs_init+0x0/0x30 @ 1
+[    1.053658] initcall kernel_hardlockup_sysfs_init+0x0/0x30 returned 0 after 1 usecs
+[    1.053662] calling  kernel_softlockup_sysfs_init+0x0/0x30 @ 1
+[    1.053665] initcall kernel_softlockup_sysfs_init+0x0/0x30 returned 0 after 0 usecs
+[    1.053670] calling  kernel_delayacct_sysctls_init+0x0/0x30 @ 1
+[    1.053673] initcall kernel_delayacct_sysctls_init+0x0/0x30 returned 0 after 0 usecs
+[    1.053675] calling  taskstats_init+0x0/0x40 @ 1
+[    1.053682] registered taskstats version 1
+[    1.053685] initcall taskstats_init+0x0/0x40 returned 0 after 7 usecs
+[    1.053687] calling  ftrace_sysctl_init+0x0/0x30 @ 1
+[    1.053692] initcall ftrace_sysctl_init+0x0/0x30 returned 0 after 3 usecs
+[    1.053694] calling  init_hwlat_tracer+0x0/0x110 @ 1
+[    1.053773] initcall init_hwlat_tracer+0x0/0x110 returned 0 after 77 usecs
+[    1.053777] calling  init_osnoise_tracer+0x0/0x360 @ 1
+[    1.053872] initcall init_osnoise_tracer+0x0/0x360 returned 0 after 92 usecs
+[    1.053875] calling  bpf_kprobe_multi_kfuncs_init+0x0/0x20 @ 1
+[    1.053879] initcall bpf_kprobe_multi_kfuncs_init+0x0/0x20 returned 0 after 2 usecs
+[    1.053881] calling  bpf_global_ma_init+0x0/0x30 @ 1
+[    1.053934] initcall bpf_global_ma_init+0x0/0x30 returned 0 after 51 usecs
+[    1.053936] calling  bpf_syscall_sysctl_init+0x0/0x30 @ 1
+[    1.053941] initcall bpf_syscall_sysctl_init+0x0/0x30 returned 0 after 4 usecs
+[    1.053943] calling  unbound_reg_init+0x0/0x20 @ 1
+[    1.053949] initcall unbound_reg_init+0x0/0x20 returned 0 after 3 usecs
+[    1.053951] calling  kfunc_init+0x0/0xf0 @ 1
+[    1.053956] initcall kfunc_init+0x0/0xf0 returned 0 after 3 usecs
+[    1.053958] calling  bpf_map_iter_init+0x0/0x40 @ 1
+[    1.053960] initcall bpf_map_iter_init+0x0/0x40 returned 0 after 0 usecs
+[    1.053961] calling  init_subsystem+0x0/0x20 @ 1
+[    1.053975] initcall init_subsystem+0x0/0x20 returned 0 after 2 usecs
+[    1.053977] calling  task_iter_init+0x0/0xd0 @ 1
+[    1.053981] initcall task_iter_init+0x0/0xd0 returned 0 after 2 usecs
+[    1.053983] calling  bpf_prog_iter_init+0x0/0x20 @ 1
+[    1.053985] initcall bpf_prog_iter_init+0x0/0x20 returned 0 after 0 usecs
+[    1.053987] calling  bpf_link_iter_init+0x0/0x20 @ 1
+[    1.053988] initcall bpf_link_iter_init+0x0/0x20 returned 0 after 0 usecs
+[    1.053990] calling  init_trampolines+0x0/0x20 @ 1
+[    1.053995] initcall init_trampolines+0x0/0x20 returned 0 after 2 usecs
+[    1.053996] calling  rqspinlock_register_kfuncs+0x0/0x20 @ 1
+[    1.053998] initcall rqspinlock_register_kfuncs+0x0/0x20 returned 0 after 0 usecs
+[    1.054000] calling  kfunc_init+0x0/0x20 @ 1
+[    1.054002] initcall kfunc_init+0x0/0x20 returned 0 after 0 usecs
+[    1.054004] calling  bpf_cgroup_iter_init+0x0/0x30 @ 1
+[    1.054006] initcall bpf_cgroup_iter_init+0x0/0x30 returned 0 after 0 usecs
+[    1.054007] calling  cpumask_kfunc_init+0x0/0xb0 @ 1
+[    1.054013] initcall cpumask_kfunc_init+0x0/0xb0 returned 0 after 3 usecs
+[    1.054015] calling  crypto_kfunc_init+0x0/0xb0 @ 1
+[    1.054017] initcall crypto_kfunc_init+0x0/0xb0 returned 0 after 0 usecs
+[    1.054019] calling  bpf_kmem_cache_iter_init+0x0/0x30 @ 1
+[    1.054021] initcall bpf_kmem_cache_iter_init+0x0/0x30 returned 0 after 0 usecs
+[    1.054023] calling  dmabuf_iter_init+0x0/0x20 @ 1
+[    1.054026] initcall dmabuf_iter_init+0x0/0x20 returned 0 after 0 usecs
+[    1.054028] calling  load_system_certificate_list+0x0/0x30 @ 1
+[    1.054031] Loading compiled-in X.509 certificates
+[    1.174589] Freeing initrd memory: 20792K
+[    1.181523] Loaded X.509 cert 'Build time autogenerated kernel key: 4883d22f52f44944847b1a4e2bdf19ac0a9492c6'
+[    1.181529] initcall load_system_certificate_list+0x0/0x30 returned 0 after 127497 usecs
+[    1.181538] calling  load_revocation_certificate_list+0x0/0x40 @ 1
+[    1.181542] initcall load_revocation_certificate_list+0x0/0x40 returned 0 after 0 usecs
+[    1.181544] calling  mempool_faul_inject_init+0x0/0x20 @ 1
+[    1.181547] initcall mempool_faul_inject_init+0x0/0x20 returned -19 after 0 usecs
+[    1.181550] calling  init_lru_gen+0x0/0x80 @ 1
+[    1.181581] initcall init_lru_gen+0x0/0x80 returned 0 after 27 usecs
+[    1.181583] calling  vmstat_late_init+0x0/0x20 @ 1
+[    1.181587] initcall vmstat_late_init+0x0/0x20 returned 0 after 1 usecs
+[    1.181591] calling  fault_around_debugfs+0x0/0x30 @ 1
+[    1.181597] initcall fault_around_debugfs+0x0/0x30 returned 0 after 1 usecs
+[    1.181599] calling  reserve_mem_init+0x0/0x2b0 @ 1
+[    1.181601] initcall reserve_mem_init+0x0/0x2b0 returned 0 after 0 usecs
+[    1.181603] calling  slab_sysfs_init+0x0/0x100 @ 1
+[    1.183944] initcall slab_sysfs_init+0x0/0x100 returned 0 after 2338 usecs
+[    1.183950] calling  max_swapfiles_check+0x0/0x10 @ 1
+[    1.183952] initcall max_swapfiles_check+0x0/0x10 returned 0 after 0 usecs
+[    1.183955] calling  zswap_init+0x0/0x20 @ 1
+[    1.185371] zswap: loaded using pool zstd
+[    1.185416] initcall zswap_init+0x0/0x20 returned 0 after 1459 usecs
+[    1.185420] calling  hugetlb_vmemmap_init+0x0/0x70 @ 1
+[    1.185432] initcall hugetlb_vmemmap_init+0x0/0x70 returned 0 after 9 usecs
+[    1.185435] calling  mempolicy_sysfs_init+0x0/0x1f0 @ 1
+[    1.185447] initcall mempolicy_sysfs_init+0x0/0x1f0 returned 0 after 10 usecs
+[    1.185451] calling  kfence_debugfs_init+0x0/0x20 @ 1
+[    1.185474] initcall kfence_debugfs_init+0x0/0x20 returned 0 after 11 usecs
+[    1.185477] calling  memory_tier_late_init+0x0/0xc0 @ 1
+[    1.185528] Demotion targets for Node 0: null
+[    1.185532] initcall memory_tier_late_init+0x0/0xc0 returned 0 after 53 usecs
+[    1.185534] calling  split_huge_pages_debugfs+0x0/0x30 @ 1
+[    1.185537] initcall split_huge_pages_debugfs+0x0/0x30 returned 0 after 1 usecs
+[    1.185540] calling  check_early_ioremap_leak+0x0/0x40 @ 1
+[    1.185542] initcall check_early_ioremap_leak+0x0/0x40 returned 0 after 0 usecs
+[    1.185544] calling  cma_debugfs_init+0x0/0x260 @ 1
+[    1.185552] initcall cma_debugfs_init+0x0/0x260 returned 0 after 5 usecs
+[    1.185554] calling  set_hardened_usercopy+0x0/0x30 @ 1
+[    1.185557] initcall set_hardened_usercopy+0x0/0x30 returned 1 after 0 usecs
+[    1.185559] calling  shrinker_debugfs_init+0x0/0x90 @ 1
+[    1.185830] initcall shrinker_debugfs_init+0x0/0x90 returned 0 after 268 usecs
+[    1.185834] calling  mg_debugfs_init+0x0/0x30 @ 1
+[    1.185837] initcall mg_debugfs_init+0x0/0x30 returned 0 after 0 usecs
+[    1.185840] calling  fscrypt_init+0x0/0xc0 @ 1
+[    1.186096] Key type .fscrypt registered
+[    1.186098] Key type fscrypt-provisioning registered
+[    1.186099] initcall fscrypt_init+0x0/0xc0 returned 0 after 254 usecs
+[    1.186102] calling  fsverity_init+0x0/0x50 @ 1
+[    1.186129] initcall fsverity_init+0x0/0x50 returned 0 after 25 usecs
+[    1.186131] calling  init_btrfs_fs+0x0/0x80 @ 1
+[    1.186465] Btrfs loaded, zoned=yes, fsverity=yes
+[    1.186480] initcall init_btrfs_fs+0x0/0x80 returned 0 after 346 usecs
+[    1.186484] calling  pstore_init+0x0/0x60 @ 1
+[    1.186492] initcall pstore_init+0x0/0x60 returned 0 after 4 usecs
+[    1.186495] calling  bpf_fs_kfuncs_init+0x0/0x20 @ 1
+[    1.186498] initcall bpf_fs_kfuncs_init+0x0/0x20 returned 0 after 0 usecs
+[    1.186500] calling  init_root_keyring+0x0/0x20 @ 1
+[    1.186513] initcall init_root_keyring+0x0/0x20 returned 0 after 11 usecs
+[    1.186515] calling  big_key_init+0x0/0x20 @ 1
+[    1.186517] Key type big_key registered
+[    1.186518] initcall big_key_init+0x0/0x20 returned 0 after 1 usecs
+[    1.186520] calling  security_initcall_late+0x0/0xc0 @ 1
+[    1.186523] initcall security_initcall_late+0x0/0xc0 returned 0 after 0 usecs
+[    1.186525] calling  load_uefi_certs+0x0/0x240 @ 1
+[    1.186531] initcall load_uefi_certs+0x0/0x240 returned 0 after 3 usecs
+[    1.186533] calling  crypto_algapi_init+0x0/0x20 @ 1
+[    1.186538] initcall crypto_algapi_init+0x0/0x20 returned 0 after 2 usecs
+[    1.186543] calling  blk_timeout_init+0x0/0x20 @ 1
+[    1.186545] initcall blk_timeout_init+0x0/0x20 returned 0 after 0 usecs
+[    1.186547] calling  sed_opal_init+0x0/0x100 @ 1
+[    1.186555] initcall sed_opal_init+0x0/0x100 returned 0 after 5 usecs
+[    1.186557] calling  init_error_injection+0x0/0x70 @ 1
+[    1.186942] initcall init_error_injection+0x0/0x70 returned 0 after 382 usecs
+[    1.186946] calling  depot_debugfs_init+0x0/0x50 @ 1
+[    1.186960] initcall depot_debugfs_init+0x0/0x50 returned 0 after 3 usecs
+[    1.186963] calling  pci_resource_alignment_sysfs_init+0x0/0x20 @ 1
+[    1.186971] initcall pci_resource_alignment_sysfs_init+0x0/0x20 returned 0 after 2 usecs
+[    1.186974] calling  pci_sysfs_init+0x0/0x80 @ 1
+[    1.187031] initcall pci_sysfs_init+0x0/0x80 returned 0 after 56 usecs
+[    1.187033] calling  bert_init+0x0/0x290 @ 1
+[    1.187038] initcall bert_init+0x0/0x290 returned 0 after 1 usecs
+[    1.187040] calling  clk_debug_init+0x0/0x130 @ 1
+[    1.187061] initcall clk_debug_init+0x0/0x130 returned 0 after 18 usecs
+[    1.187064] calling  setup_vcpu_hotplug_event+0x0/0x40 @ 1
+[    1.187067] initcall setup_vcpu_hotplug_event+0x0/0x40 returned -19 after 0 usecs
+[    1.187069] calling  boot_wait_for_devices+0x0/0x30 @ 1
+[    1.187075] initcall boot_wait_for_devices+0x0/0x30 returned -19 after 2 usecs
+[    1.187078] calling  dmar_free_unused_resources+0x0/0xd0 @ 1
+[    1.187081] initcall dmar_free_unused_resources+0x0/0xd0 returned 0 after 0 usecs
+[    1.187083] calling  sync_state_resume_initcall+0x0/0x20 @ 1
+[    1.187091] initcall sync_state_resume_initcall+0x0/0x20 returned 0 after 0 usecs
+[    1.187093] calling  deferred_probe_initcall+0x0/0xa0 @ 1
+[    1.187116] initcall deferred_probe_initcall+0x0/0xa0 returned 0 after 17 usecs
+[    1.187119] calling  late_resume_init+0x0/0x120 @ 1
+[    1.187122] PM:   Magic number: 2:884:990
+[    1.187272] memory memory33: hash matches
+[    1.187282] initcall late_resume_init+0x0/0x120 returned 0 after 160 usecs
+[    1.187286] calling  firmware_memmap_init+0x0/0x40 @ 1
+[    1.187315] initcall firmware_memmap_init+0x0/0x40 returned 0 after 26 usecs
+[    1.187318] calling  register_update_efi_random_seed+0x0/0x30 @ 1
+[    1.187320] initcall register_update_efi_random_seed+0x0/0x30 returned 0 after 0 usecs
+[    1.187323] calling  efi_shutdown_init+0x0/0x50 @ 1
+[    1.187325] initcall efi_shutdown_init+0x0/0x50 returned -19 after 0 usecs
+[    1.187327] calling  efi_rci2_sysfs_init+0x0/0x2a0 @ 1
+[    1.187330] initcall efi_rci2_sysfs_init+0x0/0x2a0 returned 0 after 0 usecs
+[    1.187332] calling  efi_earlycon_unmap_fb+0x0/0x50 @ 1
+[    1.187335] initcall efi_earlycon_unmap_fb+0x0/0x50 returned 0 after 0 usecs
+[    1.187337] calling  hid_bpf_init+0x0/0x60 @ 1
+[    1.187342] initcall hid_bpf_init+0x0/0x60 returned 0 after 2 usecs
+[    1.187345] calling  hid_bpf_struct_ops_init+0x0/0x20 @ 1
+[    1.187350] initcall hid_bpf_struct_ops_init+0x0/0x20 returned 0 after 2 usecs
+[    1.187352] calling  itmt_legacy_init+0x0/0x50 @ 1
+[    1.187355] initcall itmt_legacy_init+0x0/0x50 returned -19 after 0 usecs
+[    1.187358] calling  cec_init+0x0/0x1c0 @ 1
+[    1.187372] RAS: Correctable Errors collector initialized.
+[    1.187373] initcall cec_init+0x0/0x1c0 returned 0 after 13 usecs
+[    1.187376] calling  bpf_kfunc_init+0x0/0x1a0 @ 1
+[    1.187381] initcall bpf_kfunc_init+0x0/0x1a0 returned 0 after 2 usecs
+[    1.187382] calling  init_subsystem+0x0/0x20 @ 1
+[    1.187395] initcall init_subsystem+0x0/0x20 returned 0 after 2 usecs
+[    1.187398] calling  xdp_metadata_init+0x0/0x20 @ 1
+[    1.187400] initcall xdp_metadata_init+0x0/0x20 returned 0 after 0 usecs
+[    1.187402] calling  bpf_sockmap_iter_init+0x0/0x30 @ 1
+[    1.187404] initcall bpf_sockmap_iter_init+0x0/0x30 returned 0 after 0 usecs
+[    1.187406] calling  bpf_sk_storage_map_iter_init+0x0/0x30 @ 1
+[    1.187408] initcall bpf_sk_storage_map_iter_init+0x0/0x30 returned 0 after 0 usecs
+[    1.187410] calling  sch_default_qdisc+0x0/0x20 @ 1
+[    1.187416] initcall sch_default_qdisc+0x0/0x20 returned 0 after 3 usecs
+[    1.187418] calling  bpf_prog_test_run_init+0x0/0xb0 @ 1
+[    1.187421] initcall bpf_prog_test_run_init+0x0/0xb0 returned 0 after 0 usecs
+[    1.187423] calling  bpf_dummy_struct_ops_init+0x0/0x20 @ 1
+[    1.187425] initcall bpf_dummy_struct_ops_init+0x0/0x20 returned 0 after 0 usecs
+[    1.187427] calling  tcp_congestion_default+0x0/0x20 @ 1
+[    1.187433] initcall tcp_congestion_default+0x0/0x20 returned 0 after 3 usecs
+[    1.187435] calling  inet_blackhole_dev_init+0x0/0x40 @ 1
+[    1.187441] initcall inet_blackhole_dev_init+0x0/0x40 returned 0 after 3 usecs
+[    1.187445] calling  tcp_bpf_v4_build_proto+0x0/0xa0 @ 1
+[    1.187455] initcall tcp_bpf_v4_build_proto+0x0/0xa0 returned 0 after 5 usecs
+[    1.187458] calling  udp_bpf_v4_build_proto+0x0/0x60 @ 1
+[    1.187461] initcall udp_bpf_v4_build_proto+0x0/0x60 returned 0 after 0 usecs
+[    1.187463] calling  bpf_tcp_ca_kfunc_init+0x0/0x30 @ 1
+[    1.187466] initcall bpf_tcp_ca_kfunc_init+0x0/0x30 returned 0 after 0 usecs
+[    1.187468] calling  bpf_mptcp_kfunc_init+0x0/0x20 @ 1
+[    1.187471] initcall bpf_mptcp_kfunc_init+0x0/0x20 returned 0 after 0 usecs
+[    1.187473] calling  pci_mmcfg_late_insert_resources+0x0/0xc0 @ 1
+[    1.187477] initcall pci_mmcfg_late_insert_resources+0x0/0xc0 returned 0 after 1 usecs
+[    1.187479] calling  software_resume_initcall+0x0/0x160 @ 1
+[    1.187484] initcall software_resume_initcall+0x0/0x160 returned -2 after 1 usecs
+[    1.187486] calling  lockup_detector_check+0x0/0x50 @ 1
+[    1.187501] initcall lockup_detector_check+0x0/0x50 returned 0 after 11 usecs
+[    1.187503] calling  ftrace_check_sync+0x0/0x20 @ 1
+[    1.187560] initcall ftrace_check_sync+0x0/0x20 returned 0 after 55 usecs
+[    1.187564] calling  latency_fsnotify_init+0x0/0x40 @ 1
+[    1.187575] initcall latency_fsnotify_init+0x0/0x40 returned 0 after 6 usecs
+[    1.187578] calling  trace_eval_sync+0x0/0x20 @ 1
+[    1.187593] initcall trace_eval_sync+0x0/0x20 returned 0 after 11 usecs
+[    1.187596] calling  late_trace_init+0x0/0xb0 @ 1
+[    1.187602] initcall late_trace_init+0x0/0xb0 returned 0 after 3 usecs
+[    1.187605] calling  acpi_gpio_handle_deferred_request_irqs+0x0/0x40 @ 1
+[    1.187609] initcall acpi_gpio_handle_deferred_request_irqs+0x0/0x40 returned 0 after 0 usecs
+[    1.187612] calling  clk_disable_unused+0x0/0x110 @ 1
+[    1.187615] clk: Disabling unused clocks
+[    1.187625] initcall clk_disable_unused+0x0/0x110 returned 0 after 9 usecs
+[    1.187627] calling  balloon_wait_finish+0x0/0x100 @ 1
+[    1.187658] initcall balloon_wait_finish+0x0/0x100 returned -19 after 22 usecs
+[    1.187661] calling  regulator_init_complete+0x0/0x30 @ 1
+[    1.187667] initcall regulator_init_complete+0x0/0x30 returned 0 after 3 usecs
+[    1.278853] usb 1-1: new high-speed USB device number 2 using xhci_hcd
+[    1.334059] ata5: SATA link down (SStatus 0 SControl 300)
+[    1.334451] ata4: SATA link down (SStatus 0 SControl 300)
+[    1.335006] ata6: SATA link down (SStatus 0 SControl 300)
+[    1.335680] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+[    1.335923] ata2.00: ATA-7: QEMU HARDDISK, 2.5+, max UDMA/100
+[    1.335931] ata2.00: 268435456 sectors, multi 16: LBA48 NCQ (depth 32)
+[    1.335938] ata2.00: applying bridge limits
+[    1.336182] ata3: SATA link down (SStatus 0 SControl 300)
+[    1.336722] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+[    1.337010] ata1.00: ATAPI: QEMU DVD-ROM, 2.5+, max UDMA/100
+[    1.337021] ata1.00: applying bridge limits
+[    1.337090] ata2.00: configured for UDMA/100
+[    1.337298] ata1.00: configured for UDMA/100
+[    1.348003] scsi 1:0:0:0: CD-ROM            QEMU     QEMU DVD-ROM     2.5+ PQ: 0 ANSI: 5
+[    1.357348] probe of 1:0:0:0 returned 19 after 16 usecs
+[    1.357607] scsi 2:0:0:0: Direct-Access     ATA      QEMU HARDDISK    2.5+ PQ: 0 ANSI: 5
+[    1.358294] sd 2:0:0:0: [sda] 268435456 512-byte logical blocks: (137 GB/128 GiB)
+[    1.358329] sd 2:0:0:0: [sda] Write Protect is off
+[    1.358333] sd 2:0:0:0: [sda] Mode Sense: 00 3a 00 00
+[    1.358354] sd 2:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+[    1.358395] sd 2:0:0:0: [sda] Preferred minimum I/O size 512 bytes
+[    1.367573]  sda: sda1
+[    1.367838] sd 2:0:0:0: [sda] Attached SCSI disk
+[    1.367870] probe of 2:0:0:0 returned 0 after 9893 usecs
+[    1.373463] Freeing unused decrypted memory: 2028K
+[    1.378563] Freeing unused kernel image (initmem) memory: 4664K
+[    1.378777] Write protecting the kernel read-only data: 30720k
+[    1.380172] Freeing unused kernel image (text/rodata gap) memory: 740K
+[    1.381150] Freeing unused kernel image (rodata/data gap) memory: 688K
+[    1.403233] usb 1-1: New USB device found, idVendor=0627, idProduct=0001, bcdDevice= 0.00
+[    1.403245] usb 1-1: New USB device strings: Mfr=1, Product=3, SerialNumber=10
+[    1.403246] usb 1-1: Product: QEMU USB Tablet
+[    1.403248] usb 1-1: Manufacturer: QEMU
+[    1.403249] usb 1-1: SerialNumber: 28754-0000:00:02.1:00.0-1
+[    1.405174] input: QEMU QEMU USB Tablet as /devices/pci0000:00/0000:00:02.1/0000:02:00.0/usb1/1-1/1-1:1.0/0003:0627:0001.0001/input/input3
+[    1.405321] hid-generic 0003:0627:0001.0001: input,hidraw0: USB HID v0.01 Mouse [QEMU QEMU USB Tablet] on usb-0000:02:00.0-1/input0
+[    1.405330] probe of 0003:0627:0001.0001 returned 0 after 295 usecs
+[    1.405336] probe of 1-1:1.0 returned 0 after 1021 usecs
+[    1.405347] probe of 1-1 returned 0 after 1960 usecs
+[    1.442844] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    1.442862] rodata_test: all tests were successful
+[    1.442872] Run /init as init process
+[    1.442877]   with arguments:
+[    1.442879]     /init
+[    1.442880]   with environment:
+[    1.442880]     HOME=/
+[    1.442881]     TERM=linux
+[    1.781359] dm_mod: module verification failed: signature and/or required key missing - tainting kernel
+[    1.786353] calling  dm_init+0x0/0x50 [dm_mod] @ 160
+[    1.786417] device-mapper: uevent: version 1.0.3
+[    1.786516] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    1.786519] initcall dm_init+0x0/0x50 [dm_mod] returned 0 after 143 usecs
+[    1.891375] EXT4-fs (sda1): orphan cleanup on readonly fs
+[    1.891894] EXT4-fs (sda1): mounted filesystem fa375f0b-600c-46cc-83a0-248056a23ddc ro with ordered data mode. Quota mode: none.
+[    3.944921] calling  virtio_rng_driver_init+0x0/0xff0 [virtio_rng] @ 1
+[    3.946160] probe of virtio5 returned 0 after 1223 usecs
+[    3.946172] initcall virtio_rng_driver_init+0x0/0xff0 [virtio_rng] returned 0 after 1243 usecs
+[    3.957007] calling  fw_cfg_sysfs_init+0x0/0xff0 [qemu_fw_cfg] @ 1
+[    3.957335] probe of QEMU0002:00 returned 0 after 309 usecs
+[    3.957346] initcall fw_cfg_sysfs_init+0x0/0xff0 [qemu_fw_cfg] returned 0 after 332 usecs
+[    3.995171] systemd[1]: systemd 259.1 running in system mode (+PAM -AUDIT -SELINUX -APPARMOR +IMA +IPE +SMACK +SECCOMP +GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL -ELFUTILS -FIDO2 +IDN2 -IDN +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE -TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD -BPF_FRAMEWORK -BTF +XKBCOMMON +UTMP +SYSVINIT +LIBARCHIVE)
+[    3.995179] systemd[1]: Detected virtualization kvm.
+[    3.995193] systemd[1]: Detected architecture x86-64.
+[    3.998619] systemd[1]: Hostname set to <lfs-kvm>.
+[    4.247013] calling  vsock_init+0x0/0xf0 [vsock] @ 189
+[    4.247101] NET: Registered PF_VSOCK protocol family
+[    4.247103] initcall vsock_init+0x0/0xf0 [vsock] returned 0 after 80 usecs
+[    4.260791] calling  vmci_drv_init+0x0/0xd0 [vmw_vmci] @ 189
+[    4.260836] Guest personality initialized and is inactive
+[    4.260885] VMCI host device registered (name=vmci, major=10, minor=261)
+[    4.260887] Initialized host personality
+[    4.260888] initcall vmci_drv_init+0x0/0xd0 [vmw_vmci] returned 0 after 85 usecs
+[    4.272376] calling  vmci_transport_init+0x0/0xff0 [vmw_vsock_vmci_transport] @ 189
+[    4.272389] initcall vmci_transport_init+0x0/0xff0 [vmw_vsock_vmci_transport] returned 0 after 2 usecs
+[    4.288841] calling  vsock_loopback_init+0x0/0xff0 [vsock_loopback] @ 189
+[    4.288857] initcall vsock_loopback_init+0x0/0xff0 [vsock_loopback] returned 0 after 7 usecs
+[    4.420399] systemd[1]: Queued start job for default target Graphical Interface.
+[    4.429595] calling  nfnetlink_init+0x0/0xff0 [nfnetlink] @ 191
+[    4.429620] initcall nfnetlink_init+0x0/0xff0 [nfnetlink] returned 0 after 14 usecs
+[    4.440671] systemd[1]: Created slice Slice /system/dhcpcd.
+[    4.441737] systemd[1]: Created slice Slice /system/getty.
+[    4.442611] systemd[1]: Created slice Slice /system/modprobe.
+[    4.443416] systemd[1]: Created slice User and Session Slice.
+[    4.444030] systemd[1]: Started Dispatch Password Requests to Console Directory Watch.
+[    4.444654] systemd[1]: Started Forward Password Requests to Wall Directory Watch.
+[    4.445442] systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.
+[    4.467234] systemd[1]: Expecting device /sys/subsystem/net/devices/enp1s0...
+[    4.467869] systemd[1]: Reached target Local Encrypted Volumes.
+[    4.468393] systemd[1]: Reached target Login Prompts.
+[    4.468898] systemd[1]: Reached target Image Downloads.
+[    4.469388] systemd[1]: Reached target Local Integrity Protected Volumes.
+[    4.469955] systemd[1]: Reached target Path Units.
+[    4.470444] systemd[1]: Reached target Remote File Systems.
+[    4.470958] systemd[1]: Reached target Slice Units.
+[    4.471449] systemd[1]: Reached target Swaps.
+[    4.471943] systemd[1]: Reached target Local Verity Protected Volumes.
+[    4.474153] systemd[1]: Listening on Query the User Interactively for a Password.
+[    4.477826] systemd[1]: Listening on Process Core Dump Socket.
+[    4.479101] systemd[1]: Listening on Credential Encryption/Decryption.
+[    4.480752] systemd[1]: Listening on Factory Reset Management.
+[    4.481422] systemd[1]: Listening on initctl Compatibility Named Pipe.
+[    4.482136] systemd[1]: Journal Audit Socket skipped, unmet condition check ConditionSecurity=audit
+[    4.482225] systemd[1]: Listening on Journal Socket (/dev/log).
+[    4.482908] systemd[1]: Listening on Journal Sockets.
+[    4.483536] systemd[1]: Listening on DDI File System Mounter Socket.
+[    4.485463] systemd[1]: Listening on Console Output Muting Service Socket.
+[    4.486214] systemd[1]: Listening on Network Management Resolve Hook Socket.
+[    4.486945] systemd[1]: Listening on Network Management Varlink Socket.
+[    4.487674] systemd[1]: Listening on Network Management Netlink Socket.
+[    4.488338] systemd[1]: Listening on Namespace Resource Manager Socket.
+[    4.489922] systemd[1]: Listening on Disk Repartitioning Service Socket.
+[    4.491151] systemd[1]: Listening on udev Control Socket.
+[    4.491790] systemd[1]: Listening on udev Kernel Socket.
+[    4.492398] systemd[1]: Listening on udev Varlink Socket.
+[    4.493040] systemd[1]: Listening on User Database Manager Socket.
+[    4.494832] systemd[1]: Mounting Huge Pages File System...
+[    4.497488] systemd[1]: Mounting POSIX Message Queue File System...
+[    4.504976] systemd[1]: Mounting Kernel Debug File System...
+[    4.507554] systemd[1]: Mounting Kernel Trace File System...
+[    4.511605] systemd[1]: tmp.mount: Directory /tmp to mount over is not empty, mounting anyway.
+[    4.513527] systemd[1]: Mounting Temporary Directory /tmp...
+[    4.524338] systemd[1]: Starting Create List of Static Device Nodes...
+[    4.525998] systemd[1]: Load Kernel Module configfs skipped, unmet condition check ConditionKernelModuleLoaded=!configfs
+[    4.527391] systemd[1]: Mounting Kernel Configuration File System...
+[    4.528415] systemd[1]: Load Kernel Module drm skipped, unmet condition check ConditionKernelModuleLoaded=!drm
+[    4.528463] systemd[1]: Load Kernel Module efi_pstore skipped, unmet condition check ConditionKernelModuleLoaded=!efi_pstore
+[    4.528493] systemd[1]: Load Kernel Module fuse skipped, unmet condition check ConditionKernelModuleLoaded=!fuse
+[    4.529492] systemd[1]: Mounting FUSE Control File System...
+[    4.531475] systemd[1]: Clear Stale Hibernate Storage Info skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67
+[    4.533730] systemd[1]: Starting Journal Service...
+[    4.535490] systemd[1]: Load Kernel Modules skipped, no trigger condition checks were met.
+[    4.536450] systemd[1]: Starting Generate Network Units from Kernel Command Line...
+[    4.538260] systemd[1]: Starting Remount Root and Kernel File Systems...
+[    4.540409] systemd[1]: Starting Apply Kernel Variables...
+[    4.555096] systemd[1]: Starting Load udev Rules from Credentials...
+[    4.561566] systemd-journald[201]: Collecting audit messages is disabled.
+[    4.561915] systemd[1]: Starting Coldplug All udev Devices...
+[    4.569721] systemd[1]: Mounted Huge Pages File System.
+[    4.573181] EXT4-fs (sda1): re-mounted fa375f0b-600c-46cc-83a0-248056a23ddc r/w.
+[    4.574202] systemd[1]: Started Journal Service.
+[    4.619959] systemd-journald[201]: Received client request to flush runtime journal.
+[    4.985480] calling  rfkill_init+0x0/0x120 [rfkill] @ 252
+[    4.985560] initcall rfkill_init+0x0/0x120 [rfkill] returned 0 after 69 usecs
+[    5.040848] virtio_net virtio1 enp1s0: renamed from eth0
+[    5.098408] calling  serio_raw_drv_init+0x0/0xff0 [serio_raw] @ 261
+[    5.098446] initcall serio_raw_drv_init+0x0/0xff0 [serio_raw] returned 0 after 30 usecs
+[    5.161335] calling  cfg80211_init+0x0/0xd0 [cfg80211] @ 252
+[    5.161688] probe of regulatory returned 0 after 20 usecs
+[    5.161697] cfg80211: Loading compiled-in X.509 certificates for regulatory database
+[    5.165857] Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+[    5.165983] Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'
+[    5.166157] initcall cfg80211_init+0x0/0xd0 [cfg80211] returned 0 after 4754 usecs
+[    5.166259] faux_driver regulatory: Direct firmware load for regulatory.db failed with error -2
+[    5.166262] cfg80211: failed to load regulatory.db
+[    5.168958] calling  mac_hid_init+0x0/0xff0 [mac_hid] @ 260
+[    5.168978] initcall mac_hid_init+0x0/0xff0 [mac_hid] returned 0 after 4 usecs
+[    5.205100] calling  agp_intel_init+0x0/0xff0 [intel_agp] @ 274
+[    5.205105] calling  mousedev_init+0x0/0xff0 [mousedev] @ 262
+[    5.205198] probe of 0000:00:00.0 returned 19 after 82 usecs
+[    5.206312] initcall agp_intel_init+0x0/0xff0 [intel_agp] returned 0 after 1199 usecs
+[    5.206408] mousedev: PS/2 mouse device common for all mice
+[    5.206410] initcall mousedev_init+0x0/0xff0 [mousedev] returned 0 after 1298 usecs
+[    5.211557] calling  lpc_ich_driver_init+0x0/0xff0 [lpc_ich] @ 267
+[    5.215256] calling  virtio_gpu_driver_init+0x0/0xff0 [virtio_gpu] @ 259
+[    5.215560] [drm] pci: virtio-vga detected at 0000:00:01.0
+[    5.217107] lpc_ich 0000:00:1f.0: I/O space for GPIO uninitialized
+[    5.217145] virtio-pci 0000:00:01.0: vgaarb: deactivate vga console
+[    5.219065] probe of 0000:00:1f.0 returned 0 after 7469 usecs
+[    5.219083] initcall lpc_ich_driver_init+0x0/0xff0 [lpc_ich] returned 0 after 3815 usecs
+[    5.227721] Console: switching to colour dummy device 80x25
+[    5.228082] [drm] features: -virgl +edid -resource_blob -host_visible
+[    5.228084] [drm] features: -context_init
+[    5.236385] calling  virtio_balloon_driver_init+0x0/0xff0 [virtio_balloon] @ 268
+[    5.255907] calling  smbalert_driver_init+0x0/0xff0 [i2c_smbus] @ 274
+[    5.256049] initcall smbalert_driver_init+0x0/0xff0 [i2c_smbus] returned 0 after 133 usecs
+[    5.258235] calling  joydev_init+0x0/0xff0 [joydev] @ 262
+[    5.258323] initcall joydev_init+0x0/0xff0 [joydev] returned 0 after 75 usecs
+[    5.258743] calling  aesni_init+0x0/0xff0 [aesni_intel] @ 253
+[    5.258775] initcall aesni_init+0x0/0xff0 [aesni_intel] returned 0 after 23 usecs
+[    5.259874] calling  pcspkr_platform_driver_init+0x0/0xff0 [pcspkr] @ 264
+[    5.259940] input: PC Speaker as /devices/platform/pcspkr/input/input4
+[    5.263834] probe of pcspkr returned 0 after 3940 usecs
+[    5.264570] calling  psmouse_init+0x0/0x90 [psmouse] @ 256
+[    5.264735] initcall psmouse_init+0x0/0x90 [psmouse] returned 0 after 148 usecs
+[    5.266113] initcall pcspkr_platform_driver_init+0x0/0xff0 [pcspkr] returned 0 after 1525 usecs
+[    5.266718] [drm] number of scanouts: 1
+[    5.266731] [drm] number of cap sets: 0
+[    5.271436] virtio-pci 0000:00:01.0: [drm] Registered 1 planes with drm panic
+[    5.273398] calling  i801_driver_init+0x0/0xff0 [i2c_i801] @ 274
+[    5.273843] initcall i801_driver_init+0x0/0xff0 [i2c_i801] returned 0 after 436 usecs
+[    5.273944] i801_smbus 0000:00:1f.3: SMBus using PCI interrupt
+[    5.274064] i2c i2c-0: Memory type 0x07 not supported yet, not instantiating SPD
+[    5.274080] probe of 0000:00:1f.3 returned 0 after 649 usecs
+[    5.277602] [drm] Initialized virtio_gpu 0.1.0 for 0000:00:01.0 on minor 0
+[    5.281381] probe of virtio4 returned 0 after 44976 usecs
+[    5.282853] calling  ghash_pclmulqdqni_mod_init+0x0/0xff0 [ghash_clmulni_intel] @ 258
+[    5.282866] initcall ghash_pclmulqdqni_mod_init+0x0/0xff0 [ghash_clmulni_intel] returned 0 after 6 usecs
+[    5.290451] fbcon: virtio_gpudrmfb (fb0) is primary device
+[    5.292457] initcall virtio_balloon_driver_init+0x0/0xff0 [virtio_balloon] returned 0 after 9596 usecs
+[    5.340743] calling  iTCO_vendor_init_module+0x0/0xff0 [iTCO_vendor_support] @ 273
+[    5.340752] iTCO_vendor_support: vendor-support=0
+[    5.340753] initcall iTCO_vendor_init_module+0x0/0xff0 [iTCO_vendor_support] returned 0 after 1 usecs
+[    5.353353] calling  intel_pmc_driver_init+0x0/0xff0 [intel_pmc_bxt] @ 273
+[    5.353397] initcall intel_pmc_driver_init+0x0/0xff0 [intel_pmc_bxt] returned 0 after 37 usecs
+[    5.359843] calling  iTCO_wdt_driver_init+0x0/0xff0 [iTCO_wdt] @ 273
+[    5.359951] iTCO_wdt iTCO_wdt.1.auto: Found a ICH9 TCO device (Version=2, TCOBASE=0x0660)
+[    5.360175] iTCO_wdt iTCO_wdt.1.auto: initialized. heartbeat=30 sec (nowayout=0)
+[    5.360190] probe of iTCO_wdt.1.auto returned 0 after 327 usecs
+[    5.360199] initcall iTCO_wdt_driver_init+0x0/0xff0 [iTCO_wdt] returned 0 after 349 usecs
+[    5.371495] Console: switching to colour frame buffer device 119x61
+[    5.398840] virtio-pci 0000:00:01.0: [drm] fb0: virtio_gpudrmfb frame buffer device
+[    5.398940] probe of virtio0 returned 0 after 183662 usecs
+[    5.398968] initcall virtio_gpu_driver_init+0x0/0xff0 [virtio_gpu] returned 0 after 39118 usecs
+[    5.514443] calling  kvm_x86_init+0x0/0x40 [kvm] @ 253
+[    5.514524] initcall kvm_x86_init+0x0/0x40 [kvm] returned 0 after 19 usecs
+[    5.548994] calling  sp_mod_init+0x0/0xff0 [ccp] @ 253
+[    5.549059] initcall sp_mod_init+0x0/0xff0 [ccp] returned 0 after 44 usecs
+[    5.586875] calling  svm_init+0x0/0x70 [kvm_amd] @ 253
+[    5.586953] kvm_amd: TSC scaling supported
+[    5.586956] kvm_amd: Nested Virtualization enabled
+[    5.586958] kvm_amd: Nested Paging enabled
+[    5.586961] kvm_amd: LBR virtualization supported
+[    5.586966] kvm_amd: Virtual VMLOAD VMSAVE supported
+[    5.586966] kvm_amd: Virtual GIF supported
+[    5.607026] initcall svm_init+0x0/0x70 [kvm_amd] returned 0 after 20132 usecs
+[    5.627669] calling  rapl_init+0x0/0xff0 [intel_rapl_common] @ 253
+[    5.628242] initcall rapl_init+0x0/0xff0 [intel_rapl_common] returned 0 after 547 usecs
+[    5.642773] calling  intel_rapl_msr_driver_init+0x0/0xff0 [intel_rapl_msr] @ 263
+[    5.642985] probe of intel_rapl_msr.0 returned 19 after 185 usecs
+[    5.642999] initcall intel_rapl_msr_driver_init+0x0/0xff0 [intel_rapl_msr] returned 0 after 215 usecs
+[    5.760942] calling  llc_init+0x0/0xff0 [llc] @ 329
+[    5.760955] initcall llc_init+0x0/0xff0 [llc] returned 0 after 0 usecs
+[    5.805643] calling  vlan_proto_init+0x0/0xb0 [8021q] @ 329
+[    5.805654] 8021q: 802.1Q VLAN Support v1.8
+[    5.805683] initcall vlan_proto_init+0x0/0xb0 [8021q] returned 0 after 28 usecs
+[    5.826190] 8021q: adding VLAN 0 to HW filter on device enp1s0
+[    6.132712] input: ImExPS/2 Generic Explorer Mouse as /devices/platform/i8042/serio1/input/input5
+[    6.133297] probe of serio1 returned 0 after 868666 usecs
+[    9.190376] rfkill: input handler disabled
+[   10.892093] input: spice vdagent tablet as /devices/virtual/input/input6
