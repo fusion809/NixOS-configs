@@ -1,0 +1,100 @@
+IP found: 192.168.122.35. Waiting for SSH...
+SSH is ready!
+[    0.000000] Linux version 6.19.7 (root@archiso) (gcc.real (GCC) 15.2.0, GNU ld (GNU Binutils) 2.46.0.20260210) #1 SMP PREEMPT_DYNAMIC Fri Mar 13 03:42:47 AEST 2026
+[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-6.19.7-lfs-r13.0-3-systemd root=UUID=fa375f0b-600c-46cc-83a0-248056a23ddc ro ipv6.disable=1 psmouse=off i8042.noaux=1
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000007ffddfff] usable
+[    0.000000] BIOS-e820: [mem 0x000000007ffde000-0x000000007fffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000b0000000-0x00000000bfffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fed1c000-0x00000000fed1ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000047fffffff] usable
+[    0.000000] BIOS-e820: [mem 0x000000fd00000000-0x000000ffffffffff] reserved
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] SMBIOS 2.8 present.
+[    0.000000] DMI: QEMU Standard PC (Q35 + ICH9, 2009), BIOS rel-1.17.0-0-gb52ca86e094d-prebuilt.qemu.org 04/01/2014
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] last_pfn = 0x7ffde max_arch_pfn = 0x400000000
+[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+[    0.000001] kvm-clock: using sched offset of 4630995691592 cycles
+[    0.000003] clocksource: kvm-clock: mask: 0xffffffffffffffff max_cycles: 0x1cd42e4dffb, max_idle_ns: 881590591483 ns
+[    0.000007] tsc: Detected 3199.996 MHz processor
+[    0.000827] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+[    0.000830] e820: remove [mem 0x000a0000-0x000fffff] usable
+[    0.000835] last_pfn = 0x480000 max_arch_pfn = 0x400000000
+[    0.000865] MTRR map: 4 entries (3 fixed + 1 variable; max 19), built from 8 variable MTRRs
+[    0.000868] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+[    0.000912] last_pfn = 0x7ffde max_arch_pfn = 0x400000000
+[    0.003076] found SMP MP-table at [mem 0x000f5480-0x000f548f]
+[    0.003095] Using GB pages for direct mapping
+[    0.003240] RAMDISK: [mem 0x35753000-0x36ba0fff]
+[    0.003252] ACPI: Early table checksum verification disabled
+[    0.003257] ACPI: RSDP 0x00000000000F5200 000014 (v00 BOCHS )
+[    0.003262] ACPI: RSDT 0x000000007FFE2D0A 000034 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.003269] ACPI: FACP 0x000000007FFE2B2A 0000F4 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.003279] ACPI: DSDT 0x000000007FFE0040 002AEA (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.003283] ACPI: FACS 0x000000007FFE0000 000040
+[    0.003286] ACPI: APIC 0x000000007FFE2C1E 000088 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.003290] ACPI: MCFG 0x000000007FFE2CA6 00003C (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.003293] ACPI: WAET 0x000000007FFE2CE2 000028 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.003296] ACPI: Reserving FACP table memory at [mem 0x7ffe2b2a-0x7ffe2c1d]
+[    0.003297] ACPI: Reserving DSDT table memory at [mem 0x7ffe0040-0x7ffe2b29]
+[    0.003298] ACPI: Reserving FACS table memory at [mem 0x7ffe0000-0x7ffe003f]
+[    0.003299] ACPI: Reserving APIC table memory at [mem 0x7ffe2c1e-0x7ffe2ca5]
+[    0.003300] ACPI: Reserving MCFG table memory at [mem 0x7ffe2ca6-0x7ffe2ce1]
+[    0.003300] ACPI: Reserving WAET table memory at [mem 0x7ffe2ce2-0x7ffe2d09]
+[    0.003841] No NUMA configuration found
+[    0.003842] Faking a node at [mem 0x0000000000000000-0x000000047fffffff]
+[    0.003850] NODE_DATA(0) allocated [mem 0x47ffd5280-0x47fffffff]
+[    0.004167] Zone ranges:
+[    0.004168]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.004170]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+[    0.004172]   Normal   [mem 0x0000000100000000-0x000000047fffffff]
+[    0.004173]   Device   empty
+[    0.004174] Movable zone start for each node
+[    0.004176] Early memory node ranges
+[    0.004177]   node   0: [mem 0x0000000000001000-0x000000000009efff]
+[    0.004178]   node   0: [mem 0x0000000000100000-0x000000007ffddfff]
+[    0.004179]   node   0: [mem 0x0000000100000000-0x000000047fffffff]
+[    0.004181] Initmem setup node 0 [mem 0x0000000000001000-0x000000047fffffff]
+[    0.004193] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.004314] On node 0, zone DMA: 97 pages in unavailable ranges
+[    0.151080] On node 0, zone Normal: 34 pages in unavailable ranges
+[    0.154125] ACPI: PM-Timer IO Port: 0x608
+[    0.154145] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.154177] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.154180] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+[    0.154182] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.154183] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.154185] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.154186] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.154189] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.154191] TSC deadline timer available
+[    0.154194] CPU topo: Max. logical packages:   3
+[    0.154195] CPU topo: Max. logical nodes:      1
+[    0.154195] CPU topo: Num. nodes per package:  1
+[    0.154198] CPU topo: Max. logical dies:       3
+[    0.154198] CPU topo: Max. dies per package:   1
+[    0.154202] CPU topo: Max. threads per core:   1
+[    0.154203] CPU topo: Num. cores per package:     1
+[    0.154203] CPU topo: Num. threads per package:   1
+[    0.154204] CPU topo: Allowing 3 present CPUs plus 0 hotplug CPUs
+[    0.154226] kvm-guest: APIC: eoi() replaced with kvm_guest_apic_eoi_write()
+[    0.154241] kvm-guest: KVM setup pv remote TLB flush
+[    0.154244] kvm-guest: setup PV sched yield
+[    0.154257] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.154259] PM: hibernation: Registered nosave memory: [mem 0x0009f000-0x000fffff]
+[    0.154260] PM: hibernation: Registered nosave memory: [mem 0x7ffde000-0xffffffff]
+[    0.154262] [mem 0xc0000000-0xfed1bfff] available for PCI devices
+[    0.154263] Booting paravirtualized kernel on KVM
+[    0.154265] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.160073] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:3 nr_cpu_ids:3 nr_node_ids:1
+[    0.161152] percpu: Embedded 63 pages/cpu s221184 r8192 d28672 u524288
+[    0.161157] pcpu-alloc: s221184 r8192 d28672 u524288 alloc=1*2097152
+[    0.161160] pcpu-alloc: [0] 0 1 2 - 
