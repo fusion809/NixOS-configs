@@ -8,7 +8,6 @@ if [[ "$1" == "--upstream" ]]; then
 fi
 
 REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream") | tr -d '\r')
-echo "Checking LFS/BLFS packages for updates..."
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
 total_local=$(echo "$LOCAL_PKGS" | grep -v "^$" | wc -l)
 count=0
@@ -58,8 +57,6 @@ done
 rm -rf "$tmp_lfs"
 lfs_progress_bar "$total_local" "$total_local" "LFS/BLFS checks complete" >&2
 echo "" >&2
-
-echo "Checking custom packages for updates..."
 CUSTOM_UPDATES=$(lfs_check_custom_updates)
 while read -r update_line; do
     update_line=$(echo "$update_line" | tr -d '\r')
