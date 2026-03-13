@@ -414,7 +414,7 @@ lfs_update_all() {
             if [[ "$local_ver" != "$remote_ver" ]]; then
                 local higher=$(echo -e "$local_ver\n$remote_ver" | sort -V | tail -n 1)
                 if [[ "$higher" == "$remote_ver" ]]; then
-                    echo "Found update: $name ($local_ver -> $remote_ver)"
+                    echo "Found update: $name: $local_ver->$remote_ver"
                     updates+=("$name")
                 fi
             fi
@@ -429,7 +429,7 @@ lfs_update_all() {
         local name=$(echo "$update_line" | awk '{print $1}')
         local local_ver=$(echo "$update_line" | awk '{print $2}')
         local remote_ver=$(echo "$update_line" | awk '{print $3}')
-        echo "Found custom update: $name ($local_ver -> $remote_ver)"
+        echo "Found custom update: $name: $local_ver->$remote_ver"
         custom_updates_list+=("$name")
     done <<< "$custom_updates"
 
