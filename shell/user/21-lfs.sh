@@ -4,16 +4,58 @@ export NIXCFG="${NIXCFG:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 LFS_DEV_BOOK="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_DEV_BOOK="https://linuxfromscratch.org/blfs/view/systemd"
 
-lfs_autobuild() {
+# When SSH helpers are unavailable (e.g. running inside the VM), define ssh_lfs as a local passthrough
+if ! declare -f ssh_lfs >/dev/null 2>&1; then
+    ssh_lfs() {
+        local cmd="$1"; shift
+        case "$cmd" in
+            "bash -s") bash -s "$@" ;;
+            *) eval "$cmd" "$@" ;;
+        esac
+    }
+fi
+
+lfs_sync_to_vm() {
     source "$NIXCFG/shell/user/08-ssh.sh"
     source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
-    # Sync the latest host script to the VM, then execute it there.
-    # This ensures the VM always uses the host's current version,
-    # and also makes lfs_autobuild available natively in the VM's zsh session.
-    ssh_lfs "cat > ~/.lfs_autobuild.sh && chmod +x ~/.lfs_autobuild.sh" \
-        < "$NIXCFG/shell/user/lfs-autobuild.sh"
-    ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")"
+
+    echo "Syncing LFS scripts to VM..."
+    ssh_lfs "mkdir -p ~/.lfs_scripts"
+    ssh_lfs "cat > ~/.lfs_scripts/21-lfs.sh" < "$NIXCFG/shell/user/21-lfs.sh"
+    ssh_lfs "cat > ~/.lfs_scripts/lfs-updates.sh && chmod +x ~/.lfs_scripts/lfs-updates.sh" \
+        < "$NIXCFG/shell/user/lfs-updates.sh"
+    ssh_lfs "cat > ~/.lfs_scripts/lfs-vm-bootstrap.sh" \
+        < "$NIXCFG/shell/user/lfs-vm-bootstrap.sh"
+
+    # Hook into ~/.bashrc if not already present
+    ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo '# LFS update helpers' >> ~/.bashrc && echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
+    echo "Sync complete. 'updates' and 'update' are now available in a new shell on the VM."
 }
+
+lfs_autobuild() {
+    # Only source SSH helpers and sync scripts when running on the host
+    if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
+        source "$NIXCFG/shell/user/08-ssh.sh"
+        source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+        # Sync the latest host scripts to the VM, then execute it there.
+        # This ensures the VM always uses the host's current version.
+        ssh_lfs "cat > ~/.lfs_autobuild.sh && chmod +x ~/.lfs_autobuild.sh" \
+            < "$NIXCFG/shell/user/lfs-autobuild.sh"
+        # Also keep lfs update scripts in sync
+        ssh_lfs "mkdir -p ~/.lfs_scripts"
+        ssh_lfs "cat > ~/.lfs_scripts/21-lfs.sh" < "$NIXCFG/shell/user/21-lfs.sh"
+        ssh_lfs "cat > ~/.lfs_scripts/lfs-updates.sh && chmod +x ~/.lfs_scripts/lfs-updates.sh" \
+            < "$NIXCFG/shell/user/lfs-updates.sh"
+        ssh_lfs "cat > ~/.lfs_scripts/lfs-vm-bootstrap.sh" \
+            < "$NIXCFG/shell/user/lfs-vm-bootstrap.sh"
+        ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
+        ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")"
+    else
+        # Running directly on the VM, no syncing needed, just execute it locally
+        bash ~/.lfs_autobuild.sh "$@"
+    fi
+}
+
 
 
 lfs_progress_bar() {
@@ -70,20 +112,20 @@ lfs_get_remote_packages() {
         upstream=true
     fi
 
-    KERNEL_VER=$(curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oP '[0-9.]+' | sort -Vr | head -n 1)
-    VIM_VER=$(curl -sL -H "User-Agent: bash" https://github.com/vim/vim/tags | grep -oP 'href="/vim/vim/releases/tag/v\K[0-9.]+' | head -n 1)
+    KERNEL_VER=$(curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -Vr | head -n 1)
+    VIM_VER=$(curl -sL -H "User-Agent: bash" https://github.com/vim/vim/tags | perl -nle 'while (m{href="/vim/vim/releases/tag/v([0-9.]+)}g) { print $1 }' | head -n 1)
     if [[ -z "$VIM_VER" ]]; then
-        VIM_VER=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | grep -oP '(?<="tag_name": "v)[0-9.]+' | head -n 1)
+        VIM_VER=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{"tag_name": "v([0-9.]+)}g) { print $1 }' | head -n 1)
     fi
-    JDK_MAJOR=$(curl -s https://jdk.java.net/ | grep -oP 'href="\./\K[0-9]+' | sort -rn | head -n 1)
+    JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href="\./([0-9]+)}g) { print $1 }' | sort -rn | head -n 1)
     if [[ -n "$JDK_MAJOR" ]]; then
-        JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | grep -oP 'https://download.java.net/java/.*?/openjdk-[0-9]+.*?_linux-x64_bin.tar.gz' | head -n 1)
-        JDK_VER=$(echo "$JDK_TARBALL" | grep -oP 'openjdk-\K[0-9a-zA-Z\+\.\-]+(?=_linux-x64_bin)')
+        JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | perl -nle 'while (m{(https://download\.java\.net/java/[^ "]+/openjdk-[0-9]+[^ "]*_linux-x64_bin\.tar\.gz)}g) { print $1 }' | head -n 1)
+        JDK_VER=$(echo "$JDK_TARBALL" | perl -nle 'while (m{openjdk-([0-9a-zA-Z\+\.\-]+)_linux-x64_bin}g) { print $1 }')
         JDK_REMOTE="openjdk-${JDK_VER}_linux-x64_bin"
     fi
     # LFS packages are in links ending in .tar.* or .zip
     local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
-        grep -oP '[a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-]*\.(tar\.[a-z2]+|zip)' | \
+        grep -oE '[a-zA-Z0-9_+\-]+-[0-9][a-zA-Z0-9_+\-]*\.(tar\.[a-z0-9]+|zip)' | \
         sed 's/\.tar.*//; s/\.zip//' | \
         sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" | \
         sed "s|^[Vv]im-[0-9.]*$|vim-${VIM_VER}|g" | \
@@ -136,12 +178,12 @@ lfs_get_remote_packages() {
 }
 
 lfs_get_local_packages() {
-    # Ensure dependencies are available
-    source "$NIXCFG/shell/user/08-ssh.sh"
-    source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+    # Only source SSH helpers when running on the host (not inside the VM)
+    [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
+    [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
     
     ssh_lfs "find /sources/archives -type f ! -name '*.patch*' 2>/dev/null | tr -d '\r'" | \
-        sed 's|.*/||; s/\.tar\.[a-z2]\+//; s/\.zip$//; s/\.patch\.[a-z2]\+//; s/\.[a-z2]\+$//; s/-apng$//' | \
+        sed -E 's|.*/||; s/\.tar\.(xz|bz2|gz|lz|lzma|zst)$//; s/\.patch\.(xz|bz2|gz|lz|lzma|zst)$//; s/\.(zip|tgz|tbz2|xz|bz2|gz|lz|lzma|zst|patch)$//; s/-apng$//' | \
         sed 's/^firefox-\([0-9].*esr\.source\)/spidermonkey-\1/' | \
         grep -vE "^$|-docs-html|-systemd" | \
         sort -u
@@ -248,9 +290,9 @@ EOF
 }
 
 lfs_check_custom_updates() {
-    # Ensure dependencies are available
-    source "$NIXCFG/shell/user/08-ssh.sh"
-    source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+    # Only source SSH helpers when running on the host
+    [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
+    [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
 
     local script=$(cat <<'EOF'
     sudo mkdir -p /var/lib/lfs-custom-packages 2>/dev/null || true
@@ -304,7 +346,7 @@ lfs_check_custom_updates() {
             fi
             
             if [ -z "$remote_ver" ] && [ "$status" == "OK" ] && grep -q "git clone" "$build_script"; then
-                repo_url=$(grep -oP 'git clone \K[^ ]+' "$build_script" | head -n 1)
+                repo_url=$(perl -nle 'while (m{git clone ([^ ]+)}g) { print $1 }' "$build_script" | head -n 1)
                 if [ -n "$repo_url" ]; then
                     for attempt in 1 2 3; do
                         remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
@@ -408,9 +450,13 @@ lfs_update_all() {
         if [[ -n "$remote_pkg" ]]; then
             local remote_ver=$(echo "$remote_pkg" | sed -E "s/^.{${#name}}-//I")
             
-            if [[ "$local_ver" != "$remote_ver" ]]; then
-                local higher=$(echo -e "$local_ver\n$remote_ver" | sort -V | tail -n 1)
-                if [[ "$higher" == "$remote_ver" ]]; then
+            # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
+            local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
+            local remote_base=$(echo "$remote_ver" | sed -E 's/-[a-zA-Z]+$//')
+
+            if [[ "$local_base" != "$remote_base" ]]; then
+                local higher=$(echo -e "$local_base\n$remote_base" | sort -V | tail -n 1)
+                if [[ "$higher" == "$remote_base" ]]; then
                     echo "Found update: $name: $local_ver->$remote_ver"
                     updates+=("$name")
                 fi
@@ -573,7 +619,10 @@ for pkg in sorted_pkgs:
 ' "${updates[@]}")
 
     if [[ -n "$sorted_updates" ]]; then
-        mapfile -t updates <<< "$sorted_updates"
+        updates=()
+        while IFS= read -r pkg; do
+            [[ -n "$pkg" ]] && updates+=("$pkg")
+        done <<< "$sorted_updates"
     fi
 
     echo "Applying updates in dependency order:"
@@ -588,11 +637,11 @@ for pkg in sorted_pkgs:
         [[ "$upstream" == "true" ]] && build_args+=("--upstream")
         
         if [[ "$dry_run" == "true" ]]; then
-            echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh ${build_args[*]} $pkg"
-            "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
+            echo "DRY RUN: lfs_autobuild ${build_args[*]} $pkg"
+            lfs_autobuild "${build_args[@]}" "$pkg"
         else
             echo "Building $pkg..."
-            "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
+            lfs_autobuild "${build_args[@]}" "$pkg"
         fi
 
         # Check for preserved libraries that might require dependent rebuilds

@@ -40,11 +40,11 @@ UPSTREAM=false
 INCLUDE_CONFIG=false
 SEARCH_LFS=true
 SEARCH_BLFS=true
-PACKAGE=""
+PACKAGES=()
 XORG_MULTI_MODE=false
 
 usage() {
-    echo "Usage: $0 [options] <package-name>"
+    echo "Usage: $0 [options] <package-name> [package-name-2...]"
     echo "Options:"
     echo "  --dry-run             Show commands without executing them"
     echo "  --strip               Run stripping commands after build"
@@ -94,7 +94,7 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -h|--help) usage ;;
         -*) echo "Unknown option: $1"; usage ;;
-        *) PACKAGE="$1" ;;
+        *) PACKAGES+=("$1") ;;
     esac
     shift
 done
@@ -108,7 +108,7 @@ target_run() {
     fi
 }
 
-if [[ -z "$PACKAGE" ]]; then
+if [[ ${#PACKAGES[@]} -eq 0 ]]; then
     usage
 fi
 
@@ -117,13 +117,17 @@ error() { echo "[ERROR] $*" >&2; exit 1; }
 
 # Guard against circular dependencies across recursive invocations
 BUILDING_STACK="${BUILDING_STACK:-}"
-if [[ ":${BUILDING_STACK}:" == *":${PACKAGE}:"* ]]; then
-    log "Skipping '$PACKAGE': already in build stack (circular dependency guard)."
-    exit 0
-fi
-export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
-# 0. Check for custom package in ~/lfs_packaging
+# Loop over all requested packages
+for PACKAGE in "${PACKAGES[@]}"; do
+    if [[ ":${BUILDING_STACK}:" == *":${PACKAGE}:"* ]]; then
+        log "Skipping '$PACKAGE': already in build stack (circular dependency guard)."
+        continue
+    fi
+    # Use a local stack for this iteration to allow independent subsequent packages
+    export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
+
+    # 0. Check for custom package in ~/lfs_packaging
 CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -l -E \"^[A-Z_]*NAME=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
 if [[ -z "$CUSTOM_BUILD_SH" ]]; then
     CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -E \"/$PACKAGE/build.sh$\" | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
@@ -134,7 +138,7 @@ if [[ -n "$CUSTOM_BUILD_SH" ]]; then
     
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "DRY RUN: Would execute $CUSTOM_BUILD_SH on VM."
-        exit 0
+        continue
     fi
     
     log "Starting remote custom build for $PACKAGE..."
@@ -198,7 +202,7 @@ EOF
         fi
     fi
 
-    exit 0
+    continue
 fi
 
 # 1. Discover package page
@@ -1398,7 +1402,10 @@ fi
 # Replace hardcoded LLVM versions when using --upstream
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" && -n "$UPSTREAM_VERSION" ]]; then
     # 1. Broad version replacement
-    mapfile -t FOUND_VERSIONS < <(echo "$COMMANDS ${DOWNLOAD_URLS[*]}" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print "$&\n" }' | sort -u)
+    FOUND_VERSIONS=()
+    while IFS= read -r v; do
+        [[ -n "$v" ]] && FOUND_VERSIONS+=("$v")
+    done < <(echo "$COMMANDS ${DOWNLOAD_URLS[*]}" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print "$&\n" }' | sort -u)
     for v in "${FOUND_VERSIONS[@]}"; do
         [[ -z "$v" ]] && continue
         if [[ "$v" != "$UPSTREAM_VERSION" ]]; then
@@ -1926,3 +1933,5 @@ if [[ "$STRIP" == "true" ]]; then
         echo "Warning: STRIP skipped because 21-lfs.sh is not available locally."
     fi
 fi
+
+done
