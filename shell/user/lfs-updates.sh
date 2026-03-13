@@ -18,7 +18,7 @@ while read -r local_pkg; do
     
     (
         name=$(echo "$local_pkg" | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
-        local_ver=$(echo "$local_pkg" | sed -E "s/^$name-//")
+        local_ver=$(echo "$local_pkg" | sed -E "s/^$name-//; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//")
 
         [[ -z "$name" || "$name" == "$local_pkg" ]] && exit 0
 
@@ -57,18 +57,17 @@ done
 rm -rf "$tmp_lfs"
 lfs_progress_bar "$total_local" "$total_local" "LFS/BLFS checks complete" >&2
 echo "" >&2
-CUSTOM_UPDATES=$(lfs_check_custom_updates)
-while read -r update_line; do
-    update_line=$(echo "$update_line" | tr -d '\r')
+CUSTOM_UPDATES_RAW=$(lfs_check_custom_updates)
+# Filter to only get lines that look like package updates (3 fields)
+CUSTOM_UPDATES=$(echo "$CUSTOM_UPDATES_RAW" | grep -E '^[a-zA-Z0-9._+-]+ [^ ]+ [^ ]+$')
+while IFS= read -r update_line; do
     [[ -z "$update_line" ]] && continue
-    # Ensure there are exactly 3 fields (name local_ver remote_ver)
-    fields=($(echo "$update_line"))
-    if [[ ${#fields[@]} -ne 3 ]]; then continue; fi
+    # Parse three fields
+    read -r name local_ver remote_ver <<< "$update_line" || continue
+    [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
 
-    # update_line is "pkg_name local_ver remote_ver"
-    name="${fields[0]}"
-    local_ver="${fields[1]}"
-    remote_ver="${fields[2]}"
+    local_ver=$(printf '%s\n' "$local_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
+    remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
     
     # Format git hashes differently if they are 40 chars long
     if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi

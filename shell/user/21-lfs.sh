@@ -401,9 +401,34 @@ EOF
         elif [[ $line == PROGRESS:* ]]; then
             count=$((count + 1))
             local n="${line#PROGRESS:}"
-            lfs_progress_bar "$count" "$total" "Checking custom $n" >&2
+            lfs_progress_bar "$count" "$total" "Checking ~/lfs_packaging $n" >&2
         elif [[ $line == RESULT:* ]]; then
-            results+="${line#RESULT:}\n"
+            local result_data="${line#RESULT:}"
+            # Format: pkg_name local_ver remote_ver -> strip extensions
+            read -r pkg_name local_ver remote_ver <<< "$result_data"
+            local_ver="${local_ver%.tar.xz}"
+            local_ver="${local_ver%.tar.bz2}"
+            local_ver="${local_ver%.tar.gz}"
+            local_ver="${local_ver%.tar.lz}"
+            local_ver="${local_ver%.tar.lzma}"
+            local_ver="${local_ver%.tar.zst}"
+            local_ver="${local_ver%.zip}"
+            local_ver="${local_ver%.tgz}"
+            local_ver="${local_ver%.tbz2}"
+            local_ver="${local_ver%.patch}"
+            
+            remote_ver="${remote_ver%.tar.xz}"
+            remote_ver="${remote_ver%.tar.bz2}"
+            remote_ver="${remote_ver%.tar.gz}"
+            remote_ver="${remote_ver%.tar.lz}"
+            remote_ver="${remote_ver%.tar.lzma}"
+            remote_ver="${remote_ver%.tar.zst}"
+            remote_ver="${remote_ver%.zip}"
+            remote_ver="${remote_ver%.tgz}"
+            remote_ver="${remote_ver%.tbz2}"
+            remote_ver="${remote_ver%.patch}"
+            
+            results+="$pkg_name $local_ver $remote_ver\n"
         fi
     done < <(ssh_lfs "bash -c '$(echo "$script" | sed "s/'/'\\\\''/g")'" 2>/dev/null)
     
@@ -411,7 +436,11 @@ EOF
         lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete" >&2
         echo "" >&2
     fi
-    echo -e "$results"
+    # Build output line by line to avoid any formatting issues
+    while read -r line; do
+        [[ -z "$line" ]] && continue
+        printf '%s\n' "$line"
+    done <<< "$results"
 }
 
 lfs_update_all() {
@@ -430,7 +459,7 @@ lfs_update_all() {
     echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
     local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream"))
     echo "Fetching local package list from VM..."
-    local local_list=$(lfs_get_local_packages)
+    local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g')
 
     echo "Checking for updates..."
     local updates=()
@@ -444,7 +473,7 @@ lfs_update_all() {
         fi
 
         local name=$(echo "$local_pkg" | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
-        local local_ver=$(echo "$local_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/')
+        local local_ver=$(echo "$local_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
 
         [[ -z "$name" || "$name" == "$local_pkg" ]] && continue
 
@@ -452,7 +481,7 @@ lfs_update_all() {
         local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9])" | head -n 1)
         
         if [[ -n "$remote_pkg" ]]; then
-            local remote_ver=$(echo "$remote_pkg" | sed -E "s/^.{${#name}}-//I")
+            local remote_ver=$(echo "$remote_pkg" | sed -E "s/^.{${#name}}-//I; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//")
             
             # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
             local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
@@ -470,13 +499,26 @@ lfs_update_all() {
 
     # Also check custom updates
     local custom_updates_list=()
-    local custom_updates=$(lfs_check_custom_updates)
-    while read -r update_line; do
+    # Call function and capture output, suppressing stderr
+    local custom_updates=$(lfs_check_custom_updates 2>/dev/null)
+    
+    # Process each line of output
+    while IFS= read -r update_line; do
+        # Skip empty lines
         [[ -z "$update_line" ]] && continue
-        local name=$(echo "$update_line" | awk '{print $1}')
-        local local_ver=$(echo "$update_line" | awk '{print $2}')
-        local remote_ver=$(echo "$update_line" | awk '{print $3}')
-        echo "Found custom update: $name: $local_ver->$remote_ver"
+        
+        # Use read to split fields cleanly
+        local name local_ver remote_ver
+        read -r name local_ver remote_ver <<< "$update_line" || continue
+        
+        # Validate we got all three fields
+        [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
+        
+        # Strip file extensions
+        local_ver=$(printf '%s\n' "$local_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
+        remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
+        
+        printf "Found custom update: %s: %s->%s\n" "$name" "$local_ver" "$remote_ver"
         custom_updates_list+=("$name")
     done <<< "$custom_updates"
 
