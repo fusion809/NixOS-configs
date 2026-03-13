@@ -71,6 +71,10 @@ lfs_progress_bar() {
     printf "\r%-45s [%s] %3d%% \033[K" "$prefix" "$bar" "$percent" >&2
 }
 
+# Function to clean up duplicate library versions in the LFS VM
+cleanup_old_libraries() {
+    ssh_lfs "source ~/.zshrc ; cleanup_old_libraries_gpt"
+}
 
 lfs_get_upstream_version() {
     local pkg="$1"

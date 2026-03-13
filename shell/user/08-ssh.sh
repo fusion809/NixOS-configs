@@ -82,7 +82,9 @@ function start_qemu_vm {
     # "running" or "idle" usually indicates it's up.
     if [[ "$state" != "running" && "$state" != "idle" ]]; then
         sudo virsh start "$vm"
-        echo "Starting $vm..."
+        if [[ "$2" != "-q" ]]; then
+            echo "Starting $vm..."
+        fi
     fi
         
         # Wait for IP acquisition
@@ -103,7 +105,9 @@ function start_qemu_vm {
             return 1
         fi
         
-        echo "IP found: $ip. Waiting for SSH..."
+        if [[ "$2" != "-q" ]]; then
+            echo "IP found: $ip. Waiting for SSH..."
+        fi
 
         # Wait for SSH port to be open
         local port_ready=0
@@ -126,14 +130,16 @@ function start_qemu_vm {
              return 1
         fi
         
-        echo "SSH is ready!"
+        if [[ "$2" != "-q" ]]; then
+            echo "SSH is ready!"
+        fi
     # Logic continues to wait for IP/SSH regardless of initial state
 }
 
 function ssh_vm {
     local vm_name="$1"
     shift
-    start_qemu_vm "$vm_name" || return 1
+    start_qemu_vm "$vm_name" -q || return 1
     local ip=$(get_vm_ip "$vm_name")
     if [[ $vm_name == *"OpenIndiana"* ]]; then
         USER="fusion89"
