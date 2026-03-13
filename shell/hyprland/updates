@@ -207,7 +207,9 @@ fi
 if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	marvin_pkg_file="$NIXCFG/nixpkgs/marvin/package.nix"
 	current_marvin_ver=$(grep -o 'version = ".*"' "$marvin_pkg_file" | cut -d '"' -f 2)
-	latest_marvin_ver=$(retry curl -L -s "https://docs.chemaxon.com/display/docs/Marvin+Desktop+Suite+History+of+Changes" | grep -E -o 'Marvin (Desktop Suite )?[0-9]+\.[0-9]+\.[0-9]+' | sed -E 's/Marvin (Desktop Suite )?//' | sort -V | tail -n 1)
+	latest_marvin_ver=$(retry curl -L -s \
+  -b ~/Downloads/download.chemaxon.com_cookies.txt \
+  https://download.chemaxon.com/marvin-sketch | grep -Eo 'marvin_linux_[0-9]+\.[0-9]+\.[0-9].deb' | sort -V | tail -n 1 | cut -d "_" -f 3 | sed 's/.deb//g')
 	if [[ $latest_marvin_ver == "25.3.5" ]]; then latest_marvin_ver="25.3.6"; fi
 	
 	if [[ -n "$latest_marvin_ver" ]] && [[ "$latest_marvin_ver" != "$current_marvin_ver" ]]; then
