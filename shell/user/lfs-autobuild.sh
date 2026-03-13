@@ -38,6 +38,7 @@ DRY_RUN=false
 STRIP=false
 UPSTREAM=false
 INCLUDE_CONFIG=false
+RM_LIBS=false
 SEARCH_LFS=true
 SEARCH_BLFS=true
 PACKAGES=()
@@ -50,6 +51,7 @@ usage() {
     echo "  --strip               Run stripping commands after build"
     echo "  --upstream            Attempt to find the latest upstream version (linux, vim, firefox, rustc, and llvm)"
     echo "  --include-config      Include configuration commands in the LFS/BLFS book entry"
+    echo "  --rm-libs             Remove old library versions after build (disabled by default)"
     echo "  --lfs                 Search only in the LFS book"
     echo "  --blfs                Search only in the BLFS book"
     echo "  --lfs-book <book>     Specify LFS book (e.g., development, systemd, stable, or full URL)"
@@ -64,6 +66,7 @@ while [[ "$#" -gt 0 ]]; do
         --strip) STRIP=true ;;
         --upstream) UPSTREAM=true ;;
         --include-config) INCLUDE_CONFIG=true ;;
+        --rm-libs) RM_LIBS=true ;;
         --lfs)
             SEARCH_LFS=true
             SEARCH_BLFS=false
@@ -1719,6 +1722,7 @@ rm -f "$RS_FILE"
   printf 'NORMAL_USER="%s"\n' "$NORMAL_USER"
   printf 'FRAMEWORKS_MODE="%s"\n' "$FRAMEWORKS_MODE"
   printf 'XORG_MULTI_MODE="%s"\n' "$XORG_MULTI_MODE"
+  printf 'RM_LIBS="%s"\n' "$RM_LIBS"
   # Inject BS_B64 from a temporary file to avoid shell argument limits
   printf '%s' "$BUILD_SCRIPT_LOCAL" | base64 -w 0 > /tmp/bs_b64.txt
   printf 'BS_B64="'
@@ -1811,92 +1815,97 @@ else
 fi
 
 echo "Performing post-install cleanup of old versions..."
-# Find files installed by this build (newer than timestamp)
-SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
-EXISTING_DIRS=""
-for d in $SEARCH_DIRS; do
-    [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"
-done
+if [[ "$RM_LIBS" == "true" ]]; then
+    # Find files installed by this build (newer than timestamp)
+    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+    EXISTING_DIRS=""
+    for d in $SEARCH_DIRS; do
+        [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"
+    done
 
-NEW_FILES_LIST=$(mktemp)
-find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} ! -name "$(basename "$NEW_FILES_LIST")" > "$NEW_FILES_LIST" 2>/dev/null || true
+    NEW_FILES_LIST=$(mktemp)
+    find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} ! -name "$(basename "$NEW_FILES_LIST")" > "$NEW_FILES_LIST" 2>/dev/null || true
 
-while read -r line; do
-    [ -e "$line" ] || continue
-    dirname=$(dirname "$line")
-    basename=$(basename "$line")
+    while read -r line; do
+        [ -e "$line" ] || continue
+        dirname=$(dirname "$line")
+        basename=$(basename "$line")
 
-    if [[ "$basename" =~ \.so\.[0-9]+ || "$basename" =~ -[0-9].*\.so$ ]]; then
-        major_prefix=$(echo "$basename" | grep -oE '^.*\.so\.[0-9]+|^[a-zA-Z0-9_]+-')
-        if [ -n "$major_prefix" ]; then
-            for candidate in "$dirname"/"$major_prefix"*; do
-                [ -f "$candidate" ] && [ "$candidate" != "$line" ] || continue
-                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                    echo "Removing old library version: $candidate"
-                    #rm -f "$candidate"
-                fi
-            done
+        if [[ "$basename" =~ \.so\.[0-9]+ || "$basename" =~ -[0-9].*\.so$ ]]; then
+            major_prefix=$(echo "$basename" | grep -oE '^.*\.so\.[0-9]+|^[a-zA-Z0-9_]+-')
+            if [ -n "$major_prefix" ]; then
+                for candidate in "$dirname"/"$major_prefix"*; do
+                    [ -f "$candidate" ] && [ "$candidate" != "$line" ] || continue
+                    if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                        echo "Removing old library version: $candidate"
+                        #rm -f "$candidate"
+                    fi
+                done
+            fi
+
+            # Track preserved libraries with different major versions
+            lib_base=$(echo "$basename" | sed 's/\.so\.[0-9].*//')
+            if [ -n "$lib_base" ]; then
+                for candidate in "$dirname"/"$lib_base".so.*; do
+                    [ -f "$candidate" ] || continue
+                    if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]] && \
+                       [[ "$candidate" != "$dirname/$major_prefix"* ]]; then
+                        echo "Found preserved library: $candidate"
+                        echo "$candidate" | sudo tee -a "/tmp/preserved_libs_${PACKAGE}.txt" > /dev/null
+                    fi
+                done
+            fi
         fi
 
-        # Track preserved libraries with different major versions
-        lib_base=$(echo "$basename" | sed 's/\.so\.[0-9].*//')
-        if [ -n "$lib_base" ]; then
-            for candidate in "$dirname"/"$lib_base".so.*; do
-                [ -f "$candidate" ] || continue
-                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]] && \
-                   [[ "$candidate" != "$dirname/$major_prefix"* ]]; then
-                    echo "Found preserved library: $candidate"
-                    echo "$candidate" | sudo tee -a "/tmp/preserved_libs_${PACKAGE}.txt" > /dev/null
-                fi
-            done
+        if [ -d "$line" ]; then
+            if [[ "$basename" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+                for candidate in "$dirname"/*; do
+                    [ -d "$candidate" ] && [ "$candidate" != "$line" ] || continue
+                    cbase=$(basename "$candidate")
+                    if [[ "$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]] && ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                         echo "Removing old version directory: $candidate"
+                         rm -rf "$candidate"
+                    fi
+                done
+            elif [[ "$basename" =~ ^[a-zA-Z]+[0-9]+(\.[0-9]+)*$ ]]; then
+                 prefix=$(echo "$basename" | sed -E 's/([a-zA-Z]+).*/\1/')
+                 for candidate in "$dirname"/"$prefix"*; do
+                    [ -d "$candidate" ] && [ "$candidate" != "$line" ] || continue
+                    cbase=$(basename "$candidate")
+                    if [[ "$cbase" =~ ^$prefix[0-9]+(\.[0-9]+)*$ ]] && ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                         echo "Removing old version directory: $candidate"
+                         rm -rf "$candidate"
+                    fi
+                 done
+            fi
         fi
-    fi
 
-    if [ -d "$line" ]; then
-        if [[ "$basename" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-            for candidate in "$dirname"/*; do
-                [ -d "$candidate" ] && [ "$candidate" != "$line" ] || continue
-                cbase=$(basename "$candidate")
-                if [[ "$cbase" =~ ^[0-9]+(\.[0-9]+)*$ ]] && ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                     echo "Removing old version directory: $candidate"
-                     rm -rf "$candidate"
-                fi
-            done
-        elif [[ "$basename" =~ ^[a-zA-Z]+[0-9]+(\.[0-9]+)*$ ]]; then
-             prefix=$(echo "$basename" | sed -E 's/([a-zA-Z]+).*/\1/')
-             for candidate in "$dirname"/"$prefix"*; do
-                [ -d "$candidate" ] && [ "$candidate" != "$line" ] || continue
-                cbase=$(basename "$candidate")
-                if [[ "$cbase" =~ ^$prefix[0-9]+(\.[0-9]+)*$ ]] && ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                     echo "Removing old version directory: $candidate"
-                     rm -rf "$candidate"
-                fi
-             done
+        if [[ "$dirname" == "/boot" ]]; then
+            boot_prefix=$(echo "$basename" | grep -oE '^(vmlinuz|System\.map|config|initramfs|initrd\.img)')
+            if [ -n "$boot_prefix" ]; then
+                for candidate in "$dirname"/"$boot_prefix"*; do
+                    [ -f "$candidate" ] && [ "$candidate" != "$line" ] && ! [ -L "$candidate" ] || continue
+                    if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
+                        echo "Removing old kernel file: $candidate"
+                        rm -f "$candidate"
+                    fi
+                done
+            fi
         fi
-    fi
+    done < "$NEW_FILES_LIST"
+    rm -f "$NEW_FILES_LIST" /tmp/build_start_timestamp_${PACKAGE}
 
-    if [[ "$dirname" == "/boot" ]]; then
-        boot_prefix=$(echo "$basename" | grep -oE '^(vmlinuz|System\.map|config|initramfs|initrd\.img)')
-        if [ -n "$boot_prefix" ]; then
-            for candidate in "$dirname"/"$boot_prefix"*; do
-                [ -f "$candidate" ] && [ "$candidate" != "$line" ] && ! [ -L "$candidate" ] || continue
-                if ! [[ "$candidate" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
-                    echo "Removing old kernel file: $candidate"
-                    rm -f "$candidate"
-                fi
-            done
+    for doc_dir in /usr/share/doc/linux-*; do
+        [ -d "$doc_dir" ] || continue
+        if ! [[ "$doc_dir" -nt /tmp/build_start_timestamp_${PACKAGE} ]] 2>/dev/null; then
+            echo "Removing old kernel doc directory: $doc_dir"
+            rm -rf "$doc_dir"
         fi
-    fi
-done < "$NEW_FILES_LIST"
-rm -f "$NEW_FILES_LIST" /tmp/build_start_timestamp_${PACKAGE}
-
-for doc_dir in /usr/share/doc/linux-*; do
-    [ -d "$doc_dir" ] || continue
-    if ! [[ "$doc_dir" -nt /tmp/build_start_timestamp_${PACKAGE} ]] 2>/dev/null; then
-        echo "Removing old kernel doc directory: $doc_dir"
-        rm -rf "$doc_dir"
-    fi
-done
+    done
+else
+    echo "Skipping library cleanup (use --rm-libs flag to remove old library versions)"
+    rm -f /tmp/build_start_timestamp_${PACKAGE}
+fi
 
 echo "Build and installation complete for $PACKAGE"
 cd /sources
