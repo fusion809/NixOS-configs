@@ -186,11 +186,27 @@ lfs_get_local_packages() {
     [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
     [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
     
-    ssh_lfs "find /sources/archives -type f ! -name '*.patch*' 2>/dev/null | tr -d '\r'" | \
-        sed -E 's|.*/||; s/\.tar\.(xz|bz2|gz|lz|lzma|zst)$//; s/\.patch\.(xz|bz2|gz|lz|lzma|zst)$//; s/\.(zip|tgz|tbz2|xz|bz2|gz|lz|lzma|zst|patch)$//; s/-apng$//' | \
-        sed 's/^firefox-\([0-9].*esr\.source\)/spidermonkey-\1/' | \
-        grep -vE "^$|-docs-html|-systemd" | \
-        sort -u
+    # Extract name-version from new inventory directories
+    ssh_lfs '
+        # 1. Official book packages (version is on the first line)
+        if [ -d /var/lib/book-packages ]; then
+            for f in /var/lib/book-packages/*; do
+                [ -f "$f" ] || continue
+                name=$(basename "$f")
+                ver=$(head -n 1 "$f" | grep -v "^#" | tr -d "\r")
+                [ -n "$ver" ] && echo "${name}-${ver}"
+            done
+        fi
+        # 2. Custom packages (version is the file content)
+        if [ -d /var/lib/lfs-custom-packages ]; then
+            for f in /var/lib/lfs-custom-packages/*; do
+                [ -f "$f" ] || continue
+                name=$(basename "$f")
+                ver=$(cat "$f" | tr -d "\r")
+                [ -n "$ver" ] && echo "${name}-${ver}"
+            done
+        fi
+    ' | sort -u | tr -d '\r'
 }
 
 lfs_map_bin_to_pkg() {
@@ -740,9 +756,9 @@ for pkg in sorted_pkgs:
 
     echo "Updating Python packages via pip..."
     if [[ "$dry_run" == "true" ]]; then
-        echo "DRY RUN: sudo pip3 install --upgrade pyparsing attrs numpy sphinx pyqt-builder pyopengl sip pyqt6-sip"
+        echo "DRY RUN: pip3 list --format=freeze | cut -d= -f1 | xargs -n1 sudo pip3 install -U"
     else
-        ssh_lfs "sudo pip3 install --upgrade pyparsing attrs numpy sphinx pyqt-builder pyopengl sip pyqt6-sip"
+        ssh_lfs "pip3 list --format=freeze | cut -d= -f1 | xargs -n1 sudo pip3 install -U"
     fi
 
     echo "Updating Julia with juliaup..."

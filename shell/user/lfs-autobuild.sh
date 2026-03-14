@@ -130,6 +130,13 @@ for PACKAGE in "${PACKAGES[@]}"; do
     # Use a local stack for this iteration to allow independent subsequent packages
     export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
+    # Skip if already installed (resume feature)
+    # Check both book-packages and custom-packages (and lfs-custom-packages for version-only)
+    if ssh_lfs "[ -f /var/lib/book-packages/${PACKAGE} ] || [ -f /var/lib/custom-packages/${PACKAGE} ] || [ -f /var/lib/lfs-custom-packages/${PACKAGE} ]"; then
+        log "[LFS-AUTOBUILD] Skipping already installed package: $PACKAGE"
+        continue
+    fi
+
     # 0. Check for custom package in ~/lfs_packaging
 CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -l -E \"^[A-Z_]*NAME=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
 if [[ -z "$CUSTOM_BUILD_SH" ]]; then
@@ -149,10 +156,13 @@ if [[ -n "$CUSTOM_BUILD_SH" ]]; then
     REMOTE_SCRIPT=$(cat <<'EOF'
 set -e
 cd "$CUSTOM_DIR"
+# Create timestamp BEFORE build
+touch "/tmp/build_start_timestamp_${TARGET_PKG}"
 bash build.sh
 
 # Update registry (needs sudo)
 sudo mkdir -p /var/lib/lfs-custom-packages
+sudo mkdir -p /var/lib/custom-packages
 # Try to determine the new version we just installed
 new_ver=""
 version_line_num=$(grep -nE '^[A-Z_]*VERSION=' build.sh | head -n 1 | cut -d: -f1)
@@ -189,6 +199,16 @@ if [ -n "$new_ver" ]; then
     echo "Updated registry for $TARGET_PKG to version $new_ver"
 else
     echo "Could not determine version for $TARGET_PKG to update registry"
+fi
+
+# Record file list for custom package
+if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
+    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+    EXISTING_DIRS=""
+    for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
+    find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+    echo "Recorded installed files for custom package $TARGET_PKG in /var/lib/custom-packages/"
+    sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}"
 fi
 EOF
 )
@@ -363,6 +383,12 @@ if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
             }
         }
     ' | sort -u)
+    
+    # Custom dependency injection
+    if [[ "${PACKAGE,,}" == "prison" || "${PACKAGE,,}" == "frameworks6" ]]; then
+        log "Injecting custom dependency 'libdmtx' for $PACKAGE..."
+        REQUIRED_DEPS=$(printf "libdmtx\n%s" "$REQUIRED_DEPS" | sort -u)
+    fi
 
     if [[ -n "$REQUIRED_DEPS" ]]; then
         log "Required deps: $(echo "$REQUIRED_DEPS" | tr '\n' ' ')"
@@ -667,10 +693,15 @@ if echo "$HTML_CONTENT" | grep -qiE "texlive"; then
 fi
 
 # 2.7 Auto-detect Qt6 dependency
-if echo "$HTML_CONTENT" | grep -qiE "qt-6|qt6|qt 6"; then
-    log "Qt6 dependency detected: adding /opt/qt6/bin to PATH."
-    SETUP_COMMANDS+="export PATH=\$PATH:/opt/qt6/bin
+if echo "$HTML_CONTENT" | grep -qiE "qt-6|qt6|qt 6" || [[ "${PACKAGE,,}" == "qt6" ]]; then
+    log "Qt6 detected: setting QT6DIR/QT6PREFIX and updating PATH/LD_LIBRARY_PATH."
+    if [[ ! "$SETUP_COMMANDS" =~ "export QT6DIR=" ]]; then
+        SETUP_COMMANDS+="export QT6DIR=/opt/qt6
+export QT6PREFIX=/opt/qt6
+export PATH=\$PATH:\$QT6DIR/bin
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$QT6DIR/lib
 "
+    fi
 fi
 
 # 2.8 Respect existing Fortran support for GCC
@@ -833,12 +864,11 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
         SETUP_COMMANDS+="export KF6_PREFIX=/usr
 "
     fi
-    if ! echo "$COMMANDS" | grep -q "LD_LIBRARY_PATH.*qt6"; then
-        SETUP_COMMANDS+="export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/qt6/lib
-"
-    fi
-    if ! echo "$COMMANDS" | grep -q "PATH.*qt6"; then
-        SETUP_COMMANDS+="export PATH=\$PATH:/opt/qt6/bin
+    if ! echo "$COMMANDS" | grep -q "PATH.*qt6" && ! echo "$SETUP_COMMANDS" | grep -q "QT6DIR"; then
+        SETUP_COMMANDS+="export QT6DIR=/opt/qt6
+export QT6PREFIX=/opt/qt6
+export PATH=\$PATH:\$QT6DIR/bin
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$QT6DIR/lib
 "
     fi
 
@@ -1175,6 +1205,12 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     [[ -z "$MAIN_DOWNLOAD_URL" ]] && MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
 
     log "Identified main archive: $MAIN_DOWNLOAD_URL"
+    if [[ -z "$LFS_VERSION" ]]; then
+        # Heuristic: extract version from MAIN_DOWNLOAD_URL filename
+        # Pattern: - or _ followed by a digit and then version-like characters
+        LFS_VERSION=$(basename "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[-_]\K[0-9][a-z0-9.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1)
+        [[ -n "$LFS_VERSION" ]] && log "Extracted version from URL: $LFS_VERSION"
+    fi
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
     log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
@@ -1821,6 +1857,11 @@ rm -f "$RS_FILE"
   printf 'FRAMEWORKS_MODE="%s"\n' "$FRAMEWORKS_MODE"
   printf 'XORG_MULTI_MODE="%s"\n' "$XORG_MULTI_MODE"
   printf 'RM_LIBS="%s"\n' "$RM_LIBS"
+  
+  # Inject version information for inventory recording
+  RECORDED_VERSION="$LFS_VERSION"
+  [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && RECORDED_VERSION="$UPSTREAM_VERSION"
+  printf 'VERSION_TO_RECORD="%s"\n' "$RECORDED_VERSION"
   # Inject BS_B64 from a temporary file to avoid shell argument limits
   printf '%s' "$BUILD_SCRIPT_LOCAL" | base64 -w 0 > /tmp/bs_b64.txt
   printf 'BS_B64="'
@@ -1834,6 +1875,10 @@ rm -f "$RS_FILE"
   # 3. Append the main logic using a quoted heredoc
   cat <<'REMOTE_EOF'
 set -e
+
+# Record start time for file tracking
+touch "/tmp/build_start_timestamp_${PACKAGE}"
+
 mkdir -p /sources/archives
 cd /sources/archives
 
@@ -1889,11 +1934,24 @@ if [ "$FRAMEWORKS_MODE" == "true" ] || [ "$XORG_MULTI_MODE" == "true" ]; then
 else
     echo "Extracting $MAIN_FILENAME..."
     # Always extract to root DIRNAME, but build in GEN_DIRNAME (set to DIRNAME/llvm for monorepo)
-    rm -rf "/sources/$DIRNAME"
-    mkdir -p "/sources/$DIRNAME"
-    tar -xf "$MAIN_FILENAME" -C "/sources/$DIRNAME" --strip-components=1
-    # Ensure recursive ownership immediately after extraction
-    chown -R "${NORMAL_USER}" "/sources/$DIRNAME"
+    if [[ -n "$DIRNAME" ]] && [[ "$DIRNAME" != "." ]] && [[ "$DIRNAME" != "/" ]] && [[ "$DIRNAME" != "archives" ]]; then
+        # Extreme safety: ensure we are not deleting /sources itself or its internal archives
+        TARGET_DIR="/sources/$DIRNAME"
+        RESOLVED_TARGET=$(realpath -m "$TARGET_DIR")
+        if [[ "$RESOLVED_TARGET" != "/sources" ]] && [[ "$RESOLVED_TARGET" != "/sources/" ]] && [[ "$RESOLVED_TARGET" != "/sources/archives"* ]]; then
+            rm -rf "$TARGET_DIR"
+            mkdir -p "$TARGET_DIR"
+            tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR" --strip-components=1
+            # Ensure recursive ownership immediately after extraction
+            chown -R "${NORMAL_USER}" "$TARGET_DIR"
+        else
+            echo "[ERROR] Unsafe DIRNAME detected: $DIRNAME. Aborting extraction to prevent data loss."
+            exit 1
+        fi
+    else
+        echo "[ERROR] Invalid or empty DIRNAME: '$DIRNAME'. Aborting extraction."
+        exit 1
+    fi
     cd "/sources/$GEN_DIRNAME"
 fi
 
@@ -1913,6 +1971,16 @@ else
 fi
 
 echo "Performing post-install cleanup of old versions..."
+# Save file list to /var/lib/book-packages/
+sudo mkdir -p /var/lib/book-packages
+# Prepend version to the file list
+echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
+SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+EXISTING_DIRS=""
+for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
+find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/"
+
 if [[ "$RM_LIBS" == "true" ]]; then
     # Find files installed by this build (newer than timestamp)
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
