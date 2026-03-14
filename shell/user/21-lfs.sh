@@ -198,8 +198,8 @@ lfs_get_local_packages() {
             done
         fi
         # 2. Custom packages (version is the file content)
-        if [ -d /var/lib/lfs-custom-packages ]; then
-            for f in /var/lib/lfs-custom-packages/*; do
+        if [ -d /var/lib/custom-packages ]; then
+            for f in /var/lib/custom-packages/*; do
                 [ -f "$f" ] || continue
                 name=$(basename "$f")
                 ver=$(cat "$f" | tr -d "\r")
@@ -315,7 +315,7 @@ lfs_check_custom_updates() {
     [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
 
     local script=$(cat <<'EOF'
-    sudo mkdir -p /var/lib/lfs-custom-packages 2>/dev/null || true
+    sudo mkdir -p /var/lib/custom-packages 2>/dev/null || true
     
     scripts=($(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null))
     total=${#scripts[@]}
@@ -344,8 +344,8 @@ lfs_check_custom_updates() {
             fi
             
             local_ver="none"
-            if [ -f "/var/lib/lfs-custom-packages/$pkg_name" ]; then
-                local_ver=$(cat "/var/lib/lfs-custom-packages/$pkg_name" 2>/dev/null || echo "none")
+            if [ -f "/var/lib/custom-packages/$pkg_name" ]; then
+                local_ver=$(cat "/var/lib/custom-packages/$pkg_name" 2>/dev/null || echo "none")
             fi
             
             remote_ver=""
@@ -383,8 +383,8 @@ lfs_check_custom_updates() {
                 echo "RESULT:$pkg_name $status $status"
             elif [ -n "$remote_ver" ]; then
                 if [ "$local_ver" == "none" ]; then
-                    if [ -f "/var/lib/lfs-custom-packages/$pkg_basename" ]; then
-                        local_ver=$(cat "/var/lib/lfs-custom-packages/$pkg_basename" 2>/dev/null || echo "none")
+                    if [ -f "/var/lib/custom-packages/$pkg_basename" ]; then
+                        local_ver=$(cat "/var/lib/custom-packages/$pkg_basename" 2>/dev/null || echo "none")
                     fi
                 fi
                 if [ "$local_ver" != "$remote_ver" ]; then

@@ -131,8 +131,8 @@ for PACKAGE in "${PACKAGES[@]}"; do
     export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
     # Skip if already installed (resume feature)
-    # Check both book-packages and custom-packages (and lfs-custom-packages for version-only)
-    if ssh_lfs "[ -f /var/lib/book-packages/${PACKAGE} ] || [ -f /var/lib/custom-packages/${PACKAGE} ] || [ -f /var/lib/lfs-custom-packages/${PACKAGE} ]"; then
+    # Check both book-packages and custom-packages (and custom-packages for version-only)
+    if ssh_lfs "[ -f /var/lib/book-packages/${PACKAGE} ] || [ -f /var/lib/custom-packages/${PACKAGE} ] || [ -f /var/lib/custom-packages/${PACKAGE} ]"; then
         log "[LFS-AUTOBUILD] Skipping already installed package: $PACKAGE"
         continue
     fi
@@ -161,7 +161,7 @@ touch "/tmp/build_start_timestamp_${TARGET_PKG}"
 bash build.sh
 
 # Update registry (needs sudo)
-sudo mkdir -p /var/lib/lfs-custom-packages
+sudo mkdir -p /var/lib/custom-packages
 sudo mkdir -p /var/lib/custom-packages
 # Try to determine the new version we just installed
 new_ver=""
@@ -195,7 +195,7 @@ if [ -z "$new_ver" ] && grep -q "git clone" build.sh; then
 fi
 
 if [ -n "$new_ver" ]; then
-    echo "$new_ver" | sudo tee /var/lib/lfs-custom-packages/"$TARGET_PKG" > /dev/null
+    echo "$new_ver" | sudo tee /var/lib/custom-packages/"$TARGET_PKG" > /dev/null
     echo "Updated registry for $TARGET_PKG to version $new_ver"
 else
     echo "Could not determine version for $TARGET_PKG to update registry"
