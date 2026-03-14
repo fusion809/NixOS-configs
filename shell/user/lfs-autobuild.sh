@@ -57,7 +57,7 @@ usage() {
     echo "  --lfs-book <book>     Specify LFS book (e.g., development, systemd, stable, or full URL)"
     echo "  --blfs-book <book>    Specify BLFS book (e.g., systemd, development, stable, or full URL)"
     echo "  -h, --help            Show this help message"
-    exit 1
+    echo "$COMMANDS" > /tmp/cmds_final.out
 }
 
 while [[ "$#" -gt 0 ]]; do
@@ -116,7 +116,7 @@ if [[ ${#PACKAGES[@]} -eq 0 ]]; then
 fi
 
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
-error() { echo "[ERROR] $*" >&2; exit 1; }
+error() { echo "[ERROR] $*" >&2; echo "$COMMANDS" > /tmp/cmds_final.out; }
 
 # Guard against circular dependencies across recursive invocations
 BUILDING_STACK="${BUILDING_STACK:-}"
@@ -591,7 +591,7 @@ $CURRENT_BLOCK
     read -p 'Build failed tests. Proceed to installation anyway? [y/N] ' -n 1 -r < /dev/tty
     echo
     if [[ ! \$REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+        echo "$COMMANDS" > /tmp/cmds_final.out
     fi
 fi
 # __END_ROOT__
@@ -621,6 +621,10 @@ fi
                     bline=$(echo "$bline" | sed -E 's/\bmake\b/make -j$(nproc)/g')
                 elif [[ "$bline" =~ ^ninja([[:space:]]|$) ]] && [[ ! "$bline" =~ "-j" ]]; then
                     bline=$(echo "$bline" | sed -E 's/\bninja\b/ninja -j$(nproc)/g')
+                fi
+                # Global fix for libdir in CMake builds
+                if [[ "$bline" =~ "-D CMAKE_INSTALL_PREFIX=" ]] && [[ ! "$bline" =~ "CMAKE_INSTALL_LIBDIR" ]]; then
+                    bline=$(echo "$bline" | sed "s/-D CMAKE_INSTALL_PREFIX=/-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=/")
                 fi
                 COMMANDS+="$bline"$'\n'
             done <<< "$CURRENT_BLOCK"
@@ -793,9 +797,20 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
     FRAMEWORKS_MODE=true
     log "Enabling special KDE frameworks/plasma loop mode."
     
+    # Remove the descriptive text for wget options that gets erroneously extracted
+    COMMANDS=$(echo "$COMMANDS" | awk '
+        /^The options used here are:/ { skip=1; next }
+        skip && /^-/ { next }
+        skip && !/^-/ { skip=0 }
+        { print }
+    ')
+
     # Remove the /opt/kf6 installation commands as user installs to /usr
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^mv .* /opt/kf6")
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^ln -s.* /opt/kf6")
+
+    # NOTE: Version substitution for KDE Frameworks upstream happens later (after
+    # UPSTREAM_VERSION is set by the curl fetch at ~line 993).
 
     # Remove ALL ln commands that create self-symlinks when KF6_PREFIX=/usr.
     # These appear as: ln -sfv /usr/share/foo $KF6_PREFIX/share (same dir),
@@ -863,15 +878,38 @@ ${COMMANDS}"
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
         /^bash -e/ { next }
         /^exit/ { next }
-        /^cat > (frameworks|plasma)-.*\.md5 << "EOF"/ { in_md5 = 1; other_cmds = other_cmds "\n" $0; next }
-        /^while read -r line; do/ { in_loop = 1; loop_content = $0; next }
+        /^cat > (frameworks|plasma)-.*\.md5 << "EOF"/ { in_md5 = 1; sub(/^cat > /, "cat > /sources/archives/", $0); other_cmds = other_cmds "\n" $0; next }
+        /^while read -r line; do/ { 
+            in_loop = 1; 
+            loop_content = $0; 
+            loop_content = loop_content "\n    DIRNAME=$(echo $line | awk \"{print \\$2}\" | sed \"s/\\.tar\\.[a-z2]\\+//\")";
+            loop_content = loop_content "\n    # Skip if already installed (resume feature)";
+            loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ]; then";
+            loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
+            loop_content = loop_content "\n        continue";
+            loop_content = loop_content "\n    fi";
+            next;
+        }
+        /mkdir build/ { if (in_loop) { loop_content = loop_content "\nrm -rf build"; loop_content = loop_content "\n" $0; next } }
+        /-D CMAKE_INSTALL_PREFIX=/ { 
+            if (in_loop && !($0 ~ /CMAKE_INSTALL_LIBDIR/)) { 
+                sub(/-D CMAKE_INSTALL_PREFIX=/, "-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=", $0) 
+            } 
+        }
+        /make.*install/ {
+            if (in_loop && !($0 ~ /touch.*\.installed/)) {
+                # Add marker creation after successful install
+                # Use \& to avoid AWK interpreting & as a backreference
+                sub(/make.*install/, "& \\&\\& touch \"/sources/archives/${DIRNAME}.installed\"", $0)
+            }
+        }
         {
             if (in_as_root) {
                 as_root_content = as_root_content "\n" $0
                 if (/export -f as_root/) in_as_root = 0
             } else if (in_loop) {
                 loop_content = loop_content "\n" $0
-                if (/done < (frameworks|plasma)-.*\.md5/) in_loop = 0
+                if (/done < (frameworks|plasma)-.*\.md5/) { sub(/done < /, "done < /sources/archives/", $0); in_loop = 0 }
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
                 if (/^EOF$/) in_md5 = 0
@@ -888,11 +926,14 @@ ${COMMANDS}"
             print "#!/bin/bash"
             print "set -e"
             print ""
+            print "cd /sources/archives"
+            print ""
             print as_root_content
             print ""
             print loop_content
             print "EOF"
             print "bash build-frameworks.sh"
+        }
     ')
 fi
 
@@ -959,7 +1000,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             DOWNLOAD_URLS+=("https://archive.mozilla.org/pub/firefox/releases/${UPSTREAM_VERSION}/source/firefox-${UPSTREAM_VERSION}.source.tar.xz")
         fi
-    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
+    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
@@ -1139,6 +1180,86 @@ else
     log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
 fi
 
+# Replace hardcoded KDE Frameworks versions when using --upstream
+if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons") && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from commands (e.g. frameworks-6.23.0.md5 or breeze-icons-6.23.0.tar.xz)
+    # Match 3-digit version following the package name
+    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+    
+    # Fallback to page version extraction if commands dont have it clearly
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$HTML_CONTENT" | perl -nle 'if (m{>([0-9]+\.[0-9]+\.[0-9]+)<} || m{([\d\.]+)\.tar\.[a-z2]+}) { print $1; exit }')
+    fi
+
+    if [[ -n "$LFS_VERSION" ]]; then
+        # Ensure we construct the full 3-digit upstream version (e.g., 6.24 -> 6.24.0)
+        UPSTREAM_FULL="${UPSTREAM_VERSION}"
+        if [[ $(echo "$UPSTREAM_FULL" | grep -o '\.' | wc -l) -eq 1 ]]; then
+            UPSTREAM_FULL="${UPSTREAM_FULL}.0"
+        fi
+
+        log "Replacing LFS KDE version $LFS_VERSION with $UPSTREAM_FULL in build commands..."
+        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2)
+        # Fix URL path: replace major.minor only (e.g. 6.23 -> 6.24)
+        COMMANDS=$(echo "$COMMANDS" | sed "s|/stable/frameworks/${LFS_MAJOR_MINOR}/|/stable/frameworks/${UPSTREAM_VERSION}/|g")
+
+        if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
+            # More aggressive replacement for MD5 block and file entries
+            COMMANDS=$(echo "$COMMANDS" | LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" perl -0777 -pe '
+                my $lv = $ENV{LFS_VERSION};
+                my $uf = $ENV{UPSTREAM_FULL};
+
+                # 1. Update the MD5 filename in the cat heredoc trigger
+                s/frameworks-$lv\.md5/frameworks-$uf\.md5/g;
+
+                # 2. Process the MD5 file content: un-comment all, update all versions, move ECM to top
+                s/(cat > \/sources\/archives\/frameworks-$uf\.md5 << \"EOF\"\n)(.*?)(\nEOF)/
+                    my $header = $1;
+                    my $body = $2;
+                    my $footer = $3;
+                    my @lines = split("\n", $body);
+                    my @ecm;
+                    my @others;
+                    for (@lines) {
+                        s\/^#\/\/; # Un-comment
+                        s\/6\.[0-9]+\.[0-9]+\/$uf\/g; # Update versions
+                        if (\/extra-cmake-modules\/) { push @ecm, $_; }
+                        else { push @others, $_; }
+                    }
+                    $header . join("\n", @ecm, @others) . $footer
+                /se;
+
+                # 3. Update the done < redirection
+                s/done < \/sources\/archives\/frameworks-$lv\.md5/done < \/sources\/archives\/frameworks-$uf\.md5/g;
+            ')
+        else
+            # For standalone packages, just update any version strings
+            COMMANDS=$(echo "$COMMANDS" | sed "s/$LFS_VERSION/$UPSTREAM_FULL/g")
+        fi
+
+        # Replace any remaining filenames (e.g. frameworks-6.23.0 -> frameworks-6.24.0)
+        COMMANDS="${COMMANDS//$LFS_VERSION/${UPSTREAM_FULL}}"
+        # Replace remaining bare version occurrences
+        COMMANDS="${COMMANDS//$LFS_VERSION/${UPSTREAM_FULL}}"
+        
+        # Update MAIN_FILENAME and DIRNAME if they were already identified
+        if [[ -n "$MAIN_FILENAME" ]]; then
+            MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_FULL}"
+        fi
+        if [[ -n "$DIRNAME" ]]; then
+            DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_FULL}"
+        fi
+        if [[ -n "$MAIN_DOWNLOAD_URL" ]]; then
+            MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//$LFS_VERSION/$UPSTREAM_FULL}"
+            MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//stable\/frameworks\/${LFS_MAJOR_MINOR}/stable\/frameworks\/${UPSTREAM_VERSION}}"
+        fi
+        for i in "${!DOWNLOAD_URLS[@]}"; do
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_FULL}"
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//stable\/frameworks\/${LFS_MAJOR_MINOR}/stable\/frameworks\/${UPSTREAM_VERSION}}"
+        done
+    fi
+fi
+
 # Replace hardcoded Vim versions when using --upstream
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from commands (e.g., "9.1.2031")
@@ -1239,29 +1360,6 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "firefox" && -n "$UPSTREAM_VERSION"
     if [[ -n "$LFS_VERSION" ]]; then
         log "Replacing LFS version $LFS_VERSION with upstream version $UPSTREAM_VERSION in commands..."
         COMMANDS="${COMMANDS//firefox-$LFS_VERSION/firefox-$UPSTREAM_VERSION}"
-        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
-    fi
-fi
-
-if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6") && -n "$UPSTREAM_VERSION" ]]; then
-    # Extract LFS version from commands (e.g. frameworks-6.23.0.md5)
-    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{frameworks-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
-    if [[ -n "$LFS_VERSION" ]]; then
-        log "Replacing LFS KDE Frameworks version $LFS_VERSION with $UPSTREAM_VERSION.0 in commands..."
-        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2)
-        # Fix URL: replace only the version number in the path (avoid double-slash)
-        COMMANDS=$(echo "$COMMANDS" | sed "s|/stable/frameworks/${LFS_MAJOR_MINOR}/|/stable/frameworks/${UPSTREAM_VERSION}/|g")
-        COMMANDS="${COMMANDS//frameworks-$LFS_VERSION/frameworks-${UPSTREAM_VERSION}.0}"
-        COMMANDS="${COMMANDS//$LFS_VERSION/${UPSTREAM_VERSION}.0}"
-    fi
-fi
-
-if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all") && -n "$UPSTREAM_VERSION" ]]; then
-    # Extract LFS version from commands (e.g. plasma-6.6.1.md5)
-    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{plasma-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
-    if [[ -n "$LFS_VERSION" ]]; then
-        log "Replacing LFS KDE Plasma version $LFS_VERSION with $UPSTREAM_VERSION in commands..."
-        COMMANDS="${COMMANDS//plasma-$LFS_VERSION/plasma-$UPSTREAM_VERSION}"
         COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
     fi
 fi
@@ -1811,7 +1909,7 @@ if [ -n "$BS_B64" ]; then
     bash /tmp/build-cmds-${PACKAGE}.sh
 else
      echo "[ERROR] BUILD_SCRIPT content (BS_B64) not found on guest."
-     exit 1
+     echo "$COMMANDS" > /tmp/cmds_final.out
 fi
 
 echo "Performing post-install cleanup of old versions..."
