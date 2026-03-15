@@ -5,3 +5,4 @@ ds-fhs-env
 .swp
 wget-log
 core
+dmesg*.log
