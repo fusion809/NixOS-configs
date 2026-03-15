@@ -422,7 +422,7 @@ find_package_page() {
 SKIP_HTML_EXTRACTION=false
 if [[ "$PACKAGE" == "openjdk" ]]; then
     log "Special case for OpenJDK: Fetching the latest JDK release from jdk.java.net..."
-    JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href="\./\K[0-9]+}g) { print $& }' | sort -rn | head -n 1)
+    JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href=\x22\./\K[0-9]+}g) { print $& }' | sort -rn | head -n 1)
     if [[ -z "$JDK_MAJOR" ]]; then
         error "Could not determine latest JDK major version."
     fi
@@ -795,6 +795,13 @@ fi
                     log "Stripping placeholder command: $bline"
                     continue
                 fi
+                # Skip doxygen and manual doc installation
+                if [[ "$bline" =~ ^[[:space:]]*(doxygen|make.*doc|ninja.*doc)([[:space:]]|$) ]] || \
+                   [[ "$bline" =~ install.*doc/html ]] || \
+                   ([[ "$bline" =~ install.*/usr/share/doc ]] && [[ "$bline" =~ doc/html|doc/api|doc/manual|${PACKAGE%-*} ]]); then
+                    log "Skipping documentation command: $bline"
+                    continue
+                fi
                 COMMANDS+="$bline"$'\n'
             done <<< "$CURRENT_BLOCK"
             [[ "$_eff_type" == "root" ]] && COMMANDS+="# __END_ROOT__"$'\n'
@@ -1078,11 +1085,33 @@ ${COMMANDS}"
         }
         /make.*install|ninja.*install|pip3.*install/ {
             if (in_loop && !($0 ~ /book-packages/)) {
-                loop_content = loop_content "\n" $0;
-                loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
-                loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages";
-                loop_content = loop_content "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                # Add robust inventory recording using DESTDIR where possible
+                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
+                loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
+                loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
+                
+                # Command adaptation for DESTDIR
+                if ($0 ~ /make.*install/) {
+                    loop_content = loop_content "\n    " $0 " DESTDIR=\"$DDIR\" || true";
+                } else if ($0 ~ /ninja.*install/) {
+                    loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " $0 " || true";
+                }
+                
+                loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
+                loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then";
+                loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    fi";
+                
+                # Now the actual install to the system
+                loop_content = loop_content "\n    " $0;
+                
+                # Backup -newer check
                 loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                
+                # Cleanup and record
+                loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
+                loop_content = loop_content "\n    rm -rf \"$DDIR\"";
+                loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
                 next;
             }
         }
@@ -2047,9 +2076,9 @@ rm -f "$RS_FILE"
   printf 'VERSION_TO_RECORD="%s"\n' "$RECORDED_VERSION"
   # Inject BS_B64 from a temporary file to avoid shell argument limits
   printf '%s' "$BUILD_SCRIPT_LOCAL" | base64 -w 0 > /tmp/bs_b64.txt
-  printf 'BS_B64="'
+  printf 'BS_B64=\x22'
   cat /tmp/bs_b64.txt
-  printf '"\n'
+  printf '\x22\n'
   rm -f /tmp/bs_b64.txt
 
   # 2. Inject arrays safely using declare -p
@@ -2164,6 +2193,23 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    
+    # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
+    if [ -f "$MAIN_FILENAME" ]; then
+        echo "Enriching inventory from archive manifest for $PACKAGE..."
+        tar -tf "$MAIN_FILENAME" | sed 's|^[^/]*||; s|^/||' | while read f; do
+            [ -z "$f" ] && continue
+            # Common prefixes in BLFS
+            for pref in /usr / /opt /etc; do
+                target="${pref}${f}"
+                if [ -e "$target" ] && [ ! -d "$target" ]; then
+                    echo "$target" | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+                    break
+                fi
+            done
+        done
+        sudo sort -u "/var/lib/book-packages/${PACKAGE}" -o "/var/lib/book-packages/${PACKAGE}"
+    fi
     echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/"
 fi
 
