@@ -1260,6 +1260,11 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
         # Heuristic: extract version from MAIN_DOWNLOAD_URL filename
         # Pattern: - or _ followed by a digit and then version-like characters
         LFS_VERSION=$(basename "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[-_]\K[0-9][a-z0-9.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//; s/\.src$//')
+        if [[ -z "$LFS_VERSION" ]] && [[ -n "$HTML_CONTENT" ]]; then
+            # Fallback for BLFS: extract from <h1> header if possible (e.g. LVM2-2.03.39)
+            LFS_VERSION=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (m{<h1[^>]*?>.*?[- ]\K([0-9][0-9.]*[a-z0-9.]*)}is) { print $1; exit }')
+            [[ -n "$LFS_VERSION" ]] && log "Extracted version from HTML header: $LFS_VERSION"
+        fi
         [[ -n "$LFS_VERSION" ]] && log "Extracted version from URL: $LFS_VERSION"
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
