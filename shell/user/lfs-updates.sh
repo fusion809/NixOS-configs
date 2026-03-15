@@ -1,4 +1,3 @@
-# Source the common logic
 source "$(dirname "${BASH_SOURCE[0]}")/21-lfs.sh"
 
 # Main
@@ -17,19 +16,20 @@ while read -r local_pkg; do
     [[ -z "$local_pkg" ]] && continue
     
     (
-        name=$(echo "$local_pkg" | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
-        local_ver=$(echo "$local_pkg" | sed -E "s/^$name-//; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//")
+        name=$(echo "$local_pkg" | sed -E 's#^([-a-zA-Z0-9_\+]+)-[0-9].*#\1#')
+        local_ver=$(echo "$local_pkg" | sed -E -e 's#^'"$name"'-##' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
 
         [[ -z "$name" || "$name" == "$local_pkg" ]] && exit 0
 
         remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${name}-([0-9])" | head -n 1)
         
         if [[ -n "$remote_pkg" ]]; then
-            remote_ver=$(echo "$remote_pkg" | sed -E "s/^.{${#name}}-//I" | tr -d '\r')
+            # Strip the name prefix robustly using the known name (case-insensitive)
+            remote_ver=$(echo "$remote_pkg" | sed -E 's#^'"$name"'-##I' | tr -d '\r')
             
             # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
-            local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
-            remote_base=$(echo "$remote_ver" | sed -E 's/-[a-zA-Z]+$//')
+            local_base=$(echo "$local_ver" | sed -E 's#-[-a-zA-Z]+$##')
+            remote_base=$(echo "$remote_ver" | sed -E 's#-[-a-zA-Z]+$##')
 
             if [[ "$local_base" != "$remote_base" ]]; then
                 higher=$(echo -e "$local_base\n$remote_base" | tr -d '\r' | sort -V | tail -n 1)
@@ -66,17 +66,22 @@ while IFS= read -r update_line; do
     read -r name local_ver remote_ver <<< "$update_line" || continue
     [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
 
-    local_ver=$(printf '%s\n' "$local_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
-    remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
+    local_ver=$(printf '%s\n' "$local_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
+    remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
+    
+    # Skip if local and remote versions match exactly, but NOT if they are status indicators like FAILED or MISSING
+    if [[ "$local_ver" == "$remote_ver" ]]; then
+        [[ "$remote_ver" != *"FAILED"* && "$remote_ver" != *"MISSING"* ]] && continue
+    fi
     
     # Format git hashes differently if they are 40 chars long
     if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
     if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
     
     label="[UPDATE]"
-    if [[ "$remote_ver" == "FAILED" ]]; then
+    if [[ "$remote_ver" == *"FAILED"* ]]; then
         label="[FAILED]"
-    elif [[ "$remote_ver" == "MISSING" ]]; then
+    elif [[ "$remote_ver" == *"MISSING"* ]]; then
         label="[MISSING]"
     fi
     

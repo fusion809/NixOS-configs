@@ -43,6 +43,7 @@ SEARCH_LFS=true
 SEARCH_BLFS=true
 PACKAGES=()
 XORG_MULTI_MODE=false
+FORCE=false
 
 usage() {
     echo "Usage: $0 [options] <package-name> [package-name-2...]"
@@ -56,6 +57,7 @@ usage() {
     echo "  --blfs                Search only in the BLFS book"
     echo "  --lfs-book <book>     Specify LFS book (e.g., development, systemd, stable, or full URL)"
     echo "  --blfs-book <book>    Specify BLFS book (e.g., systemd, development, stable, or full URL)"
+    echo "  -f, --force           Force build even if already installed"
     echo "  -h, --help            Show this help message"
     echo "$COMMANDS" > /tmp/cmds_final.out
 }
@@ -95,6 +97,7 @@ while [[ "$#" -gt 0 ]]; do
                 BLFS_BOOK="https://www.linuxfromscratch.org/blfs/view/$BLFS_BOOK"
             fi
             ;;
+        -f|--force) FORCE=true ;;
         -h|--help) usage ;;
         -*) echo "Unknown option: $1"; usage ;;
         *) PACKAGES+=("$1") ;;
@@ -130,12 +133,8 @@ for PACKAGE in "${PACKAGES[@]}"; do
     # Use a local stack for this iteration to allow independent subsequent packages
     export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
-    # Skip if already installed (resume feature)
-    # Check both book-packages and custom-packages (and custom-packages for version-only)
-    if ssh_lfs "[ -f /var/lib/book-packages/${PACKAGE} ] || [ -f /var/lib/custom-packages/${PACKAGE} ] || [ -f /var/lib/custom-packages/${PACKAGE} ]"; then
-        log "[LFS-AUTOBUILD] Skipping already installed package: $PACKAGE"
-        continue
-    fi
+    # Use a local stack for this iteration to allow independent subsequent packages
+    export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
     # 0. Check for custom package in ~/lfs_packaging
 CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -l -E \"^[A-Z_]*NAME=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
@@ -212,6 +211,17 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
 fi
 EOF
 )
+    # Skip logic for custom packages
+    if [[ "$FORCE" != "true" ]]; then
+        INSTALLED_VER=$(ssh_lfs "[ -f /var/lib/custom-packages/$PACKAGE ] && cat /var/lib/custom-packages/$PACKAGE" 2>/dev/null | tr -d '\r')
+        if [[ -n "$INSTALLED_VER" && -n "$new_ver" ]]; then
+            if [[ "$INSTALLED_VER" == "$new_ver" ]]; then
+                log "[LFS-AUTOBUILD] Skipping custom package $PACKAGE: version $INSTALLED_VER already installed (use -f to force build)."
+                continue
+            fi
+        fi
+    fi
+
     ssh_lfs "TARGET_PKG=\"$PACKAGE\" CUSTOM_DIR=\"$CUSTOM_DIR\" bash -c '$(echo "$REMOTE_SCRIPT" | sed "s/'/'\\\\''/g")'"
 
 
@@ -1205,12 +1215,10 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     [[ -z "$MAIN_DOWNLOAD_URL" ]] && MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
 
     log "Identified main archive: $MAIN_DOWNLOAD_URL"
-    if [[ -z "$LFS_VERSION" ]]; then
         # Heuristic: extract version from MAIN_DOWNLOAD_URL filename
         # Pattern: - or _ followed by a digit and then version-like characters
-        LFS_VERSION=$(basename "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[-_]\K[0-9][a-z0-9.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1)
+        LFS_VERSION=$(basename "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[-_]\K[0-9][a-z0-9.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//; s/\.src$//')
         [[ -n "$LFS_VERSION" ]] && log "Extracted version from URL: $LFS_VERSION"
-    fi
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
     log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
@@ -1569,6 +1577,8 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" && -n "$UPSTREAM_VERSION" ]]
             s/sed .*?(\.\.\/cmake|\.\.\/third-party|LLVM_COMMON_CMAKE_UTILS|LLVM_THIRD_PARTY_DIR).*?-i [^ \n]+(?=\s*&&|\n|\$)/true /gs;
             # Fix component paths for monorepo: e.g. ../projects/compiler-rt -> ../../compiler-rt (since we build in llvm/build)
             s/\.\.\/(projects|tools)\/(compiler-rt|clang|lld|polly|openmp|libcxx|libcxxabi|libunwind|clang-tools-extra)/..\/..\/\2/g;
+            # Strip llvm/ prefix from paths since we already cd into llvm/
+            s/\bllvm\/(utils|include|lib|cmake|projects|tools|runtimes|test|docs|examples|benchmarks|unittests|build)(?=\/|\s|$)/$1/g;
             # Enable projects in cmake if not already present
             s/cmake (?!.*LLVM_ENABLE_PROJECTS)/cmake -D LLVM_ENABLE_PROJECTS="clang;compiler-rt" /g;
             # Add -j$(nproc) to ninja commands if not already present
@@ -1590,6 +1600,28 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" && -n "$UPSTREAM_VERSION" ]]
             fi
         done
         DOWNLOAD_URLS=("${NEW_URLS[@]}")
+    fi
+fi
+
+# Skip logic for official packages
+if [[ "$FORCE" != "true" ]]; then
+    # Identify target version for comparison
+    TARGET_VER="$LFS_VERSION"
+    [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && TARGET_VER="$UPSTREAM_VERSION"
+    
+    # Identify installed version
+    INSTALLED_VER=$(ssh_lfs "[ -f /var/lib/book-packages/$PACKAGE ] && head -n 1 /var/lib/book-packages/$PACKAGE" 2>/dev/null | tr -d '\r')
+    
+    if [[ -n "$INSTALLED_VER" && -n "$TARGET_VER" ]]; then
+        if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
+            log "[LFS-AUTOBUILD] Skipping already installed package: $PACKAGE (version $INSTALLED_VER, use -f to force rebuild)"
+            continue
+        fi
+    elif [[ -n "$INSTALLED_VER" ]]; then
+        # If we have it installed but couldn't determine target version from book/upstream,
+        # we still skip by default unless forced.
+        log "[LFS-AUTOBUILD] Skipping already installed package (target version unknown): $PACKAGE (use -f to force rebuild)"
+        continue
     fi
 fi
 

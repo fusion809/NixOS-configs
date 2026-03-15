@@ -202,7 +202,7 @@ lfs_get_local_packages() {
             for f in /var/lib/custom-packages/*; do
                 [ -f "$f" ] || continue
                 name=$(basename "$f")
-                ver=$(cat "$f" | tr -d "\r")
+                ver=$(head -n 1 "$f" | tr -d "\r")
                 [ -n "$ver" ] && echo "${name}-${ver}"
             done
         fi
@@ -334,7 +334,7 @@ lfs_check_custom_updates() {
             pkg_basename=$(basename "$pkg_dir")
             
             # Output progress marker for local script to intercept
-            echo "PROGRESS:$pkg_basename" >&2
+            echo "PROGRESS:$pkg_basename"
 
             name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
             if [ -n "$name_line" ]; then
@@ -345,7 +345,7 @@ lfs_check_custom_updates() {
             
             local_ver="none"
             if [ -f "/var/lib/custom-packages/$pkg_name" ]; then
-                local_ver=$(cat "/var/lib/custom-packages/$pkg_name" 2>/dev/null || echo "none")
+                local_ver=$(head -n 1 "/var/lib/custom-packages/$pkg_name" 2>/dev/null | tr -d '\r\n[:space:]' || echo "none")
             fi
             
             remote_ver=""
@@ -354,10 +354,13 @@ lfs_check_custom_updates() {
             var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
             if [ -n "$version_line_num" ]; then
                 eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
-                head -n "$version_line_num" "$build_script" > "$eval_script"
-                echo "echo \$$var_name" >> "$eval_script"
+                # Add PATH and other common environment variables to eval script
+                # Use a safe default path plus existing path
+                echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' > "$eval_script"
+                head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
+                echo "echo \"\$$var_name\"" >> "$eval_script"
                 for attempt in 1 2 3; do
-                    remote_ver=$(cd "$pkg_dir" && bash "$eval_script" 2>/dev/null | tail -n 1)
+                    remote_ver=$(cd "$pkg_dir" && bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
                     [ -n "$remote_ver" ] && break
                     [ "$attempt" -lt 3 ] && sleep 2
                 done
@@ -384,7 +387,7 @@ lfs_check_custom_updates() {
             elif [ -n "$remote_ver" ]; then
                 if [ "$local_ver" == "none" ]; then
                     if [ -f "/var/lib/custom-packages/$pkg_basename" ]; then
-                        local_ver=$(cat "/var/lib/custom-packages/$pkg_basename" 2>/dev/null || echo "none")
+                        local_ver=$(head -n 1 "/var/lib/custom-packages/$pkg_basename" 2>/dev/null | tr -d '\r\n[:space:]' || echo "none")
                     fi
                 fi
                 if [ "$local_ver" != "$remote_ver" ]; then
@@ -446,7 +449,7 @@ EOF
             
             results+="$pkg_name $local_ver $remote_ver\n"
         fi
-    done < <(ssh_lfs "bash -c '$(echo "$script" | sed "s/'/'\\\\''/g")'" 2>/dev/null)
+    done < <(printf '%s\n' "$script" | ssh_lfs "bash -s")
     
     if [ "$total" -gt 0 ]; then
         lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete" >&2
@@ -497,7 +500,7 @@ lfs_update_all() {
         local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9])" | head -n 1)
         
         if [[ -n "$remote_pkg" ]]; then
-            local remote_ver=$(echo "$remote_pkg" | sed -E "s/^.{${#name}}-//I; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//")
+            local remote_ver=$(echo "$remote_pkg" | sed -E -e 's#^'"$name"'-##I' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
             
             # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
             local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
