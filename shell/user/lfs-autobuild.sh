@@ -162,15 +162,18 @@ bash build.sh
 # Update registry (needs sudo)
 sudo mkdir -p /var/lib/custom-packages
 sudo mkdir -p /var/lib/custom-packages
-# Try to determine the new version we just installed
+# Determine the new version we just installed
 new_ver=""
-version_line_num=$(grep -nE '^[A-Z_]*VERSION=' build.sh | head -n 1 | cut -d: -f1)
+version_line_num=$(grep -niE '^[a-z_]*version=' build.sh | head -n 1 | cut -d: -f1)
 if [ -n "$version_line_num" ]; then
-    head -n "$version_line_num" build.sh > /tmp/eval_ver_${TARGET_PKG}.sh
-    var_name=$(grep -E '^[A-Z_]*VERSION=' build.sh | head -n 1 | cut -d= -f1)
-    echo "echo \$$var_name" >> /tmp/eval_ver_${TARGET_PKG}.sh
-    new_ver=$(bash /tmp/eval_ver_${TARGET_PKG}.sh 2>/dev/null | tail -n 1)
-    rm -f /tmp/eval_ver_${TARGET_PKG}.sh
+    eval_script="/tmp/eval_ver_${TARGET_PKG}.sh"
+    echo 'set +e' > "$eval_script"
+    echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
+    head -n "$version_line_num" build.sh | tr -d '\r' >> "$eval_script"
+    var_name=$(grep -iE '^[a-z_]*version=' build.sh | head -n 1 | cut -d= -f1)
+    echo "echo \"\$$var_name\"" >> "$eval_script"
+    new_ver=$(bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
+    rm -f "$eval_script"
 fi
 
 if [ -z "$new_ver" ]; then
@@ -205,7 +208,7 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-    find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+    find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
     echo "Recorded installed files for custom package $TARGET_PKG in /var/lib/custom-packages/"
     sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}"
 fi
@@ -220,11 +223,12 @@ EOF
         EVAL_SCRIPT=$(cat <<EOF
 pkg_dir="$CUSTOM_DIR"
 build_script="$CUSTOM_BUILD_SH"
-version_line_num=\$(grep -nE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d: -f1)
-var_name=\$(grep -E '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d= -f1)
+version_line_num=\$(grep -niE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d: -f1)
+var_name=\$(grep -iE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d= -f1)
 if [ -n "\$version_line_num" ]; then
     tmp_eval="/tmp/eval_autobuild_ver_\$\$.sh"
-    echo 'export PATH=\$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' > "\$tmp_eval"
+    echo 'set +e' > "\$tmp_eval"
+    echo 'export PATH=\$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "\$tmp_eval"
     head -n "\$version_line_num" "\$build_script" | tr -d '\r' >> "\$tmp_eval"
     echo "echo \"\\$\$var_name\"" >> "\$tmp_eval"
     cd "\$pkg_dir" && bash "\$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
@@ -823,7 +827,15 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                 as_root_content = as_root_content "\n" $0
                 if (/export -f as_root/) in_as_root = 0
             } else if (in_loop) {
+                if (/packagedir=/) { 
+                    loop_content = loop_content "\n    PKGNAME=$(echo $package | sed -E \"s/-[0-9].*//\")";
+                    loop_content = loop_content "\n    PKGVER=$(echo $package | sed -E \"s/^[a-zA-Z0-9_\\+\\-]+-//; s/\\.tar\\..*//\")";
+                    loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
+                }
                 loop_content = loop_content "\n" $0
+                if (/make.*install/) {
+                    loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null && find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                }
                 if (/done/) in_loop = 0
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
@@ -945,11 +957,14 @@ ${COMMANDS}"
             in_loop = 1; 
             loop_content = $0; 
             loop_content = loop_content "\n    DIRNAME=$(echo $line | awk \"{print \\$2}\" | sed \"s/\\.tar\\.[a-z2]\\+//\")";
+            loop_content = loop_content "\n    PKGNAME=$(echo $DIRNAME | sed -E \"s/-[0-9].*//\")";
+            loop_content = loop_content "\n    PKGVER=$(echo $DIRNAME | sed -E \"s/^[a-zA-Z0-9_\\+\\-]+-//\")";
             loop_content = loop_content "\n    # Skip if already installed (resume feature)";
             loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ]; then";
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
             loop_content = loop_content "\n        continue";
             loop_content = loop_content "\n    fi";
+            loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
             next;
         }
         /mkdir build/ { if (in_loop) { loop_content = loop_content "\nrm -rf build"; loop_content = loop_content "\n" $0; next } }
@@ -962,7 +977,7 @@ ${COMMANDS}"
             if (in_loop && !($0 ~ /touch.*\.installed/)) {
                 # Add marker creation after successful install
                 # Use \& to avoid AWK interpreting & as a backreference
-                sub(/make.*install/, "& \\&\\& touch \"/sources/archives/${DIRNAME}.installed\"", $0)
+                sub(/make.*install/, "& \\&\\& touch \"/sources/archives/${DIRNAME}.installed\" \\&\\& sudo mkdir -p /var/lib/book-packages \\&\\& echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null \\&\\& find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null", $0)
             }
         }
         {

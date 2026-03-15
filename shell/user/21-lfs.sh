@@ -356,7 +356,8 @@ lfs_check_custom_updates() {
                 eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
                 # Add PATH and other common environment variables to eval script
                 # Use a safe default path plus existing path
-                echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' > "$eval_script"
+                echo 'set +e' > "$eval_script"
+                echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
                 head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
                 echo "echo \"\$$var_name\"" >> "$eval_script"
                 for attempt in 1 2 3; do
