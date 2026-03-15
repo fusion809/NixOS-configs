@@ -590,7 +590,7 @@ while read -r line; do
         # Determine effective type: explicit root, or heuristic for userinput blocks
         _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
-            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]].*(/usr|/boot|/etc|/lib|/var)|ln[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]].*(/usr|/boot|/etc|/lib|/var)|cp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|mv[[:space:]].*(/usr|/boot|/etc|/lib|/var)|touch[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]].*(/usr|/boot|/etc|/lib|/var)|ln[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]].*(/usr|/boot|/etc|/lib|/var)|cp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|mv[[:space:]].*(/usr|/boot|/etc|/lib|/var)|touch[[:space:]].*(/usr|/boot|/etc|/lib|/var)|chmod[[:space:]].*(/usr|/boot|/etc|/lib|/var)|chown[[:space:]].*(/usr|/boot|/etc|/lib|/var)|chgrp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
             fi
         fi
@@ -599,6 +599,13 @@ while read -r line; do
         if [[ "$PACKAGE" == "glibc" ]]; then
             if grep -qiE "(nscd|gcc[[:space:]]+-print-libgcc-file-name|localedef|localedata/install-locales|nsswitch\.conf|ZONEINFO|tzselect|localtime|ld\.so\.conf)" <<< "$CURRENT_BLOCK"; then
                 log "Skipping unnecessary glibc configuration/maintenance block." >&2
+                continue
+            fi
+        fi
+
+        if [[ "$PACKAGE" == "shadow" ]]; then
+            if grep -qiE "^(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod)" <<< "$CURRENT_BLOCK"; then
+                log "Skipping unnecessary shadow configuration/maintenance block." >&2
                 continue
             fi
         fi
@@ -1074,13 +1081,6 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$VIM_TAG" ]]; then
             DOWNLOAD_URLS+=("https://github.com/vim/vim/archive/v${VIM_TAG}/vim-${VIM_TAG}.tar.gz")
             UPSTREAM_VERSION="$VIM_TAG"
-        fi
-    elif [[ "$PACKAGE" == "firefox" ]]; then
-        log "Fetching latest upstream Firefox version from Mozilla..."
-        FIREFOX_JSON=$(curl -s https://product-details.mozilla.org/1.0/firefox_versions.json)
-        UPSTREAM_VERSION=$(echo "$FIREFOX_JSON" | perl -nle 'while (m{(?<="LATEST_FIREFOX_VERSION": ")[0-9.]+}g) { print $& }')
-        if [[ -n "$UPSTREAM_VERSION" ]]; then
-            DOWNLOAD_URLS+=("https://archive.mozilla.org/pub/firefox/releases/${UPSTREAM_VERSION}/source/firefox-${UPSTREAM_VERSION}.source.tar.xz")
         fi
     elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
@@ -1760,6 +1760,7 @@ _gen_build_script() {
     local dirname="$1"
     local normal_user="$2"
     local setup_cmds="$3"
+    local lfs_version="$4"
     local in_section=""
     local block_n=0
     local user_lines=()
@@ -1771,8 +1772,9 @@ _gen_build_script() {
         if [[ ${#user_lines[@]} -gt 0 ]]; then
             ((block_n++))
             local sentinel="__LFS_USER_${block_n}__"
-            echo "su '${normal_user}' -s /bin/bash << '${sentinel}'"
+            echo "sudo -u '${normal_user}' /bin/bash << '${sentinel}'"
             echo "set -e"
+            echo "export PATH=\"/usr/bin:/usr/sbin:/bin:/sbin:\$PATH\""
             # Ensure each USER block starts with setup commands
             if [[ -n "$setup_cmds" ]]; then
                 echo "$setup_cmds"
@@ -1920,7 +1922,7 @@ fi
 log "Starting remote build for $PACKAGE..."
 
 # Generate the Privilege-Separated build script locally
-BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER" "$SETUP_COMMANDS")
+BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER" "$SETUP_COMMANDS" "$LFS_VERSION")
 
 # Generate the Privilege-Separated build script locally by appending to the file directly for maximum robustness
 RS_FILE="/tmp/remote_script_${PACKAGE}.sh"

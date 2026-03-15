@@ -192,8 +192,13 @@ lfs_rebuild_missing_inventories() {
     [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
 
     echo "Scanning for packages with missing file inventories..."
+    # 1. Use -maxdepth 1 to avoid entering subdirectories like .git
+    # 2. Match ! -name ".*" to ignore hidden files
+    # 3. Exclude known metadata files via grep
     local missing_pkgs=$(ssh_lfs '
-        find /var/lib/book-packages /var/lib/custom-packages -type f 2>/dev/null | while read -r f; do
+        find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | 
+        grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | 
+        while read -r f; do
             if [ $(wc -l < "$f") -le 1 ]; then
                 basename "$f"
             fi
@@ -209,10 +214,13 @@ lfs_rebuild_missing_inventories() {
     echo "$missing_pkgs"
     echo "--------------------------------------------------------------------------------"
 
-    for pkg in $missing_pkgs; do
+    # Use a private file descriptor (9) to read the package list.
+    # This prevents ssh (inside lfs_autobuild) from consuming the loop's stdin.
+    while read -u 9 -r pkg; do
+        [[ -z "$pkg" ]] && continue
         echo ">>> Restoring inventory for: $pkg"
-        lfs_autobuild -f "$pkg"
-    done
+        lfs_autobuild -f "$pkg" --upstream
+    done 9<<< "$missing_pkgs"
 }
 
 lfs_get_local_packages() {
