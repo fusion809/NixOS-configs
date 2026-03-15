@@ -211,18 +211,40 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
 fi
 EOF
 )
-    # Skip logic for custom packages
+    # Skip logic for custom packages: evaluate version on VM before building
     if [[ "$FORCE" != "true" ]]; then
-        INSTALLED_VER=$(ssh_lfs "[ -f /var/lib/custom-packages/$PACKAGE ] && cat /var/lib/custom-packages/$PACKAGE" 2>/dev/null | tr -d '\r')
-        if [[ -n "$INSTALLED_VER" && -n "$new_ver" ]]; then
-            if [[ "$INSTALLED_VER" == "$new_ver" ]]; then
+        INSTALLED_VER=$(target_run "[ -f /var/lib/custom-packages/$PACKAGE ] && head -n 1 /var/lib/custom-packages/$PACKAGE" 2>/dev/null | tr -d '\r\n[:space:]')
+        
+        # Determine target version from build script
+        TARGET_VER=""
+        EVAL_SCRIPT=$(cat <<EOF
+pkg_dir="$CUSTOM_DIR"
+build_script="$CUSTOM_BUILD_SH"
+version_line_num=\$(grep -nE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d: -f1)
+var_name=\$(grep -E '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d= -f1)
+if [ -n "\$version_line_num" ]; then
+    tmp_eval="/tmp/eval_autobuild_ver_\$\$.sh"
+    echo 'export PATH=\$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' > "\$tmp_eval"
+    head -n "\$version_line_num" "\$build_script" | tr -d '\r' >> "\$tmp_eval"
+    echo "echo \"\\$\$var_name\"" >> "\$tmp_eval"
+    cd "\$pkg_dir" && bash "\$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
+    rm -f "\$tmp_eval"
+fi
+EOF
+)
+        TARGET_VER=$(printf "%s" "$EVAL_SCRIPT" | target_run "bash -s" 2>/dev/null | tail -n 1)
+
+        if [[ -n "$INSTALLED_VER" && -n "$TARGET_VER" ]]; then
+            if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
                 log "[LFS-AUTOBUILD] Skipping custom package $PACKAGE: version $INSTALLED_VER already installed (use -f to force build)."
                 continue
             fi
         fi
     fi
 
-    ssh_lfs "TARGET_PKG=\"$PACKAGE\" CUSTOM_DIR=\"$CUSTOM_DIR\" bash -c '$(echo "$REMOTE_SCRIPT" | sed "s/'/'\\\\''/g")'"
+    ssh_lfs "TARGET_PKG=\"$PACKAGE\" CUSTOM_DIR=\"$CUSTOM_DIR\" bash -s" <<EOF
+$(echo "$REMOTE_SCRIPT")
+EOF
 
 
     
