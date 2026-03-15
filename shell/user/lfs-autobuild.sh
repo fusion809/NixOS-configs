@@ -947,8 +947,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                 if (/export -f as_root/) in_as_root = 0
             } else if (in_loop) {
                 if (/packagedir=/) { 
-                    loop_content = loop_content "\n    PKGNAME=$(echo $package | sed -E \"s/-[0-9].*//\")";
-                    loop_content = loop_content "\n    PKGVER=$(echo $package | sed -E \"s/^[a-zA-Z0-9_\\+\\-]+-//; s/\\.tar\\..*//\")";
+                    loop_content = loop_content "\n    PKGNAME=$(echo $package | sed -E \"s/[-_][0-9].*//\")";
+                    loop_content = loop_content "\n    PKGVER=$(echo $package | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/\\.tar\\..*//\")";
                     loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 }
                 loop_content = loop_content "\n" $0
@@ -1067,8 +1067,8 @@ ${COMMANDS}"
             in_loop = 1; 
             loop_content = $0; 
             loop_content = loop_content "\n    DIRNAME=$(echo $line | awk \"{print \\$2}\" | sed \"s/\\.tar\\.[a-z2]\\+//\")";
-            loop_content = loop_content "\n    PKGNAME=$(echo $DIRNAME | sed -E \"s/-[0-9].*//\")";
-            loop_content = loop_content "\n    PKGVER=$(echo $DIRNAME | sed -E \"s/^[a-zA-Z0-9_\\+\\-]+-//\")";
+            loop_content = loop_content "\n    PKGNAME=$(echo $DIRNAME | sed -E \"s/[-_][0-9].*//\")";
+            loop_content = loop_content "\n    PKGVER=$(echo $DIRNAME | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//\")";
             loop_content = loop_content "\n    # Skip if already installed (resume feature)";
             loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ]; then";
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
@@ -1391,10 +1391,10 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     log "Identified main archive: $MAIN_DOWNLOAD_URL"
         # Heuristic: extract version from MAIN_DOWNLOAD_URL filename
         # Pattern: - or _ followed by a digit and then version-like characters
-        LFS_VERSION=$(basename "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[-_]\K[0-9][a-z0-9.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//; s/\.src$//')
+        LFS_VERSION=$(basename "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[-_]\K[0-9][a-z0-9.-]*(?:\.[0-9]+[a-z0-9.-]*)*[a-z0-9]}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//; s/\.src$//')
         if [[ -z "$LFS_VERSION" ]] && [[ -n "$HTML_CONTENT" ]]; then
             # Fallback for BLFS: extract from <h1> header if possible (e.g. LVM2-2.03.39)
-            LFS_VERSION=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (m{<h1[^>]*?>.*?[- ]\K([0-9][0-9.]*[a-z0-9.]*)}is) { print $1; exit }')
+            LFS_VERSION=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (m{<h1[^>]*?>.*?[- ]\K([0-9][0-9.-]*[a-z0-9])}is) { print $1; exit }')
             [[ -n "$LFS_VERSION" ]] && log "Extracted version from HTML header: $LFS_VERSION"
         fi
         [[ -n "$LFS_VERSION" ]] && log "Extracted version from URL: $LFS_VERSION"
