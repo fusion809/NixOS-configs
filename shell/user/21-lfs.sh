@@ -378,7 +378,7 @@ lfs_check_custom_updates() {
             # Output progress marker for local script to intercept
             echo "PROGRESS:$pkg_basename"
 
-            name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
+            name_line=$(grep -iE '^[a-zA-Z_]*name=' "$build_script" | head -n 1)
             if [ -n "$name_line" ]; then
                 pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
             else
@@ -392,8 +392,8 @@ lfs_check_custom_updates() {
             
             remote_ver=""
             status="OK"
-            version_line_num=$(grep -nE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
-            var_name=$(grep -E '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
+            version_line_num=$(grep -niE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
+            var_name=$(grep -iE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
             if [ -n "$version_line_num" ]; then
                 eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
                 # Add PATH and other common environment variables to eval script
