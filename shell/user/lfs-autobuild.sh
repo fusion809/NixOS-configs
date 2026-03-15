@@ -516,6 +516,8 @@ get_commands() {
         /<\/pre>/ { in_block=0; print "___BLOCK_END___" }
     ' | perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
+        sed 's/\\ \+/ /g' | \
+        perl -0777 -pe 's/\\\n\s*//gs' | \
         sed 's/^[[:space:]]*//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
         perl -0777 -pe '
@@ -588,7 +590,7 @@ while read -r line; do
         # Determine effective type: explicit root, or heuristic for userinput blocks
         _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
-            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]].*(/usr|/boot|/etc|/lib|/var)|ln[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]].*(/usr|/boot|/etc|/lib|/var)|cp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|mv[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]].*(/usr|/boot|/etc|/lib|/var)|ln[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]].*(/usr|/boot|/etc|/lib|/var)|cp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|mv[[:space:]].*(/usr|/boot|/etc|/lib|/var)|touch[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
             fi
         fi
@@ -1747,7 +1749,6 @@ GEN_DIRNAME="$DIRNAME"
 if [[ "$PACKAGE" == "llvm" && "$MAIN_FILENAME" == *"llvm-project-"* ]]; then
     GEN_DIRNAME="${DIRNAME}/llvm"
 fi
-
 # Generate BUILD_SCRIPT from annotated COMMANDS: user blocks run via su, root blocks run as root
 # This runs on the HOST - generates the VM-side build script with privilege separation
 _gen_build_script() {
@@ -1946,6 +1947,8 @@ rm -f "$RS_FILE"
 
   # 3. Append the main logic using a quoted heredoc
   cat <<'REMOTE_EOF'
+(
+  flock -x 200 || { echo "Another build is in progress. Waiting for lock..."; flock -x 200; }
 set -e
 
 # Record start time for file tracking
@@ -2148,6 +2151,7 @@ fi
 echo "Build and installation complete for $PACKAGE"
 cd /sources
 rm -rf "$GEN_DIRNAME"
+) 200>/tmp/lfs_autobuild.lock
 REMOTE_EOF
 } > "$RS_FILE"
 
