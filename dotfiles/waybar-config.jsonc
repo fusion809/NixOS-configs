@@ -1,8 +1,8 @@
 // -*- mode: jsonc -*-
 // Font awesome is required for waybar's usual fonts
 {
-    // "layer": "top", // Waybar at top layer
-    // "position": "bottom", // Waybar position (top|bottom|left|right)
+    "layer": "top", // Waybar at top layer
+    "exclusive": true, // Ensure windows don't overlap with Waybar's space
     //"height": 30, // Waybar height (to be removed for auto height)
     // "width": 1280, // Waybar width
     "spacing": 4, // Gaps between modules (4px)

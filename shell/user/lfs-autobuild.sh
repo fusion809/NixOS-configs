@@ -292,10 +292,14 @@ find_package_page() {
 
     if [[ "$SEARCH_BLFS" == "true" ]]; then
         case "$pkg" in
-            xorg-lib|x7lib)       echo "$BLFS_BOOK/x/x7lib.html"; return 0 ;;
-            xorg-app|x7app)       echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
-            xorg-font|x7font)     echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
-            xorg-driver|x7driver) echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
+            xorg-lib|x7lib|libICE|libSM|libX11|libXext|libXrender|libXft|libXi|libXinerama|libXrandr|libXcursor|libXcomposite|libXdamage|libXfixes|libXfont2|libXmu|libXpm|libXt|libXtst|libXv|libXvMC|libXxf86vm|libxkbfile)
+                                  echo "$BLFS_BOOK/x/x7lib.html"; return 0 ;;
+            xorg-app|x7app|iceauth|sessreg|setxkbmap|smproxy|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
+                                  echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
+            xorg-font|x7font|font-bh-ttf|font-misc-misc|font-cursor-misc|font-adobe-100dpi|font-adobe-75dpi|font-adobe-utopia-100dpi|font-adobe-utopia-75dpi|font-bh-100dpi|font-bh-75dpi|font-bh-lucidatypewriter-100dpi|font-bh-lucidatypewriter-75dpi|font-bitstream-100dpi|font-bitstream-75dpi|font-bitstream-type1|font-cronyx-cyrillic|font-daewoo-misc|font-dec-misc|font-ibm-type1|font-isatis-misc|font-jis-misc|font-mutt-misc|font-schumacher-misc|font-screen-cyrillic|font-sony-misc|font-sun-misc|font-winitzki-cyrillic|font-xfree86-type1)
+                                  echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
+            xorg-driver|x7driver|xorg-evdev-driver|xf86-input-evdev|xf86-input-libinput|xf86-input-synaptics|xf86-input-vmmouse|xf86-input-keyboard|xf86-input-mouse|xf86-video-fbdev|xf86-video-vesa|xf86-video-intel|xf86-video-ati|xf86-video-nouveau|xf86-video-vmware|xf86-video-amdgpu|xf86-video-qxl)
+                                  echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
         esac
 
         log "Searching for '$pkg' in BLFS index..." >&2
@@ -307,6 +311,84 @@ find_package_page() {
             search_pkg="rust"
         elif [[ "$pkg" == "pygobject" ]]; then
             search_pkg="pygobject3"
+        elif [[ "$pkg" == "plasma-disks" ]]; then
+            search_pkg="kinfocenter" # plasma-disks is part of kinfocenter
+        elif [[ "$pkg" == "plasma-pa" ]]; then
+            search_pkg="plasma-pa"
+        elif [[ "$pkg" == "print-manager" ]]; then
+            search_pkg="print-manager"
+        elif [[ "$pkg" == "kgamma" ]]; then
+            search_pkg="kgamma5"
+        elif [[ "$pkg" == "kquickimageditor" ]]; then
+            search_pkg="kquickimageeditor"
+        elif [[ "$pkg" == "kcolorpicker" ]]; then
+            search_pkg="kColorPicker"
+        elif [[ "$pkg" == "ocean-sound-theme" ]]; then
+            search_pkg="ocean-sound-theme"
+        elif [[ "$pkg" == "plymouth-kcm" ]]; then
+            search_pkg="plymouth-kcm"
+        elif [[ "$pkg" == "kdenlive" ]]; then
+            search_pkg="kdenlive"
+        elif [[ "$pkg" == "kdevelop" ]]; then
+            search_pkg="kdevelop"
+        elif [[ "$pkg" == "kmail" ]]; then
+            search_pkg="kmail"
+        elif [[ "$pkg" == "korganizer" ]]; then
+            search_pkg="korganizer"
+        elif [[ "$pkg" == "knotes" ]]; then
+            search_pkg="knotes"
+        elif [[ "$pkg" == "kontact" ]]; then
+            search_pkg="kontact"
+        elif [[ "$pkg" == "kaddressbook" ]]; then
+            search_pkg="kaddressbook"
+        elif [[ "$pkg" == "akonadi" ]]; then
+            search_pkg="akonadi"
+        elif [[ "$pkg" == "akonadi-calendar" ]]; then
+            search_pkg="akonadi-calendar"
+        elif [[ "$pkg" == "akonadi-contacts" ]]; then
+            search_pkg="akonadi-contacts"
+        elif [[ "$pkg" == "akonadi-mime" ]]; then
+            search_pkg="akonadi-mime"
+        elif [[ "$pkg" == "akonadi-notes" ]]; then
+            search_pkg="akonadi-notes"
+        elif [[ "$pkg" == "akonadi-search" ]]; then
+            search_pkg="akonadi-search"
+        elif [[ "$pkg" == "calendarsupport" ]]; then
+            search_pkg="calendarsupport"
+        elif [[ "$pkg" == "eventviews" ]]; then
+            search_pkg="eventviews"
+        elif [[ "$pkg" == "incidenceeditor" ]]; then
+            search_pkg="incidenceeditor"
+        elif [[ "$pkg" == "kcalendarcore" ]]; then
+            search_pkg="kcalendarcore"
+        elif [[ "$pkg" == "kcontacts" ]]; then
+            search_pkg="kcontacts"
+        elif [[ "$pkg" == "kholidays" ]]; then
+            search_pkg="kholidays"
+        elif [[ "$pkg" == "kidentitymanagement" ]]; then
+            search_pkg="kidentitymanagement"
+        elif [[ "$pkg" == "kmailtransport" ]]; then
+            search_pkg="kmailtransport"
+        elif [[ "$pkg" == "knotes" ]]; then
+            search_pkg="knotes"
+        elif [[ "$pkg" == "kparts" ]]; then
+            search_pkg="kparts"
+        elif [[ "$pkg" == "libkdepim" ]]; then
+            search_pkg="libkdepim"
+        elif [[ "$pkg" == "mailcommon" ]]; then
+            search_pkg="mailcommon"
+        elif [[ "$pkg" == "mailimporter" ]]; then
+            search_pkg="mailimporter"
+        elif [[ "$pkg" == "messagelist" ]]; then
+            search_pkg="messagelist"
+        elif [[ "$pkg" == "pimcommon" ]]; then
+            search_pkg="pimcommon"
+        elif [[ "$pkg" == "pimtextedit" ]]; then
+            search_pkg="pimtextedit"
+        elif [[ "$pkg" == "templateparser" ]]; then
+            search_pkg="templateparser"
+        elif [[ "$pkg" == "kdepim-runtime" ]]; then
+            search_pkg="kdepim-runtime"
         fi
 
         # First try match for pkg.html (with optional fragment)
@@ -317,9 +399,9 @@ find_package_page() {
             blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]+\.html#$search_pkg)\"/is) { print \$1; exit }")
         fi
 
-        # Fallback to match at boundaries
+        # Fallback to match at boundaries (more strict)
         if [[ -z "$blfs_page" ]]; then
-            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?${search_pkg}[^\"]*\.html(?:#[^\"]*)?|[^\"]*\/?$search_pkg[^a-z0-9][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?${search_pkg}\.html(?:#[^\"]*)?|[^\"]*\/?$search_pkg[^a-z0-9][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$blfs_page" ]]; then
@@ -375,7 +457,8 @@ fi
 
 log "Found package page: $PAGE_URL"
 
-if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font|driver)$ ]]; then
+if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font|driver)$ ]] || \
+   [[ "$PAGE_URL" =~ x7(lib|app|font|driver)\.html$ ]]; then
     XORG_MULTI_MODE=true
     log "Enabling Xorg multi-package mode."
 fi
@@ -393,11 +476,11 @@ FRAG=$(echo "$PAGE_URL" | grep -o "#.*$")
 if [[ -n "$FRAG" ]]; then
     FRAG_ID=${FRAG#\#}
     log "Slicing HTML content for fragment: $FRAG_ID"
-    # Extract starting from the anchor with the id $FRAG_ID up to the next sect/header
+    # Extract starting from the anchor or container with the id $FRAG_ID up to the next sect/header
     HTML_CONTENT=$(printf '%s' "$HTML_CONTENT" | perl -0777 -nse '
-        if (/(<a\s+(?:id|name)="\Q$id\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$id\E)[^"]+")/is) {
+        if (/(<(?:a|div|h[1-6]|section|p|li)\s+[^>]*?\b(?:id|name)="\Q$id\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[1-2]|id="(?!\Q$id\E)[^"]+")/is) {
             print $1;
-        } elsif (/(<a\s+(?:id|name)="\Q$id\E"[^>]*>.*)/is) {
+        } elsif (/(<(?:a|div|h[1-6]|section|p|li)\s+[^>]*?\b(?:id|name)="\Q$id\E"[^>]*>.*)/is) {
             print $1;
         }
     ' -- -id="$FRAG_ID")
@@ -460,6 +543,16 @@ fi
 # 4. xcursor-themes special case
 if [ "$dep" == "xcursor-themes" ]; then
     [ -d /usr/share/icons/whiteglass ] && echo installed && exit 0
+fi
+
+# 4.5 KDE/Plasma Meta-package special cases
+if [[ "$dep" == "frameworks6" || "$dep" == "frameworks" ]]; then
+    # Check for core components like extra-cmake-modules or kf6-config
+    (pkg-config --exists extra-cmake-modules || [ -d /usr/lib/cmake/KF6 ] || [ -d /usr/include/KF6 ]) && echo installed && exit 0
+fi
+if [[ "$dep" == "plasma-all" || "$dep" == "plasma" ]]; then
+    # Check for plasma-desktop or similar
+    ([ -f /usr/bin/plasma-desktop ] || [ -f /usr/lib/libPlasma.so ]) && echo installed && exit 0
 fi
 
 # 5. Executable check
@@ -662,7 +755,7 @@ $CURRENT_BLOCK
     read -p 'Build failed tests. Proceed to installation anyway? [y/N] ' -n 1 -r < /dev/tty
     echo
     if [[ ! \$REPLY =~ ^[Yy]$ ]]; then
-        echo "$COMMANDS" > /tmp/cmds_final.out
+        exit 1
     fi
 fi
 # __END_ROOT__
@@ -695,7 +788,12 @@ fi
                 fi
                 # Global fix for libdir in CMake builds
                 if [[ "$bline" =~ "-D CMAKE_INSTALL_PREFIX=" ]] && [[ ! "$bline" =~ "CMAKE_INSTALL_LIBDIR" ]]; then
-                    bline=$(echo "$bline" | sed "s/-D CMAKE_INSTALL_PREFIX=/-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=/")
+                    bline=$(echo "$bline" | sed "s/-D CMAKE_INSTALL_PREFIX=/-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=/g")
+                fi
+                # Strip placeholder commands like /path/to/web/app
+                if [[ "$bline" =~ "/path/to/web/app" ]]; then
+                    log "Stripping placeholder command: $bline"
+                    continue
                 fi
                 COMMANDS+="$bline"$'\n'
             done <<< "$CURRENT_BLOCK"
@@ -737,14 +835,19 @@ if echo "$HTML_CONTENT" | grep -qiE "texlive"; then
     fi
 fi
 
-# 2.7 Auto-detect Qt6 dependency
-if echo "$HTML_CONTENT" | grep -qiE "qt-6|qt6|qt 6" || [[ "${PACKAGE,,}" == "qt6" ]]; then
-    log "Qt6 detected: setting QT6DIR/QT6PREFIX and updating PATH/LD_LIBRARY_PATH."
+# 2.7 Auto-detect Qt6/KF6/KDE dependency
+if echo "$HTML_CONTENT" | grep -qiE "qt-6|qt6|qt 6|kf6|frameworks 6|frameworks6|plasma 6|plasma6" || [[ "${PACKAGE,,}" =~ ^(qt6|frameworks6|plasma-all|plasma)$ ]] || [[ "$COMMANDS" =~ "KF6" ]]; then
+    log "Qt6/KF6/KDE detected: setting environment variables."
+    if [[ ! "$SETUP_COMMANDS" =~ "export KF6_PREFIX=" ]]; then
+        SETUP_COMMANDS+="export KF6_PREFIX=/usr
+"
+    fi
     if [[ ! "$SETUP_COMMANDS" =~ "export QT6DIR=" ]]; then
         SETUP_COMMANDS+="export QT6DIR=/opt/qt6
 export QT6PREFIX=/opt/qt6
 export PATH=\$PATH:\$QT6DIR/bin
 export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$QT6DIR/lib
+export CMAKE_PREFIX_PATH=\$QT6PREFIX:\$KF6_PREFIX:\$CMAKE_PREFIX_PATH
 "
     fi
 fi
@@ -912,18 +1015,6 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
     COMMANDS=$(echo "$COMMANDS" | grep -v "^dbus-launch")
 
     
-    # Ensure KF6_PREFIX, Qt6 PATH, and Qt6 LD_LIBRARY_PATH are set for all KDE packages
-    if [[ ! "$COMMANDS" =~ "export KF6_PREFIX=/usr" ]]; then
-        SETUP_COMMANDS+="export KF6_PREFIX=/usr
-"
-    fi
-    if ! echo "$COMMANDS" | grep -q "PATH.*qt6" && ! echo "$SETUP_COMMANDS" | grep -q "QT6DIR"; then
-        SETUP_COMMANDS+="export QT6DIR=/opt/qt6
-export QT6PREFIX=/opt/qt6
-export PATH=\$PATH:\$QT6DIR/bin
-export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$QT6DIR/lib
-"
-    fi
 
     if [[ "$INCLUDE_CONFIG" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks") ]]; then
         log "Adding kf6-intro.html configuration for /usr installation..."
@@ -947,6 +1038,9 @@ ${COMMANDS}"
     COMMANDS=$(echo "$COMMANDS" | sed '/cat > ~\/.xinitrc << "EOF"/,/EOF/d')
     COMMANDS=$(echo "$COMMANDS" | grep -v "^startx")
 
+    # Fix internal script paths for MD5 files (Xorg/KDE) before awk processing
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')
+
     # Fix the bash subshell and execution
     log "Converting build loop into a standalone script..."
     COMMANDS=$(echo "$COMMANDS" | awk '
@@ -961,7 +1055,7 @@ ${COMMANDS}"
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
         /^bash -e/ { next }
         /^exit/ { next }
-        /^cat > (frameworks|plasma)-.*\.md5 << "EOF"/ { in_md5 = 1; sub(/^cat > /, "cat > /sources/archives/", $0); other_cmds = other_cmds "\n" $0; next }
+        /^cat > [a-z0-9-]+\.md5 << "EOF"/ { in_md5 = 1; sub(/^cat > /, "cat > /sources/archives/", $0); other_cmds = other_cmds "\n" $0; next }
         /^while read -r line; do/ { 
             in_loop = 1; 
             loop_content = $0; 
@@ -997,8 +1091,12 @@ ${COMMANDS}"
                 as_root_content = as_root_content "\n" $0
                 if (/export -f as_root/) in_as_root = 0
             } else if (in_loop) {
+                # Rewrite internal script paths for MD5 files (Xorg/KDE) - extra safety
+                gsub(/\.\.\/[a-z0-9-]+\.md5/, "/sources/archives/&", $0);
+                gsub(/\/sources\/archives\/\.\.\//, "/sources/archives/", $0);
+                
                 loop_content = loop_content "\n" $0
-                if (/done < (frameworks|plasma)-.*\.md5/) { sub(/done < /, "done < /sources/archives/", $0); in_loop = 0 }
+                if (/done < [a-z0-9-]+\.md5/) { sub(/done < /, "done < /sources/archives/", $0); in_loop = 0 }
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
                 if (/^EOF$/) in_md5 = 0
@@ -1167,7 +1265,11 @@ log "Package base name for search: $PKG_BASE"
 if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
     # 0. Primary Link from Page (Robust Extraction)
     # The first "Download (HTTP)" link is usually the main one
-    http_download=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (/Download \(HTTP\):\s*<a[^>]+href="([^"]+)"/is) { print $1 }')
+    http_download=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (/Download\s*\(HTTP\):\s*<a[^>]+href="([^"]+)"/is) { print $1 }')
+    if [[ -z "$http_download" ]]; then
+        # Fallback for plain links after text (narrower match to avoid .html or .php redirects)
+        http_download=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (/Download\s*\(HTTP\):.*?href="([^"]+?(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz))"/is) { print $1 }')
+    fi
     [[ -n "$http_download" ]] && DOWNLOAD_URLS+=("$http_download")
 
     # 1. Main Page Links (for both LFS and BLFS)
@@ -1210,8 +1312,9 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
             match_pattern="${PKG_BASE}|${PKG_BASE%[0-9]}"
         fi
 
-        if grep -Eiq "${match_pattern}" <<< "$link_base" || \
-           ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "firefox" <<< "$link_base"); then
+        if (grep -Eiq "${match_pattern}" <<< "$link_base" || \
+           ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "firefox" <<< "$link_base")) && \
+           [[ "$link_base" =~ (\.tar\.[a-z2]+|\.zip|\.patch|\.tgz|\.gz|\.sig)$ ]]; then
             DOWNLOAD_URLS+=("$link")
         fi
     done
@@ -2052,25 +2155,22 @@ else
      echo "$COMMANDS" > /tmp/cmds_final.out
 fi
 
-echo "Performing post-install cleanup of old versions..."
-# Save file list to /var/lib/book-packages/
-sudo mkdir -p /var/lib/book-packages
-# Prepend version to the file list
-echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
-SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
-EXISTING_DIRS=""
-for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
-echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/"
+if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
+    # Save file list to /var/lib/book-packages/
+    sudo mkdir -p /var/lib/book-packages
+    # Prepend version to the file list
+    echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+    EXISTING_DIRS=""
+    for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
+    find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/"
+fi
 
 if [[ "$RM_LIBS" == "true" ]]; then
     # Find files installed by this build (newer than timestamp)
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
-    EXISTING_DIRS=""
-    for d in $SEARCH_DIRS; do
-        [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"
-    done
-
+    for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     NEW_FILES_LIST=$(mktemp)
     find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} ! -name "$(basename "$NEW_FILES_LIST")" > "$NEW_FILES_LIST" 2>/dev/null || true
 
