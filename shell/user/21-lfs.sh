@@ -183,6 +183,38 @@ lfs_get_remote_packages() {
     echo "$all_pkgs" | grep -v "^$"
 }
 
+lfs_rebuild_missing_inventories() {
+    # This function identifies packages in /var/lib/book-packages and /var/lib/custom-packages
+    # that only contain the version (1 line) and lack a file list.
+    # It then triggers lfs_autobuild -f to restore the inventory.
+    
+    [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
+    [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+
+    echo "Scanning for packages with missing file inventories..."
+    local missing_pkgs=$(ssh_lfs '
+        find /var/lib/book-packages /var/lib/custom-packages -type f 2>/dev/null | while read -r f; do
+            if [ $(wc -l < "$f") -le 1 ]; then
+                basename "$f"
+            fi
+        done
+    ' | tr -d '\r')
+
+    if [[ -z "$missing_pkgs" ]]; then
+        echo "All packages have inventories recorded. No action needed."
+        return 0
+    fi
+
+    echo "The following packages are missing inventories and will be rebuilt:"
+    echo "$missing_pkgs"
+    echo "--------------------------------------------------------------------------------"
+
+    for pkg in $missing_pkgs; do
+        echo ">>> Restoring inventory for: $pkg"
+        lfs_autobuild -f "$pkg"
+    done
+}
+
 lfs_get_local_packages() {
     # Only source SSH helpers when running on the host (not inside the VM)
     [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"

@@ -119,7 +119,7 @@ if [[ ${#PACKAGES[@]} -eq 0 ]]; then
 fi
 
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
-error() { echo "[ERROR] $*" >&2; echo "$COMMANDS" > /tmp/cmds_final.out; }
+error() { echo "[ERROR] $*" >&2; echo "$COMMANDS" > /tmp/cmds_final.out; exit 1; }
 
 # Guard against circular dependencies across recursive invocations
 BUILDING_STACK="${BUILDING_STACK:-}"
@@ -276,12 +276,12 @@ find_package_page() {
         fi
 
         log "Searching for '$pkg' in LFS book..." >&2
-        # First try exact match (e.g., /pkg.html)
-        local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/$pkg\.html)\"/is) { print \$1; exit }")
+        # First try exact match (e.g., /pkg.html or pkg.html)
+        local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?$pkg\.html)\"/is) { print \$1; exit }")
         
         # Fallback to loose match but only at boundaries (e.g. openssl vs nss)
         if [[ -z "$lfs_page" ]]; then
-            lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*[^a-z]${pkg}\.html|[^\"]*\/$pkg[^a-z0-9][^\"]*\.html)\"/is) { print \$1; exit }")
+            lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?${pkg}\.html|[^\"]*\/?$pkg[^a-z0-9][^\"]*\.html)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$lfs_page" ]]; then
@@ -310,7 +310,7 @@ find_package_page() {
         fi
 
         # First try match for pkg.html (with optional fragment)
-        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/$search_pkg\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
+        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?$search_pkg\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
         
         # Second try: match fragment directly (if search_pkg is used as a fragment)
         if [[ -z "$blfs_page" ]]; then
@@ -319,7 +319,7 @@ find_package_page() {
 
         # Fallback to match at boundaries
         if [[ -z "$blfs_page" ]]; then
-            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*\/[^a-z0-9]${search_pkg}[^\"]*\.html(?:#[^\"]*)?|[^\"]*\/$search_pkg[^a-z0-9][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?${search_pkg}[^\"]*\.html(?:#[^\"]*)?|[^\"]*\/?$search_pkg[^a-z0-9][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$blfs_page" ]]; then
