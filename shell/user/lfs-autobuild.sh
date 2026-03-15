@@ -833,7 +833,7 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 }
                 loop_content = loop_content "\n" $0
-                if (/make.*install/) {
+                if (/make.*install|ninja.*install|pip3.*install/) {
                     loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null && find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 }
                 if (/done/) in_loop = 0
@@ -973,11 +973,14 @@ ${COMMANDS}"
                 sub(/-D CMAKE_INSTALL_PREFIX=/, "-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=", $0) 
             } 
         }
-        /make.*install/ {
-            if (in_loop && !($0 ~ /touch.*\.installed/)) {
-                # Add marker creation after successful install
-                # Use \& to avoid AWK interpreting & as a backreference
-                sub(/make.*install/, "& \\&\\& touch \"/sources/archives/${DIRNAME}.installed\" \\&\\& sudo mkdir -p /var/lib/book-packages \\&\\& echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null \\&\\& find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null", $0)
+        /make.*install|ninja.*install|pip3.*install/ {
+            if (in_loop && !($0 ~ /book-packages/)) {
+                loop_content = loop_content "\n" $0;
+                loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
+                loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages";
+                loop_content = loop_content "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                next;
             }
         }
         {

@@ -26,6 +26,8 @@ lfs_sync_to_vm() {
         < "$NIXCFG/shell/user/lfs-updates.sh"
     ssh_lfs "cat > ~/.lfs_scripts/lfs-vm-bootstrap.sh" \
         < "$NIXCFG/shell/user/lfs-vm-bootstrap.sh"
+    ssh_lfs "cat > ~/.lfs_autobuild.sh && chmod +x ~/.lfs_autobuild.sh" \
+        < "$NIXCFG/shell/user/lfs-autobuild.sh"
 
     # Hook into ~/.bashrc if not already present
     ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo '# LFS update helpers' >> ~/.bashrc && echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
