@@ -219,7 +219,31 @@ lfs_rebuild_missing_inventories() {
     while read -u 9 -r pkg; do
         [[ -z "$pkg" ]] && continue
         echo ">>> Restoring inventory for: $pkg"
-        lfs_autobuild -f "$pkg" --upstream
+        
+        # Metapackage mapping
+        actual_pkg="$pkg"
+        case "$pkg" in
+            # KDE components often part of frameworks6 or plasma
+            kquickimageeditor|kirigami-addons|purpose|qqc2-desktop-style)
+                actual_pkg="frameworks6"
+                echo "  Mapping $pkg to metapackage: $actual_pkg"
+                ;;
+            xdg-desktop-portal-kde|plasma-desktop|plasma-workspace)
+                actual_pkg="plasma"
+                echo "  Mapping $pkg to metapackage: $actual_pkg"
+                ;;
+            # Xorg libraries/apps
+            libX11|libXext|libXrender|libXft|libXi)
+                actual_pkg="xorg-lib"
+                echo "  Mapping $pkg to metapackage: $actual_pkg"
+                ;;
+            xterm|xclock|xinit|xauth)
+                actual_pkg="xorg-app"
+                echo "  Mapping $pkg to metapackage: $actual_pkg"
+                ;;
+        esac
+
+        lfs_autobuild -f "$actual_pkg" --upstream
     done 9<<< "$missing_pkgs"
 }
 

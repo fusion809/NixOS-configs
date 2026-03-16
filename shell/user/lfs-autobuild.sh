@@ -228,7 +228,7 @@ var_name=\$(grep -iE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d= -
 if [ -n "\$version_line_num" ]; then
     tmp_eval="/tmp/eval_autobuild_ver_\$\$.sh"
     echo 'set +e' > "\$tmp_eval"
-    echo 'export PATH=\$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "\$tmp_eval"
+    echo 'export PATH=/opt/texlive/2025/bin/x86_64-linux:$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$tmp_eval"
     head -n "\$version_line_num" "\$build_script" | tr -d '\r' >> "\$tmp_eval"
     echo "echo \"\\$\$var_name\"" >> "\$tmp_eval"
     cd "\$pkg_dir" && bash "\$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
@@ -900,9 +900,53 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     # Handle meson configure specifically
     COMMANDS=$(echo "$COMMANDS" | sed 's/meson configure -D docs=enabled/meson configure -D docs=disabled/g')
     COMMANDS=$(echo "$COMMANDS" | sed 's/meson configure -D documentation=true/meson configure -D documentation=false/g')
-    # Wrap standalone doxygen/gi-docgen calls
+    # Universal DESTDIR inventory tracking for make/ninja/pip install (non-loop)
+    # This ensures "Up-to-date" files are captured.
     COMMANDS=$(echo "$COMMANDS" | awk '
-        /^(doxygen|gi-docgen)/ { print "if command -v " $1 " &>/dev/null; then"; print; print "fi"; next }
+        /make.*install|ninja.*install|pip3.*install/ {
+            if (!($0 ~ /book-packages/)) {
+                print "echo \"[LFS-AUTOBUILD] Staging installation for full inventory...\""
+                print "DDIR=\"/tmp/destdir_staging\""
+                print "rm -rf \"$DDIR\" && mkdir -p \"$DDIR\""
+                if ($0 ~ /make.*install/) {
+                    print $0 " DESTDIR=\"$DDIR\" || true"
+                } else if ($0 ~ /ninja.*install/) {
+                    print "DESTDIR=\"$DDIR\" " $0 " || true"
+                } else if ($0 ~ /pip3.*install/) {
+                    print $0 " --root=\"$DDIR\" || true"
+                }
+                print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then"
+                print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PACKAGE}\" > /dev/null"
+                print "fi"
+                print "rm -rf \"$DDIR\""
+                print $0
+                next
+            }
+        }
+        { print }
+    ')
+    
+    # Universal DESTDIR inventory tracking for make/ninja install (non-loop)
+    # This ensures "Up-to-date" files are captured.
+    COMMANDS=$(echo "$COMMANDS" | awk '
+        /make.*install|ninja.*install/ {
+            if (!($0 ~ /book-packages/)) {
+                print "echo \"[LFS-AUTOBUILD] Staging installation for full inventory...\""
+                print "DDIR=\"/tmp/destdir_staging\""
+                print "rm -rf \"$DDIR\" && mkdir -p \"$DDIR\""
+                if ($0 ~ /make.*install/) {
+                    print $0 " DESTDIR=\"$DDIR\" || true"
+                } else if ($0 ~ /ninja.*install/) {
+                    print "DESTDIR=\"$DDIR\" " $0 " || true"
+                }
+                print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then"
+                print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PACKAGE}\" > /dev/null"
+                print "fi"
+                print "rm -rf \"$DDIR\""
+                print $0
+                next
+            }
+        }
         { print }
     ')
 fi
@@ -953,7 +997,28 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                 }
                 loop_content = loop_content "\n" $0
                 if (/make.*install|ninja.*install|pip3.*install/) {
-                    loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null && find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    # Add robust inventory recording using DESTDIR where possible
+                    loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
+                    loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
+                    loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
+                    
+                    # Command adaptation for DESTDIR
+                    if ($0 ~ /make.*install/) {
+                        loop_content = loop_content "\n    " $0 " DESTDIR=\"$DDIR\" || true";
+                    } else if ($0 ~ /ninja.*install/) {
+                        loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " $0 " || true";
+                    }
+                    
+                    loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
+                    loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then";
+                    loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n    fi";
+
+                    loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n    " $0;
+                    loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
+                    loop_content = loop_content "\n    rm -rf \"$DDIR\"";
                 }
                 if (/done/) in_loop = 0
             } else if (in_md5) {
@@ -1401,6 +1466,11 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
     log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
+fi
+
+# Fix move command for xorgproto doc in single package mode if it exists
+if [[ "$PACKAGE" == "xorgproto" ]]; then
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's|mv -v \$XORG_PREFIX/share/doc/xorgproto\{,-(.*)\}|sudo rm -rf $XORG_PREFIX/share/doc/xorgproto-\1 \&\& sudo mv -v $XORG_PREFIX/share/doc/xorgproto $XORG_PREFIX/share/doc/xorgproto-\1|g')
 fi
 
 # Replace hardcoded KDE Frameworks versions when using --upstream
