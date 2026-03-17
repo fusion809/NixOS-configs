@@ -275,13 +275,11 @@ find_package_page() {
             return 0
         fi
 
-        log "Searching for '$pkg' in LFS book..." >&2
-        # First try exact match (e.g., /pkg.html or pkg.html)
-        local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?$pkg\.html)\"/is) { print \$1; exit }")
+        local lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"((?:[^\"]*\/)?\Q$pkg\E(?:-(?:[0-9]|\$|patch)|(?:\.html))[^\"]*)\"/is) { print \$1; exit }")
         
-        # Fallback to loose match but only at boundaries (e.g. openssl vs nss)
+        # Fallback to strict start match (e.g. zip vs zip-3.0)
         if [[ -z "$lfs_page" ]]; then
-            lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?${pkg}\.html|[^\"]*\/?$pkg[^a-z0-9][^\"]*\.html)\"/is) { print \$1; exit }")
+            lfs_page=$(curl -s "$LFS_BOOK/chapter08/chapter08.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"((?:[^\"]*\/)?\Q$pkg\E[0-9-][^\"]*\.html)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$lfs_page" ]]; then
@@ -392,16 +390,16 @@ find_package_page() {
         fi
 
         # First try match for pkg.html (with optional fragment)
-        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?$search_pkg\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
+        local blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"((?:[^\"]*\/)?\Q$search_pkg\E(?:\.html|-[0-9])[^\"]*(?:#[^\"]*)?)\"/is) { print \$1; exit }")
         
         # Second try: match fragment directly (if search_pkg is used as a fragment)
         if [[ -z "$blfs_page" ]]; then
-            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]+\.html#$search_pkg)\"/is) { print \$1; exit }")
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]+\.html#\Q$search_pkg\E)\"/is) { print \$1; exit }")
         fi
 
-        # Fallback to match at boundaries (more strict)
+        # Fallback to match at start of filename (strict)
         if [[ -z "$blfs_page" ]]; then
-            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]*?\/?${search_pkg}\.html(?:#[^\"]*)?|[^\"]*\/?$search_pkg[^a-z0-9][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"((?:[^\"]*\/)?\Q$search_pkg\E[0-9-][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
         fi
         
         if [[ -n "$blfs_page" ]]; then
@@ -611,8 +609,10 @@ get_commands() {
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
         sed 's/\\ \+/ /g' | \
         perl -0777 -pe 's/\\\n\s*//gs' | \
-        sed 's/^[[:space:]]*//' | \
+        sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
+        grep -vE "<[a-zA-Z ]+>|\[[a-zA-Z ]+\]" | \
+        grep -vE "^(\.desktop|/usr/share/.*|/etc/.*)$" | \
         perl -0777 -pe '
             # 1. Remove trailing && before block ends or start of next markers
             s/\s*&&\s*\n\s*?___BLOCK_END___/\n___BLOCK_END___/gs;
@@ -683,7 +683,7 @@ while read -r line; do
         # Determine effective type: explicit root, or heuristic for userinput blocks
         _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
-            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|install[[:space:]].*(/usr|/boot|/etc|/lib|/var)|ln[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]].*(/usr|/boot|/etc|/lib|/var)|cp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|mv[[:space:]].*(/usr|/boot|/etc|/lib|/var)|touch[[:space:]].*(/usr|/boot|/etc|/lib|/var)|chmod[[:space:]].*(/usr|/boot|/etc|/lib|/var)|chown[[:space:]].*(/usr|/boot|/etc|/lib|/var)|chgrp[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch)[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
             fi
         fi
@@ -859,6 +859,10 @@ export CMAKE_PREFIX_PATH=\$QT6PREFIX:\$KF6_PREFIX:\$CMAKE_PREFIX_PATH
     fi
 fi
 
+if [[ "$PACKAGE" == "zsh" ]]; then
+    COMMANDS="$(echo "${COMMANDS}" | sed '/texi2pdf/d')"
+fi
+
 # 2.8 Respect existing Fortran support for GCC
 if [[ "$PACKAGE" == "gcc" ]] && [[ "$COMMANDS" == *"--enable-languages=c,c++"* ]]; then
     if target_run "command -v gfortran" &>/dev/null; then
@@ -996,6 +1000,12 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 }
                 loop_content = loop_content "\n" $0
+                if ($0 ~ /mv.*xorgproto\{,-/) {
+                    # Fix for xorgproto move error: ensure destination is not an existing directory
+                    loop_content = loop_content "\n    DEST_DIR=$(echo " $0 " | awk \"{print \\$NF}\" | sed \"s/.*{//; s/}.*//; s/^-//\")";
+                    loop_content = loop_content "\n    sudo rm -rf \"$XORG_PREFIX/share/doc/xorgproto-$DEST_DIR\"";
+                    loop_content = loop_content "\n    sudo " $0;
+                }
                 if (/make.*install|ninja.*install|pip3.*install/) {
                     # Add robust inventory recording using DESTDIR where possible
                     loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
@@ -1007,6 +1017,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                         loop_content = loop_content "\n    " $0 " DESTDIR=\"$DDIR\" || true";
                     } else if ($0 ~ /ninja.*install/) {
                         loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " $0 " || true";
+                    } else if ($0 ~ /pip3.*install/) {
+                        loop_content = loop_content "\n    " $0 " --root=\"$DDIR\" || true";
                     }
                     
                     loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
@@ -1127,7 +1139,13 @@ ${COMMANDS}"
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
         /^bash -e/ { next }
         /^exit/ { next }
-        /^cat > [a-z0-9-]+\.md5 << "EOF"/ { in_md5 = 1; sub(/^cat > /, "cat > /sources/archives/", $0); other_cmds = other_cmds "\n" $0; next }
+        /^cat > [a-z0-9-]+\.md5 << "EOF"/ { 
+            in_md5 = 1; 
+            print "[DEBUG] Found MD5 cat command: " $0 > "/dev/stderr";
+            sub(/^cat > /, "cat > /sources/archives/", $0); 
+            other_cmds = other_cmds "\n" $0; 
+            next 
+        }
         /^while read -r line; do/ { 
             in_loop = 1; 
             loop_content = $0; 
@@ -1282,7 +1300,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
         fi
     elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
         log "Fetching latest upstream KDE Plasma version from KDE mirrors..."
-        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="([0-9]+\.[0-9]+\.[0-9]+)/?"}g) { print $1 }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE Plasma version: $UPSTREAM_VERSION"
         fi
@@ -1351,6 +1369,8 @@ elif [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
     PKG_BASE="$PACKAGE"
 elif [[ "$PACKAGE" == "rustc" ]]; then
     PKG_BASE="(rustc|rust-std|cargo)"
+elif [[ "$PACKAGE" == "libelf" ]]; then
+    PKG_BASE="elfutils"
 else
     PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
 fi
@@ -1473,85 +1493,6 @@ if [[ "$PACKAGE" == "xorgproto" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed -E 's|mv -v \$XORG_PREFIX/share/doc/xorgproto\{,-(.*)\}|sudo rm -rf $XORG_PREFIX/share/doc/xorgproto-\1 \&\& sudo mv -v $XORG_PREFIX/share/doc/xorgproto $XORG_PREFIX/share/doc/xorgproto-\1|g')
 fi
 
-# Replace hardcoded KDE Frameworks versions when using --upstream
-if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons") && -n "$UPSTREAM_VERSION" ]]; then
-    # Extract LFS version from commands (e.g. frameworks-6.23.0.md5 or breeze-icons-6.23.0.tar.xz)
-    # Match 3-digit version following the package name
-    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
-    
-    # Fallback to page version extraction if commands dont have it clearly
-    if [[ -z "$LFS_VERSION" ]]; then
-        LFS_VERSION=$(echo "$HTML_CONTENT" | perl -nle 'if (m{>([0-9]+\.[0-9]+\.[0-9]+)<} || m{([\d\.]+)\.tar\.[a-z2]+}) { print $1; exit }')
-    fi
-
-    if [[ -n "$LFS_VERSION" ]]; then
-        # Ensure we construct the full 3-digit upstream version (e.g., 6.24 -> 6.24.0)
-        UPSTREAM_FULL="${UPSTREAM_VERSION}"
-        if [[ $(echo "$UPSTREAM_FULL" | grep -o '\.' | wc -l) -eq 1 ]]; then
-            UPSTREAM_FULL="${UPSTREAM_FULL}.0"
-        fi
-
-        log "Replacing LFS KDE version $LFS_VERSION with $UPSTREAM_FULL in build commands..."
-        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2)
-        # Fix URL path: replace major.minor only (e.g. 6.23 -> 6.24)
-        COMMANDS=$(echo "$COMMANDS" | sed "s|/stable/frameworks/${LFS_MAJOR_MINOR}/|/stable/frameworks/${UPSTREAM_VERSION}/|g")
-
-        if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
-            # More aggressive replacement for MD5 block and file entries
-            COMMANDS=$(echo "$COMMANDS" | LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" perl -0777 -pe '
-                my $lv = $ENV{LFS_VERSION};
-                my $uf = $ENV{UPSTREAM_FULL};
-
-                # 1. Update the MD5 filename in the cat heredoc trigger
-                s/frameworks-$lv\.md5/frameworks-$uf\.md5/g;
-
-                # 2. Process the MD5 file content: un-comment all, update all versions, move ECM to top
-                s/(cat > \/sources\/archives\/frameworks-$uf\.md5 << \"EOF\"\n)(.*?)(\nEOF)/
-                    my $header = $1;
-                    my $body = $2;
-                    my $footer = $3;
-                    my @lines = split("\n", $body);
-                    my @ecm;
-                    my @others;
-                    for (@lines) {
-                        s\/^#\/\/; # Un-comment
-                        s\/6\.[0-9]+\.[0-9]+\/$uf\/g; # Update versions
-                        if (\/extra-cmake-modules\/) { push @ecm, $_; }
-                        else { push @others, $_; }
-                    }
-                    $header . join("\n", @ecm, @others) . $footer
-                /se;
-
-                # 3. Update the done < redirection
-                s/done < \/sources\/archives\/frameworks-$lv\.md5/done < \/sources\/archives\/frameworks-$uf\.md5/g;
-            ')
-        else
-            # For standalone packages, just update any version strings
-            COMMANDS=$(echo "$COMMANDS" | sed "s/$LFS_VERSION/$UPSTREAM_FULL/g")
-        fi
-
-        # Replace any remaining filenames (e.g. frameworks-6.23.0 -> frameworks-6.24.0)
-        COMMANDS="${COMMANDS//$LFS_VERSION/${UPSTREAM_FULL}}"
-        # Replace remaining bare version occurrences
-        COMMANDS="${COMMANDS//$LFS_VERSION/${UPSTREAM_FULL}}"
-        
-        # Update MAIN_FILENAME and DIRNAME if they were already identified
-        if [[ -n "$MAIN_FILENAME" ]]; then
-            MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_FULL}"
-        fi
-        if [[ -n "$DIRNAME" ]]; then
-            DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_FULL}"
-        fi
-        if [[ -n "$MAIN_DOWNLOAD_URL" ]]; then
-            MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//$LFS_VERSION/$UPSTREAM_FULL}"
-            MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//stable\/frameworks\/${LFS_MAJOR_MINOR}/stable\/frameworks\/${UPSTREAM_VERSION}}"
-        fi
-        for i in "${!DOWNLOAD_URLS[@]}"; do
-            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_FULL}"
-            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//stable\/frameworks\/${LFS_MAJOR_MINOR}/stable\/frameworks\/${UPSTREAM_VERSION}}"
-        done
-    fi
-fi
 
 # Replace hardcoded Vim versions when using --upstream
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]]; then
@@ -1935,6 +1876,59 @@ if [[ "$PACKAGE" == "vim" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed "\|ln -sv ../vim/vim$UPSTREAM_MAJOR_MINOR/doc /usr/share/doc/vim-$UPSTREAM_VERSION|i rm -rf /usr/share/doc/vim-*")
 fi
 
+
+# Handle KDE metapackage version substitution at the very end to ensure it catches generated paths
+if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma") && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from commands (now including absolute paths like /sources/archives/plasma-6.6.1.md5)
+    # Match version string that ends with a digit to avoid eating the trailing dot
+    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{/archives/(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-\K[0-9]+(\.[0-9]+)+}g) { print $& }' | sort -V | tail -n 1)
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-\K[0-9]+(\.[0-9]+)+}g) { print $& }' | sort -V | tail -n 1)
+    fi
+
+    if [[ -n "$LFS_VERSION" ]]; then
+        UPSTREAM_FULL="${UPSTREAM_VERSION}"
+        if [[ $(echo "$UPSTREAM_FULL" | grep -o '\.' | wc -l) -eq 1 ]]; then
+            UPSTREAM_FULL="${UPSTREAM_FULL}.0"
+        fi
+
+        log "[DEBUG] KDE Version Substitution: LFS_VERSION='$LFS_VERSION', UPSTREAM_FULL='$UPSTREAM_FULL'"
+        log "Replacing LFS KDE version $LFS_VERSION with $UPSTREAM_FULL in final build script..."
+        pkg_name=$(echo "${PACKAGE,,}" | grep -qi plasma && echo "plasma" || echo "frameworks")
+
+        # Use perl for complex heredoc and regex substitution
+        COMMANDS=$(echo "$COMMANDS" | LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" PKG_BASE_NAME="$pkg_name" perl -0777 -pe '
+            my $lv = $ENV{LFS_VERSION};
+            my $uf = $ENV{UPSTREAM_FULL};
+            my $bn = $ENV{PKG_BASE_NAME};
+
+            # 1. Update the MD5 filename in the cat heredoc trigger (handle both bare and path)
+            s|($bn-)$lv\.md5|${1}$uf.md5|g;
+            s|(\/sources\/archives\/$bn-)$lv\.md5|${1}$uf.md5|g;
+
+            # 2. Process the MD5 file content: update all versions
+            s|(cat > (?:/sources/archives/)?$bn-$uf\.md5 << \"EOF\"\n)(.*?)(\nEOF)|
+                my $header = $1;
+                my $body = $2;
+                my $footer = $3;
+                my @lines = split("\n", $body);
+                for (@lines) {
+                    s/^#//; # Un-comment
+                    s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
+                    s/6\.[0-9.]+/$uf/g; # Fallback generic replacement
+                }
+                $header . join("\n", @lines) . $footer
+            |se;
+
+            # 3. Update the done < redirection
+            s|(done < (?:/sources/archives/)?$bn-)$lv\.md5|${1}$uf.md5|g;
+
+            # 4. Global version string replacement (be careful not to break other things)
+            # Only replace if it looks like a version match for this package
+            s/\Q$lv\E/$uf/g;
+        ')
+    fi
+fi
 
 if [[ "$FRAMEWORKS_MODE" == "true" || "$XORG_MULTI_MODE" == "true" ]]; then
     MAIN_FILENAME="$PACKAGE"
@@ -2402,7 +2396,6 @@ rm -f /tmp/remote_script_${PACKAGE}.sh
 if [[ "$STRIP" == "true" ]]; then
     if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
         source "$NIXCFG/shell/user/21-lfs.sh"
-        lfs_strip
     else
         echo "Warning: STRIP skipped because 21-lfs.sh is not available locally."
     fi

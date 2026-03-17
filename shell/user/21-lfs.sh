@@ -224,21 +224,25 @@ lfs_rebuild_missing_inventories() {
         actual_pkg="$pkg"
         case "$pkg" in
             # KDE components often part of frameworks6 or plasma
-            kquickimageeditor|kirigami-addons|purpose|qqc2-desktop-style)
-                actual_pkg="frameworks6"
+            kquickimageeditor|kquickimageditor|kirigami-addons|purpose|qqc2-desktop-style)
+                actual_pkg="plasma-all"
                 echo "  Mapping $pkg to metapackage: $actual_pkg"
                 ;;
             xdg-desktop-portal-kde|plasma-desktop|plasma-workspace)
-                actual_pkg="plasma"
+                actual_pkg="plasma-all"
                 echo "  Mapping $pkg to metapackage: $actual_pkg"
                 ;;
-            # Xorg libraries/apps
-            libX11|libXext|libXrender|libXft|libXi)
+            # Xorg libraries/apps/fonts
+            libX11|libXext|libXrender|libXft|libXi|libXau|libXdmcp|libxcb|xcb-util*)
                 actual_pkg="xorg-lib"
                 echo "  Mapping $pkg to metapackage: $actual_pkg"
                 ;;
-            xterm|xclock|xinit|xauth)
+            xterm|xclock|xinit|xauth|iceauth|sessreg|setxkbmap|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
                 actual_pkg="xorg-app"
+                echo "  Mapping $pkg to metapackage: $actual_pkg"
+                ;;
+            font-*)
+                actual_pkg="xorg-font"
                 echo "  Mapping $pkg to metapackage: $actual_pkg"
                 ;;
         esac
