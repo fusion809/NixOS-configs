@@ -130,10 +130,6 @@ for PACKAGE in "${PACKAGES[@]}"; do
         log "Skipping '$PACKAGE': already in build stack (circular dependency guard)."
         continue
     fi
-    # Use a local stack for this iteration to allow independent subsequent packages
-    export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
-
-    # Use a local stack for this iteration to allow independent subsequent packages
     export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
     # 0. Check for custom package in ~/lfs_packaging
@@ -298,6 +294,7 @@ find_package_page() {
                                   echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
             xorg-driver|x7driver|xorg-evdev-driver|xf86-input-evdev|xf86-input-libinput|xf86-input-synaptics|xf86-input-vmmouse|xf86-input-keyboard|xf86-input-mouse|xf86-video-fbdev|xf86-video-vesa|xf86-video-intel|xf86-video-ati|xf86-video-nouveau|xf86-video-vmware|xf86-video-amdgpu|xf86-video-qxl)
                                   echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
+            sdl2-compat) echo "$BLFS_BOOK/multimedia/sdl2.html"; return 0 ;;
         esac
 
         log "Searching for '$pkg' in BLFS index..." >&2
@@ -397,9 +394,19 @@ find_package_page() {
             blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"([^\"]+\.html#\Q$search_pkg\E)\"/is) { print \$1; exit }")
         fi
 
+        # NEW: Try exact match in anchor text first to avoid fuzzy matches (vlc vs phonon-backend-vlc)
+        if [[ -z "$blfs_page" ]]; then
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/<a\s+[^>]*href=\"([^\"]+)\"[^>]*>\s*\Q$search_pkg\E\s*<\/a>/is) { print \$1; exit }")
+        fi
+
         # Fallback to match at start of filename (strict)
         if [[ -z "$blfs_page" ]]; then
             blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/href\s*=\s*\"((?:[^\"]*\/)?\Q$search_pkg\E[0-9-][^\"]*\.html(?:#[^\"]*)?)\"/is) { print \$1; exit }")
+        fi
+
+        # Fourth try: match package name in the anchor text (the visible link text)
+        if [[ -z "$blfs_page" ]]; then
+            blfs_page=$(curl -s "$BLFS_BOOK/longindex.html" | tr -d '\r' | perl -0777 -ne "if (/<a\s+[^>]*href=\"([^\"]+)\"[^>]*>\s*\Q$search_pkg\E(?:-|\$|\s|<)/is) { print \$1; exit }")
         fi
         
         if [[ -n "$blfs_page" ]]; then
@@ -595,9 +602,33 @@ DEPCHECK
         log "No required dependencies found on page."
     fi
 fi
+fi
 
 get_commands() {
     local html="$1"
+    local target_pkg="$2"
+
+    # If target_pkg is provided, try to isolate its section (Identity Crisis Fix)
+    if [[ -n "$target_pkg" ]]; then
+        # Try a more robust sectioning: find the anchor and take everything until the next major section or header.
+        # We use environment variable to safely pass target_pkg to perl.
+        local sectioned_html=$(TARGET_PKG="$target_pkg" printf '%s' "$html" | perl -0777 -ne '
+            my $tp = $ENV{TARGET_PKG};
+            # Match 1: Anchor with ID/Name followed by content until next section
+            if (/(<(?:a|div|h[1-6]|section)[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
+                print $1;
+            } 
+            # Match 2: Header containing anchor with ID/Name
+            elsif (/(<(h[1-6])[^>]*>.*?<(?:a|div)\s+[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?<\/ \2>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
+                print $1;
+            }
+        ')
+        if [[ -n "$sectioned_html" ]]; then
+             html="$sectioned_html"
+             log "[DEBUG] Successfully isolated section for $target_pkg"
+        fi
+    fi
+
     # Extract blocks and clean them individually, preserving root vs userinput class
     printf '%s' "$html" | awk '
         BEGIN { IGNORECASE=1 }
@@ -625,7 +656,7 @@ get_commands() {
 }
 
     log "Extracting build commands..."
-    RAW_CONTENT=$(get_commands "$HTML_CONTENT")
+    RAW_CONTENT=$(get_commands "$HTML_CONTENT" "$PACKAGE")
 
     # Special handling for Linux kernel - include headers
     if [[ "$PACKAGE" == "linux" ]]; then
@@ -633,7 +664,7 @@ get_commands() {
         HEADER_HTML=$(curl -s "$LFS_BOOK/chapter05/linux-headers.html")
         # In a running system, we don't use $LFS prefix and we install to /usr
         # Prepend header commands to RAW_CONTENT so they get processed by the annotation loop
-        HEADER_CMDS=$(get_commands "$HEADER_HTML" | sed 's/\$LFS//g')
+        HEADER_CMDS=$(get_commands "$HEADER_HTML" "linux-headers" | sed 's/\$LFS//g')
         RAW_CONTENT="${HEADER_CMDS}
 ${RAW_CONTENT}"
     fi
@@ -743,7 +774,14 @@ while read -r line; do
         fi
 
         # 7. Determine if this block is a test suite or related setup
-        if [[ "$XORG_MULTI_MODE" == "false" ]] && [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test|all-headless)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary|cd[[:space:]]+t$) ]]; then
+        if [[ "$XORG_MULTI_MODE" == "false" ]] && [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test|all-headless)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary|cd[[:space:]]+t$|tests/run\.sh) ]]; then
+            # util-linux special case: ensure tests are compiled before running
+            if [[ "$PACKAGE" == "util-linux" ]] && [[ ! "$CURRENT_BLOCK" =~ "check-programs" ]]; then
+                log "Prepending 'make check-programs' to util-linux test block."
+                CURRENT_BLOCK="make check-programs
+$CURRENT_BLOCK"
+            fi
+
             if [[ "$is_critical" == "true" ]]; then
                 CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
                 COMMANDS+="
@@ -896,64 +934,49 @@ if [[ "$COMMANDS" =~ $DOC_PATTERNS ]]; then
     done
 fi
 
-if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
-    # Disable docs in meson, cmake, and autotools
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D (docs?|documentation)=enabled/-D \1=disabled/g')
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D (docs?|documentation)=true/-D \1=false/g')
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/--enable-(gtk-doc|doxygen-docs|docs)/--disable-\1/g')
-    # Handle meson configure specifically
-    COMMANDS=$(echo "$COMMANDS" | sed 's/meson configure -D docs=enabled/meson configure -D docs=disabled/g')
-    COMMANDS=$(echo "$COMMANDS" | sed 's/meson configure -D documentation=true/meson configure -D documentation=false/g')
-    # Universal DESTDIR inventory tracking for make/ninja/pip install (non-loop)
-    # This ensures "Up-to-date" files are captured.
-    COMMANDS=$(echo "$COMMANDS" | awk '
-        /make.*install|ninja.*install|pip3.*install/ {
-            if (!($0 ~ /book-packages/)) {
-                print "echo \"[LFS-AUTOBUILD] Staging installation for full inventory...\""
-                print "DDIR=\"/tmp/destdir_staging\""
-                print "rm -rf \"$DDIR\" && mkdir -p \"$DDIR\""
-                if ($0 ~ /make.*install/) {
-                    print $0 " DESTDIR=\"$DDIR\" || true"
-                } else if ($0 ~ /ninja.*install/) {
-                    print "DESTDIR=\"$DDIR\" " $0 " || true"
-                } else if ($0 ~ /pip3.*install/) {
-                    print $0 " --root=\"$DDIR\" || true"
-                }
-                print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then"
-                print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PACKAGE}\" > /dev/null"
-                print "fi"
-                print "rm -rf \"$DDIR\""
-                print $0
-                next
+# 2.9.5 Universal DESTDIR inventory tracking for make/ninja/pip install (non-loop)
+# This ensures "Up-to-date" files are captured. If DESTDIR is present, we ALSO capture from it.
+COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
+    /make.*install|ninja.*install|pip3.*install/ {
+        if (!($0 ~ /book-packages/)) {
+            print "echo \"[LFS-AUTOBUILD] Staging installation for full inventory...\""
+            print "DDIR=\"/tmp/destdir_staging\""
+            print "rm -rf \"$DDIR\" && mkdir -p \"$DDIR\""
+            
+            # 1. Run staging install (our own DESTDIR)
+            if ($0 ~ /make.*install/) {
+                cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
+                print cmd " DESTDIR=\"$DDIR\" || true"
+            } else if ($0 ~ /ninja.*install/) {
+                cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd);
+                print "DESTDIR=\"$DDIR\" " cmd " || true"
+            } else if ($0 ~ /pip3.*install/) {
+                cmd = $0; sub(/--root=[^ ]+ /, "", cmd);
+                print cmd " --root=\"$DDIR\" || true"
             }
-        }
-        { print }
-    ')
-    
-    # Universal DESTDIR inventory tracking for make/ninja install (non-loop)
-    # This ensures "Up-to-date" files are captured.
-    COMMANDS=$(echo "$COMMANDS" | awk '
-        /make.*install|ninja.*install/ {
-            if (!($0 ~ /book-packages/)) {
-                print "echo \"[LFS-AUTOBUILD] Staging installation for full inventory...\""
-                print "DDIR=\"/tmp/destdir_staging\""
-                print "rm -rf \"$DDIR\" && mkdir -p \"$DDIR\""
-                if ($0 ~ /make.*install/) {
-                    print $0 " DESTDIR=\"$DDIR\" || true"
-                } else if ($0 ~ /ninja.*install/) {
-                    print "DESTDIR=\"$DDIR\" " $0 " || true"
-                }
-                print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then"
-                print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PACKAGE}\" > /dev/null"
+            
+            # 2. Run the original command as intended
+            print $0
+
+            # 3. Record from our staging
+            print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then"
+            print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
+            print "fi"
+            print "rm -rf \"$DDIR\""
+            
+            # 4. If the ORIGINAL command had its own DESTDIR/root, also capture from there!
+            if ($0 ~ /DESTDIR=/ || $0 ~ /--root=/) {
+                print "echo \"[LFS-AUTOBUILD] Detected existing DESTDIR/root. Capturing those files too...\""
+                print "EXISTING_DDIR=$(echo \"" $0 "\" | grep -oP \"(DESTDIR=|--root=)\\K[^ ]+\" | head -n 1)"
+                print "if [ -n \"$EXISTING_DDIR\" ] && [ -d \"$EXISTING_DDIR\" ]; then"
+                print "  find \"$EXISTING_DDIR\" -type f -o -type l | sed \"s|^$EXISTING_DDIR||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
                 print "fi"
-                print "rm -rf \"$DDIR\""
-                print $0
-                next
             }
+            next
         }
-        { print }
-    ')
-fi
+    }
+    { print }
+')
 
 # 2.10 ensure XORG_PREFIX and XORG_CONFIG are set if referenced in commands
 if [[ "$COMMANDS" =~ "XORG_PREFIX" || "$COMMANDS" =~ "XORG_CONFIG" ]]; then
@@ -1000,6 +1023,7 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 }
                 loop_content = loop_content "\n" $0
+                if ($0 ~ /^mkdir [^-]/) sub(/^mkdir /, "mkdir -p ", loop_content);
                 if ($0 ~ /mv.*xorgproto\{,-/) {
                     # Fix for xorgproto move error: ensure destination is not an existing directory
                     loop_content = loop_content "\n    DEST_DIR=$(echo " $0 " | awk \"{print \\$NF}\" | sed \"s/.*{//; s/}.*//; s/^-//\")";
@@ -1012,22 +1036,34 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
                     loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                     
-                    # Command adaptation for DESTDIR
+                    # 1. Run staging install (our own DESTDIR)
                     if ($0 ~ /make.*install/) {
-                        loop_content = loop_content "\n    " $0 " DESTDIR=\"$DDIR\" || true";
+                        cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
+                        loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
                     } else if ($0 ~ /ninja.*install/) {
-                        loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " $0 " || true";
+                        cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd);
+                        loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " cmd " || true";
                     } else if ($0 ~ /pip3.*install/) {
-                        loop_content = loop_content "\n    " $0 " --root=\"$DDIR\" || true";
+                        cmd = $0; sub(/--root=[^ ]+ /, "", cmd);
+                        loop_content = loop_content "\n    " cmd " --root=\"$DDIR\" || true";
                     }
                     
-                    loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
+                    # 2. Run the original command as intended
+                    loop_content = loop_content "\n    " $0;
+
+                    # 3. Capture from DESTDIR if populated, otherwise fallback to -newer
                     loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then";
                     loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     loop_content = loop_content "\n    fi";
 
-                    loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n    " $0;
+                    # 4. If the ORIGINAL command had its own DESTDIR/root, also capture from there!
+                    if ($0 ~ /DESTDIR=/ || $0 ~ /--root=/) {
+                        loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Detected existing DESTDIR/root in loop. Capturing those files too...\"";
+                        loop_content = loop_content "\n    EXISTING_DDIR=$(echo \"" $0 "\" | grep -oP \"(DESTDIR=|--root=)\\K[^ ]+\" | head -n 1)";
+                        loop_content = loop_content "\n    if [ -n \"$EXISTING_DDIR\" ] && [ -d \"$EXISTING_DDIR\" ]; then";
+                        loop_content = loop_content "\n        find \"$EXISTING_DDIR\" -type f -o -type l | sed \"s|^$EXISTING_DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                        loop_content = loop_content "\n    fi";
+                    }
                     loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
                     loop_content = loop_content "\n    rm -rf \"$DDIR\"";
@@ -1265,8 +1301,7 @@ elif [[ "$XORG_MULTI_MODE" == "true" ]]; then
             DOWNLOAD_URLS+=("${BASE_URL}${f}")
         done
         MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
-    fi
-fi
+else
 
 if [[ "$UPSTREAM" == "true" ]]; then
     if [[ "$PACKAGE" == "linux" ]]; then
@@ -1486,6 +1521,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
     log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
+fi
 fi
 
 # Fix move command for xorgproto doc in single package mode if it exists
@@ -2138,6 +2174,7 @@ rm -f "$RS_FILE"
   RECORDED_VERSION="$LFS_VERSION"
   [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && RECORDED_VERSION="$UPSTREAM_VERSION"
   printf 'VERSION_TO_RECORD="%s"\n' "$RECORDED_VERSION"
+
   # Inject BS_B64 from a temporary file to avoid shell argument limits
   printf '%s' "$BUILD_SCRIPT_LOCAL" | base64 -w 0 > /tmp/bs_b64.txt
   printf 'BS_B64=\x22'
@@ -2150,6 +2187,8 @@ rm -f "$RS_FILE"
 
   # 3. Append the main logic using a quoted heredoc
   cat <<'REMOTE_EOF'
+export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE XORG_MULTI_MODE RM_LIBS
+
 (
   flock -x 200 || { echo "Another build is in progress. Waiting for lock..."; flock -x 200; }
 set -e
@@ -2274,7 +2313,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
         done
         sudo sort -u "/var/lib/book-packages/${PACKAGE}" -o "/var/lib/book-packages/${PACKAGE}"
     fi
-    echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/"
+    echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/$PACKAGE"
 fi
 
 if [[ "$RM_LIBS" == "true" ]]; then
