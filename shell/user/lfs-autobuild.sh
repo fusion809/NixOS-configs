@@ -712,7 +712,6 @@ while read -r line; do
         [[ -z "$CURRENT_BLOCK" ]] && continue
 
         # Determine effective type: explicit root, or heuristic for userinput blocks
-        _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
             if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch)[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod|gtk-update-icon-cache|update-desktop-database|glib-compile-schemas))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
@@ -803,6 +802,8 @@ fi
             fi
         elif [[ "$CURRENT_BLOCK" =~ "patch" ]]; then
             CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
+            # Make patch non-interactive so it doesn't hang the build
+            CURRENT_BLOCK=$(echo "$CURRENT_BLOCK" | sed -E 's/\bpatch\b/patch -N -f /g')
             COMMANDS+="# __BEGIN_ROOT__
 "
             COMMANDS+="echo \"Attempting to apply patch...\"
@@ -1033,9 +1034,6 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
             # Robustly correct path in the for loop line
             gsub(/\/sources\/archives\/\.\.\/|\.\.\//, "/sources/archives/", line);
             loop_content = line;
-            loop_content = loop_content "\n    # Skip if we only want one package and this is not it"
-            loop_content = loop_content "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
-            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"$pkg_match\" != \"${PACKAGE}\" ] && [ \"$package\" != \"${PACKAGE}\" ]; then continue; fi"
             next 
         }
         {
@@ -1044,9 +1042,16 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                 if ($0 ~ /export -f as_root/) in_as_root = 0
             } else if (in_loop) {
                 if ($0 ~ /packagedir=/) { 
+                    loop_content = loop_content "\n" $0;
+                    loop_content = loop_content "\n    # Skip if we only want one package and this is not it"
+                    loop_content = loop_content "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
+                    loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"$pkg_match\" != \"${PACKAGE}\" ] && [ \"$package\" != \"${PACKAGE}\" ]; then continue; fi"
+
                     loop_content = loop_content "\n    PKGNAME=$(echo $package | sed -E \"s/[-_][0-9].*//\")";
                     loop_content = loop_content "\n    PKGVER=$(echo $package | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/\\.tar\\..*//\")";
                     loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
+                    loop_content = loop_content "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    next;
                 }
                 line = $0;
                 # Fix relative paths to md5 files robustly
@@ -1135,7 +1140,6 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
             print "}"
             print "export -f as_root"
             print other_cmds
-            print "cd /sources/archives"
             print "cat > build-xorg.sh << \"EOF\""
             print "#!/bin/bash"
             print "set -e"
@@ -2371,8 +2375,11 @@ echo "Marking build start time..."
 touch /tmp/build_start_timestamp_${PACKAGE}
 
 # Initialize inventory file with version before build starts to prevent overwriting DESTDIR captures
-sudo mkdir -p /var/lib/book-packages
-echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
+# Skip this for meta-packages, as their subpackages track their own versions internally
+if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
+    sudo mkdir -p /var/lib/book-packages
+    echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
+fi
 
 echo "Running build commands (user blocks as ${NORMAL_USER}, root blocks as root)..."
 # The build script is injected via an environment variable on the guest
