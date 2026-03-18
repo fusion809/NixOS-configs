@@ -946,12 +946,15 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
             # 1. Run staging install (our own DESTDIR)
             if ($0 ~ /make.*install/) {
                 cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
+                sub(/[ &|;\\]+$/, "", cmd);
                 print cmd " DESTDIR=\"$DDIR\" || true"
             } else if ($0 ~ /ninja.*install/) {
                 cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd);
+                sub(/[ &|;\\]+$/, "", cmd);
                 print "DESTDIR=\"$DDIR\" " cmd " || true"
             } else if ($0 ~ /pip3.*install/) {
                 cmd = $0; sub(/--root=[^ ]+ /, "", cmd);
+                sub(/[ &|;\\]+$/, "", cmd);
                 print cmd " --root=\"$DDIR\" || true"
             }
             
@@ -962,7 +965,7 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
             print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then"
             print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
             print "fi"
-            print "rm -rf \"$DDIR\""
+            print "sudo rm -rf \"$DDIR\""
             
             # 4. If the ORIGINAL command had its own DESTDIR/root, also capture from there!
             if ($0 ~ /DESTDIR=/ || $0 ~ /--root=/) {
@@ -1011,40 +1014,55 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
             other_cmds = other_cmds "\n" $0; 
             next 
         }
-        /^for package in/ { in_loop = 1; loop_content = $0; next }
+        /^for package in/ { 
+            in_loop = 1; 
+            line = $0;
+            if (line ~ /\.\.\/.*\.md5/) gsub(/\.\.\//, "/sources/archives/", line);
+            loop_content = line;
+            loop_content = loop_content "\n    # Skip if we only want one package and this is not it"
+            loop_content = loop_content "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
+            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"$pkg_match\" != \"${PACKAGE}\" ] && [ \"$package\" != \"${PACKAGE}\" ]; then continue; fi"
+            next 
+        }
         {
             if (in_as_root) {
                 as_root_content = as_root_content "\n" $0
-                if (/export -f as_root/) in_as_root = 0
+                if ($0 ~ /export -f as_root/) in_as_root = 0
             } else if (in_loop) {
-                if (/packagedir=/) { 
+                if ($0 ~ /packagedir=/) { 
                     loop_content = loop_content "\n    PKGNAME=$(echo $package | sed -E \"s/[-_][0-9].*//\")";
                     loop_content = loop_content "\n    PKGVER=$(echo $package | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/\\.tar\\..*//\")";
                     loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 }
-                loop_content = loop_content "\n" $0
-                if ($0 ~ /^mkdir [^-]/) sub(/^mkdir /, "mkdir -p ", loop_content);
-                if ($0 ~ /mv.*xorgproto\{,-/) {
+                line = $0;
+                # Fix relative paths to md5 files
+                if (line ~ /\.\.\/.*\.md5/) gsub(/\.\.\//, "/sources/archives/", line);
+                if (line ~ /^mkdir [^-]|^mkdir [^ -]/) sub(/^mkdir /, "mkdir -p ", line);
+                loop_content = loop_content "\n" line;
+                if (line ~ /mv.*xorgproto\{,-/) {
                     # Fix for xorgproto move error: ensure destination is not an existing directory
                     loop_content = loop_content "\n    DEST_DIR=$(echo " $0 " | awk \"{print \\$NF}\" | sed \"s/.*{//; s/}.*//; s/^-//\")";
                     loop_content = loop_content "\n    sudo rm -rf \"$XORG_PREFIX/share/doc/xorgproto-$DEST_DIR\"";
                     loop_content = loop_content "\n    sudo " $0;
                 }
-                if (/make.*install|ninja.*install|pip3.*install/) {
+                if ($0 ~ /make.*install|ninja.*install|pip3.*install/) {
                     # Add robust inventory recording using DESTDIR where possible
                     loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
                     loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
-                    loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
+                    loop_content = loop_content "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                     
                     # 1. Run staging install (our own DESTDIR)
                     if ($0 ~ /make.*install/) {
                         cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
+                        sub(/[ &|;\\]+$/, "", cmd);
                         loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
                     } else if ($0 ~ /ninja.*install/) {
                         cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd);
+                        sub(/[ &|;\\]+$/, "", cmd);
                         loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " cmd " || true";
                     } else if ($0 ~ /pip3.*install/) {
                         cmd = $0; sub(/--root=[^ ]+ /, "", cmd);
+                        sub(/[ &|;\\]+$/, "", cmd);
                         loop_content = loop_content "\n    " cmd " --root=\"$DDIR\" || true";
                     }
                     
@@ -1064,16 +1082,20 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                         loop_content = loop_content "\n        find \"$EXISTING_DDIR\" -type f -o -type l | sed \"s|^$EXISTING_DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                         loop_content = loop_content "\n    fi";
                     }
+                    loop_content = loop_content "\n    # Initialize inventory file in loop";
+                    loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
-                    loop_content = loop_content "\n    rm -rf \"$DDIR\"";
+                    loop_content = loop_content "\n    sudo rm -rf \"$DDIR\"";
                 }
-                if (/done/) in_loop = 0
+                if ($0 ~ /done/) in_loop = 0
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
-                if (/^EOF$/) in_md5 = 0
+                if ($0 ~ /^EOF$/) in_md5 = 0
             } else {
-                other_cmds = other_cmds "\n" $0
+                line = $0;
+                if (line ~ /^mkdir [^-]/) sub(/^mkdir /, "mkdir -p ", line);
+                other_cmds = other_cmds "\n" line
             }
         }
         END {
@@ -2275,6 +2297,10 @@ fi
 echo "Marking build start time..."
 touch /tmp/build_start_timestamp_${PACKAGE}
 
+# Initialize inventory file with version before build starts to prevent overwriting DESTDIR captures
+sudo mkdir -p /var/lib/book-packages
+echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
+
 echo "Running build commands (user blocks as ${NORMAL_USER}, root blocks as root)..."
 # The build script is injected via an environment variable on the guest
 # to avoid quoting issues with base64 embedding inside the remote script.
@@ -2290,8 +2316,10 @@ fi
 if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     # Save file list to /var/lib/book-packages/
     sudo mkdir -p /var/lib/book-packages
-    # Prepend version to the file list
-    echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    # Append version if not already there (though we initialized it above, safety first)
+    if ! grep -q "^${VERSION_TO_RECORD}$" "/var/lib/book-packages/${PACKAGE}" 2>/dev/null; then
+        echo "${VERSION_TO_RECORD}" | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    fi
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
