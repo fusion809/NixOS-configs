@@ -714,7 +714,7 @@ while read -r line; do
         # Determine effective type: explicit root, or heuristic for userinput blocks
         _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
-            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch)[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod))' <<< "$CURRENT_BLOCK"; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch)[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod|gtk-update-icon-cache|update-desktop-database|glib-compile-schemas))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
             fi
         fi
@@ -946,15 +946,15 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
             # 1. Run staging install (our own DESTDIR)
             if ($0 ~ /make.*install/) {
                 cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
-                sub(/[ &|;\\]+$/, "", cmd);
+                gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                 print cmd " DESTDIR=\"$DDIR\" || true"
             } else if ($0 ~ /ninja.*install/) {
                 cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd);
-                sub(/[ &|;\\]+$/, "", cmd);
+                gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                 print "DESTDIR=\"$DDIR\" " cmd " || true"
             } else if ($0 ~ /pip3.*install/) {
                 cmd = $0; sub(/--root=[^ ]+ /, "", cmd);
-                sub(/[ &|;\\]+$/, "", cmd);
+                gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                 print cmd " --root=\"$DDIR\" || true"
             }
             
@@ -969,11 +969,21 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
             
             # 4. If the ORIGINAL command had its own DESTDIR/root, also capture from there!
             if ($0 ~ /DESTDIR=/ || $0 ~ /--root=/) {
-                print "echo \"[LFS-AUTOBUILD] Detected existing DESTDIR/root. Capturing those files too...\""
-                print "EXISTING_DDIR=$(echo \"" $0 "\" | grep -oP \"(DESTDIR=|--root=)\\K[^ ]+\" | head -n 1)"
-                print "if [ -n \"$EXISTING_DDIR\" ] && [ -d \"$EXISTING_DDIR\" ]; then"
-                print "  find \"$EXISTING_DDIR\" -type f -o -type l | sed \"s|^$EXISTING_DDIR||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
-                print "fi"
+                # Extract value safely using awk instead of fragile echo
+                split($0, parts, "DESTDIR=");
+                if (length(parts) < 2) split($0, parts, "--root=");
+                if (length(parts) >= 2) {
+                    split(parts[2], val_parts, " ");
+                    destdir = val_parts[1];
+                    # Remove surrounding quotes and trailing operators
+                    gsub(/^["\x27]|["\x27]$|[&|;]+$/, "", destdir);
+                    if (destdir != "") {
+                        print "echo \"[LFS-AUTOBUILD] Detected existing DESTDIR/root: " destdir ". Capturing files...\""
+                        print "if [ -d \"" destdir "\" ]; then"
+                        print "  find \"" destdir "\" -type f -o -type l | sed \"s|^" destdir "||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
+                        print "fi"
+                    }
+                }
             }
             next
         }
@@ -993,6 +1003,9 @@ fi
 # Special handling for Xorg multi-package targets (libs, apps, fonts, drivers)
 if [[ "$XORG_MULTI_MODE" == "true" ]]; then
     log "Enabling Xorg multi-package loop mode."
+
+    # Pre-fix relative MD5 paths for Xorg as well
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')
 
     # Fix the bash subshell and execution for Xorg loops
     log "Converting Xorg build loop into a standalone script..."
@@ -1017,7 +1030,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
         /^for package in/ { 
             in_loop = 1; 
             line = $0;
-            if (line ~ /\.\.\/.*\.md5/) gsub(/\.\.\//, "/sources/archives/", line);
+            # Robustly correct path in the for loop line
+            gsub(/\/sources\/archives\/\.\.\/|\.\.\//, "/sources/archives/", line);
             loop_content = line;
             loop_content = loop_content "\n    # Skip if we only want one package and this is not it"
             loop_content = loop_content "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
@@ -1035,59 +1049,68 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 }
                 line = $0;
-                # Fix relative paths to md5 files
-                if (line ~ /\.\.\/.*\.md5/) gsub(/\.\.\//, "/sources/archives/", line);
+                # Fix relative paths to md5 files robustly
+                gsub(/\/sources\/archives\/\.\.\/|\.\.\//, "/sources/archives/", line);
                 if (line ~ /^mkdir [^-]|^mkdir [^ -]/) sub(/^mkdir /, "mkdir -p ", line);
-                loop_content = loop_content "\n" line;
-                if (line ~ /mv.*xorgproto\{,-/) {
-                    # Fix for xorgproto move error: ensure destination is not an existing directory
-                    loop_content = loop_content "\n    DEST_DIR=$(echo " $0 " | awk \"{print \\$NF}\" | sed \"s/.*{//; s/}.*//; s/^-//\")";
-                    loop_content = loop_content "\n    sudo rm -rf \"$XORG_PREFIX/share/doc/xorgproto-$DEST_DIR\"";
-                    loop_content = loop_content "\n    sudo " $0;
-                }
-                if ($0 ~ /make.*install|ninja.*install|pip3.*install/) {
-                    # Add robust inventory recording using DESTDIR where possible
+                if (line ~ /make.*install|ninja.*install|pip3.*install/) {
+                    # Install line: goes ONLY through inventory tracking (NOT also appended above)
                     loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
                     loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
                     loop_content = loop_content "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                     
                     # 1. Run staging install (our own DESTDIR)
-                    if ($0 ~ /make.*install/) {
-                        cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
-                        sub(/[ &|;\\]+$/, "", cmd);
+                    if (line ~ /make.*install/) {
+                        cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
+                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                         loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
-                    } else if ($0 ~ /ninja.*install/) {
-                        cmd = $0; sub(/DESTDIR=[^ ]+ /, "", cmd);
-                        sub(/[ &|;\\]+$/, "", cmd);
+                    } else if (line ~ /ninja.*install/) {
+                        cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd);
+                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                         loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " cmd " || true";
-                    } else if ($0 ~ /pip3.*install/) {
-                        cmd = $0; sub(/--root=[^ ]+ /, "", cmd);
-                        sub(/[ &|;\\]+$/, "", cmd);
+                    } else if (line ~ /pip3.*install/) {
+                        cmd = line; sub(/--root=[^ ]+ /, "", cmd);
+                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                         loop_content = loop_content "\n    " cmd " --root=\"$DDIR\" || true";
                     }
                     
-                    # 2. Run the original command as intended
-                    loop_content = loop_content "\n    " $0;
+                    # 2. Run the original command as intended (use line which has path fixes applied)
+                    loop_content = loop_content "\n    " line;
 
-                    # 3. Capture from DESTDIR if populated, otherwise fallback to -newer
+                    # 3. Capture from DESTDIR if populated
                     loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then";
                     loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     loop_content = loop_content "\n    fi";
 
                     # 4. If the ORIGINAL command had its own DESTDIR/root, also capture from there!
                     if ($0 ~ /DESTDIR=/ || $0 ~ /--root=/) {
-                        loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Detected existing DESTDIR/root in loop. Capturing those files too...\"";
-                        loop_content = loop_content "\n    EXISTING_DDIR=$(echo \"" $0 "\" | grep -oP \"(DESTDIR=|--root=)\\K[^ ]+\" | head -n 1)";
-                        loop_content = loop_content "\n    if [ -n \"$EXISTING_DDIR\" ] && [ -d \"$EXISTING_DDIR\" ]; then";
-                        loop_content = loop_content "\n        find \"$EXISTING_DDIR\" -type f -o -type l | sed \"s|^$EXISTING_DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                        loop_content = loop_content "\n    fi";
+                        split($0, parts, "DESTDIR=");
+                        if (length(parts) < 2) split($0, parts, "--root=");
+                        if (length(parts) >= 2) {
+                            split(parts[2], val_parts, " ");
+                            destdir = val_parts[1];
+                            gsub(/^["\x27]|["\x27]$|[&|;]+$/, "", destdir);
+                            if (destdir != "") {
+                                loop_content = loop_content "\n    if [ -d \"" destdir "\" ]; then"
+                                loop_content = loop_content "\n        find \"" destdir "\" -type f -o -type l | sed \"s|^" destdir "||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null"
+                                loop_content = loop_content "\n    fi"
+                            }
+                        }
                     }
-                    loop_content = loop_content "\n    # Initialize inventory file in loop";
                     loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
                     loop_content = loop_content "\n    sudo rm -rf \"$DDIR\"";
+                } else {
+                    # Non-install line: unconditionally append (with path fixes)
+                    loop_content = loop_content "\n" line;
+                    if (line ~ /mv.*xorgproto\{,-/) {
+                        # Fix for xorgproto move error
+                        loop_content = loop_content "\n    DEST_DIR=$(echo " line " | awk \"{print \\$NF}\" | sed \"s/.*{//; s/}.*//; s/^-//\")";
+                        loop_content = loop_content "\n    sudo rm -rf \"$XORG_PREFIX/share/doc/xorgproto-$DEST_DIR\"";
+                        loop_content = loop_content "\n    sudo " line;
+                    }
                 }
+
                 if ($0 ~ /done/) in_loop = 0
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
@@ -1101,17 +1124,34 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
         END {
             sub(/^\n/, "", other_cmds)
             print "cd /sources/archives"
+            print "as_root() {"
+            print "  if [ \$EUID = 0 ]; then"
+            print "    \$@"
+            print "  elif [ -x /usr/bin/sudo ]; then"
+            print "    sudo \$@"
+            print "  else"
+            print "    su -c \"\$*\""
+            print "  fi"
+            print "}"
+            print "export -f as_root"
             print other_cmds
             print "cd /sources/archives"
             print "cat > build-xorg.sh << \"EOF\""
             print "#!/bin/bash"
             print "set -e"
             print ""
-            print as_root_content
+            print "as_root() {"
+            print "  if [ \$EUID = 0 ]; then"
+            print "    \$@"
+            print "  elif [ -x /usr/bin/sudo ]; then"
+            print "    sudo \$@"
+            print "  else"
+            print "    su -c \"\$*\""
+            print "  fi"
+            print "}"
+            print "export -f as_root"
             print ""
-            # Inject markers for BUILD_SCRIPT generator
-            # The as_root from the book works if sudo is available.
-            # We dont need to override it here.
+            print as_root_content
             print ""
             print loop_content
             print "EOF"
@@ -1277,6 +1317,16 @@ ${COMMANDS}"
         END {
             sub(/^\n/, "", other_cmds)
             print "cd /sources/archives"
+            print "as_root() {"
+            print "  if [ $EUID = 0 ]; then"
+            print "    $*"
+            print "  elif [ -x /usr/bin/sudo ]; then"
+            print "    sudo $*"
+            print "  else"
+            print "    su -c \"$*\""
+            print "  fi"
+            print "}"
+            print "export -f as_root"
             print other_cmds
             print "cd /sources/archives"
             print "cat > build-frameworks.sh << \"EOF\""
@@ -1284,6 +1334,17 @@ ${COMMANDS}"
             print "set -e"
             print ""
             print "cd /sources/archives"
+            print ""
+            print "as_root() {"
+            print "  if [ $EUID = 0 ]; then"
+            print "    $*"
+            print "  elif [ -x /usr/bin/sudo ]; then"
+            print "    sudo $*"
+            print "  else"
+            print "    su -c \"$*\""
+            print "  fi"
+            print "}"
+            print "export -f as_root"
             print ""
             print as_root_content
             print ""
@@ -1973,7 +2034,7 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
                 for (@lines) {
                     s/^#//; # Un-comment
                     s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
-                    s/6\.[0-9.]+/$uf/g; # Fallback generic replacement
+                    s/6\.\d+(?:\.\d+){0,2}/$uf/g; # Fallback generic replacement
                 }
                 $header . join("\n", @lines) . $footer
             |se;
@@ -2020,6 +2081,18 @@ _gen_build_script() {
     local user_lines=()
     local current_rel_dir="."
     local block_starting_rel_dir="."
+
+    # Always define as_root at the top of every generated script
+    echo "as_root() {"
+    echo "  if [ \$EUID = 0 ]; then"
+    echo "    \$@"
+    echo "  elif [ -x /usr/bin/sudo ]; then"
+    echo "    sudo \$@"
+    echo "  else"
+    echo "    su -c \"\$*\""
+    echo "  fi"
+    echo "}"
+    echo "export -f as_root"
 
     # Internal helper to flush accumulated user commands into an su block
     _flush_user() {
