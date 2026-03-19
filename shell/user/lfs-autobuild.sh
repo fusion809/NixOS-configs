@@ -843,6 +843,11 @@ fi
                     log "Stripping placeholder command: $bline"
                     continue
                 fi
+                # Strip time-consuming PGO optimizations (tests) from Python
+                if [[ "$PACKAGE" == "python"* ]] && [[ "$bline" =~ "--enable-optimizations" ]]; then
+                    log "Stripping non-critical --enable-optimizations from Python." >&2
+                    bline=$(echo "$bline" | sed 's/--enable-optimizations//g; s/[[:space:]]\+/ /g')
+                fi
                 COMMANDS+="$bline"$'\n'
             done <<< "$CURRENT_BLOCK"
             [[ "$_eff_type" == "root" ]] && COMMANDS+="# __END_ROOT__"$'\n'
@@ -2638,8 +2643,12 @@ else
 fi
 rm -f /tmp/remote_script_${PACKAGE}.sh
 
-if [[ "$STRIP" == "true" ]]; then
-    lfs_strip
+# Optional binary stripping on host after build
+if [[ "$STRIP" == "true" ]] && [[ "$HOST_MODE" == "true" ]]; then
+    if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
+        source "$NIXCFG/shell/user/21-lfs.sh"
+        lfs_strip
+    fi
 fi
 
 done
