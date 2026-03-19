@@ -42,6 +42,8 @@ RM_LIBS=false
 SEARCH_LFS=true
 SEARCH_BLFS=true
 PACKAGES=()
+DOWNLOAD_URLS=()
+ALL_FILENAMES=()
 XORG_MULTI_MODE=false
 FORCE=false
 
@@ -462,8 +464,8 @@ fi
 
 log "Found package page: $PAGE_URL"
 
-if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font|driver)$ ]] || \
-   [[ "$PAGE_URL" =~ x7(lib|app|font|driver)\.html$ ]]; then
+if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font)$ ]] || \
+   [[ "$PAGE_URL" =~ x7(lib|app|font)\.html$ ]]; then
     XORG_MULTI_MODE=true
     log "Enabling Xorg multi-package mode."
 fi
@@ -607,6 +609,11 @@ fi
 get_commands() {
     local html="$1"
     local target_pkg="$2"
+    
+    # If it is a driver, try to simplify for anchor matching
+    if [[ "$target_pkg" =~ ^xorg-.*-driver$ ]]; then
+        target_pkg=$(echo "$target_pkg" | sed 's/^xorg-//; s/-driver$//')
+    fi
 
     # If target_pkg is provided, try to isolate its section (Identity Crisis Fix)
     if [[ -n "$target_pkg" ]]; then
@@ -711,9 +718,9 @@ while read -r line; do
     elif [[ "$line" == "___BLOCK_END___" ]]; then
         [[ -z "$CURRENT_BLOCK" ]] && continue
 
-        # Determine effective type: explicit root, or heuristic for userinput blocks
+        _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
-            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch)[[:space:]].*(/usr|/boot|/etc|/lib|/var)|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod|gtk-update-icon-cache|update-desktop-database|glib-compile-schemas))' <<< "$CURRENT_BLOCK"; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch|pushd|popd|cd)[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]]+.*info/dir|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod|gtk-update-icon-cache|update-desktop-database|glib-compile-schemas))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
             fi
         fi
@@ -748,9 +755,9 @@ while read -r line; do
             continue
         fi
 
-        # 4. Skip blfs-systemd-units install commands
-        if [[ "$CURRENT_BLOCK" =~ make[[:space:]]+install-dhcpcd ]]; then
-            log "Skipping blfs-systemd-units install command." >&2
+        # 4. Skip blfs-systemd-units / configuration install commands
+        if [[ "$CURRENT_BLOCK" =~ make[[:space:]]+install-(dhcpcd|rsyncd) ]]; then
+            log "Skipping service/configuration install command." >&2
             continue
         fi
 
@@ -773,7 +780,9 @@ while read -r line; do
         fi
 
         # 7. Determine if this block is a test suite or related setup
-        if [[ "$XORG_MULTI_MODE" == "false" ]] && [[ "$CURRENT_BLOCK" =~ (make.*(check|test|tests|jstest|jit-test|all-headless)|ninja.*test|spawn.*make|\<expect\>|tester|su.*tester|testdir|test_summary|cd[[:space:]]+t$|tests/run\.sh) ]]; then
+        if [[ "$XORG_MULTI_MODE" == "false" ]] && \
+           ! grep -qE '^[[:space:]]*(cmake|mkdir[[:space:]]+build)' <<< "$CURRENT_BLOCK" && \
+           [[ "$CURRENT_BLOCK" =~ (make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests/run\.sh) ]]; then
             # util-linux special case: ensure tests are compiled before running
             if [[ "$PACKAGE" == "util-linux" ]] && [[ ! "$CURRENT_BLOCK" =~ "check-programs" ]]; then
                 log "Prepending 'make check-programs' to util-linux test block."
@@ -834,13 +843,6 @@ fi
                     log "Stripping placeholder command: $bline"
                     continue
                 fi
-                # Skip doxygen and manual doc installation
-                if [[ "$bline" =~ ^[[:space:]]*(doxygen|make.*doc|ninja.*doc)([[:space:]]|$) ]] || \
-                   [[ "$bline" =~ install.*doc/html ]] || \
-                   ([[ "$bline" =~ install.*/usr/share/doc ]] && [[ "$bline" =~ doc/html|doc/api|doc/manual|${PACKAGE%-*} ]]); then
-                    log "Skipping documentation command: $bline"
-                    continue
-                fi
                 COMMANDS+="$bline"$'\n'
             done <<< "$CURRENT_BLOCK"
             [[ "$_eff_type" == "root" ]] && COMMANDS+="# __END_ROOT__"$'\n'
@@ -856,6 +858,10 @@ done <<< "$RAW_CONTENT"
 if [[ -z "$COMMANDS" ]]; then
     error "Could not extract build commands for '$PACKAGE'"
 fi
+
+# Rewrite relative ../pkg.tar.* references in tar commands to absolute /sources/archives/ paths
+# This handles packages like docbook-xsl-nons that reference a secondary tarball in the parent directory
+COMMANDS=$(echo "$COMMANDS" | sed -E 's|tar ([^|&;]*)-xf \.\./(([a-zA-Z0-9_+.-]+)\.tar\.[a-z0-9]+)|tar \1-xf /sources/archives/\2|g; s|tar ([^|&;]*)-xf \.\./\.\./([^/]+\.tar\.[a-z0-9]+)|tar \1-xf /sources/archives/\2|g')
 
 # 2.5 Auto-detect Rust dependency
 if echo "$HTML_CONTENT" | grep -qiE "rust|rustc|cargo"; then
@@ -919,29 +925,67 @@ if [[ "$PACKAGE" == "llvm" ]] && [[ "$COMMANDS" == *"LLVM_TARGETS_TO_BUILD"* ]];
 fi
 
 # 2.9 Check for documentation tools and disable if missing
-DOC_TOOLS="doxygen gi-docgen db2html xmlto xsltproc sphinx-build"
+DOC_TOOLS="doxygen gi-docgen db2html xmlto xsltproc sphinx-build texlive"
 DOC_PATTERNS="-D (docs?|documentation)=(enabled|true)|--enable-(gtk-doc|doxygen-docs|docs)"
 ENABLE_DOC_BUILD=true
 
-if [[ "$COMMANDS" =~ $DOC_PATTERNS ]]; then
+# ONLY suppress documentation if specific, missing tools are mentioned on the build page (doxygen or texlive)
+if [[ "$COMMANDS" =~ $DOC_PATTERNS ]] || [[ "$PACKAGE" == "libxml2" ]]; then
     for tool in $DOC_TOOLS; do
-        if [[ "$COMMANDS" =~ $tool ]] || [[ "$COMMANDS" =~ (docs?|documentation) ]]; then
+        # If the tool is referenced in commands OR specifically if it is doxygen/texlive AND mentioned on the page
+        if [[ "$COMMANDS" =~ $tool ]] || \
+           ([[ "$tool" =~ doxygen|texlive ]] && echo "$HTML_CONTENT" | grep -qi "$tool"); then
             if ! target_run "command -v $tool" &>/dev/null; then
-                log "[WARNING] Documentation tool '$tool' not found on target. Disabling documentation building."
+                # Special case: 'texlive' command might be one of its components like 'pdflatex' or 'xelatex'
+                if [[ "$tool" == "texlive" ]]; then
+                    if target_run "command -v pdflatex" || target_run "command -v xelatex" &>/dev/null; then
+                        continue
+                    fi
+                fi
+                log "[WARNING] Documentation tool '$tool' not found on target. Disabling documentation building requiring it."
                 ENABLE_DOC_BUILD=false
+                MISSING_DOC_TOOL="$tool"
                 break
             fi
         fi
     done
 fi
 
+if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
+    # 1. Flip existing meson/configure flags
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's/-D (docs?|documentation)=(enabled|true)/-D $1=disabled/g; s/--enable-(docs|gtk-doc|doxygen-docs)/--disable-$1/g')
+    
+    # 2. Universal injection for Meson: ensure docs are disabled even if no flag was present
+    if [[ "$COMMANDS" == *"meson setup"* ]]; then
+        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "s/meson\s+setup/meson setup -D docs=disabled/g")
+    fi
+
+    # 3. Universal injection for Autotools
+    if [[ "$COMMANDS" == *"./configure"* || "$COMMANDS" == *"../configure"* ]]; then
+        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "s/configure/configure --disable-docs/g")
+    fi
+    
+    # 4. Strip any lines that are exclusively for building documentation REQUIRING the missing tool
+    # If doxygen is missing, strip doxygen or manual doc building
+    if [[ "$MISSING_DOC_TOOL" == "doxygen" ]]; then
+        COMMANDS=$(echo "$COMMANDS" | awk '
+            !/^[[:space:]]*(doxygen|ninja -C [^ ]+ doc|make doc|make docs|as_root make install-doc)[[:space:]]*$/
+        ')
+    elif [[ "$MISSING_DOC_TOOL" == "texlive" ]]; then
+        # If texlive is missing, strip commands that look like pdf/latex doc builds
+        COMMANDS=$(echo "$COMMANDS" | awk '
+            !/^[[:space:]]*(make pdf|make ps|make dvi|make install-pdf|make -C doc pdf)[[:space:]]*$/
+        ')
+    fi
+fi
+
 # 2.9.5 Universal DESTDIR inventory tracking for make/ninja/pip install (non-loop)
 # This ensures "Up-to-date" files are captured. If DESTDIR is present, we ALSO capture from it.
 COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
-    /make.*install|ninja.*install|pip3.*install/ {
+    /^[[:space:]]*([A-Z_]+=.*[[:space:]]+)*(make|ninja|pip3).*install/ {
         if (!($0 ~ /book-packages/)) {
             print "echo \"[LFS-AUTOBUILD] Staging installation for full inventory...\""
-            print "DDIR=\"/tmp/destdir_staging\""
+            print "DDIR=\"/tmp/destdir_" PKG "\""
             print "rm -rf \"$DDIR\" && mkdir -p \"$DDIR\""
             
             # 1. Run staging install (our own DESTDIR)
@@ -963,7 +1007,7 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
             print $0
 
             # 3. Record from our staging
-            print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then"
+            print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then"
             print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
             print "fi"
             print "sudo rm -rf \"$DDIR\""
@@ -1006,159 +1050,155 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
     log "Enabling Xorg multi-package loop mode."
 
     # Pre-fix relative MD5 paths for Xorg as well
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')
-
-    # Fix the bash subshell and execution for Xorg loops
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')    # Fix the bash subshell and execution for Xorg loops
     log "Converting Xorg build loop into a standalone script..."
     COMMANDS=$(echo "$COMMANDS" | awk '
         BEGIN {
-            in_loop = 0
             in_as_root = 0
             in_md5 = 0
+            in_vm_script = 0
             as_root_content = ""
-            other_cmds = ""
-            loop_content = ""
-            md5_file = ""
+            host_cmds = ""
+            vm_cmds = ""
         }
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
         /^bash -e/ { next }
         /^exit/ { next }
         /^cat > .*\.md5 << "EOF"/ { 
             in_md5 = 1; 
-            other_cmds = other_cmds "\n" $0; 
+            host_cmds = host_cmds "\n" $0; 
             next 
         }
-        /^for package in/ { 
-            in_loop = 1; 
-            line = $0;
-            # Robustly correct path in the for loop line
-            gsub(/\/sources\/archives\/\.\.\/|\.\.\//, "/sources/archives/", line);
-            loop_content = line;
-            next 
-        }
+        /^for package in/ { in_vm_script = 1 }
         {
             if (in_as_root) {
                 as_root_content = as_root_content "\n" $0
                 if ($0 ~ /export -f as_root/) in_as_root = 0
-            } else if (in_loop) {
-                if ($0 ~ /packagedir=/) { 
-                    loop_content = loop_content "\n" $0;
-                    loop_content = loop_content "\n    # Skip if we only want one package and this is not it"
-                    loop_content = loop_content "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
-                    loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"$pkg_match\" != \"${PACKAGE}\" ] && [ \"$package\" != \"${PACKAGE}\" ]; then continue; fi"
+                next
+            }
+            if (in_md5) {
+                host_cmds = host_cmds "\n" $0
+                if ($0 ~ /^EOF$/) in_md5 = 0
+                next
+            }
+            
+            line = $0;
+            # Fix relative paths to md5 files robustly
+            gsub(/\/sources\/archives\/\.\.\/|\.\.\//, "/sources/archives/", line);
+            if (line ~ /^mkdir [^-]|^mkdir [^ -]/) sub(/^mkdir /, "mkdir -p ", line);
+            
+            if (in_vm_script) {
+                if (line ~ /packagedir=/) { 
+                    vm_cmds = vm_cmds "\n    " line;
+                    vm_cmds = vm_cmds "\n    # Skip if we only want one package and this is not it"
+                    vm_cmds = vm_cmds "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
+                    vm_cmds = vm_cmds "\n    if [ -n \"${PACKAGE}\" ] && [ \"$pkg_match\" != \"${PACKAGE}\" ] && [ \"$package\" != \"${PACKAGE}\" ]; then continue; fi"
 
-                    loop_content = loop_content "\n    PKGNAME=$(echo $package | sed -E \"s/[-_][0-9].*//\")";
-                    loop_content = loop_content "\n    PKGVER=$(echo $package | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/\\.tar\\..*//\")";
-                    loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
-                    loop_content = loop_content "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    PKGNAME=$(echo $package | sed -E \"s/[-_][0-9].*//\")";
+                    vm_cmds = vm_cmds "\n    PKGVER=$(echo $package | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/\\.tar\\..*//\")";
+                    vm_cmds = vm_cmds "\n    touch /tmp/build_start_${PKGNAME}";
+                    vm_cmds = vm_cmds "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     next;
                 }
-                line = $0;
-                # Fix relative paths to md5 files robustly
-                gsub(/\/sources\/archives\/\.\.\/|\.\.\//, "/sources/archives/", line);
-                if (line ~ /^mkdir [^-]|^mkdir [^ -]/) sub(/^mkdir /, "mkdir -p ", line);
                 if (line ~ /make.*install|ninja.*install|pip3.*install/) {
-                    # Install line: goes ONLY through inventory tracking (NOT also appended above)
-                    loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
-                    loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
-                    loop_content = loop_content "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
+                    vm_cmds = vm_cmds "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
+                    vm_cmds = vm_cmds "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
+                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                     
-                    # 1. Run staging install (our own DESTDIR)
                     if (line ~ /make.*install/) {
                         cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
                         gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                        loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
+                        vm_cmds = vm_cmds "\n    " cmd " DESTDIR=\"$DDIR\" || true";
                     } else if (line ~ /ninja.*install/) {
                         cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd);
                         gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                        loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " cmd " || true";
+                        vm_cmds = vm_cmds "\n    DESTDIR=\"$DDIR\" " cmd " || true";
                     } else if (line ~ /pip3.*install/) {
                         cmd = line; sub(/--root=[^ ]+ /, "", cmd);
                         gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                        loop_content = loop_content "\n    " cmd " --root=\"$DDIR\" || true";
+                        vm_cmds = vm_cmds "\n    " cmd " --root=\"$DDIR\" || true";
                     }
                     
-                    # 2. Run the original command as intended (use line which has path fixes applied)
-                    loop_content = loop_content "\n    " line;
+                    cmd = line; gsub(/ *([|][|]|&&|;).*$/, "", cmd);
+                    vm_cmds = vm_cmds "\n    " cmd;
+                    vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
+                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    fi";
 
-                    # 3. Capture from DESTDIR if populated
-                    loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then";
-                    loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n    fi";
-
-                    # 4. If the ORIGINAL command had its own DESTDIR/root, also capture from there!
-                    if ($0 ~ /DESTDIR=/ || $0 ~ /--root=/) {
-                        split($0, parts, "DESTDIR=");
-                        if (length(parts) < 2) split($0, parts, "--root=");
+                    if (line ~ /DESTDIR=/ || line ~ /--root=/) {
+                        split(line, parts, "DESTDIR=");
+                        if (length(parts) < 2) split(line, parts, "--root=");
                         if (length(parts) >= 2) {
                             split(parts[2], val_parts, " ");
                             destdir = val_parts[1];
                             gsub(/^["\x27]|["\x27]$|[&|;]+$/, "", destdir);
                             if (destdir != "") {
-                                loop_content = loop_content "\n    if [ -d \"" destdir "\" ]; then"
-                                loop_content = loop_content "\n        find \"" destdir "\" -type f -o -type l | sed \"s|^" destdir "||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null"
-                                loop_content = loop_content "\n    fi"
+                                vm_cmds = vm_cmds "\n    if [ -d \"" destdir "\" ]; then"
+                                vm_cmds = vm_cmds "\n        find \"" destdir "\" -type f -o -type l | sed \"s|^" destdir "||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null"
+                                vm_cmds = vm_cmds "\n    fi"
                             }
                         }
                     }
-                    loop_content = loop_content "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
-                    loop_content = loop_content "\n    sudo rm -rf \"$DDIR\"";
-                } else {
-                    # Non-install line: unconditionally append (with path fixes)
-                    loop_content = loop_content "\n" line;
-                    if (line ~ /mv.*xorgproto\{,-/) {
-                        # Fix for xorgproto move error
-                        loop_content = loop_content "\n    DEST_DIR=$(echo " line " | awk \"{print \\$NF}\" | sed \"s/.*{//; s/}.*//; s/^-//\")";
-                        loop_content = loop_content "\n    sudo rm -rf \"$XORG_PREFIX/share/doc/xorgproto-$DEST_DIR\"";
-                        loop_content = loop_content "\n    sudo " line;
-                    }
+                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
+                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
+                    next;
                 }
-
-                if ($0 ~ /done/) in_loop = 0
-            } else if (in_md5) {
-                other_cmds = other_cmds "\n" $0
-                if ($0 ~ /^EOF$/) in_md5 = 0
+                
+                # Diagnostic suppression
+                if (line ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
+                    vm_cmds = vm_cmds "\n    " line " 2>/dev/null || true";
+                    next;
+                }
+                
+                # Test suite suppression
+                if (line ~ /(make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests\/run\.sh)/) {
+                    next;
+                }
+                
+                vm_cmds = vm_cmds "\n    " line;
+                next;
             } else {
-                line = $0;
-                if (line ~ /^mkdir [^-]/) sub(/^mkdir /, "mkdir -p ", line);
-                other_cmds = other_cmds "\n" line
+                # Host diagnostic suppression
+                if (line ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
+                    host_cmds = host_cmds "\n" line " 2>/dev/null || true";
+                } else {
+                    host_cmds = host_cmds "\n" line
+                }
+                next;
             }
         }
         END {
-            sub(/^\n/, "", other_cmds)
+            sub(/^\n/, "", host_cmds)
             print "cd /sources/archives"
             print "as_root() {"
-            print "  if [ \$EUID = 0 ]; then"
-            print "    \$@"
+            print "  if [ ${EUID:-$(id -u)} = 0 ]; then"
+            print "    [ $# -gt 0 ] && \"$@\" || :"
             print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo \$@"
+            print "    sudo \"$@\""
             print "  else"
-            print "    su -c \"\$*\""
+            print "    su -c \"$*\""
             print "  fi"
             print "}"
             print "export -f as_root"
-            print other_cmds
-            print "cat > build-xorg.sh << \"EOF\""
+            print host_cmds
+            print "cat > build-xorg.sh << \x27XORGEOF\x27"
             print "#!/bin/bash"
             print "set -e"
             print ""
             print "as_root() {"
-            print "  if [ \$EUID = 0 ]; then"
-            print "    \$@"
+            print "  if [ ${EUID:-$(id -u)} = 0 ]; then"
+            print "    [ $# -gt 0 ] && \"$@\" || :"
             print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo \$@"
+            print "    sudo \"$@\""
             print "  else"
-            print "    su -c \"\$*\""
+            print "    su -c \"$*\""
             print "  fi"
             print "}"
             print "export -f as_root"
-            print ""
-            print as_root_content
-            print ""
-            print loop_content
-            print "EOF"
+            print vm_cmds
+            print "XORGEOF"
             print "bash build-xorg.sh"
         }
     ')
@@ -1275,15 +1315,18 @@ ${COMMANDS}"
                 loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
                 loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                 
-                # Command adaptation for DESTDIR
+                # Command adaptation for DESTDIR (strip trailing separators first)
+                cmd = $0;
+                gsub(/ *([|][|]|&&|;).*$/, "", cmd);
+                
                 if ($0 ~ /make.*install/) {
-                    loop_content = loop_content "\n    " $0 " DESTDIR=\"$DDIR\" || true";
+                    loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
                 } else if ($0 ~ /ninja.*install/) {
-                    loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " $0 " || true";
+                    loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " cmd " || true";
                 }
                 
                 loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
-                loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\")\" ]; then";
+                loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
                 loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n    fi";
                 
@@ -1309,13 +1352,28 @@ ${COMMANDS}"
                 gsub(/\.\.\/[a-z0-9-]+\.md5/, "/sources/archives/&", $0);
                 gsub(/\/sources\/archives\/\.\.\//, "/sources/archives/", $0);
                 
-                loop_content = loop_content "\n" $0
+                # Skip diagnostic/log-check commands if the log does not exist
+                if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
+                    loop_content = loop_content "\n    " $0 " 2>/dev/null || true";
+                    next;
+                }
+                # Skip tests in loop
+                if ($0 ~ /(make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests\/run\.sh)/) {
+                    next;
+                }
+
+                loop_content = loop_content "\n    " $0
                 if (/done < [a-z0-9-]+\.md5/) { sub(/done < /, "done < /sources/archives/", $0); in_loop = 0 }
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
                 if (/^EOF$/) in_md5 = 0
             } else {
-                other_cmds = other_cmds "\n" $0
+                # Skip diagnostic/log-check commands if the log does not exist (even outside loop)
+                if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
+                    other_cmds = other_cmds "\n" $0 " 2>/dev/null || true";
+                } else {
+                   other_cmds = other_cmds "\n" $0
+                }
             }
         }
         END {
@@ -1323,9 +1381,9 @@ ${COMMANDS}"
             print "cd /sources/archives"
             print "as_root() {"
             print "  if [ $EUID = 0 ]; then"
-            print "    $*"
+            print "    [ $# -gt 0 ] && \"$@\" || :"
             print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo $*"
+            print "    sudo \"$@\""
             print "  else"
             print "    su -c \"$*\""
             print "  fi"
@@ -1333,27 +1391,28 @@ ${COMMANDS}"
             print "export -f as_root"
             print other_cmds
             print "cd /sources/archives"
-            print "cat > build-frameworks.sh << \"EOF\""
+            print "cat > build-frameworks.sh << 'KDEEOF'"
             print "#!/bin/bash"
             print "set -e"
             print ""
             print "cd /sources/archives"
             print ""
             print "as_root() {"
-            print "  if [ $EUID = 0 ]; then"
-            print "    $*"
+            print "  if [ ${EUID:-$(id -u)} = 0 ]; then"
+            print "    [ $# -gt 0 ] && \"$@\" || :"
             print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo $*"
+            print "    sudo \"$@\""
             print "  else"
             print "    su -c \"$*\""
             print "  fi"
             print "}"
             print "export -f as_root"
             print ""
-            print as_root_content
+            # Skip as_root_content as we provide our own robust version
+            # print as_root_content
             print ""
             print loop_content
-            print "EOF"
+            print "KDEEOF"
             print "bash build-frameworks.sh"
         }
     ')
@@ -1491,8 +1550,9 @@ elif [[ "$PACKAGE" =~ ^[a-zA-Z]+[0-9]$ ]]; then
     PKG_BASE="$PACKAGE"
 elif [[ "$PACKAGE" == "rustc" ]]; then
     PKG_BASE="(rustc|rust-std|cargo)"
-elif [[ "$PACKAGE" == "libelf" ]]; then
-    PKG_BASE="elfutils"
+elif [[ "$PACKAGE" =~ ^xorg-.*-driver$ ]]; then
+    driver_name=$(echo "$PACKAGE" | sed 's/^xorg-//; s/-driver$//')
+    PKG_BASE="(xf86-input-${driver_name}|${driver_name})"
 else
     PKG_BASE=$(echo "$PACKAGE" | sed 's/[0-9]*$//')
 fi
@@ -1632,6 +1692,9 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]];
         LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2 | tr -d '.')
         UPSTREAM_MAJOR_MINOR=$(echo "$UPSTREAM_VERSION" | cut -d. -f1-2 | tr -d '.')
         COMMANDS="${COMMANDS//vim$LFS_MAJOR_MINOR/vim$UPSTREAM_MAJOR_MINOR}"
+        MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
     fi
 fi
 
@@ -1718,6 +1781,9 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "firefox" && -n "$UPSTREAM_VERSION"
         log "Replacing LFS version $LFS_VERSION with upstream version $UPSTREAM_VERSION in commands..."
         COMMANDS="${COMMANDS//firefox-$LFS_VERSION/firefox-$UPSTREAM_VERSION}"
         COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+        MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
     fi
 fi
 
@@ -1742,6 +1808,9 @@ if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugi
         for i in "${!DOWNLOAD_URLS[@]}"; do
             DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
         done
+        MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
     fi
 fi
 
@@ -1761,6 +1830,9 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "libuv" && -n "$UPSTREAM_VERSION" ]
         for i in "${!DOWNLOAD_URLS[@]}"; do
             DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
         done
+        MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
     fi
 fi
 
@@ -1974,6 +2046,21 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && "$PACKAGE" != "rustc" ]
         fi
     done
     DOWNLOAD_URLS=("${NEW_URLS[@]}")
+    
+    # Synchronize filenames/dirnames with the chosen upstream version
+    if [[ ${#DOWNLOAD_URLS[@]} -gt 0 ]]; then
+        # Use the first archive found as the new MAIN_FILENAME
+        for url in "${DOWNLOAD_URLS[@]}"; do
+            fname=$(basename "$url")
+            if [[ "$fname" =~ \.(tar\.[a-z2]+|zip|tgz)$ ]]; then
+                MAIN_FILENAME="$fname"
+                # Update DIRNAME/GEN_DIRNAME by stripping the extension
+                DIRNAME=$(echo "$fname" | sed 's/\.tar\..*//; s/\.zip$//; s/\.tgz$//')
+                GEN_DIRNAME="$DIRNAME"
+                break
+            fi
+        done
+    fi
 fi
 
 # Deduplicate DOWNLOAD_URLS while preserving order as much as possible

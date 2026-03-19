@@ -35,6 +35,9 @@ lfs_sync_to_vm() {
 }
 
 lfs_autobuild() {
+    local logfile="/tmp/lfs-autobuild.log"
+    echo "--- Build session starting at $(date) ---" | tee -a "$logfile" >/dev/null
+    
     # Only source SSH helpers and sync scripts when running on the host
     if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
         source "$NIXCFG/shell/user/08-ssh.sh"
@@ -51,10 +54,10 @@ lfs_autobuild() {
         ssh_lfs "cat > ~/.lfs_scripts/lfs-vm-bootstrap.sh" \
             < "$NIXCFG/shell/user/lfs-vm-bootstrap.sh"
         ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
-        ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")"
+        ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")" 2>&1 | tee -a "$logfile"
     else
         # Running directly on the VM, no syncing needed, just execute it locally
-        bash ~/.lfs_autobuild.sh "$@"
+        bash ~/.lfs_autobuild.sh "$@" 2>&1 | tee -a "$logfile"
     fi
 }
 
@@ -228,7 +231,7 @@ lfs_rebuild_missing_inventories() {
                 actual_pkg="plasma-all"
                 echo "  Mapping $pkg to metapackage: $actual_pkg"
                 ;;
-            xdg-desktop-portal-kde|plasma-desktop|plasma-workspace)
+            xdg-desktop-portal-kde|plasma-desktop|plasma-workspace|kglobalacceld|kwayland-integration|plymouth-kcm|ocean-sound-theme|ksshaskpass|print-manager|plasma-disks|plasma-pa)
                 actual_pkg="plasma-all"
                 echo "  Mapping $pkg to metapackage: $actual_pkg"
                 ;;
