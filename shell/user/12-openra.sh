@@ -1,5 +1,5 @@
 git -C $GHUBO/OpenRA pull origin bleed -q
-git merge --no-ff
+git -C $GHUBO/OpenRA merge --no-ff -q
 export latestVer=$(comno $GHUBO/OpenRA).git.$(revision $GHUBO/OpenRA | head -c 7)
 export packagedVer=$(ls -ld $(which openra-ra) | cut -d '/' -f 9 | cut -d '-' -f 4)
 
