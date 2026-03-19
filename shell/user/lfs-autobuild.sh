@@ -42,8 +42,6 @@ RM_LIBS=false
 SEARCH_LFS=true
 SEARCH_BLFS=true
 PACKAGES=()
-DOWNLOAD_URLS=()
-ALL_FILENAMES=()
 XORG_MULTI_MODE=false
 FORCE=false
 
@@ -622,8 +620,16 @@ get_commands() {
         local sectioned_html=$(TARGET_PKG="$target_pkg" printf '%s' "$html" | perl -0777 -ne '
             my $tp = $ENV{TARGET_PKG};
             # Match 1: Anchor with ID/Name followed by content until next section
+            # Improved: if anchor is empty, we must ensure we capture the FOLLOWING content 
+            # until the next major section that is NOT this one.
             if (/(<(?:a|div|h[1-6]|section)[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
-                print $1;
+                my $content = $1;
+                # If we captured almost nothing (empty anchor), continue matching until the next section
+                if ($content =~ /^<[^>]+>\s*$/) {
+                    if (/(<(?:a|div|h[1-6]|section)[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?(?:<div\s+class="sect[12]"|<h[12]).*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
+                        print $1;
+                    } else { print $content }
+                } else { print $content }
             } 
             # Match 2: Header containing anchor with ID/Name
             elsif (/(<(h[1-6])[^>]*>.*?<(?:a|div)\s+[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?<\/ \2>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
@@ -649,7 +655,7 @@ get_commands() {
         perl -0777 -pe 's/\\\n\s*//gs' | \
         sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
-        grep -vE "<[a-zA-Z ]+>|\[[a-zA-Z ]+\]" | \
+        grep -vE "^[[:space:]]*<[a-zA-Z ]+>[[:space:]]*$" | \
         grep -vE "^(\.desktop|/usr/share/.*|/etc/.*)$" | \
         perl -0777 -pe '
             # 1. Remove trailing && before block ends or start of next markers
@@ -775,11 +781,16 @@ while read -r line; do
 
         # 6. Skip post-installation configuration blocks
         if [[ "$INCLUDE_CONFIG" == "false" ]] && grep -qE "^cat[[:space:]]*>[[:space:]]*/etc/|^cat[[:space:]]*>[[:space:]]*/var/" <<< "$CURRENT_BLOCK"; then
-            log "Skipping post-installation configuration block." >&2
-            continue
+            # Never skip critical PAM/Shadow configurations
+            if ! grep -qE "/etc/pam\.d/|/etc/login\.defs|/etc/security/|/etc/shadow|/etc/sddm" <<< "$CURRENT_BLOCK" && \
+               [[ "${PACKAGE,,}" != "linux-pam" ]] && [[ "${PACKAGE,,}" != "shadow" ]]; then
+                log "Skipping post-installation configuration block." >&2
+                continue
+            fi
         fi
 
         # 7. Determine if this block is a test suite or related setup
+
         if [[ "$XORG_MULTI_MODE" == "false" ]] && \
            ! grep -qE '^[[:space:]]*(cmake|mkdir[[:space:]]+build)' <<< "$CURRENT_BLOCK" && \
            [[ "$CURRENT_BLOCK" =~ (make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests/run\.sh) ]]; then
@@ -1118,13 +1129,15 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                         cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd);
                         gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                         vm_cmds = vm_cmds "\n    DESTDIR=\"$DDIR\" " cmd " || true";
-                    } else if (line ~ /pip3.*install/) {
-                        cmd = line; sub(/--root=[^ ]+ /, "", cmd);
-                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                        vm_cmds = vm_cmds "\n    " cmd " --root=\"$DDIR\" || true";
                     }
                     
-                    cmd = line; gsub(/ *([|][|]|&&|;).*$/, "", cmd);
+                    cmd = line; 
+                    # Only strip trailing operators if not followed by a closing brace (function definition end)
+                    if (!(cmd ~ /;[[:space:]]*\}/)) {
+                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
+                    } else {
+                        gsub(/ *([|][|]|&&).*$/, "", cmd);
+                    }
                     vm_cmds = vm_cmds "\n    " cmd;
                     vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
                     vm_cmds = vm_cmds "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
@@ -1296,9 +1309,9 @@ ${COMMANDS}"
         /^while read -r line; do/ { 
             in_loop = 1; 
             loop_content = $0; 
-            loop_content = loop_content "\n    DIRNAME=$(echo $line | awk \"{print \\$2}\" | sed \"s/\\.tar\\.[a-z2]\\+//\")";
-            loop_content = loop_content "\n    PKGNAME=$(echo $DIRNAME | sed -E \"s/[-_][0-9].*//\")";
-            loop_content = loop_content "\n    PKGVER=$(echo $DIRNAME | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//\")";
+            loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x22{print \\$2}\x22 | sed \x22s/\\.tar\\.[a-z2]\\+//\x22)";
+            loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
+            loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//\x22)";
             loop_content = loop_content "\n    # Skip if already installed (resume feature)";
             loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ]; then";
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
@@ -1322,7 +1335,11 @@ ${COMMANDS}"
                 
                 # Command adaptation for DESTDIR (strip trailing separators first)
                 cmd = $0;
-                gsub(/ *([|][|]|&&|;).*$/, "", cmd);
+                if (!(cmd ~ /;[[:space:]]*\}/)) {
+                    gsub(/ *([|][|]|&&|;).*$/, "", cmd);
+                } else {
+                    gsub(/ *([|][|]|&&).*$/, "", cmd);
+                }
                 
                 if ($0 ~ /make.*install/) {
                     loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
@@ -1368,7 +1385,12 @@ ${COMMANDS}"
                 }
 
                 loop_content = loop_content "\n    " $0
-                if (/done < [a-z0-9-]+\.md5/) { sub(/done < /, "done < /sources/archives/", $0); in_loop = 0 }
+                if ($0 ~ /done < [a-z0-9-]+\.md5/) { 
+                    sub(/done < /, "done < /sources/archives/", $0);
+                    # Ensure the replaced line is what we end the loop with
+                    sub(/.*\n    [^\n]*$/, "    " $0, loop_content);
+                    in_loop = 0;
+                }
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
                 if (/^EOF$/) in_md5 = 0
@@ -1543,6 +1565,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
         log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, firefox, frameworks, plasma, libuv, and KDE apps)"
     fi
 fi
+fi
 
 # Strip trailing digits only for certain known versioned names (python3, lua5)
 if [[ "${PACKAGE,,}" == "liba52" ]]; then
@@ -1684,7 +1707,6 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
     log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
-fi
 fi
 
 # Fix move command for xorgproto doc in single package mode if it exists
@@ -2100,6 +2122,11 @@ if [[ "$PACKAGE" == "vim" ]]; then
     COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's/for L in.*?do.*?ln -sv vim\.1.*?done//gs')
     # Clean up old documentation before linking the new one
     COMMANDS=$(echo "$COMMANDS" | sed "\|ln -sv ../vim/vim$UPSTREAM_MAJOR_MINOR/doc /usr/share/doc/vim-$UPSTREAM_VERSION|i rm -rf /usr/share/doc/vim-*")
+fi
+
+if [[ "$PACKAGE" == "sddm" ]]; then
+    log "Removing legacy /opt/xorg ServerPath modification for sddm..."
+    COMMANDS=$(echo "$COMMANDS" | grep -v "sed -i.orig '/ServerPath/ s|usr|opt/xorg|' /etc/sddm.conf")
 fi
 
 
