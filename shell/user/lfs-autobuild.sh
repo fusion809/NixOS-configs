@@ -860,8 +860,8 @@ if [[ -z "$COMMANDS" ]]; then
 fi
 
 # Rewrite relative ../pkg.tar.* references in tar commands to absolute /sources/archives/ paths
-# This handles packages like docbook-xsl-nons that reference a secondary tarball in the parent directory
-COMMANDS=$(echo "$COMMANDS" | sed -E 's|tar ([^|&;]*)-xf \.\./(([a-zA-Z0-9_+.-]+)\.tar\.[a-z0-9]+)|tar \1-xf /sources/archives/\2|g; s|tar ([^|&;]*)-xf \.\./\.\./([^/]+\.tar\.[a-z0-9]+)|tar \1-xf /sources/archives/\2|g')
+# Generalized to handle various flags like -xf, -xvf, -xfv and deeper paths like ../..
+COMMANDS=$(echo "$COMMANDS" | sed -E 's|tar ([^|&;]*)-x?v?f[[:space:]]+\.\./(\.\./)?(([a-zA-Z0-9_+.-]+)\.tar\.[a-z0-9.]+)|tar \1-xf /sources/archives/\3|g')
 
 # 2.5 Auto-detect Rust dependency
 if echo "$HTML_CONTENT" | grep -qiE "rust|rustc|cargo"; then
@@ -1629,17 +1629,28 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     MAIN_DOWNLOAD_URL=""
     for url in "${DOWNLOAD_URLS[@]}"; do
         fname=$(basename "$url")
-        # For LLVM, prefer the monorepo if available
-        if [[ "$PACKAGE" == "llvm" ]] && [[ "$fname" == *"llvm-project-"* ]]; then
-            MAIN_DOWNLOAD_URL="$url"
-            break
-        fi
-        # Priority 1: matches package-version.tar.*
-        if [[ "$fname" =~ ^${PKG_BASE}-?[0-9].*\.tar\. ]]; then
+        # High Priority: For TeX Live, we MUST use the -source tarball as primary
+        if [[ "$PACKAGE" == "texlive" ]] && [[ "$fname" == *"texlive-"*"-source"* ]]; then
             MAIN_DOWNLOAD_URL="$url"
             break
         fi
     done
+
+    if [[ -z "$MAIN_DOWNLOAD_URL" ]]; then
+        for url in "${DOWNLOAD_URLS[@]}"; do
+            fname=$(basename "$url")
+            # For LLVM, prefer the monorepo if available
+            if [[ "$PACKAGE" == "llvm" ]] && [[ "$fname" == *"llvm-project-"* ]]; then
+                MAIN_DOWNLOAD_URL="$url"
+                break
+            fi
+            # Priority 1: matches package-version.tar.*
+            if [[ "$fname" =~ ^${PKG_BASE}-?[0-9].*\.tar\. ]]; then
+                MAIN_DOWNLOAD_URL="$url"
+                break
+            fi
+        done
+    fi
 
     # Fallback: first one that isn't a patch or docs
     if [[ -z "$MAIN_DOWNLOAD_URL" ]]; then
@@ -2628,11 +2639,7 @@ fi
 rm -f /tmp/remote_script_${PACKAGE}.sh
 
 if [[ "$STRIP" == "true" ]]; then
-    if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
-        source "$NIXCFG/shell/user/21-lfs.sh"
-    else
-        echo "Warning: STRIP skipped because 21-lfs.sh is not available locally."
-    fi
+    lfs_strip
 fi
 
 done
