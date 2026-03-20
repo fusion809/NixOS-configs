@@ -12,13 +12,13 @@ as_root() {
     local cmd="$*"
     # If the command contains redirections or pipes, wrap it in bash -c
     if [[ "$cmd" == *">"* ]] || [[ "$cmd" == *"<<"* ]] || [[ "$cmd" == *"|"* ]]; then
-      if [ -x /usr/bin/sudo ]; then
+      if command -v sudo >/dev/null 2>&1; then
         sudo bash -c "$cmd"
       else
         su -c "$cmd"
       fi
     else
-      if [ -x /usr/bin/sudo ]; then
+      if command -v sudo >/dev/null 2>&1; then
         sudo "$@"
       else
         su -c "$cmd"
@@ -1377,8 +1377,15 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
     COMMANDS=$(echo "$COMMANDS" | grep -v 'ln -sfv \$KF6_PREFIX/share/xdg-desktop-portal/portals/kde\.portal')
     COMMANDS=$(echo "$COMMANDS" | grep -v "^dbus-launch")
 
-    
-
+    # Clean up any trailing && left on lines directly preceding the stripped lines
+    if [[ "$COMMANDS" == *"&&"* ]]; then
+        # Remove trailing && that precede marker lines or empty lines
+        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe '
+            s/&&\s*?\n(?=\s*#\s*__[A-Z_]+__)/\n/gs;
+            s/&&\s*?\n(?=\n)/\n/gs;
+            s/&&\s*?\n(?:#.*?\n)*\s*?$/\n/gs;
+        ')
+    fi
     if [[ "$INCLUDE_CONFIG" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks") ]]; then
         log "Adding kf6-intro.html configuration for /usr installation..."
         # Note: Depending on BLFS book URL, it could be in /kde/
@@ -1512,19 +1519,25 @@ ${COMMANDS}"
         # Intercept do_install wrapper calls in frameworks loop
         /^[[:space:]]*do_install[[:space:]]*$/ {
             if (in_loop) {
-                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
-                loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
-                loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
-                loop_content = loop_content "\n    echo \"$PKGVER\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n    do_install";
-                loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Installing and recording inventory for ${PKGNAME}...\"";
+                loop_content = loop_content "\n    if do_install; then";
+                loop_content = loop_content "\n        # Record inventory ONLY on success";
+                loop_content = loop_content "\n        echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n        # Find files installed by this specific component";
+                loop_content = loop_content "\n        find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer \"/tmp/build_start_${PKGNAME}\" 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n        # Clean duplicate version lines and orphaned paths";
+                loop_content = loop_content "\n        if [ -f \"/var/lib/book-packages/${PKGNAME}\" ]; then";
+                loop_content = loop_content "\n            TMP_INV=\$(mktemp)";
+                loop_content = loop_content "\n            echo \"\${PKGVER}\" > \"\$TMP_INV\"";
+                loop_content = loop_content "\n            grep -v -x \"\${PKGVER}\" \"/var/lib/book-packages/${PKGNAME}\" | grep -v \"^[[:space:]]*\\$\" | sort -u >> \"\$TMP_INV\"";
+                loop_content = loop_content "\n            sudo mv \"\$TMP_INV\" \"/var/lib/book-packages/${PKGNAME}\"";
+                loop_content = loop_content "\n            sudo chmod 644 \"/var/lib/book-packages/${PKGNAME}\"";
+                loop_content = loop_content "\n        fi";
+                loop_content = loop_content "\n        touch \"/sources/archives/${DIRNAME}.installed\"";
+                loop_content = loop_content "\n    else";
+                loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Build for ${PKGNAME} failed. Skipping inventory recording.\"";
+                loop_content = loop_content "\n        exit 1";
                 loop_content = loop_content "\n    fi";
-                loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                # Cleanup and record: Ensure version is on top, followed by sorted unique files
-                loop_content = loop_content "\n    (echo \"$PKGVER\"; sort -u \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^$PKGVER$|^[[:space:]]*$\") | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n    as_root rm -rf \"$DDIR\"";
-                loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
                 next;
             }
         }
@@ -1667,7 +1680,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
             DOWNLOAD_URLS+=("https://github.com/vim/vim/archive/v${VIM_TAG}/vim-${VIM_TAG}.tar.gz")
             UPSTREAM_VERSION="$VIM_TAG"
         fi
-    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" ]]; then
+    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
@@ -2241,6 +2254,25 @@ if [[ "$FORCE" != "true" ]]; then
     fi
 fi
 
+# Early URL rewriting for KDE single packages to prevent pruning
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && [[ "${DOWNLOAD_URLS[*]}" == *"download.kde.org"* || "${DOWNLOAD_URLS[*]}" == *"invent.kde.org"* ]]; then
+    log "Rewriting KDE download URLs for upstream version..."
+    KDE_LFS_VER=$(printf "%s\n" "${DOWNLOAD_URLS[@]}" | perl -nle 'while (m{-(?:[a-zA-Z]+-)?\K[0-9]+(?:\.[0-9]+)+(?=\.tar)}ig) { print $& }' | sort -V | tail -n 1)
+    if [[ -n "$KDE_LFS_VER" && "$KDE_LFS_VER" != "$UPSTREAM_VERSION" ]]; then
+        KDE_UP_FULL="$UPSTREAM_VERSION"
+        if [[ $(echo "$KDE_UP_FULL" | grep -o '\.' | wc -l) -eq 1 ]]; then
+            KDE_UP_FULL="${KDE_UP_FULL}.0"
+        fi
+        KDE_LFS_MM=$(echo "$KDE_LFS_VER" | cut -d. -f1,2)
+        KDE_UP_MM=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
+        for i in "${!DOWNLOAD_URLS[@]}"; do
+            DOWNLOAD_URLS[$i]=$(echo "${DOWNLOAD_URLS[$i]}" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g; s|/$KDE_LFS_MM/|/$KDE_UP_MM/|g")
+        done
+        # Also substitute the LFS_VERSION inside COMMANDS since these simple packages don't have an MD5 heredoc!
+        COMMANDS=$(echo "$COMMANDS" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g")
+    fi
+fi
+
 # Final filtering for Rust upstream to ensure NO redundant binaries are fetched
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" ]]; then
     log "Finalizing Rust download URLs (keeping only source and bootstrap)..."
@@ -2331,43 +2363,54 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
     if [[ -z "$LFS_VERSION" ]]; then
         LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-\K[0-9]+(\.[0-9]+)+}g) { print $& }' | sort -V | tail -n 1)
     fi
+    if [[ -z "$LFS_VERSION" ]]; then
+        # Last resort: extract from the package's tarball
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{'"${PACKAGE,,}"'-\K[0-9]+(?:\.[0-9]+)+(?=\.tar)}ig) { print $& }' | sort -V | tail -n 1)
+    fi
 
     if [[ -n "$LFS_VERSION" ]]; then
         UPSTREAM_FULL="${UPSTREAM_VERSION}"
         if [[ $(echo "$UPSTREAM_FULL" | grep -o '\.' | wc -l) -eq 1 ]]; then
             UPSTREAM_FULL="${UPSTREAM_FULL}.0"
         fi
-
-        log "[DEBUG] KDE Version Substitution: LFS_VERSION='$LFS_VERSION', UPSTREAM_FULL='$UPSTREAM_FULL'"
-        log "Replacing LFS KDE version $LFS_VERSION with $UPSTREAM_FULL in final build script..."
-        pkg_name=$(echo "${PACKAGE,,}" | grep -qi plasma && echo "plasma" || echo "frameworks")
+        
+        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1,2)
+        UPSTREAM_MAJOR_MINOR=$(echo "$UPSTREAM_FULL" | cut -d. -f1,2)
+        
+        log "[DEBUG] KDE Version Substitution: LFS_VERSION='$LFS_VERSION', LFS_MM='$LFS_MAJOR_MINOR', UPSTREAM_FULL='$UPSTREAM_FULL', UPSTREAM_MM='$UPSTREAM_MAJOR_MINOR'"
 
         # Use perl for complex heredoc and regex substitution
-        COMMANDS=$(echo "$COMMANDS" | LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" PKG_BASE_NAME="$pkg_name" perl -0777 -pe '
+        COMMANDS=$(echo "$COMMANDS" | LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" LFS_MM="$LFS_MAJOR_MINOR" UPSTREAM_MM="$UPSTREAM_MAJOR_MINOR" perl -0777 -pe '
             my $lv = $ENV{LFS_VERSION};
             my $uf = $ENV{UPSTREAM_FULL};
-            my $bn = $ENV{PKG_BASE_NAME};
+            my $lmm = $ENV{LFS_MM};
+            my $umm = $ENV{UPSTREAM_MM};
 
-            # 1. Update the MD5 filename in the cat heredoc trigger (handle both bare and path)
-            s|($bn-)$lv\.md5|${1}$uf.md5|g;
-            s|(\/sources\/archives\/$bn-)$lv\.md5|${1}$uf.md5|g;
+            # 1. Update the MD5 filename in the cat heredoc trigger (match frameworks, plasma, etc. dynamically)
+            s!((?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-)$lv\.md5!${1}$uf.md5!g;
+            s!(\/sources\/archives\/(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-)$lv\.md5!${1}$uf.md5!g;
 
             # 2. Process the MD5 file content: update all versions inside the heredoc
-            s|(cat > (?:/sources/archives/)?$bn-$uf\.md5 << \"?EOF\"?\n)(.*?)(\nEOF)|
-                my $header = $1;
-                my $body = $2;
-                my $footer = $3;
-                $body =~ s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
-                $body =~ s/6\.\d+(?:\.\d+){0,2}/$uf/og; # Fallback generic replacement
-                $header . $body . $footer
-            |gse;
+            s!(cat > (?:/sources/archives/)?(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-$uf\.md5 << \"?EOF\"?\n)(.*?)(\nEOF)!
+                do {
+                    my $header = $1;
+                    my $body = $2;
+                    my $footer = $3;
+                    $body =~ s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
+                    $body =~ s/6\.\d+(?:\.\d+){0,2}/$uf/og; # Fallback generic replacement
+                    $header . $body . $footer
+                }
+            !gse;
 
             # 3. Update the done < redirection
-            s|(done < (?:/sources/archives/)?$bn-)$lv\.md5|${1}$uf.md5|g;
+            s!(done < (?:/sources/archives/)?(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-)$lv\.md5!${1}$uf.md5!g;
 
             # 4. Global version string replacement (be careful not to break other things)
-            # Only replace if it looks like a version match for this package
+            # Replace full version
             s/\Q$lv\E/$uf/g;
+            
+            # Replace major.minor in URLs, e.g. /6.23/ to /6.24/
+            s!/$lmm/!/$umm/!g;
         ')
     fi
 fi
@@ -2613,6 +2656,31 @@ rm -f "$RS_FILE"
   declare -p DOWNLOAD_URLS ALL_FILENAMES
 
   # 3. Append the main logic using a quoted heredoc
+  cat <<'REMOTE_EOF'
+# Helper to run commands as root inside the remote script
+as_root() {
+  if [ ${EUID:-$(id -u)} = 0 ]; then
+    "$@"
+  else
+    local cmd="$*"
+    if [[ "$cmd" == *">"* ]] || [[ "$cmd" == *"<<"* ]] || [[ "$cmd" == *"|"* ]]; then
+      if command -v sudo >/dev/null 2>&1; then
+        sudo bash -c "$cmd"
+      else
+        su -c "$cmd"
+      fi
+    else
+      if command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+      else
+        su -c "$cmd"
+      fi
+    fi
+  fi
+}
+export -f as_root
+
+REMOTE_EOF
   cat <<'REMOTE_EOF'
 export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE XORG_MULTI_MODE RM_LIBS
 
