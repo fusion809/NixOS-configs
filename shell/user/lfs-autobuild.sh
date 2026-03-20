@@ -4,6 +4,30 @@
 # Ensure NIXCFG is set
 export NIXCFG="${NIXCFG:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
+# 0. Global Setup: Better as_root that handles redirections
+as_root() {
+  if [ ${EUID:-$(id -u)} = 0 ]; then
+    "$@"
+  else
+    local cmd="$*"
+    # If the command contains redirections or pipes, wrap it in bash -c
+    if [[ "$cmd" == *">"* ]] || [[ "$cmd" == *"<<"* ]] || [[ "$cmd" == *"|"* ]]; then
+      if [ -x /usr/bin/sudo ]; then
+        sudo bash -c "$cmd"
+      else
+        su -c "$cmd"
+      fi
+    else
+      if [ -x /usr/bin/sudo ]; then
+        sudo "$@"
+      else
+        su -c "$cmd"
+      fi
+    fi
+  fi
+}
+export -f as_root
+
 # Source SSH helpers if available (only on host)
 HOST_MODE=false
 if [ -f "$NIXCFG/shell/user/08-ssh.sh" ]; then
@@ -131,6 +155,21 @@ for PACKAGE in "${PACKAGES[@]}"; do
         continue
     fi
     export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
+
+    # Translate friendly aliases to canonical upstream names used in archives/loops
+    case "$PACKAGE" in
+        xorg-libinput)   PACKAGE="xf86-input-libinput" ;;
+        xorg-evdev)      PACKAGE="xf86-input-evdev" ;;
+        xorg-synaptics)  PACKAGE="xf86-input-synaptics" ;;
+        xorg-vmmouse)    PACKAGE="xf86-input-vmmouse" ;;
+        xorg-vmware)     PACKAGE="xf86-video-vmware" ;;
+        xorg-fbdev)      PACKAGE="xf86-video-fbdev" ;;
+        xorg-vesa)       PACKAGE="xf86-video-vesa" ;;
+        xorg-intel)      PACKAGE="xf86-video-intel" ;;
+        xorg-amdgpu)     PACKAGE="xf86-video-amdgpu" ;;
+        xorg-nouveau)    PACKAGE="xf86-video-nouveau" ;;
+        xdg-desktop-portal-kde) PACKAGE="plasma-all" ;;
+    esac
 
     # 0. Check for custom package in ~/lfs_packaging
 CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -il -E \"^[a-zA-Z_]*name=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
@@ -286,14 +325,19 @@ find_package_page() {
 
     if [[ "$SEARCH_BLFS" == "true" ]]; then
         case "$pkg" in
-            xorg-lib|x7lib|libICE|libSM|libX11|libXext|libXrender|libXft|libXi|libXinerama|libXrandr|libXcursor|libXcomposite|libXdamage|libXfixes|libXfont2|libXmu|libXpm|libXt|libXtst|libXv|libXvMC|libXxf86vm|libxkbfile)
+            xorg-lib|x7lib|xtrans|libICE|libSM|libX11|libXext|libXrender|libXft|libXi|libXinerama|libXrandr|libXcursor|libXcomposite|libXdamage|libXfixes|libXfont2|libXmu|libXpm|libXt|libXtst|libXv|libXvMC|libXxf86vm|libxkbfile|libFS|libXScrnSaver|libXaw|libXres|libXxf86dga|libpciaccess|libxshmfence|libXpresent|libfontenc)
                                   echo "$BLFS_BOOK/x/x7lib.html"; return 0 ;;
-            xorg-app|x7app|iceauth|sessreg|setxkbmap|smproxy|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
-                                  echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
-            xorg-font|x7font|font-bh-ttf|font-misc-misc|font-cursor-misc|font-adobe-100dpi|font-adobe-75dpi|font-adobe-utopia-100dpi|font-adobe-utopia-75dpi|font-bh-100dpi|font-bh-75dpi|font-bh-lucidatypewriter-100dpi|font-bh-lucidatypewriter-75dpi|font-bitstream-100dpi|font-bitstream-75dpi|font-bitstream-type1|font-cronyx-cyrillic|font-daewoo-misc|font-dec-misc|font-ibm-type1|font-isatis-misc|font-jis-misc|font-mutt-misc|font-schumacher-misc|font-screen-cyrillic|font-sony-misc|font-sun-misc|font-winitzki-cyrillic|font-xfree86-type1)
-                                  echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
-            xorg-driver|x7driver|xorg-evdev-driver|xf86-input-evdev|xf86-input-libinput|xf86-input-synaptics|xf86-input-vmmouse|xf86-input-keyboard|xf86-input-mouse|xf86-video-fbdev|xf86-video-vesa|xf86-video-intel|xf86-video-ati|xf86-video-nouveau|xf86-video-vmware|xf86-video-amdgpu|xf86-video-qxl)
-                                  echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
+            xorg-app|x7app) echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
+            iceauth|sessreg|setxkbmap|smproxy|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
+                                  echo "$BLFS_BOOK/x/x7app.html#xorg-app"; return 0 ;;
+            xorg-font|x7font)     echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
+            font-*)               echo "$BLFS_BOOK/x/x7font.html#xorg-font"; return 0 ;;
+            xorg-driver|x7driver) echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
+            xorg-libinput|xf86-input-libinput) echo "$BLFS_BOOK/x/x7driver.html#xorg-libinput-driver"; return 0 ;;
+            xorg-evdev-driver|xf86-input-evdev) echo "$BLFS_BOOK/x/x7driver.html#xorg-evdev-driver"; return 0 ;;
+            xf86-input-synaptics) echo "$BLFS_BOOK/x/x7driver.html#xorg-synaptics-driver"; return 0 ;;
+            xf86-input-vmmouse)   echo "$BLFS_BOOK/x/x7driver.html#xorg-vmmouse-driver"; return 0 ;;
+            xf86-video-*)         echo "$BLFS_BOOK/x/x7driver.html#xorg-video-drivers"; return 0 ;;
             sdl2-compat) echo "$BLFS_BOOK/multimedia/sdl2.html"; return 0 ;;
         esac
 
@@ -384,6 +428,8 @@ find_package_page() {
             search_pkg="templateparser"
         elif [[ "$pkg" == "kdepim-runtime" ]]; then
             search_pkg="kdepim-runtime"
+        elif [[ "$pkg" == "xdg-desktop-portal-kde" ]]; then
+            search_pkg="plasma-all"
         fi
 
         # First try match for pkg.html (with optional fragment)
@@ -466,6 +512,11 @@ if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font)$ ]] || \
    [[ "$PAGE_URL" =~ x7(lib|app|font)\.html$ ]]; then
     XORG_MULTI_MODE=true
     log "Enabling Xorg multi-package mode."
+elif [[ "$PACKAGE" =~ ^(xorg|x7)-driver$ ]]; then
+    # Drivers are NOT in a loop, they have individual sections. 
+    # Only enable multi-mode for the bulk alias if the logic supports it, 
+    # but currently x7driver.html is better handled as individual packages.
+    XORG_MULTI_MODE=false
 fi
 
 # 2. Extract Download URL and Build Commands
@@ -665,6 +716,8 @@ get_commands() {
             s/___BLOCK_START_(ROOT|USER)___\s*___BLOCK_END___\s*//gs;
             # 3. Final cleanup of any trailing && at end of file
             s/\s*&&\s*$//gs;
+            # 4. Suppress errors for redundant symlinks
+            s/^[[:space:]]*(ln -sv? [^|&\n]+)$/$1 || true/gm;
         '
 }
 
@@ -726,7 +779,7 @@ while read -r line; do
 
         _eff_type="$CURRENT_BLOCK_TYPE"
         if [[ "$_eff_type" == "user" ]]; then
-            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch|pushd|popd|cd)[[:space:]].*(/usr|/boot|/etc|/lib|/var)|rm[[:space:]]+.*info/dir|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod|gtk-update-icon-cache|update-desktop-database|glib-compile-schemas))' <<< "$CURRENT_BLOCK"; then
+            if grep -qE '^[[:space:]]*(make[[:space:]]+.*install|ninja[[:space:]]+.*install|meson[[:space:]].*install|cmake[[:space:]]+--install|(install|ln|rm|cp|mv|touch|chmod|chown|chgrp|sed|patch|awk|cat|tee|echo|wget|update-desktop-database|glib-compile-schemas)[[:space:]].*(/usr|/boot|/etc|/lib|/var|/opt|/sbin|/bin)|rm[[:space:]]+.*info/dir|(pwconv|grpconv|pwunconv|grpunconv|passwd|useradd|groupadd|userdel|groupdel|usermod|groupmod|mkinitramfs|grub-mkconfig|ldconfig|depmod|gtk-update-icon-cache))' <<< "$CURRENT_BLOCK"; then
                 _eff_type="root"
             fi
         fi
@@ -998,6 +1051,8 @@ fi
 # 2.9.5 Universal DESTDIR inventory tracking for make/ninja/pip install (non-loop)
 # This ensures "Up-to-date" files are captured. If DESTDIR is present, we ALSO capture from it.
 COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
+    # Guard against function definitions (e.g. do_install() { ... })
+    /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/ { print; next }
     /^[[:space:]]*([A-Z_]+=.*[[:space:]]+)*(make|ninja|pip3).*install/ {
         if (!($0 ~ /book-packages/)) {
             print "echo \"[LFS-AUTOBUILD] Staging installation for full inventory...\""
@@ -1066,7 +1121,7 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
     log "Enabling Xorg multi-package loop mode."
 
     # Pre-fix relative MD5 paths for Xorg as well
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')    # Fix the bash subshell and execution for Xorg loops
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9.-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')    # Fix the bash subshell and execution for Xorg loops
     log "Converting Xorg build loop into a standalone script..."
     COMMANDS=$(echo "$COMMANDS" | awk '
         BEGIN {
@@ -1116,6 +1171,11 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     vm_cmds = vm_cmds "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     next;
                 }
+                # Pass function definitions through verbatim (e.g. do_build() { make; })
+                if (line ~ /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/) {
+                    vm_cmds = vm_cmds "\n    " line;
+                    next;
+                }
                 if (line ~ /make.*install|ninja.*install|pip3.*install/) {
                     vm_cmds = vm_cmds "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
                     vm_cmds = vm_cmds "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
@@ -1157,6 +1217,21 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                             }
                         }
                     }
+                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
+                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
+                    next;
+                }
+                # Intercept do_install wrapper calls used by xorg-lib loop
+                if (line ~ /^[[:space:]]*do_install[[:space:]]*$/) {
+                    vm_cmds = vm_cmds "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
+                    vm_cmds = vm_cmds "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
+                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
+                    vm_cmds = vm_cmds "\n    do_install";
+                    vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
+                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    fi";
                     vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
@@ -1280,26 +1355,49 @@ ${COMMANDS}"
 
     # Strip desktop session testing commands (startx etc) which break SSH builds
     COMMANDS=$(echo "$COMMANDS" | sed '/cat > ~\/.xinitrc << "EOF"/,/EOF/d')
-    COMMANDS=$(echo "$COMMANDS" | grep -v "^startx")
-
-    # Fix internal script paths for MD5 files (Xorg/KDE) before awk processing
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')
+    COMMANDS=$(echo "$COMMANDS" | grep -v "^startx")    # Fix internal script paths for MD5 files (Xorg/KDE) before awk processing
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9.-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')
+    # Fix invalid syntax on BLFS KDE pages: if $(echo $line | grep -q ...)
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/if \$\(echo \$line \| grep -E -q ([^)]*)\) ; then/if echo \$line | grep -E -q \1 ; then/g; s/if \$\(echo \$line \| grep -E -q ([^)]*)\); then/if echo \$line | grep -E -q \1; then/g')
 
     # Fix the bash subshell and execution
     log "Converting build loop into a standalone script..."
+    # Preserve block markers for root identification
     COMMANDS=$(echo "$COMMANDS" | awk '
         BEGIN {
             in_loop = 0
             in_as_root = 0
             in_md5 = 0
+            in_root_block = 0
             as_root_content = ""
             other_cmds = ""
             loop_content = ""
         }
+        /^# __BEGIN_ROOT__/ { 
+            if (in_loop) { in_root_block = 1; next }
+            other_cmds = other_cmds "\nas_root bash << \x27ROOTEOF\x27\n"; 
+            in_root_block = 1; 
+            next 
+        }
+        /^# __BEGIN_USER__/ { 
+            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
+            in_root_block = 0; 
+            next 
+        }
+        /^# __END_ROOT__/ { 
+            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
+            in_root_block = 0; 
+            next 
+        }
+        /^# __END_USER__/ { 
+            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
+            in_root_block = 0; 
+            next 
+        }
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
-        /^bash -e/ { next }
+        /^bash -e/ { other_cmds = other_cmds "\n" $0; next }
         /^exit/ { next }
-        /^cat > [a-z0-9-]+\.md5 << "EOF"/ { 
+        /^cat > [a-z0-9.-]+\.md5 << "EOF"/ { 
             in_md5 = 1; 
             print "[DEBUG] Found MD5 cat command: " $0 > "/dev/stderr";
             sub(/^cat > /, "cat > /sources/archives/", $0); 
@@ -1326,6 +1424,10 @@ ${COMMANDS}"
                 sub(/-D CMAKE_INSTALL_PREFIX=/, "-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=", $0) 
             } 
         }
+        # Pass function definitions through verbatim in frameworks loop
+        /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/ {
+            if (in_loop) { loop_content = loop_content "\n    " $0; next }
+        }
         /make.*install|ninja.*install|pip3.*install/ {
             if (in_loop && !($0 ~ /book-packages/)) {
                 # Add robust inventory recording using DESTDIR where possible
@@ -1333,13 +1435,9 @@ ${COMMANDS}"
                 loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
                 loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                 
-                # Command adaptation for DESTDIR (strip trailing separators first)
+                # Command adaptation for DESTDIR (strip trailing separators, braces and semicolons)
                 cmd = $0;
-                if (!(cmd ~ /;[[:space:]]*\}/)) {
-                    gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                } else {
-                    gsub(/ *([|][|]|&&).*$/, "", cmd);
-                }
+                gsub(/ *([|][|]|&&|;|[[:space:]]\}).*$/, "", cmd);
                 
                 if ($0 ~ /make.*install/) {
                     loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
@@ -1365,6 +1463,23 @@ ${COMMANDS}"
                 next;
             }
         }
+        # Intercept do_install wrapper calls in frameworks loop
+        /^[[:space:]]*do_install[[:space:]]*$/ {
+            if (in_loop) {
+                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
+                loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
+                loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
+                loop_content = loop_content "\n    do_install";
+                loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
+                loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    fi";
+                loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
+                loop_content = loop_content "\n    rm -rf \"$DDIR\"";
+                loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
+                next;
+            }
+        }
         {
             if (in_as_root) {
                 as_root_content = as_root_content "\n" $0
@@ -1384,8 +1499,8 @@ ${COMMANDS}"
                     next;
                 }
 
-                loop_content = loop_content "\n    " $0
-                if ($0 ~ /done < [a-z0-9-]+\.md5/) { 
+                loop_content = loop_content "\n    " (in_root_block ? "as_root " : "") $0
+                if ($0 ~ /done < [a-z0-9.-]+\.md5/) { 
                     sub(/done < /, "done < /sources/archives/", $0);
                     # Ensure the replaced line is what we end the loop with
                     sub(/.*\n    [^\n]*$/, "    " $0, loop_content);
@@ -1404,33 +1519,37 @@ ${COMMANDS}"
             }
         }
         END {
+            # Close any pending root block
+            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
             sub(/^\n/, "", other_cmds)
             print "cd /sources/archives"
             print "as_root() {"
-            print "  if [ $EUID = 0 ]; then"
-            print "    [ $# -gt 0 ] && \"$@\" || :"
-            print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo \"$@\""
-            print "  else"
-            print "    su -c \"$*\""
+            print "  if [ ${EUID:-$(id -u)} = 0 ]; then \"$@\"; else"
+            print "    local cmd=\"$*\""
+            print "    if [[ \"$cmd\" == *\">\"* ]] || [[ \"$cmd\" == *\"<<\"* ]] || [[ \"$cmd\" == *\"|\"* ]]; then"
+            print "      [ -x /usr/bin/sudo ] && sudo bash -c \"$cmd\" || su -c \"$cmd\""
+            print "    else"
+            print "      [ -x /usr/bin/sudo ] && sudo \"$@\" || su -c \"$cmd\""
+            print "    fi"
             print "  fi"
             print "}"
             print "export -f as_root"
             print other_cmds
             print "cd /sources/archives"
-            print "cat > build-frameworks.sh << 'KDEEOF'"
+            print "cat > build-frameworks.sh << \x27KDEEOF\x27"
             print "#!/bin/bash"
             print "set -e"
             print ""
             print "cd /sources/archives"
             print ""
             print "as_root() {"
-            print "  if [ ${EUID:-$(id -u)} = 0 ]; then"
-            print "    [ $# -gt 0 ] && \"$@\" || :"
-            print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo \"$@\""
-            print "  else"
-            print "    su -c \"$*\""
+            print "  if [ \${EUID:-\$(id -u)} = 0 ]; then \"\$@\"; else"
+            print "    local cmd=\"\$*\""
+            print "    if [[ \"\$cmd\" == *\">\"* ]] || [[ \"\$cmd\" == *\"<<\"* ]] || [[ \"\$cmd\" == *\"|\"* ]]; then"
+            print "      [ -x /usr/bin/sudo ] && sudo bash -c \"\$cmd\" || su -c \"\$cmd\""
+            print "    else"
+            print "      [ -x /usr/bin/sudo ] && sudo \"\$@\" || su -c \"\$cmd\""
+            print "    fi"
             print "  fi"
             print "}"
             print "export -f as_root"
@@ -1439,6 +1558,8 @@ ${COMMANDS}"
             # print as_root_content
             print ""
             print loop_content
+            # Close loop if pending
+            if (in_loop) print "done"
             print "KDEEOF"
             print "bash build-frameworks.sh"
         }
@@ -1603,9 +1724,10 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
     # 2. LFS Patches Page (for LFS packages)
     if [[ "$PAGE_URL" == *"/lfs/"* ]]; then
         log "Searching LFS Chapter 3 for packages and patches..."
-        # Add main source from chapter 3 if not found on page
-        LFS_PKG_URL=$(curl -s "$LFS_BOOK/chapter03/packages.html" | perl -nle "while (m{(?i)https?://[^\\s\"]*/${PKG_BASE}-?[0-9][^\\s\"]*(\\.tar\\.[a-z2]+|\\.zip)}g) { print $& }" | head -n 1)
-        [[ -n "$LFS_PKG_URL" ]] && DOWNLOAD_URLS+=("$LFS_PKG_URL")
+        # Get ALL matching files from chapter 3 packages (including docs, sources, etc)
+        # Match patterns like: sqlite-autoconf-3510300, sqlite-doc-3510300, python-3.9.1, etc
+        mapfile -t LFS_PKG_URLS < <(curl -s "$LFS_BOOK/chapter03/packages.html" | perl -nle "while (m{(?i)https?://[^\\s\"]*/${PKG_BASE}[^\\s/]*[0-9][^\\s\"]*(\\.tar\\.[a-z2]+|\\.zip)}g) { print $& }" | sort -u)
+        DOWNLOAD_URLS+=("${LFS_PKG_URLS[@]}")
         
         # Add patches from chapter 3
         mapfile -t LFS_PATCH_URLS < <(curl -s "$LFS_BOOK/chapter03/patches.html" | perl -nle "while (m{(?i)https?://[^\\s\"]*/${PKG_BASE}-[^\\s\"]*\\.patch}g) { print $& }" | sort -u)
@@ -1623,7 +1745,7 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
              continue
         fi
         # For LLVM upstream, if we already have the monorepo, skip individual components from the page
-        if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" ]] && [[ "$(basename "$link")" =~ (llvm-|clang-|cmake-|third-party-|compiler-rt-)[0-9] ]]; then
+        if [[ "$PACKAGE" == "llvm" ]] && [[ "$UPSTREAM" == "true" ]] && [[ "$(basename "$link")" =~ (llvm-|clang-|cmake-|third-party-|compiler-rt-)[0-9] ]]; then
             continue
         fi
         # Include if it matches package base name (case insensitive)
@@ -1652,6 +1774,25 @@ fi
 # Remove duplicates while preserving order (to some extent)
 DOWNLOAD_URLS=($(printf "%s\n" "${DOWNLOAD_URLS[@]}" | awk '!x[$0]++'))
 
+# Special case: Fix ghostscript GitHub releases (BLFS often has wrong tag)
+# The BLFS page may have gs10060 tag for 10.07.0, but need gs10070
+if [[ "$PACKAGE" == "ghostscript" ]]; then
+    for i in "${!DOWNLOAD_URLS[@]}"; do
+        url="${DOWNLOAD_URLS[$i]}"
+        if [[ "$url" == *"github.com/ArtifexSoftware/ghostpdl-downloads"* ]]; then
+            # Extract version from filename
+            gs_version=$(basename "$url" | sed -n 's/.*ghostscript-\([0-9.]*\).*/\1/p')
+            if [[ -n "$gs_version" ]]; then
+                # Convert version to tag format: 10.07.0 -> gs10070
+                gs_tag="gs$(echo "$gs_version" | tr -d '.')"
+                # Replace incorrect tag in URL with correct one
+                DOWNLOAD_URLS[$i]="${url//\/gs[0-9]*\//\/${gs_tag}\/}"
+                log "Fixed ghostscript URL tag: $gs_tag"
+            fi
+        fi
+    done
+fi
+
 if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     # Identify MAIN_DOWNLOAD_URL (the one that looks most like the source archive)
     MAIN_DOWNLOAD_URL=""
@@ -1672,19 +1813,20 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
                 MAIN_DOWNLOAD_URL="$url"
                 break
             fi
-            # Priority 1: matches package-version.tar.*
-            if [[ "$fname" =~ ^${PKG_BASE}-?[0-9].*\.tar\. ]]; then
+            # Priority 1: matches package-version.tar.* (handles sqlite-autoconf-3510300, etc)
+            if [[ "$fname" =~ ^${PKG_BASE}[^-]*-?[0-9].*\.tar\. ]]; then
                 MAIN_DOWNLOAD_URL="$url"
                 break
             fi
         done
     fi
 
-    # Fallback: first one that isn't a patch or docs
+    # Fallback: first one that isn't a patch or documentation
     if [[ -z "$MAIN_DOWNLOAD_URL" ]]; then
         for url in "${DOWNLOAD_URLS[@]}"; do
             fname=$(basename "$url")
-            if [[ ! "$fname" =~ \.patch$ ]] && [[ ! "$fname" =~ -docs ]]; then
+            # Exclude patches and documentation files (doc, docs, documentation, etc)
+            if [[ ! "$fname" =~ \.patch$ ]] && [[ ! "$fname" =~ (-doc(s)?(-|\.)|-documentation) ]]; then
                 MAIN_DOWNLOAD_URL="$url"
                 break
             fi
@@ -2093,7 +2235,7 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && "$PACKAGE" != "rustc" ]
             if [[ "$fname" =~ \.(tar\.[a-z2]+|zip|tgz)$ ]]; then
                 MAIN_FILENAME="$fname"
                 # Update DIRNAME/GEN_DIRNAME by stripping the extension
-                DIRNAME=$(echo "$fname" | sed 's/\.tar\..*//; s/\.zip$//; s/\.tgz$//')
+                DIRNAME=$(echo "$fname" | sed 's/\.tar.*//; s/\.zip$//; s/\.tgz$//')
                 GEN_DIRNAME="$DIRNAME"
                 break
             fi
@@ -2218,7 +2360,7 @@ _gen_build_script() {
 
     # Always define as_root at the top of every generated script
     echo "as_root() {"
-    echo "  if [ \$EUID = 0 ]; then"
+    echo "  if [ \${EUID:-\$(id -u)} = 0 ]; then"
     echo "    \$@"
     echo "  elif [ -x /usr/bin/sudo ]; then"
     echo "    sudo \$@"
@@ -2632,7 +2774,7 @@ if [[ "$RM_LIBS" == "true" ]]; then
 
     for doc_dir in /usr/share/doc/linux-*; do
         [ -d "$doc_dir" ] || continue
-        if ! [[ "$doc_dir" -nt /tmp/build_start_timestamp_${PACKAGE} ]] 2>/dev/null; then
+        if ! [[ "$doc_dir" -nt /tmp/build_start_timestamp_${PACKAGE} ]]; then
             echo "Removing old kernel doc directory: $doc_dir"
             rm -rf "$doc_dir"
         fi
