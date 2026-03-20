@@ -69,9 +69,16 @@ while IFS= read -r update_line; do
     local_ver=$(printf '%s\n' "$local_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
     remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
     
-    # Skip if local and remote versions match exactly, but NOT if they are status indicators like FAILED or MISSING
-    if [[ "$local_ver" == "$remote_ver" ]]; then
-        [[ "$remote_ver" != *"FAILED"* && "$remote_ver" != *"MISSING"* ]] && continue
+    # Strip any possible hidden characters, ANSI codes, or whitespace
+    local_ver=$(echo "$local_ver" | tr -d '[:space:]\r\n')
+    remote_ver=$(echo "$remote_ver" | tr -d '[:space:]\r\n')
+
+    [[ "$name" == *"nsis"* ]] && printf "DEBUG: name=%s local=%s remote=%s\n" "$name" "$local_ver" "$remote_ver" >&2
+
+    # Skip if local and remote versions match exactly, or if both are MISSING
+    if [[ "$local_ver" == "$remote_ver" ]] || [[ "$local_ver" == *"MISSING"* && "$remote_ver" == *"MISSING"* ]]; then
+        # If it failed, we might want to know. Otherwise, skip all matches.
+        [[ "$remote_ver" != *"FAILED"* ]] && continue
     fi
     
     # Format git hashes differently if they are 40 chars long

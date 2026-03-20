@@ -1441,6 +1441,8 @@ ${COMMANDS}"
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
         /^bash -e/ { other_cmds = other_cmds "\n" $0; next }
         /^exit/ { next }
+        # Skip shebangs and basic setup from original text as we provide our own
+        /^#!/ || /^set -e/ || /^set +e/ { next }
         /^cat > [a-z0-9.-]+\.md5 << "EOF"/ { 
             in_md5 = 1; 
             print "[DEBUG] Found MD5 cat command: " $0 > "/dev/stderr";
@@ -1448,18 +1450,19 @@ ${COMMANDS}"
             other_cmds = other_cmds "\n" $0; 
             next 
         }
-        /^while read -r line; do/ { 
+        /^[[:space:]]*while read -r line; do/ { 
             in_loop = 1; 
             loop_content = $0; 
             loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x22{print \\$2}\x22 | sed \x22s/\\.tar\\.[a-z2]\\+//\x22)";
             loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
-            loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//\x22)";
+            loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
             loop_content = loop_content "\n    # Skip if already installed (resume feature)";
             loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ]; then";
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
             loop_content = loop_content "\n        continue";
             loop_content = loop_content "\n    fi";
             loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
+            loop_content = loop_content "\n    echo \"$PKGVER\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
             next;
         }
         /mkdir build/ { if (in_loop) { loop_content = loop_content "\nrm -rf build"; loop_content = loop_content "\n" $0; next } }
@@ -1499,10 +1502,9 @@ ${COMMANDS}"
                 
                 # Backup -newer check
                 loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                
-                # Cleanup and record
-                loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
-                loop_content = loop_content "\n    rm -rf \"$DDIR\"";
+                # Cleanup and record: Keep the version header at line 1, sort the rest uniquely
+                loop_content = loop_content "\n    (head -n 1 \"/var/lib/book-packages/${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    as_root rm -rf \"$DDIR\"";
                 loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
                 next;
             }
@@ -1513,13 +1515,15 @@ ${COMMANDS}"
                 loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
                 loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
                 loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
+                loop_content = loop_content "\n    echo \"$PKGVER\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n    do_install";
                 loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
                 loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n    fi";
                 loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
-                loop_content = loop_content "\n    rm -rf \"$DDIR\"";
+                # Cleanup and record: Ensure version is on top, followed by sorted unique files
+                loop_content = loop_content "\n    (echo \"$PKGVER\"; sort -u \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^$PKGVER$|^[[:space:]]*$\") | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    as_root rm -rf \"$DDIR\"";
                 loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
                 next;
             }
@@ -1529,10 +1533,6 @@ ${COMMANDS}"
                 as_root_content = as_root_content "\n" $0
                 if (/export -f as_root/) in_as_root = 0
             } else if (in_loop) {
-                # Rewrite internal script paths for MD5 files (Xorg/KDE) - extra safety
-                gsub(/\.\.\/[a-z0-9-]+\.md5/, "/sources/archives/&", $0);
-                gsub(/\/sources\/archives\/\.\.\//, "/sources/archives/", $0);
-                
                 # Skip diagnostic/log-check commands if the log does not exist
                 if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
                     loop_content = loop_content "\n    " $0 " 2>/dev/null || true";
@@ -1543,13 +1543,15 @@ ${COMMANDS}"
                     next;
                 }
 
-                loop_content = loop_content "\n    " (in_root_block ? "as_root " : "") $0
+                # Handle loop end BEFORE adding it to content
                 if ($0 ~ /done[[:space:]]+<.*\.md5/) { 
                     sub(/done < /, "done < /sources/archives/", $0);
-                    # Ensure the replaced line is what we end the loop with
-                    sub(/.*\n    [^\n]*$/, "    " $0, loop_content);
+                    loop_content = loop_content "\n    " $0;
                     in_loop = 0;
+                    next;
                 }
+
+                loop_content = loop_content "\n    " (in_root_block ? "as_root " : "") $0
             } else if (in_md5) {
                 other_cmds = other_cmds "\n" $0
                 if (/^EOF$/) in_md5 = 0
@@ -2350,19 +2352,15 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
             s|($bn-)$lv\.md5|${1}$uf.md5|g;
             s|(\/sources\/archives\/$bn-)$lv\.md5|${1}$uf.md5|g;
 
-            # 2. Process the MD5 file content: update all versions
-            s|(cat > (?:/sources/archives/)?$bn-$uf\.md5 << \"EOF\"\n)(.*?)(\nEOF)|
+            # 2. Process the MD5 file content: update all versions inside the heredoc
+            s|(cat > (?:/sources/archives/)?$bn-$uf\.md5 << \"?EOF\"?\n)(.*?)(\nEOF)|
                 my $header = $1;
                 my $body = $2;
                 my $footer = $3;
-                my @lines = split("\n", $body);
-                for (@lines) {
-                    s/^#//; # Un-comment
-                    s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
-                    s/6\.\d+(?:\.\d+){0,2}/$uf/g; # Fallback generic replacement
-                }
-                $header . join("\n", @lines) . $footer
-            |se;
+                $body =~ s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
+                $body =~ s/6\.\d+(?:\.\d+){0,2}/$uf/og; # Fallback generic replacement
+                $header . $body . $footer
+            |gse;
 
             # 3. Update the done < redirection
             s|(done < (?:/sources/archives/)?$bn-)$lv\.md5|${1}$uf.md5|g;

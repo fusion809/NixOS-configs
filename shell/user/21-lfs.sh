@@ -390,7 +390,7 @@ lfs_check_custom_updates() {
     local script=$(cat <<'EOF'
     sudo mkdir -p /var/lib/custom-packages 2>/dev/null || true
     
-    scripts=($(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null))
+    scripts=($(find ~/lfs_packaging -mindepth 2 -maxdepth 2 -name "build.sh" 2>/dev/null))
     total=${#scripts[@]}
     echo "TOTAL:$total"
     count=0
@@ -606,6 +606,11 @@ lfs_update_all() {
         
         # Validate we got all three fields
         [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
+        
+        # Skip if both are MISSING (not an update)
+        if [[ "$local_ver" == "MISSING" && "$remote_ver" == "MISSING" ]]; then
+            continue
+        fi
         
         # Strip file extensions
         local_ver=$(printf '%s\n' "$local_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
