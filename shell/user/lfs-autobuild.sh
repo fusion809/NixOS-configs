@@ -299,6 +299,8 @@ EOF
     continue
 fi
 
+log "[LFS-AUTOBUILD] Script initialization complete. Version 2026.03.20.2"
+
 # 1. Discover package page
 find_package_page() {
     local pkg="$1"
@@ -307,6 +309,10 @@ find_package_page() {
     if [[ "$SEARCH_LFS" == "true" ]]; then
         if [[ "$pkg" == "linux" ]]; then
             echo "$LFS_BOOK/chapter10/kernel.html"
+            return 0
+        fi
+        if [[ "$pkg" == "tzdata" ]]; then
+            echo "$LFS_BOOK/chapter08/glibc.html"
             return 0
         fi
 
@@ -724,6 +730,36 @@ get_commands() {
     log "Extracting build commands..."
     RAW_CONTENT=$(get_commands "$HTML_CONTENT" "$PACKAGE")
 
+    # TZDATA special case: glibc.html contains many things, we only want the tzdata block
+    if [[ "$PACKAGE" == "tzdata" ]]; then
+        log "Filtering commands for tzdata only..."
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -ne "
+            if (/(ZONEINFO=\\/usr\\/share\\/zoneinfo.*unset ZONEINFO tz)/is) {
+                my \$c = \$1;
+                # Strip inappropriate glibc commands that might have bled in
+                \$c =~ s/^[[:space:]]*(patch|\\.\\/configure|make[[:space:]]+.*|sed[[:space:]]+.*|localedef[[:space:]]+.*|cat[[:space:]]+.*>.*nsswitch\.conf).*\\n//gm;
+                # Strip redundant tar extraction from the page
+                \$c =~ s/^[[:space:]]*tar -xf .*?tzdata.*?\.tar\..*\\n//gm;
+                print \"___BLOCK_START_ROOT___\\n\";
+                print \$c;
+                print \"\\n___BLOCK_END___\\n\";
+            }
+        ")
+        if [[ -z "$RAW_CONTENT" ]]; then
+            # Try second pattern if the first one failed (LFS version variations)
+            RAW_CONTENT=$(echo "$HTML_CONTENT" | perl -0777 -ne "
+                if (/(ZONEINFO=\\/usr\\/share\\/zoneinfo\\s+mkdir -pv \\\$ZONEINFO.*?unset ZONEINFO tz)/is) {
+                    my \$c = \$1; \$c =~ s/<[^>]+>//gs;
+                    # Same stripping logic
+                    \$c =~ s/^[[:space:]]*(patch|\\.\\/configure|make[[:space:]]+.*|sed[[:space:]]+.*|localedef[[:space:]]+.*).*\\n//gm;
+                    \$c =~ s/^[[:space:]]*tar -xf .*?tzdata.*?\.tar\..*\\n//gm;
+                    print \"___BLOCK_START_ROOT___\\n\$c\\n___BLOCK_END___\\n\";
+                }
+            ")
+        fi
+        log "Tzdata commands isolated and cleaned (using internal markers)."
+    fi
+
     # Special handling for Linux kernel - include headers
     if [[ "$PACKAGE" == "linux" ]]; then
         log "Adding Linux API Headers build steps..."
@@ -1140,6 +1176,14 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
             host_cmds = host_cmds "\n" $0; 
             next 
         }
+        /^# __BEGIN_ROOT__/ { 
+            vm_cmds = vm_cmds "\nas_root bash << \x27ROOTEOF\x27\n"; 
+            next 
+        }
+        /^# __BEGIN_USER__/ || /^# __END_ROOT__/ || /^# __END_USER__/ { 
+            if (vm_cmds ~ /ROOTEOF\n$/) { } else { vm_cmds = vm_cmds "\nROOTEOF\n" }
+            next 
+        }
         /^for package in/ { in_vm_script = 1 }
         {
             if (in_as_root) {
@@ -1500,7 +1544,7 @@ ${COMMANDS}"
                 }
 
                 loop_content = loop_content "\n    " (in_root_block ? "as_root " : "") $0
-                if ($0 ~ /done < [a-z0-9.-]+\.md5/) { 
+                if ($0 ~ /done[[:space:]]+<.*\.md5/) { 
                     sub(/done < /, "done < /sources/archives/", $0);
                     # Ensure the replaced line is what we end the loop with
                     sub(/.*\n    [^\n]*$/, "    " $0, loop_content);
@@ -1846,6 +1890,11 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
             [[ -n "$LFS_VERSION" ]] && log "Extracted version from HTML header: $LFS_VERSION"
         fi
         [[ -n "$LFS_VERSION" ]] && log "Extracted version from URL: $LFS_VERSION"
+        # TZDATA special case: extract version from filename (e.g. 2026a)
+        if [[ "$PACKAGE" == "tzdata" ]]; then
+            LFS_VERSION=$(basename "$MAIN_DOWNLOAD_URL" | sed -E 's/^tzdata//; s/\.tar\..*$//')
+            log "Tzdata version override from filename: $LFS_VERSION"
+        fi
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
     log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
@@ -2358,17 +2407,6 @@ _gen_build_script() {
     local current_rel_dir="."
     local block_starting_rel_dir="."
 
-    # Always define as_root at the top of every generated script
-    echo "as_root() {"
-    echo "  if [ \${EUID:-\$(id -u)} = 0 ]; then"
-    echo "    \$@"
-    echo "  elif [ -x /usr/bin/sudo ]; then"
-    echo "    sudo \$@"
-    echo "  else"
-    echo "    su -c \"\$*\""
-    echo "  fi"
-    echo "}"
-    echo "export -f as_root"
 
     # Internal helper to flush accumulated user commands into an su block
     _flush_user() {
@@ -2447,6 +2485,18 @@ _gen_build_script() {
 
     echo "#!/bin/bash"
     echo "set -e"
+
+    # Always define as_root at the top of every generated script
+    echo "as_root() {"
+    echo "  if [ \${EUID:-\$(id -u)} = 0 ]; then"
+    echo "    \$@"
+    echo "  elif [ -x /usr/bin/sudo ]; then"
+    echo "    sudo \$@"
+    echo "  else"
+    echo "    su -c \"\$*\""
+    echo "  fi"
+    echo "}"
+    echo "export -f as_root"
     echo "BUILD_DIR=\"/sources/${dirname}\""
     echo "# Grant regular user access to build directory for compilation"
     echo "chown -R '${normal_user}' \"/sources/${dirname}\" 2>/dev/null || true"
@@ -2456,6 +2506,9 @@ _gen_build_script() {
         if [[ "$line" == "# __BEGIN_ROOT__" ]]; then
             _flush_user
             in_section="root"
+            # Start a single root shell for this block
+            echo "as_root bash << 'ROOTEOF'"
+            echo "set -e"
             # Ensure ROOT blocks start with setup commands
             if [[ -n "$setup_cmds" ]]; then
                 echo "$setup_cmds"
@@ -2463,6 +2516,7 @@ _gen_build_script() {
             # Ensure ROOT blocks start in the tracked directory
             echo "cd \"/sources/${dirname}/${current_rel_dir}\" || cd \"/sources/${dirname}\""
         elif [[ "$line" == "# __END_ROOT__" ]]; then
+            echo "ROOTEOF"
             in_section=""
             echo "chown -R '${normal_user}' \"/sources/${dirname}\" 2>/dev/null || true"
         elif [[ "$line" == "# __BEGIN_USER__" ]]; then
@@ -2479,6 +2533,10 @@ _gen_build_script() {
             _update_cwd "$line"
         fi
     done <<< "$COMMANDS"
+    # Ensure any final root block is closed (should have been handled by __END_ROOT__ but for safety)
+    if [[ "$in_section" == "root" ]]; then
+        echo "ROOTEOF"
+    fi
     _flush_user
 }
 
@@ -2629,7 +2687,13 @@ else
         if [[ "$RESOLVED_TARGET" != "/sources" ]] && [[ "$RESOLVED_TARGET" != "/sources/" ]] && [[ "$RESOLVED_TARGET" != "/sources/archives"* ]]; then
             rm -rf "$TARGET_DIR"
             mkdir -p "$TARGET_DIR"
-            tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR" --strip-components=1
+            # Try to strip components if it is a standard archive with a root folder
+            # If tar succeeds but extracts nothing (silent failure on flat archives), fallback
+            tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR" --strip-components=1 2>/dev/null || true
+            if [ ! "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]; then
+                # Fallback for flat archives (like tzdata)
+                tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR"
+            fi
             # Ensure recursive ownership immediately after extraction
             chown -R "${NORMAL_USER}" "$TARGET_DIR"
         else
