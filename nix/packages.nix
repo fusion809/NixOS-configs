@@ -129,7 +129,6 @@ with pkgs; [
   ###############################################################
   kdePackages.okular
   languagetool
-  unstable.onlyoffice-desktopeditors
   texliveFull
   texstudio
   zotero
