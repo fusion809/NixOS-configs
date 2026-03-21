@@ -36,3 +36,7 @@ function nix-run {
 function gist {
 	nix-run "gist" "$@"
 }
+
+function pstart {
+	ps -eo pid,lstart | grep  "$1" | sed "s/\s*$1 //g"
+}

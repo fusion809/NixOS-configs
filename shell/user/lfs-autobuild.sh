@@ -68,6 +68,7 @@ SEARCH_BLFS=true
 PACKAGES=()
 XORG_MULTI_MODE=false
 FORCE=false
+YES=false
 
 usage() {
     echo "Usage: $0 [options] <package-name> [package-name-2...]"
@@ -122,6 +123,7 @@ while [[ "$#" -gt 0 ]]; do
             fi
             ;;
         -f|--force) FORCE=true ;;
+        -y|--yes) YES=true ;;
         -h|--help) usage ;;
         -*) echo "Unknown option: $1"; usage ;;
         *) PACKAGES+=("$1") ;;
@@ -709,7 +711,7 @@ get_commands() {
     ' | perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
         sed 's/\\ \+/ /g' | \
-        perl -0777 -pe 's/\\\n\s*//gs' | \
+        perl -0777 -pe 's/([ \t])\\\n\s*/$1/gs' | \
         sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
         grep -vE "^[[:space:]]*<[a-zA-Z ]+>[[:space:]]*$" | \
@@ -822,7 +824,8 @@ while read -r line; do
         
         # 1. Block Blacklist (mainly for glibc)
         if [[ "$PACKAGE" == "glibc" ]]; then
-            if grep -qiE "(nscd|gcc[[:space:]]+-print-libgcc-file-name|localedef|localedata/install-locales|nsswitch\.conf|ZONEINFO|tzselect|localtime|ld\.so\.conf)" <<< "$CURRENT_BLOCK"; then
+            # Relaxed skipping: only skip blocks that are PURELY configuration without build commands
+            if grep -qiE "(nscd|gcc[[:space:]]+-print-libgcc-file-name|localedef|localedata/install-locales|nsswitch\.conf|ZONEINFO|tzselect|localtime|ld\.so\.conf)" <<< "$CURRENT_BLOCK" && ! grep -qiE "(\.\./configure|make)" <<< "$CURRENT_BLOCK"; then
                 log "Skipping unnecessary glibc configuration/maintenance block." >&2
                 continue
             fi
@@ -836,7 +839,7 @@ while read -r line; do
         fi
         
         # 2. Skip duplicate configure blocks (BLFS shows alternatives)
-        if [[ "$CURRENT_BLOCK" =~ [[:space:]]*\./configure ]]; then
+        if [[ "$CURRENT_BLOCK" =~ [[:space:]]*(\./|\.\./)configure ]]; then
             if [[ "$configure_seen" == "true" ]]; then
                 log "Skipping duplicate configure block (alternative build method)." >&2
                 continue
@@ -882,7 +885,7 @@ while read -r line; do
 
         if [[ "$XORG_MULTI_MODE" == "false" ]] && \
            ! grep -qE '^[[:space:]]*(cmake|mkdir[[:space:]]+build)' <<< "$CURRENT_BLOCK" && \
-           [[ "$CURRENT_BLOCK" =~ (make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests/run\.sh) ]]; then
+           [[ "$CURRENT_BLOCK" =~ (make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|x\.py[[:space:]]+test|grep.*testlog|grep.*test\ result:|awk.*passed.*failed|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests/run\.sh) ]]; then
             # util-linux special case: ensure tests are compiled before running
             if [[ "$PACKAGE" == "util-linux" ]] && [[ ! "$CURRENT_BLOCK" =~ "check-programs" ]]; then
                 log "Prepending 'make check-programs' to util-linux test block."
@@ -898,10 +901,14 @@ if ! (
 $CURRENT_BLOCK
 ); then
     echo '[WARNING] Test suite for $PACKAGE failed.'
-    read -p 'Build failed tests. Proceed to installation anyway? [y/N] ' -n 1 -r < /dev/tty
-    echo
-    if [[ ! \$REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+    if [[ \"\$YES\" == \"true\" ]]; then
+        echo '[INFO] Proceeding anyway (--yes enabled).'
+    else
+        read -p 'Build failed tests. Proceed to installation anyway? [y/N] ' -n 1 -r < /dev/tty
+        echo
+        if [[ ! \$REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
     fi
 fi
 # __END_ROOT__
@@ -1767,14 +1774,11 @@ fi
 log "Package base name for search: $PKG_BASE"
 
 if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
-    # 0. Primary Link from Page (Robust Extraction)
-    # The first "Download (HTTP)" link is usually the main one
-    http_download=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (/Download\s*\(HTTP\):\s*<a[^>]+href="([^"]+)"/is) { print $1 }')
-    if [[ -z "$http_download" ]]; then
-        # Fallback for plain links after text (narrower match to avoid .html or .php redirects)
-        http_download=$(echo "$HTML_CONTENT" | perl -0777 -ne 'if (/Download\s*\(HTTP\):.*?href="([^"]+?(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz))"/is) { print $1 }')
-    fi
-    [[ -n "$http_download" ]] && DOWNLOAD_URLS+=("$http_download")
+    # 0. Primary Links from Page (Robust Extraction)
+    # Extract all "Download (HTTP)" and "Download:" links explicitly labeled on the page
+    mapfile -t PRIMARY_DOWNLOADS < <(printf '%s' "$HTML_CONTENT" | perl -0777 -ne 'while (/Download(?:\s*\(HTTP\))?:\s*<a[^>]+href=\s*"([^"]+)"/igs) { print "$1\n" }')
+    DOWNLOAD_URLS+=("${PRIMARY_DOWNLOADS[@]}")
+
 
     # 1. Main Page Links (for both LFS and BLFS)
     # Extract all archive and patch links
@@ -2355,8 +2359,23 @@ if [[ "$PACKAGE" == "sddm" ]]; then
 fi
 
 
-# Handle KDE metapackage version substitution at the very end to ensure it catches generated paths
-if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma") && -n "$UPSTREAM_VERSION" ]]; then
+
+
+if [[ "$FRAMEWORKS_MODE" == "true" || "$XORG_MULTI_MODE" == "true" ]]; then
+    MAIN_FILENAME="$PACKAGE"
+    DIRNAME="$PACKAGE"
+    ALL_FILENAMES=()
+else
+    MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
+    DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
+    ALL_FILENAMES=()
+    for url in "${DOWNLOAD_URLS[@]}"; do
+        ALL_FILENAMES+=("$(basename "$url")")
+    done
+fi
+
+# Handle KDE metapackage version substitution after initial variable assignments
+if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "extra-cmake-modules") && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from commands (now including absolute paths like /sources/archives/plasma-6.6.1.md5)
     # Match version string that ends with a digit to avoid eating the trailing dot
     LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{/archives/(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-\K[0-9]+(\.[0-9]+)+}g) { print $& }' | sort -V | tail -n 1)
@@ -2412,20 +2431,15 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
             # Replace major.minor in URLs, e.g. /6.23/ to /6.24/
             s!/$lmm/!/$umm/!g;
         ')
+        
+        # Update core variables so they match the substituted commands
+        VERSION="$UPSTREAM_FULL"
+        packagedir="${PACKAGE}-${VERSION}"
+        DIRNAME="${packagedir}"
+        GEN_DIRNAME="${packagedir}"
+        MAIN_FILENAME="${packagedir}.tar.xz"
+        log "Updated build variables to match KDE upstream version $VERSION"
     fi
-fi
-
-if [[ "$FRAMEWORKS_MODE" == "true" || "$XORG_MULTI_MODE" == "true" ]]; then
-    MAIN_FILENAME="$PACKAGE"
-    DIRNAME="$PACKAGE"
-    ALL_FILENAMES=()
-else
-    MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
-    DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
-    ALL_FILENAMES=()
-    for url in "${DOWNLOAD_URLS[@]}"; do
-        ALL_FILENAMES+=("$(basename "$url")")
-    done
 fi
 
 # For LLVM monorepo, the actual build should happen in the llvm/ subdirectory
@@ -2639,6 +2653,7 @@ rm -f "$RS_FILE"
   printf 'FRAMEWORKS_MODE="%s"\n' "$FRAMEWORKS_MODE"
   printf 'XORG_MULTI_MODE="%s"\n' "$XORG_MULTI_MODE"
   printf 'RM_LIBS="%s"\n' "$RM_LIBS"
+  printf 'YES="%s"\n' "$YES"
   
   # Inject version information for inventory recording
   RECORDED_VERSION="$LFS_VERSION"
@@ -2682,7 +2697,7 @@ export -f as_root
 
 REMOTE_EOF
   cat <<'REMOTE_EOF'
-export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE XORG_MULTI_MODE RM_LIBS
+export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE XORG_MULTI_MODE RM_LIBS YES
 
 (
   flock -x 200 || { echo "Another build is in progress. Waiting for lock..."; flock -x 200; }
