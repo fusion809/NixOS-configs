@@ -171,6 +171,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
         xorg-amdgpu)     PACKAGE="xf86-video-amdgpu" ;;
         xorg-nouveau)    PACKAGE="xf86-video-nouveau" ;;
         xdg-desktop-portal-kde) PACKAGE="plasma-all" ;;
+        glib)                    PACKAGE="glib2" ;;
     esac
 
     # 0. Check for custom package in ~/lfs_packaging
