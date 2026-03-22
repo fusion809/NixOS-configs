@@ -266,7 +266,7 @@ lfs_get_local_packages() {
             for f in /var/lib/book-packages/*; do
                 [ -f "$f" ] || continue
                 name=$(basename "$f")
-                ver=$(head -n 1 "$f" | grep -v "^#" | tr -d "\r")
+                ver=$(head -n 1 "$f" | grep -v "^#" | tr -d "[:space:]")
                 [ -n "$ver" ] && echo "${name}-${ver}"
             done
         fi
@@ -275,7 +275,7 @@ lfs_get_local_packages() {
             for f in /var/lib/custom-packages/*; do
                 [ -f "$f" ] || continue
                 name=$(basename "$f")
-                ver=$(head -n 1 "$f" | tr -d "\r")
+                ver=$(head -n 1 "$f" | tr -d "[:space:]")
                 [ -n "$ver" ] && echo "${name}-${ver}"
             done
         fi
@@ -521,7 +521,7 @@ EOF
             remote_ver="${remote_ver%.tbz2}"
             remote_ver="${remote_ver%.patch}"
             
-            results+="$pkg_name $local_ver $remote_ver\n"
+            results+="$pkg_name $local_ver $remote_ver"$'\n'
         fi
     done < <(printf '%s\n' "$script" | ssh_lfs "bash -s")
     
@@ -566,7 +566,7 @@ lfs_update_all() {
         fi
 
         local name=$(echo "$local_pkg" | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
-        local local_ver=$(echo "$local_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
+        local local_ver=$(echo "$local_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
 
         [[ -z "$name" || "$name" == "$local_pkg" ]] && continue
 
@@ -574,7 +574,7 @@ lfs_update_all() {
         local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9])" | head -n 1)
         
         if [[ -n "$remote_pkg" ]]; then
-            local remote_ver=$(echo "$remote_pkg" | sed -E -e 's#^'"$name"'-##I' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
+            local remote_ver=$(echo "$remote_pkg" | sed -E -e 's#^'"$name"'-##I' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##' | tr -d '[:space:]')
             
             # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
             local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')

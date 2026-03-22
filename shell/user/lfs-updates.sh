@@ -17,7 +17,7 @@ while read -r local_pkg; do
     
     (
         name=$(echo "$local_pkg" | sed -E 's#^([-a-zA-Z0-9_\+]+)-[0-9].*#\1#')
-        local_ver=$(echo "$local_pkg" | sed -E -e 's#^'"$name"'-##' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
+        local_ver=$(echo "$local_pkg" | sed -E -e 's#^'"$name"'-##' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##' | tr -d '[:space:]')
 
         [[ -z "$name" || "$name" == "$local_pkg" ]] && exit 0
 
@@ -25,7 +25,7 @@ while read -r local_pkg; do
         
         if [[ -n "$remote_pkg" ]]; then
             # Strip the name prefix robustly using the known name (case-insensitive)
-            remote_ver=$(echo "$remote_pkg" | sed -E 's#^'"$name"'-##I' | tr -d '\r')
+            remote_ver=$(echo "$remote_pkg" | sed -E 's#^'"$name"'-##I' | tr -d '[:space:]')
             
             # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
             local_base=$(echo "$local_ver" | sed -E 's#-[-a-zA-Z]+$##')

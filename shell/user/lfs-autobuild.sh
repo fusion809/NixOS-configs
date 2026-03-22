@@ -679,21 +679,19 @@ get_commands() {
         # We use environment variable to safely pass target_pkg to perl.
         local sectioned_html=$(TARGET_PKG="$target_pkg" printf '%s' "$html" | perl -0777 -ne '
             my $tp = $ENV{TARGET_PKG};
-            # Match 1: Anchor with ID/Name followed by content until next section
-            # Improved: if anchor is empty, we must ensure we capture the FOLLOWING content 
-            # until the next major section that is NOT this one.
-            if (/(<(?:a|div|h[1-6]|section)[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
+            # Match 1: Header containing anchor with ID/Name (More specific, should come first)
+            if (/(<(h[1-6])[^>]*>.*?<(?:a|div)\s+[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?<\/ \2>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
+                print $1;
+            }
+            # Match 2: Standalone anchor or div - capture until next major section
+            elsif (/(<(?:a|div|h[1-6]|section|p|li)[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
                 my $content = $1;
-                # If we captured almost nothing (empty anchor), continue matching until the next section
-                if ($content =~ /^<[^>]+>\s*$/) {
-                    if (/(<(?:a|div|h[1-6]|section)[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?(?:<div\s+class="sect[12]"|<h[12]).*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
+                # If we captured almost nothing (no substantial tags), continue matching until the next section
+                if ($content !~ /<(?:pre|p|div|table|ul|ol|h[3-6]|section)/is) {
+                    if (/(<(?:a|div|h[1-6]|section|p|li)[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?(?:<div\s+class="sect[12]"|<h[12]).*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
                         print $1;
                     } else { print $content }
                 } else { print $content }
-            } 
-            # Match 2: Header containing anchor with ID/Name
-            elsif (/(<(h[1-6])[^>]*>.*?<(?:a|div)\s+[^>]*?\b(?:id|name)="\Q$tp\E"[^>]*>.*?<\/ \2>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$tp\E)[^"]+")/is) {
-                print $1;
             }
         ')
         if [[ -n "$sectioned_html" ]]; then
@@ -886,7 +884,7 @@ while read -r line; do
 
         if [[ "$XORG_MULTI_MODE" == "false" ]] && \
            ! grep -qE '^[[:space:]]*(cmake|mkdir[[:space:]]+build)' <<< "$CURRENT_BLOCK" && \
-           [[ "$CURRENT_BLOCK" =~ (make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|x\.py[[:space:]]+test|grep.*testlog|grep.*test\ result:|awk.*passed.*failed|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests/run\.sh) ]]; then
+           [[ "$CURRENT_BLOCK" =~ (make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|x\.py[[:space:]]+test|grep.*testlog|grep.*test\ result:|awk.*passed.*failed|spawn.*make|\<expect\>|([[:space:]]|^)tester([[:space:]]|$)|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+tests|all\.sh|tests/run\.sh) ]]; then
             # util-linux special case: ensure tests are compiled before running
             if [[ "$PACKAGE" == "util-linux" ]] && [[ ! "$CURRENT_BLOCK" =~ "check-programs" ]]; then
                 log "Prepending 'make check-programs' to util-linux test block."
@@ -2778,6 +2776,12 @@ else
             fi
             # Ensure recursive ownership immediately after extraction
             chown -R "${NORMAL_USER}" "$TARGET_DIR"
+            
+            # Package-specific source fixes after extraction
+            if [[ "${PACKAGE,,}" == "libportal" ]] && [[ -f "$TARGET_DIR/libportal/meson.build" ]]; then
+                echo "Applying libportal-specific Meson fix for Qt6 dependency..."
+                sed -i "s/requires: \[qt6_dep/requires: ['Qt6Core', 'Qt6Gui', 'Qt6Widgets'/" "$TARGET_DIR/libportal/meson.build"
+            fi
         else
             echo "[ERROR] Unsafe DIRNAME detected: $DIRNAME. Aborting extraction to prevent data loss."
             exit 1
