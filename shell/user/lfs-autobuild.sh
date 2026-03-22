@@ -836,6 +836,12 @@ while read -r line; do
                 continue
             fi
         fi
+
+        # Skip literal placeholder alternatives like `ABI=32 ./configure ...`
+        if grep -q "configure \.\.\." <<< "$CURRENT_BLOCK"; then
+            log "Skipping placeholder configure block." >&2
+            continue
+        fi
         
         # 2. Skip duplicate configure blocks (BLFS shows alternatives)
         if [[ "$CURRENT_BLOCK" =~ [[:space:]]*(\./|\.\./)configure ]]; then
@@ -883,8 +889,8 @@ while read -r line; do
         # 7. Determine if this block is a test suite or related setup
 
         if [[ "$XORG_MULTI_MODE" == "false" ]] && \
-           ! grep -qE '^[[:space:]]*(cmake|mkdir[[:space:]]+build)' <<< "$CURRENT_BLOCK" && \
-           [[ "$CURRENT_BLOCK" =~ (make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|x\.py[[:space:]]+test|grep.*testlog|grep.*test\ result:|awk.*passed.*failed|spawn.*make|\<expect\>|([[:space:]]|^)tester([[:space:]]|$)|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+tests|all\.sh|tests/run\.sh) ]]; then
+           ! grep -qE '^[[:space:]]*(cmake|mkdir[[:space:]]+build)' <<< "$(echo "$CURRENT_BLOCK" | grep -vE "BUILD_(TESTS|TESTING)=ON")" && \
+           [[ "$CURRENT_BLOCK" =~ (make[[:space:]][^$'\n']*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|x\.py[[:space:]]+test|grep[^$'\n']*testlog|grep[^$'\n']*test\ result:|awk[^$'\n']*passed[^$'\n']*failed|spawn[^$'\n']*make|\<expect\>|([[:space:]]|^)tester([[:space:]]|$)|su[^$'\n']*tester|groupadd[^$'\n']*dummy|groupdel[^$'\n']*dummy|gnulib-tests|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+tests|all\.sh|tests/run\.sh|tar[^$'\n']*xmlts|xmlts) ]]; then
             # util-linux special case: ensure tests are compiled before running
             if [[ "$PACKAGE" == "util-linux" ]] && [[ ! "$CURRENT_BLOCK" =~ "check-programs" ]]; then
                 log "Prepending 'make check-programs' to util-linux test block."
@@ -1113,11 +1119,15 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
             } else if ($0 ~ /pip3.*install/) {
                 cmd = $0; sub(/--root=[^ ]+ /, "", cmd);
                 gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                print cmd " --root=\"$DDIR\" || true"
+                print cmd " --root=\"$DDIR\" --ignore-installed --no-deps || true"
             }
             
             # 2. Run the original command as intended
-            print $0
+            real_cmd = $0;
+            if (real_cmd ~ /pip3.*install/ && real_cmd !~ /ignore-installed/) {
+                sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed", real_cmd);
+            }
+            print real_cmd
 
             # 3. Record from our staging
             print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then"
@@ -1239,9 +1249,16 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                         cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd);
                         gsub(/ *([|][|]|&&|;).*$/, "", cmd);
                         vm_cmds = vm_cmds "\n    DESTDIR=\"$DDIR\" " cmd " || true";
+                    } else if (line ~ /pip3.*install/) {
+                        cmd = line; sub(/--root=[^ ]+ /, "", cmd);
+                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
+                        vm_cmds = vm_cmds "\n    " cmd " --root=\"$DDIR\" --ignore-installed --no-deps || true";
                     }
                     
                     cmd = line; 
+                    if (cmd ~ /pip3.*install/ && cmd !~ /ignore-installed/) {
+                        sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed", cmd);
+                    }
                     # Only strip trailing operators if not followed by a closing brace (function definition end)
                     if (!(cmd ~ /;[[:space:]]*\}/)) {
                         gsub(/ *([|][|]|&&|;).*$/, "", cmd);
@@ -1503,6 +1520,9 @@ ${COMMANDS}"
                     loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
                 } else if ($0 ~ /ninja.*install/) {
                     loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " cmd " || true";
+                } else if ($0 ~ /pip3.*install/) {
+                    sub(/--root=[^ ]+ /, "", cmd);
+                    loop_content = loop_content "\n    " cmd " --root=\"$DDIR\" --ignore-installed --no-deps || true";
                 }
                 
                 loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
@@ -1510,8 +1530,12 @@ ${COMMANDS}"
                 loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n    fi";
                 
+                real_cmd = $0;
+                if (real_cmd ~ /pip3.*install/ && real_cmd !~ /ignore-installed/) {
+                    sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed", real_cmd);
+                }
                 # Now the actual install to the system
-                loop_content = loop_content "\n    " $0;
+                loop_content = loop_content "\n    " real_cmd;
                 
                 # Backup -newer check
                 loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
