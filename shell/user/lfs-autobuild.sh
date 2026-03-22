@@ -767,6 +767,27 @@ get_commands() {
     log "Extracting build commands..."
     RAW_CONTENT=$(get_commands "$HTML_CONTENT" "$PACKAGE")
 
+    # Handle custom hardcoded packages (libelf, elfutils, etc)
+    if [[ "$PACKAGE" == "libelf" || "$PACKAGE" == "elfutils" ]]; then
+        log "Using hardcoded metadata for $PACKAGE (elfutils package)"
+        # LFS Chapter 8 / BLFS style build for libelf/elfutils
+        RAW_CONTENT="___BLOCK_START_USER___
+./configure --prefix=/usr                \\
+            --disable-debuginfod         \\
+            --enable-libdebuginfod=dummy &&
+make
+___BLOCK_END___
+___BLOCK_START_ROOT___
+make install
+___BLOCK_END___"
+        # Since we have RAW_CONTENT, we don't need to fetch it from HTML later
+        SKIP_HTML_EXTRACTION="true"
+        MAIN_DOWNLOAD_URL="https://sourceware.org/elfutils/ftp/0.194/elfutils-0.194.tar.bz2"
+        DOWNLOAD_URLS=("$MAIN_DOWNLOAD_URL")
+        LFS_VERSION="0.194"
+        log "Hardcoded commands for $PACKAGE injected into RAW_CONTENT."
+    fi
+
     # TZDATA special case: glibc.html contains many things, we only want the tzdata block
     if [[ "$PACKAGE" == "tzdata" ]]; then
         log "Filtering commands for tzdata only..."
@@ -895,7 +916,7 @@ while IFS= read -r line; do
         fi
 
         # 4. Skip blfs-systemd-units / configuration install commands
-        if [[ "$CURRENT_BLOCK" =~ make[[:space:]]+install-(dhcpcd|rsyncd) ]]; then
+        if [[ "$CURRENT_BLOCK" =~ make[[:space:]]+install-(dhcpcd|rsyncd|gpm) ]]; then
             log "Skipping service/configuration install command." >&2
             continue
         fi
@@ -1082,7 +1103,7 @@ MISSING_DOC_TOOL=""
 
 # ALWAYS suppress doxygen, texlive, asciidoc, xmlto as requested
 if [[ "$COMMANDS" =~ "doxygen" || "$COMMANDS" =~ "texlive" || "$COMMANDS" =~ "asciidoc" || "$COMMANDS" =~ "xmlto" ]] || \
-   [[ "$HTML_CONTENT" =~ "doxygen" || "$HTML_CONTENT" =~ "texlive" || "$PACKAGE" == "git" ]]; then
+   [[ "$HTML_CONTENT" =~ "doxygen" || "$HTML_CONTENT" =~ "texlive" || "$PACKAGE" == "git" || "$PACKAGE" == "gpm" ]]; then
     log "[INFO] Documentation building (doxygen/texlive/asciidoc) is explicitly suppressed."
     ENABLE_DOC_BUILD=false
     # Map to whichever tool was found (or both), doxygen takes precedence for the stripping logic
@@ -1091,9 +1112,9 @@ if [[ "$COMMANDS" =~ "doxygen" || "$COMMANDS" =~ "texlive" || "$COMMANDS" =~ "as
     else
         MISSING_DOC_TOOL="texlive"
     fi
-    # Force common tools to false in the environment for both host and build detection
-    SETUP_COMMANDS+="export DOXYGEN=false TEXI2HTML=false TEXI2PDF=false MAKEINFO=false
-export ac_cv_path_DOXYGEN=false ac_cv_path_MAKEINFO=false ac_cv_path_TEXI2HTML=false ac_cv_path_TEXI2PDF=false
+    # Force common tools to true in the environment to avoid build failures when they are called
+    SETUP_COMMANDS+="export DOXYGEN=true TEXI2HTML=true TEXI2PDF=true MAKEINFO=true
+export ac_cv_path_DOXYGEN=true ac_cv_path_MAKEINFO=true ac_cv_path_TEXI2HTML=true ac_cv_path_TEXI2PDF=true
 "
 fi
 
@@ -1134,6 +1155,7 @@ fi
 if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     SETUP_COMMANDS+="
 MOCK_DOC_DIR=\"/tmp/mock_docs\"
+TEXLIVE_PREFIX=\"/opt/texlive/2025\"
 mkdir -p \"\$MOCK_DOC_DIR\"
 for m in doxygen makeinfo asciidoc xmlto asciidoctor xmlproc docbook2x pdflatex xelatex lualatex texi2html texi2pdf texi2dvi sphinx-build; do
     ln -sf /bin/true \"\$MOCK_DOC_DIR/\$m\"
@@ -1154,10 +1176,14 @@ if [[ "$PACKAGE" == "colord" ]] || [[ "$PACKAGE" == "colord-gtk" ]]; then
 fi
 
 if [[ "$PACKAGE" == "gpm" ]]; then
-    COMMANDS=$(echo "$COMMANDS" | sed 's/( p/p/g' | sed 's/make )/make/g' | sed '/INPUT/d' | sed '/dvipdfm/d')
+    log "Applying GPM-specific build fixes (skipping documentation)..."
+    # Ensure make only runs in src to avoid documentation failures
+    COMMANDS=$(echo "$COMMANDS" | sed 's/\bmake\b/make -C src/g')
+    # Remove lines related to documentation formats we are skipping
+    COMMANDS=$(echo "$COMMANDS" | sed -E '/(INPUT|dvipdfm)/d')
 fi
 
-if [[ "$PACKAGE" == "krb5" || "$PACKAGE" == "mitkrb" ]]; then
+if [[ "$PACKAGE" == "krb5" || "$PACKAGE" == "mitkrb" || "$PACKAGE" == "elfutils" ]]; then
     log "Applying GCC 15 compatibility fix for $PACKAGE"
     # Create a GCC wrapper to strip -Werror flags on the fly
     MOCK_GCC_DIR="/tmp/mock_gcc"
@@ -1211,6 +1237,8 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     fi
     # Also catch and neutralize specific doc building tools and python scripts in doc/
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/(^|[^a-zA-Z0-9_-])(doxygen|texi2html|texi2pdf|texi2dvi|makeinfo|pdflatex|xelatex|lualatex|asciidoc|xmlto|asciidoctor|xmlproc|docbook2x)\b/\1true /g')
+    # Ensure meson builds have a build directory
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's/meson setup/mkdir -p build && cd build && $&/g')
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpython3?[[:space:]]+doc\/[a-zA-Z0-9_-]+\.py\b/true /g')
     # Optional: neutralize test commands that might fail and kill the build
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\b(make|ninja)[[:space:]]+(check|test)\b/& || true/g')
@@ -1797,7 +1825,6 @@ ${COMMANDS}"
     ')
 fi
 
-# 2.22 Extract Download URL and identify main filename
 if [[ "$SKIP_HTML_EXTRACTION" == "true" ]]; then
     # Already set by special case
     :
@@ -2941,10 +2968,20 @@ else
             mkdir -p "$TARGET_DIR"
             # Try to strip components if it is a standard archive with a root folder
             # If tar succeeds but extracts nothing (silent failure on flat archives), fallback
-            tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR" --strip-components=1 2>/dev/null || true
+            if echo $MAIN_FILENAME | grep -E "tar|tgz" &> /dev/null; then
+                echo "Using tar with strip-components"
+                tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR" --strip-components=1 2>/dev/null || true
+            elif echo $MAIN_FILENAME | grep "zip" &> /dev/null; then
+                unzip "$MAIN_FILENAME" -d "$TARGET_DIR" 2>/dev/null || true
+            fi
             if [ ! "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]; then
                 # Fallback for flat archives (like tzdata)
-                tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR"
+                if echo $MAIN_FILENAME | grep -E "tar|tgz" &> /dev/null; then
+                    echo "Using tar"
+                    tar -xf "$MAIN_FILENAME" -C "$TARGET_DIR" 2>/dev/null || true
+                elif echo $MAIN_FILENAME | grep "zip" &> /dev/null; then
+                    unzip "$MAIN_FILENAME" -d "$TARGET_DIR" 2>/dev/null || true
+                fi
             fi
             # Ensure recursive ownership immediately after extraction
             chown -R "${NORMAL_USER}" "$TARGET_DIR"
