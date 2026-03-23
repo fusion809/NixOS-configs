@@ -749,8 +749,8 @@ get_commands() {
         sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
         grep -vE "^[[:space:]]*<[a-zA-Z ]+>[[:space:]]*$" | \
-        grep -vE "^(\.desktop|/usr/share/.*|/etc/.*)$" | \
-        grep -vEi '(---[>]|Options ---[>]|^\s*[*] )' | \
+        grep -vEi '^(\.desktop|/usr/share/.*|/etc/.*)$' | \
+        grep -vEi '(---[>]|Options ---[>]|^\s*\[[ *]*\] )' | \
         perl -0777 -pe '
             # 1. Remove trailing && before block ends or start of next markers
             s/\s*&&\s*\n\s*?___BLOCK_END___/\n___BLOCK_END___/gs;
@@ -902,7 +902,7 @@ while IFS= read -r line; do
         
         # 2. Skip duplicate configure blocks (BLFS shows alternatives)
         if [[ "$CURRENT_BLOCK" =~ [[:space:]]*(\./|\.\./)configure ]]; then
-            if [[ "$configure_seen" == "true" ]]; then
+            if [[ "$configure_seen" == "true" ]] && [[ "${PACKAGE,,}" != "sassc" ]]; then
                 log "Skipping duplicate configure block (alternative build method)." >&2
                 continue
             fi
@@ -947,7 +947,7 @@ while IFS= read -r line; do
 
         if [[ "$XORG_MULTI_MODE" == "false" ]] && \
            ! grep -qE '^[[:space:]]*(cmake|mkdir[[:space:]]+build)' <<< "$(echo "$CURRENT_BLOCK" | grep -vE "BUILD_(TESTS|TESTING)=ON")" && \
-           [[ "$CURRENT_BLOCK" =~ (make[[:space:]][^$'\n']*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|x\.py[[:space:]]+test|grep[^$'\n']*testlog|grep[^$'\n']*test\ result:|awk[^$'\n']*passed[^$'\n']*failed|spawn[^$'\n']*make|\<expect\>|([[:space:]]|^)tester([[:space:]]|$)|su[^$'\n']*tester|groupadd[^$'\n']*dummy|groupdel[^$'\n']*dummy|gnulib-tests|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+tests|all\.sh|tests/run\.sh|tar[^$'\n']*xmlts|xmlts) ]]; then
+           [[ "$CURRENT_BLOCK" =~ (make[[:space:]][^$'\n']*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|meson[[:space:]]+test|x\.py[[:space:]]+test|grep[^$'\n']*testlog|grep[^$'\n']*test\ result:|awk[^$'\n']*passed[^$'\n']*failed|spawn[^$'\n']*make|\<expect\>|([[:space:]]|^)tester([[:space:]]|$)|su[^$'\n']*tester|groupadd[^$'\n']*dummy|groupdel[^$'\n']*dummy|gnulib-tests|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+tests|all\.sh|tests/run\.sh|tar[^$'\n']*xmlts|xmlts) ]]; then
             # util-linux special case: ensure tests are compiled before running
             if [[ "$PACKAGE" == "util-linux" ]] && [[ ! "$CURRENT_BLOCK" =~ "check-programs" ]]; then
                 log "Prepending 'make check-programs' to util-linux test block."
@@ -981,7 +981,8 @@ fi
         elif [[ "$CURRENT_BLOCK" =~ "patch" ]]; then
             CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
             # Make patch non-interactive so it doesn't hang the build
-            CURRENT_BLOCK=$(echo "$CURRENT_BLOCK" | sed -E 's/\bpatch\b/patch -N -f /g')
+            # Protect against filenames containing "patch" by matching only at start of line or after separators
+            CURRENT_BLOCK=$(echo "$CURRENT_BLOCK" | sed -E 's/(^|[|;&(][[:space:]]*)patch\b/\1patch -N -f /g')
             COMMANDS+="# __BEGIN_ROOT__
 "
             COMMANDS+="echo \"Attempting to apply patch...\"
@@ -1031,6 +1032,26 @@ done <<< "$RAW_CONTENT"
 
 if [[ -z "$COMMANDS" ]]; then
     error "Could not extract build commands for '$PACKAGE'"
+fi
+
+# Package-specific source fixes after command processing
+# 2.4.5 Convert pushd/popd to cd for better block compatibility
+COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpushd[[:space:]]+(\.\.|doc)\b/cd \1/g; s/\bpopd\b/cd .. /g')
+# Protect against other pushd calls if they are part of a library build (like libsass in sassc)
+COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpushd[[:space:]]+([^[:space:];&|]+)\b/cd \1/g')
+
+# Package-specific source fixes after command processing
+if [[ "${PACKAGE,,}" == "sassc" ]]; then
+    # libsass and sassc archives contain manual Makefiles that interfere with Autotools
+    # and have broken relative paths in their install targets.
+    # We force the use of Autotools-generated Makefiles by removing the manual ones
+    # and setting environment variables to ensure shared builds.
+    log "Applying sassc/libsass source fix: removing interfering manual Makefiles and setting environment..."
+    SETUP_COMMANDS+="export BUILD=shared
+export SASS_LIBSASS_PATH=\$(pwd)/libsass-3.6.6
+"
+    COMMANDS=$(echo "$COMMANDS" | sed 's/cd libsass/rm -f libsass-3.6.6\/{Makefile,GNUmakefile} \&\& cd libsass/')
+    COMMANDS=$(echo "$COMMANDS" | sed 's/cd \.\. /rm -f Makefile \&\& cd .. /')
 fi
 
 # Rewrite relative ../pkg.tar.* references in tar commands to absolute /sources/archives/ paths
@@ -1171,8 +1192,37 @@ if [[ "$PACKAGE" == "svt-av1" ]]; then
     COMMANDS=$(echo "$COMMANDS" | grep -vE "TestVectors|ctest")
 fi
 
+if [[ "$PACKAGE" == "libpng" ]]; then
+    log "Enabling APNG support for libpng (required by Firefox)..."
+    # Dynamically extract the APNG patch URL from the page to ensure version alignment
+    APNG_PATCH_URL=$(echo "$HTML_CONTENT" | perl -nle 'print $1 if /href="(https?:\/\/[^"]+apng\.patch\.gz)"/i' | head -n 1)
+    if [[ -n "$APNG_PATCH_URL" ]]; then
+        DOWNLOAD_URLS+=("$APNG_PATCH_URL")
+        APNG_PATCH_FILE=$(basename "$APNG_PATCH_URL")
+        # Ensure the patch command is present in the build script and non-interactive
+        if [[ ! "$COMMANDS" =~ "apng.patch.gz" ]]; then
+            COMMANDS="as_root bash -c \"zcat /sources/archives/${APNG_PATCH_FILE} | patch -p1 -N -f || true\"
+${COMMANDS}"
+        fi
+    fi
+fi
+
 if [[ "$PACKAGE" == "colord" ]] || [[ "$PACKAGE" == "colord-gtk" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed 's/man=true/man=false/g')
+fi
+
+if [[ "$PACKAGE" == "rustc" ]]; then
+    log "Applying rustc post-install fix: creating /etc/profile.d/rustc.sh and removing 'source' call."
+    # The BLFS book has a heredoc that creates /etc/profile.d/rustc.sh, but we skip
+    # heredoc config blocks. Create it explicitly so the 'source' call doesn't fail.
+    # Note: we use 'export PATH=' instead of 'pathprepend' (LFS-specific function not
+    # available in plain shell environments).
+    SETUP_COMMANDS+='
+as_root bash -c "mkdir -p /etc/profile.d && printf '"'"'# Begin /etc/profile.d/rustc.sh\nexport PATH=/opt/rustc/bin:$PATH\n# End /etc/profile.d/rustc.sh\n'"'"' > /etc/profile.d/rustc.sh"
+'
+    # Strip the 'source /etc/profile.d/rustc.sh' line — it updates PATH for the interactive
+    # user session but is irrelevant (and breaks) during an automated build script.
+    COMMANDS=$(echo "$COMMANDS" | grep -v "source /etc/profile.d/rustc.sh")
 fi
 
 if [[ "$PACKAGE" == "gpm" ]]; then
@@ -1223,7 +1273,7 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     
     if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
         # 1. Strip pushd doc / popd blocks entirely
-        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's{pushd[[:space:]]+(\.\.|doc).*?popd([[:space:]]*&&[[:space:]]*)?}{}gs')
+        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's{pushd[[:space:]]+(\.\.\/|doc).*?popd([[:space:]]*&&[[:space:]]*)?}{}gs')
         
         # 2. Strip standalone targets for make/ninja
         # PROTECT: Use lookbehind to avoid variables like $docdir
@@ -1237,8 +1287,6 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     fi
     # Also catch and neutralize specific doc building tools and python scripts in doc/
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/(^|[^a-zA-Z0-9_-])(doxygen|texi2html|texi2pdf|texi2dvi|makeinfo|pdflatex|xelatex|lualatex|asciidoc|xmlto|asciidoctor|xmlproc|docbook2x)\b/\1true /g')
-    # Ensure meson builds have a build directory
-    COMMANDS=$(echo "$COMMANDS" | perl -pe 's/meson setup/mkdir -p build && cd build && $&/g')
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpython3?[[:space:]]+doc\/[a-zA-Z0-9_-]+\.py\b/true /g')
     # Optional: neutralize test commands that might fail and kill the build
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\b(make|ninja)[[:space:]]+(check|test)\b/& || true/g')
@@ -1384,8 +1432,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
             }
             
             line = $0;
-            # Fix relative paths to md5 files robustly
-            gsub(/\/sources\/archives\/\.\.\/|\.\.\//, "/sources/archives/", line);
+            # Fix relative paths to md5 files robustly - ONLY for .md5 files
+            gsub(/\/sources\/archives\/\.\.\/|\.\.\/([a-z0-9.-]+\.md5)/, "/sources/archives/$1", line);
             if (line ~ /^mkdir [^-]|^mkdir [^ -]/) sub(/^mkdir /, "mkdir -p ", line);
             
             if (in_vm_script) {
@@ -2695,12 +2743,14 @@ _gen_build_script() {
             [[ -z "$cmd" ]] && continue
             # Match 'cd' with various quoting styles. Avoiding \b which is not portable in bash [[ =~ ]].
             local target=""
-            if [[ "$cmd" =~ (^|[[:space:]])cd[[:space:]]+\"([^\"]+)\" ]]; then
-                target="${BASH_REMATCH[2]}"
-            elif [[ "$cmd" =~ (^|[[:space:]])cd[[:space:]]+\'([^\']+)\' ]]; then
-                target="${BASH_REMATCH[2]}"
-            elif [[ "$cmd" =~ (^|[[:space:]])cd[[:space:]]+([^[:space:]&;\|]+) ]]; then
-                target="${BASH_REMATCH[2]}"
+            if [[ "$cmd" =~ (^|[[:space:]])(cd|pushd)[[:space:]]+\"([^\"]+)\" ]]; then
+                target="${BASH_REMATCH[3]}"
+            elif [[ "$cmd" =~ (^|[[:space:]])(cd|pushd)[[:space:]]+\'([^\']+)\' ]]; then
+                target="${BASH_REMATCH[3]}"
+            elif [[ "$cmd" =~ (^|[[:space:]])(cd|pushd)[[:space:]]+([^[:space:]&;\|]+) ]]; then
+                target="${BASH_REMATCH[3]}"
+            elif [[ "$cmd" =~ (^|[[:space:]])popd([[:space:]]|$) ]]; then
+                target=".."
             fi
 
             if [[ -n "$target" ]]; then
@@ -2982,6 +3032,13 @@ else
                 elif echo $MAIN_FILENAME | grep "zip" &> /dev/null; then
                     unzip "$MAIN_FILENAME" -d "$TARGET_DIR" 2>/dev/null || true
                 fi
+            fi
+            # Flatten archives that extract into a single nested subfolder (common when archives have a leading ./ prefix)
+            if [[ $(ls -A "$TARGET_DIR" | wc -l) -eq 1 ]] && [[ -d "$TARGET_DIR/$(ls -A "$TARGET_DIR")" ]]; then
+                SUBDIR=$(ls -A "$TARGET_DIR")
+                echo "Detected nested directory '$SUBDIR' after extraction. Moving contents up."
+                mv "$TARGET_DIR/$SUBDIR"/{.[!.]*,*} "$TARGET_DIR/" 2>/dev/null || true
+                rmdir "$TARGET_DIR/$SUBDIR"
             fi
             # Ensure recursive ownership immediately after extraction
             chown -R "${NORMAL_USER}" "$TARGET_DIR"
