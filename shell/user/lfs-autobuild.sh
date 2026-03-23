@@ -751,6 +751,7 @@ get_commands() {
         grep -vE "^[[:space:]]*<[a-zA-Z ]+>[[:space:]]*$" | \
         grep -vEi '^(\.desktop|/usr/share/.*|/etc/.*)$' | \
         grep -vEi '(---[>]|Options ---[>]|^\s*\[[ *]*\] )' | \
+        grep -vE '^(\s*<[*/]?(M|Y|N)>\s+.*\[.*\]\s*$|.*--->\s*\[.*\]|.*\[USB_|.*\[PARPORT)' | \
         perl -0777 -pe '
             # 1. Remove trailing && before block ends or start of next markers
             s/\s*&&\s*\n\s*?___BLOCK_END___/\n___BLOCK_END___/gs;
@@ -909,11 +910,19 @@ while IFS= read -r line; do
             configure_seen="true"
         fi
 
-        # 3. Skip system configuration and service management blocks
+        # 3. Skip kernel configuration blocks from BLFS 'Kernel Configuration' sections
+        # These contain <*/M> notation for kconfig options and are NOT shell commands
+        if grep -qE '<\*/M>|<\*>|<M>[[:space:]]+[A-Z_]+$|\[USB_|USB_PRINTER\]|\[PARPORT' <<< "$CURRENT_BLOCK"; then
+            log "Skipping kernel configuration block." >&2
+            continue
+        fi
+
+        # 3b. Skip system configuration and service management blocks
         if grep -qE "(groupadd|useradd|usermod|systemctl)" <<< "$CURRENT_BLOCK"; then
             log "Skipping system configuration/service management block." >&2
             continue
         fi
+
 
         # 4. Skip blfs-systemd-units / configuration install commands
         if [[ "$CURRENT_BLOCK" =~ make[[:space:]]+install-(dhcpcd|rsyncd|gpm) ]]; then
