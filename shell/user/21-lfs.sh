@@ -847,7 +847,7 @@ for pkg in sorted_pkgs:
     if [[ "$dry_run" == "true" ]]; then
         echo "DRY RUN: juliaup update"
     else
-        ssh_lfs "juliaup update"
+        ssh_lfs 'export PATH=$PATH:$HOME/.juliaup/bin && juliaup update'
     fi
 
     if [[ ${#custom_updates_list[@]} -gt 0 ]]; then

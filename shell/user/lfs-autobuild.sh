@@ -830,6 +830,11 @@ ___BLOCK_END___"
 ${RAW_CONTENT}"
     fi
 
+    if [[ "$PACKAGE" == "wireplumber" ]]; then
+        log "Disabling documentation for wireplumber to fix Doxygen/XML generation issues..."
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/meson setup/meson setup -Ddoc=disabled -Dintrospection=disabled/g')
+    fi
+
     # Process blocks: Parallel make and Test filtering
 CRITICAL_PKGS="gcc binutils glibc"
 is_critical=false
