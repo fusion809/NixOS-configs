@@ -2726,6 +2726,16 @@ _gen_build_script() {
             echo "sudo -u '${normal_user}' /bin/bash << '${sentinel}'"
             echo "set -e"
             echo "export PATH=\"/usr/bin:/usr/sbin:/bin:/sbin:\$PATH\""
+            # Redefine as_root inside the USER block: sudo -u strips BASH_FUNC_* env vars
+            echo "as_root() {"
+            echo "  if [ \${EUID:-\$(id -u)} = 0 ]; then"
+            echo "    \"\$@\""
+            echo "  elif [ -x /usr/bin/sudo ]; then"
+            echo "    sudo \"\$@\""
+            echo "  else"
+            echo "    su -c \"\$*\""
+            echo "  fi"
+            echo "}"
             # Ensure each USER block starts with setup commands
             if [[ -n "$setup_cmds" ]]; then
                 echo "$setup_cmds"
@@ -2801,9 +2811,9 @@ _gen_build_script() {
     # Always define as_root at the top of every generated script
     echo "as_root() {"
     echo "  if [ \${EUID:-\$(id -u)} = 0 ]; then"
-    echo "    \$@"
+    echo "    \"\$@\""
     echo "  elif [ -x /usr/bin/sudo ]; then"
-    echo "    sudo \$@"
+    echo "    sudo \"\$@\""
     echo "  else"
     echo "    su -c \"\$*\""
     echo "  fi"
@@ -2821,6 +2831,16 @@ _gen_build_script() {
             # Start a single root shell for this block
             echo "as_root bash << 'ROOTEOF'"
             echo "set -e"
+            # Redefine as_root inside the ROOT block for robustness
+            echo "as_root() {"
+            echo "  if [ \${EUID:-\$(id -u)} = 0 ]; then"
+            echo "    \"\$@\""
+            echo "  elif [ -x /usr/bin/sudo ]; then"
+            echo "    sudo \"\$@\""
+            echo "  else"
+            echo "    su -c \"\$*\""
+            echo "  fi"
+            echo "}"
             # Ensure ROOT blocks start with setup commands
             if [[ -n "$setup_cmds" ]]; then
                 echo "$setup_cmds"
