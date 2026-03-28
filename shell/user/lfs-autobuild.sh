@@ -235,7 +235,11 @@ if [ -z "$new_ver" ] && grep -q "git clone" build.sh; then
 fi
 
 if [ -n "$new_ver" ]; then
-    echo "$new_ver" | sudo tee /var/lib/custom-packages/"$TARGET_PKG" > /dev/null
+    if [ $(wc -l < /var/lib/custom-packages/"$TARGET_PKG" 2>/dev/null || echo 0) -gt 1 ]; then
+        sudo sed -i "1s/.*/$new_ver/" /var/lib/custom-packages/"$TARGET_PKG"
+    else
+        echo "$new_ver" | sudo tee /var/lib/custom-packages/"$TARGET_PKG" > /dev/null
+    fi
     echo "Updated registry for $TARGET_PKG to version $new_ver"
 else
     echo "Could not determine version for $TARGET_PKG to update registry"
@@ -247,6 +251,8 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+    sudo awk '!seen[$0]++' "/var/lib/custom-packages/${TARGET_PKG}" > "/tmp/dedup_${TARGET_PKG}"
+    sudo mv "/tmp/dedup_${TARGET_PKG}" "/var/lib/custom-packages/${TARGET_PKG}"
     echo "Recorded installed files for custom package $TARGET_PKG in /var/lib/custom-packages/"
     sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}"
 fi
