@@ -195,10 +195,10 @@ set -e
 cd "$CUSTOM_DIR"
 # Create timestamp BEFORE build
 touch "/tmp/build_start_timestamp_${TARGET_PKG}"
-bash build.sh
+BUILD_LOG="/tmp/build_log_${TARGET_PKG}.txt"
+bash build.sh 2>&1 | tee "$BUILD_LOG"
 
 # Update registry (needs sudo)
-sudo mkdir -p /var/lib/custom-packages
 sudo mkdir -p /var/lib/custom-packages
 # Determine the new version we just installed
 new_ver=""
@@ -251,8 +251,20 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+    
+    # 2. Capture via build log (CMake/Meson files that are already up-to-date)
+    if [ -f "$BUILD_LOG" ]; then
+        echo "Parsing build log for additional files (Up-to-date/Installing)..."
+        # Parse CMake: -- Installing: /path OR -- Up-to-date: /path
+        grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's/^-- (Installing|Up-to-date): //' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        # Parse Meson: Installing <src> to <dst>
+        grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's/^Installing .* to (.*)$/\1/' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        rm -f "$BUILD_LOG"
+    fi
+
     sudo awk '!seen[$0]++' "/var/lib/custom-packages/${TARGET_PKG}" > "/tmp/dedup_${TARGET_PKG}"
     sudo mv "/tmp/dedup_${TARGET_PKG}" "/var/lib/custom-packages/${TARGET_PKG}"
+    sudo chmod 755 "/var/lib/custom-packages/${TARGET_PKG}"
     echo "Recorded installed files for custom package $TARGET_PKG in /var/lib/custom-packages/"
     sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}"
 fi
@@ -1779,6 +1791,7 @@ ${COMMANDS}"
                 loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 # Cleanup and record: Keep the version header at line 1, sort the rest uniquely
                 loop_content = loop_content "\n    (head -n 1 \"/var/lib/book-packages/${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    sudo chmod 755 \"/var/lib/book-packages/${PKGNAME}\"";
                 loop_content = loop_content "\n    as_root rm -rf \"$DDIR\"";
                 loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
                 next;
@@ -1799,7 +1812,7 @@ ${COMMANDS}"
                 loop_content = loop_content "\n            echo \"\${PKGVER}\" > \"\$TMP_INV\"";
                 loop_content = loop_content "\n            grep -v -x \"\${PKGVER}\" \"/var/lib/book-packages/${PKGNAME}\" | grep -v \"^[[:space:]]*\\$\" | sort -u >> \"\$TMP_INV\"";
                 loop_content = loop_content "\n            sudo mv \"\$TMP_INV\" \"/var/lib/book-packages/${PKGNAME}\"";
-                loop_content = loop_content "\n            sudo chmod 644 \"/var/lib/book-packages/${PKGNAME}\"";
+                loop_content = loop_content "\n            sudo chmod 755 \"/var/lib/book-packages/${PKGNAME}\"";
                 loop_content = loop_content "\n        fi";
                 loop_content = loop_content "\n        touch \"/sources/archives/${DIRNAME}.installed\"";
                 loop_content = loop_content "\n    else";
@@ -3086,6 +3099,7 @@ touch /tmp/build_start_timestamp_${PACKAGE}
 if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     sudo mkdir -p /var/lib/book-packages
     echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
 fi
 
 echo "Running build commands (user blocks as ${NORMAL_USER}, root blocks as root)..."
@@ -3127,6 +3141,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
             done
         done
         sudo sort -u "/var/lib/book-packages/${PACKAGE}" -o "/var/lib/book-packages/${PACKAGE}"
+        sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
     fi
     echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/$PACKAGE"
 fi
