@@ -75,7 +75,7 @@ usage() {
     echo "Options:"
     echo "  --dry-run             Show commands without executing them"
     echo "  --strip               Run stripping commands after build"
-    echo "  --upstream            Attempt to find the latest upstream version (linux, vim, firefox, rustc, and llvm)"
+    echo "  --upstream            Attempt to find the latest upstream version (linux, firefox, rustc, and llvm)"
     echo "  --include-config      Include configuration commands in the LFS/BLFS book entry"
     echo "  --rm-libs             Remove old library versions after build (disabled by default)"
     echo "  --lfs                 Search only in the LFS book"
@@ -1936,17 +1936,6 @@ if [[ "$UPSTREAM" == "true" ]]; then
             DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VER}.tar.xz")
             UPSTREAM_VERSION="$KERNEL_VER"
         fi
-    elif [[ "$PACKAGE" == "vim" ]]; then
-        log "Fetching latest upstream Vim version from GitHub..."
-        VIM_TAG=$(curl -sL https://github.com/vim/vim/tags | perl -nle 'while (m{href="/vim/vim/releases/tag/v\K[0-9.]+}g) { print $& }' | head -n 1)
-        if [[ -z "$VIM_TAG" ]]; then
-             VIM_TAG=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{(?<="tag_name": "v)[0-9.]+}g) { print $& }' | head -n 1)
-        fi
-        
-        if [[ -n "$VIM_TAG" ]]; then
-            DOWNLOAD_URLS+=("https://github.com/vim/vim/archive/v${VIM_TAG}/vim-${VIM_TAG}.tar.gz")
-            UPSTREAM_VERSION="$VIM_TAG"
-        fi
     elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
@@ -2009,7 +1998,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
             DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
         fi
     else
-        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, vim, firefox, frameworks, plasma, libuv, and KDE apps)"
+        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, and KDE apps)"
     fi
 fi
 fi
@@ -2207,28 +2196,6 @@ fi
 # Fix move command for xorgproto doc in single package mode if it exists
 if [[ "$PACKAGE" == "xorgproto" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed -E 's|mv -v \$XORG_PREFIX/share/doc/xorgproto\{,-(.*)\}|sudo rm -rf $XORG_PREFIX/share/doc/xorgproto-\1 \&\& sudo mv -v $XORG_PREFIX/share/doc/xorgproto $XORG_PREFIX/share/doc/xorgproto-\1|g')
-fi
-
-
-# Replace hardcoded Vim versions when using --upstream
-if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "vim" && -n "$UPSTREAM_VERSION" ]]; then
-    # Extract LFS version from commands (e.g., "9.1.2031")
-    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{vim-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
-    
-    if [[ -n "$LFS_VERSION" ]]; then
-        log "Replacing LFS version $LFS_VERSION with upstream version $UPSTREAM_VERSION in commands..."
-        # Replace full version strings
-        COMMANDS="${COMMANDS//vim-$LFS_VERSION/vim-$UPSTREAM_VERSION}"
-        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
-        
-        # Replace vimXY directory references (e.g., vim91 -> vim92)
-        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1-2 | tr -d '.')
-        UPSTREAM_MAJOR_MINOR=$(echo "$UPSTREAM_VERSION" | cut -d. -f1-2 | tr -d '.')
-        COMMANDS="${COMMANDS//vim$LFS_MAJOR_MINOR/vim$UPSTREAM_MAJOR_MINOR}"
-        MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
-        DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
-        GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
-    fi
 fi
 
 # Replace hardcoded Linux kernel versions and fix build commands when using --upstream
@@ -2628,17 +2595,6 @@ fi
 if [[ "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all" || \
       "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed 's/wget -r /wget -r --no-clobber /g')
-fi
-
-
-if [[ "$PACKAGE" == "vim" ]]; then
-    log "Removing /usr/bin/vi symlink creation and cleaning up docs..."
-    # Remove symlink creation for vi that often appears in the book
-    COMMANDS=$(echo "$COMMANDS" | grep -v "ln -sv .* /usr/bin/vi")
-    # Also remove the loop that links vi.1 and other man pages
-    COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's/for L in.*?do.*?ln -sv vim\.1.*?done//gs')
-    # Clean up old documentation before linking the new one
-    COMMANDS=$(echo "$COMMANDS" | sed "\|ln -sv ../vim/vim$UPSTREAM_MAJOR_MINOR/doc /usr/share/doc/vim-$UPSTREAM_VERSION|i rm -rf /usr/share/doc/vim-*")
 fi
 
 if [[ "$PACKAGE" == "sddm" ]]; then

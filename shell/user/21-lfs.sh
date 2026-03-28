@@ -93,13 +93,6 @@ lfs_get_upstream_version() {
         libuv)
             curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
-        vim)
-            VIM_TAG=$(curl -sL -H "User-Agent: bash" https://github.com/vim/vim/tags | perl -nle 'while (m{href="/vim/vim/releases/tag/v\K[0-9.]+}g) { print $& }' | head -n 1)
-            if [[ -z "$VIM_TAG" ]]; then
-                VIM_TAG=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{(?<="tag_name": "v)[0-9.]+}g) { print $& }' | head -n 1)
-            fi
-            echo "$VIM_TAG"
-            ;;
         frameworks|frameworks6)
             curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
             ;;
@@ -122,10 +115,6 @@ lfs_get_remote_packages() {
     fi
 
     KERNEL_VER=$(curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -Vr | head -n 1)
-    VIM_VER=$(curl -sL -H "User-Agent: bash" https://github.com/vim/vim/tags | perl -nle 'while (m{href="/vim/vim/releases/tag/v([0-9.]+)}g) { print $1 }' | head -n 1)
-    if [[ -z "$VIM_VER" ]]; then
-        VIM_VER=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/vim/vim/releases/latest | perl -nle 'while (m{"tag_name": "v([0-9.]+)}g) { print $1 }' | head -n 1)
-    fi
     JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href="\./([0-9]+)}g) { print $1 }' | sort -rn | head -n 1)
     if [[ -n "$JDK_MAJOR" ]]; then
         JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | perl -nle 'while (m{(https://download\.java\.net/java/[^ "]+/openjdk-[0-9]+[^ "]*_linux-x64_bin\.tar\.gz)}g) { print $1 }' | head -n 1)
@@ -136,8 +125,7 @@ lfs_get_remote_packages() {
     local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
         grep -oE '[a-zA-Z0-9_+\-]+-[0-9][a-zA-Z0-9_+\-]*\.(tar\.[a-z0-9]+|zip)' | \
         sed 's/\.tar.*//; s/\.zip//' | \
-        sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" | \
-        sed "s|^[Vv]im-[0-9.]*$|vim-${VIM_VER}|g" | \
+        sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" |\
         sort -u)
 
     # BLFS longindex has package-version in <a> tags or before " -- "
@@ -149,7 +137,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "vim" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
