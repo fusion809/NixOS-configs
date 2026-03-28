@@ -2117,6 +2117,28 @@ if [[ "$PACKAGE" == "ghostscript" ]]; then
             fi
         fi
     done
+# Generic fix for other GitHub releases where the tag in the path does not match the filename version
+else
+    for i in "${!DOWNLOAD_URLS[@]}"; do
+        url="${DOWNLOAD_URLS[$i]}"
+        if [[ "$url" == *"github.com/"*"/releases/download/"* ]]; then
+            # Extract version from filename using the same heuristic as LFS_VERSION
+            fname=$(basename "$url")
+            fv=$(echo "$fname" | perl -nle 'while (m{[-_]\K[0-9][a-z0-9.-]*(?:\.[0-9]+[a-z0-9.-]*)*[a-z0-9]}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//; s/-(source|src|linux|x86_64|noarch|bin|static|shared)$//g')
+            
+            if [[ -n "$fv" ]]; then
+                # Extract current tag (directory before filename)
+                tag=$(echo "$url" | sed -E 's|.*/releases/download/([^/]+)/.*|\1|')
+                if [[ -n "$tag" && "$tag" != "$fv" && "$tag" != "v$fv" ]]; then
+                     # If the tag looks like a version of the same package (numeric-ish), treat as mismatched and attempt fix
+                     if [[ "$tag" =~ ^v?[0-9][0-9.-]*[a-z0-9]$ ]]; then
+                         log "Mismatched GitHub tag detected for $(basename "$url") ($tag vs $fv). Fixing path tag..."
+                         DOWNLOAD_URLS[$i]="${url/\/download\/$tag\//\/download\/$fv\/}"
+                     fi
+                fi
+            fi
+        fi
+    done
 fi
 
 if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
