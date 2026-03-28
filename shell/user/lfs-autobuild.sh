@@ -2649,17 +2649,18 @@ fi
 
 
 
+# Populate ALL_FILENAMES from DOWNLOAD_URLS for all modes
+ALL_FILENAMES=()
+for url in "${DOWNLOAD_URLS[@]}"; do
+    ALL_FILENAMES+=("$(basename "$url")")
+done
+
 if [[ "$FRAMEWORKS_MODE" == "true" || "$XORG_MULTI_MODE" == "true" ]]; then
     MAIN_FILENAME="$PACKAGE"
     DIRNAME="$PACKAGE"
-    ALL_FILENAMES=()
 else
     MAIN_FILENAME=$(basename "$MAIN_DOWNLOAD_URL")
     DIRNAME=$(echo "$MAIN_FILENAME" | sed 's/\.tar.*//; s/\.zip//')
-    ALL_FILENAMES=()
-    for url in "${DOWNLOAD_URLS[@]}"; do
-        ALL_FILENAMES+=("$(basename "$url")")
-    done
 fi
 
 # Handle KDE metapackage version substitution after initial variable assignments
@@ -3264,7 +3265,17 @@ fi
 
 echo "Build and installation complete for $PACKAGE"
 cd /sources
+# Remove extracted source tree
 rm -rf "$GEN_DIRNAME"
+# Remove downloaded archives and symlinks from /sources to conserve space
+echo "Cleaning up archives for $PACKAGE..."
+for f in "${ALL_FILENAMES[@]}"; do
+    rm -f "/sources/archives/$f"
+    rm -f "/sources/$f"
+done
+# Remove generated helper scripts
+rm -f "/sources/archives/build-xorg.sh" "/sources/archives/build-frameworks.sh"
+rm -f "/tmp/build-cmds-${PACKAGE}.sh"
 ) 200>/tmp/lfs_autobuild.lock
 REMOTE_EOF
 } > "$RS_FILE"
