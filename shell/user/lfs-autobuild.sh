@@ -256,9 +256,9 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     if [ -f "$BUILD_LOG" ]; then
         echo "Parsing build log for additional files (Up-to-date/Installing)..."
         # Parse CMake: -- Installing: /path OR -- Up-to-date: /path
-        grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's/^-- (Installing|Up-to-date): //; s|^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)|\1|' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's@^-- (Installing|Up-to-date): @@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
         # Parse Meson: Installing <src> to <dst>
-        grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's/^Installing .* to (.*)$/\1/; s|^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)|\1|' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's@^Installing .* to (.*)$@\1@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
         rm -f "$BUILD_LOG"
     fi
 
@@ -455,8 +455,8 @@ find_package_page() {
             search_pkg="templateparser"
         elif [[ "$pkg" == "kdepim-runtime" ]]; then
             search_pkg="kdepim-runtime"
-        elif [[ "$pkg" == "xdg-desktop-portal-kde" ]]; then
-            search_pkg="plasma-all"
+        elif [[ "$pkg" == "libjpeg-turbo" ]]; then
+            search_pkg="libjpeg"
         fi
 
         # First try match for pkg.html (with optional fragment)
