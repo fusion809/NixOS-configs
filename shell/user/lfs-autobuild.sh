@@ -256,9 +256,9 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     if [ -f "$BUILD_LOG" ]; then
         echo "Parsing build log for additional files (Up-to-date/Installing)..."
         # Parse CMake: -- Installing: /path OR -- Up-to-date: /path
-        grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's/^-- (Installing|Up-to-date): //' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's/^-- (Installing|Up-to-date): //; s|^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)|\1|' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
         # Parse Meson: Installing <src> to <dst>
-        grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's/^Installing .* to (.*)$/\1/' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's/^Installing .* to (.*)$/\1/; s|^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)|\1|' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
         rm -f "$BUILD_LOG"
     fi
 
@@ -1371,9 +1371,9 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
             # 3. Record from our staging
             print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then"
             print "  sudo mkdir -p \"/var/lib/book-packages\" \"/var/lib/custom-packages\""
-            print "  find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
+            print "  find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
+            print "  sudo rm -rf \"$DDIR\""
             print "fi"
-            print "sudo rm -rf \"$DDIR\""
             
             # 4. If the ORIGINAL command had its own DESTDIR/root, also capture from there!
             if ($0 ~ /DESTDIR=/ || $0 ~ /--root=/) {
@@ -1517,7 +1517,7 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     }
                     vm_cmds = vm_cmds "\n    " cmd;
                     vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    fi";
 
                     if (line ~ /DESTDIR=/ || line ~ /--root=/) {
@@ -1529,7 +1529,7 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                             gsub(/^["\x27]|["\x27]$|[&|;]+$/, "", destdir);
                             if (destdir != "") {
                                 vm_cmds = vm_cmds "\n    if [ -d \"" destdir "\" ]; then"
-                                vm_cmds = vm_cmds "\n        find \"" destdir "\" -type f -o -type l | sed \"s|^" destdir "||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null"
+                                vm_cmds = vm_cmds "\n        find \"" destdir "\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null"
                                 vm_cmds = vm_cmds "\n    fi"
                             }
                         }
@@ -1547,7 +1547,7 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                     vm_cmds = vm_cmds "\n    do_install";
                     vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    fi";
                     vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
@@ -1777,7 +1777,7 @@ ${COMMANDS}"
                 
                 loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
                 loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                loop_content = loop_content "\n        find \"$DDIR\" -type f -o -type l | sed \"s|^$DDIR||\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n    fi";
                 
                 real_cmd = $0;
