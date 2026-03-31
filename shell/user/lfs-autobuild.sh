@@ -773,7 +773,9 @@ get_commands() {
         grep -vE "^[[:space:]]*<[a-zA-Z ]+>[[:space:]]*$" | \
         grep -vEi '^(\.desktop|/usr/share/.*|/etc/.*)$' | \
         grep -vEi '(---[>]|Options ---[>]|^\s*\[[ *]*\] )' | \
+        grep -vE '^rm /etc/resolv\.conf$' | \
         grep -vE '^(\s*<[*/]?(M|Y|N)>\s+.*\[.*\]\s*$|.*--->\s*\[.*\]|.*\[USB_|.*\[PARPORT)' | \
+        sed 's/yes | cpan -i/yes | sudo cpan -i/g' | \
         perl -0777 -pe '
             # 1. Remove trailing && before block ends or start of next markers
             s/\s*&&\s*\n\s*?___BLOCK_END___/\n___BLOCK_END___/gs;
