@@ -105,6 +105,9 @@ lfs_get_upstream_version() {
         linux)
             curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1
             ;;
+        qt6)
+            curl -s https://linuxfromscratch.org/blfs/view/systemd/x/qt6.html | perl -nle 'while (m{Qt-([0-9]+\.[0-9]+\.[0-9]+)}g) { print $1; exit }'
+            ;;
     esac
 }
 
@@ -121,23 +124,32 @@ lfs_get_remote_packages() {
         JDK_VER=$(echo "$JDK_TARBALL" | perl -nle 'while (m{openjdk-([0-9a-zA-Z\+\.\-]+)_linux-x64_bin}g) { print $1 }')
         JDK_REMOTE="openjdk-${JDK_VER}_linux-x64_bin"
     fi
-    # LFS packages are in links ending in .tar.* or .zip
+    # LFS packages scraping: Fix regex to include dots in versions (e.g. libxcrypt-4.5.2)
     local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
-        grep -oE '[a-zA-Z0-9_+\-]+-[0-9][a-zA-Z0-9_+\-]*\.(tar\.[a-z0-9]+|zip)' | \
+        grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.(tar\.[a-z0-9]+|zip)' | \
         sed 's/\.tar.*//; s/\.zip//' | \
         sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" |\
         sort -u)
 
-    # BLFS longindex has package-version in <a> tags or before " -- "
+    # BLFS individual packages from long index
     local blfs_remote=$(curl -s "$BLFS_DEV_BOOK/longindex.html" | tr -d '\r' | \
         perl -0777 -ne 'while (/SpiderMonkey:.*?firefox-([0-9.]+)/gs) { print "spidermonkey-$1\n" } while (/>([a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+)<\/a>/gs) { print "$1\n" }' | \
         sed "/[Vv]im-[0-9.]*$/d" | \
         sort -u)
+
+    # BLFS meta-pages for extra coverage (Xorg, KDE, etc.)
+    local blfs_metapages=("x/x7lib.html" "x/x7app.html" "x/x7font.html" "x/x7driver.html" "kde/frameworks6.html" "kde/plasma-all.html" "kde/plasma.html")
+    local blfs_extra=""
+    for page in "${blfs_metapages[@]}"; do
+        blfs_extra+="$(curl -s "$BLFS_DEV_BOOK/$page" | tr -d '\r' | \
+            grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.(tar\.[a-z0-9]+|zip)' | \
+            sed 's/\.tar.*//; s/\.zip//' | sort -u)"$'\n'
+    done
     
-    local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
+    local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)

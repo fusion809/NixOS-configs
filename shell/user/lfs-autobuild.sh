@@ -58,6 +58,10 @@ BLFS_BOOK_DEFAULT="https://linuxfromscratch.org/blfs/view/systemd"
 LFS_BOOK="$LFS_BOOK_DEFAULT"
 BLFS_BOOK="$BLFS_BOOK_DEFAULT"
 
+# 0.5 Ensure non-interactive builds for Perl and other tools
+export PERL_MM_USE_DEFAULT=1
+export PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
+
 DRY_RUN=false
 STRIP=false
 UPSTREAM=false
@@ -1125,9 +1129,18 @@ if echo "$HTML_CONTENT" | grep -qiE "qt-6|qt6|qt 6|kf6|frameworks 6|frameworks6|
         SETUP_COMMANDS+="export QT6DIR=/opt/qt6
 export QT6PREFIX=/opt/qt6
 export PATH=\$PATH:\$QT6DIR/bin
-export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$QT6DIR/lib
 export CMAKE_PREFIX_PATH=\$QT6PREFIX:\$KF6_PREFIX:\$CMAKE_PREFIX_PATH
 "
+        # Only add to LD_LIBRARY_PATH if we are NOT building qt6 itself to avoid version mismatches during upgrades
+        if [[ "${PACKAGE,,}" != "qt6" ]]; then
+            SETUP_COMMANDS+="export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$QT6DIR/lib
+"
+        else
+            # When building qt6 itself, prepend the build-tree library path to ensure tools like rcc use newly built libs
+            # We also ensure the system path is NOT included to avoid version shadowing from ld.so.conf
+            SETUP_COMMANDS+="export LD_LIBRARY_PATH=\$(pwd)/qtbase/lib:\$LD_LIBRARY_PATH
+"
+        fi
     fi
 fi
 
