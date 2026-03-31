@@ -108,6 +108,10 @@ lfs_get_upstream_version() {
         qt6)
             curl -s https://linuxfromscratch.org/blfs/view/systemd/x/qt6.html | perl -nle 'while (m{Qt-([0-9]+\.[0-9]+\.[0-9]+)}g) { print $1; exit }'
             ;;
+        gtk3)
+            # Use BLFS book directly for current version
+            curl -s https://linuxfromscratch.org/blfs/view/systemd/x/gtk3.html | perl -nle 'while (m{GTK-([0-9]+\.[0-9]+\.[0-9]+)}g) { print $1; exit }'
+            ;;
     esac
 }
 
@@ -149,7 +153,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -572,9 +576,15 @@ lfs_update_all() {
 
         # Find matching package in remote list (case-insensitive)
         local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9])" | head -n 1)
+        if [[ -z "$remote_pkg" ]]; then
+            # Try fuzzy match: strip numeric suffix like 3 in gtk3 and try matching GTK-
+            local name_base=$(echo "$name" | sed -E 's/[0-9]+$//')
+            [[ -n "$name_base" ]] && remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}-([0-9])" | head -n 1)
+        fi
         
         if [[ -n "$remote_pkg" ]]; then
-            local remote_ver=$(echo "$remote_pkg" | sed -E -e 's#^'"$name"'-##I' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##' | tr -d '[:space:]')
+            # Extract version carefully (anything after the first hyphen followed by a digit)
+            local remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
             
             # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
             local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
