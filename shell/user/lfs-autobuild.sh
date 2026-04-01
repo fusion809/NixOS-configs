@@ -1748,6 +1748,7 @@ ${COMMANDS}"
         /^[[:space:]]*while read -r line; do/ { 
             in_loop = 1; 
             loop_content = $0; 
+            loop_content = loop_content "\n    cd /sources/archives";
             loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x22{print \\$2}\x22 | sed \x22s/\\.tar\\.[a-z2]\\+//\x22)";
             loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
             loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
