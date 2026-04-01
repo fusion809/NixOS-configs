@@ -324,7 +324,7 @@ EOF
     continue
 fi
 
-log "[LFS-AUTOBUILD] Script initialization complete. Version 2026.03.20.2"
+log "[LFS-AUTOBUILD] Script initialization complete. Version 2026.04.02.1"
 
 # 1. Discover package page
 find_package_page() {
@@ -1295,6 +1295,12 @@ as_root bash -c \"echo 'exec \\\"\\\$REAL_GCC\\\" \\\"\\\${ARGS[@]}\\\"' >> $MOC
 as_root chmod +x \"$MOCK_GCC_DIR/gcc\"
 export PATH=\"$MOCK_GCC_DIR:\$PATH\"
 "
+fi
+
+if [[ "${PACKAGE,,}" == "libqalculate" ]]; then
+    log "Applying libqalculate documentation install fix: neutralizing docs directory..."
+    # Neutralize the docs directory in the top-level Makefile to prevent install failures
+    COMMANDS=$(echo "$COMMANDS" | sed '/^\.\/configure/a sed -i "s/docs//g" Makefile')
 fi
 
 if [[ "$PACKAGE" == "groff" ]]; then
@@ -3014,9 +3020,47 @@ for url in "${DOWNLOAD_URLS[@]}"; do
     fname=$(basename "$url")
     if [[ "$fname" == *".patch"* ]]; then
         # Resilient download for patches
-        if [ ! -s "$fname" ]; then rm -f "$fname"; echo "Downloading $fname..."; wget "$url" || echo "[WARNING] Failed to download $fname"; fi
+        if [ ! -s "$fname" ]; then 
+            rm -f "$fname"
+            echo "Downloading $fname..."
+            wget -T 30 -t 3 "$url" || echo "[WARNING] Failed to download $fname"
+        fi
     else
-        if [ ! -s "$fname" ]; then rm -f "$fname"; echo "Downloading $fname..."; wget "$url"; fi
+        if [ ! -s "$fname" ]; then
+            rm -f "$fname"
+            echo "Downloading $fname..."
+            # Try primary URL first
+            if ! wget -T 30 -t 3 "$url"; then
+                echo "[WARNING] Failed to download $url"
+                # If it's the main archive, try fallback extensions
+                if [[ "$url" == "$MAIN_DOWNLOAD_URL" ]]; then
+                    echo "Main archive download failed. Attempting fallbacks..."
+                    base_url_no_ext=$(echo "$url" | sed -E 's/\.(tar\.(xz|gz|bz2|lz|lzma|zst)|zip|tgz|tbz2)$//')
+                    success=false
+                    for ext in .tar.xz .tar.gz .tar.bz2 .tar.lz .zip; do
+                        alt_url="${base_url_no_ext}${ext}"
+                        [[ "$alt_url" == "$url" ]] && continue
+                        
+                        echo "Trying fallback extension: $alt_url"
+                        if wget -T 30 -t 2 "$alt_url"; then
+                            MAIN_FILENAME=$(basename "$alt_url")
+                            ALL_FILENAMES+=("$MAIN_FILENAME")
+                            echo "Successfully downloaded fallback: $MAIN_FILENAME"
+                            success=true
+                            break
+                        fi
+                    done
+                    if [ "$success" = "false" ]; then
+                        echo "[ERROR] Could not download primary archive or any common fallbacks."
+                        exit 1
+                    fi
+                else
+                    # Not the main archive, but still a failure
+                     echo "[ERROR] Failed to download required file: $url"
+                     exit 1
+                fi
+            fi
+        fi
     fi
 done
 

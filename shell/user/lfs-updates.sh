@@ -8,6 +8,8 @@ fi
 
 REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream") | tr -d '\r')
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
+# Identify packages with missing file inventories (line count <= 1)
+BROKEN_PKGS=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done' | tr -d '\r')
 total_local=$(echo "$LOCAL_PKGS" | grep -v "^$" | wc -l)
 count=0
 tmp_lfs=$(mktemp -d)
@@ -20,6 +22,15 @@ while read -r local_pkg; do
         local_ver=$(echo "$local_pkg" | sed -E -e 's#^'"$name"'-##' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##' | tr -d '[:space:]')
 
         [[ -z "$name" || "$name" == "$local_pkg" ]] && exit 0
+        is_broken=false
+        if [[ "$local_ver" == "VERSION_MISSING" ]]; then
+            is_broken=true
+        elif echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
+            is_broken=true
+        fi
+
+        # is_broken already set above
+
 
         remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${name}-([0-9])" | head -n 1)
         if [[ -z "$remote_pkg" ]]; then
@@ -28,7 +39,15 @@ while read -r local_pkg; do
             [[ -n "$name_base" ]] && remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${name_base}[0-9]?-([0-9])" | head -n 1)
         fi
         
-        if [[ -n "$remote_pkg" ]]; then
+        if [[ "$is_broken" == "true" ]]; then
+            remote_ver="${local_ver}"
+            if [[ -n "$remote_pkg" ]]; then
+                remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/' | tr -d '[:space:]')
+            fi
+            label="[FILES MISSING]"
+            [[ "$local_ver" == "VERSION_MISSING" ]] && label="[VERSION MISSING]"
+            printf "%-30s | %-15s | %-15s %s\n" "$name" "$local_ver" "$remote_ver" "$label" > "$tmp_lfs/$name"
+        elif [[ -n "$remote_pkg" ]]; then
             # Strip everything before the first hyphen followed by a digit to get the version
             remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/' | tr -d '[:space:]')
             
@@ -91,7 +110,9 @@ while IFS= read -r update_line; do
     if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
     
     label="[UPDATE]"
-    if [[ "$remote_ver" == *"FAILED"* ]]; then
+    if echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
+        label="[FILES MISSING]"
+    elif [[ "$remote_ver" == *"FAILED"* ]]; then
         label="[FAILED]"
     elif [[ "$remote_ver" == *"MISSING"* ]]; then
         label="[MISSING]"

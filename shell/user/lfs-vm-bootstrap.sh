@@ -33,6 +33,70 @@ updates() {
 }
 export -f updates
 
+# ---- Commit and Push Registry Changes ----
+lfs_package_commit() {
+    local msg="$1"
+    local push_needed=false
+    for dir in /var/lib/book-packages /var/lib/custom-packages; do
+        if [ -d "$dir/.git" ]; then
+            (
+                cd "$dir"
+                local final_msg=""
+                if [ -z "$msg" ]; then
+                    # Auto-generate list of version changes
+                    local changes=""
+                    # Get all modified or new files
+                    for f in $(git status --short | awk '{print $NF}'); do
+                        [ -f "$f" ] || continue
+                        local name=$(basename "$f")
+                        # Ignore metadata files
+                        [[ "$name" =~ ^(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$ ]] && continue
+                        
+                        local new_v=$(head -n 1 "$f" | tr -d '[:space:]' | sed 's/\.tar.*//')
+                        local old_v=$(git show "HEAD:$f" 2>/dev/null | head -n 1 | tr -d '[:space:]' | sed 's/\.tar.*//' || echo "NEW")
+                        
+                        if [ "$old_v" = "NEW" ]; then
+                            changes="${changes}${name}: ${new_v} (NEW); "
+                        elif [ "$old_v" != "$new_v" ]; then
+                            changes="${changes}${name}: ${old_v}->${new_v}; "
+                        fi
+                    done
+                    if [ -n "$changes" ]; then
+                        final_msg="${changes%; }."
+                    fi
+                else
+                    final_msg="$msg"
+                fi
+
+                if [ -n "$final_msg" ]; then
+                    echo "Committing updates in $dir: $final_msg"
+                    git add -A
+                    if git commit -m "$final_msg" 2>/dev/null; then
+                        push_needed=true
+                    fi
+                fi
+            )
+        fi
+    done
+    if [ "$push_needed" = "true" ]; then
+        echo "Pushing registry changes..."
+        # Use user-defined 'push' function if available, fallback to git push
+        if command -v zsh >/dev/null 2>&1; then
+            zsh -c "source ~/.zshrc 2>/dev/null; if declare -f push >/dev/null; then push; else git -C /var/lib/book-packages push; git -C /var/lib/custom-packages push; fi"
+        else
+            git -C /var/lib/book-packages push 2>/dev/null || true
+            git -C /var/lib/custom-packages push 2>/dev/null || true
+        fi
+    fi
+}
+export -f lfs_package_commit
+
+# ---- Manual Commit Helper ----
+lfs_commit() {
+    lfs_package_commit "$@"
+}
+export -f lfs_commit
+
 # `update` = lfs_update_all
 update() {
     lfs_update_all "$@"

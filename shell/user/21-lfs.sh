@@ -31,7 +31,8 @@ lfs_sync_to_vm() {
 
     # Hook into ~/.bashrc if not already present
     ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo '# LFS update helpers' >> ~/.bashrc && echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
-    echo "Sync complete. 'updates' and 'update' are now available in a new shell on the VM."
+    ssh_lfs "touch ~/.zshrc && (grep -q 'lfs-vm-bootstrap.sh' ~/.zshrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.zshrc)"
+    echo "Sync complete. 'updates', 'update', and 'lfs_commit' are now available on the VM."
 }
 
 lfs_autobuild() {
@@ -271,7 +272,8 @@ lfs_get_local_packages() {
                 [ -f "$f" ] || continue
                 name=$(basename "$f")
                 ver=$(head -n 1 "$f" | grep -v "^#" | tr -d "[:space:]")
-                [ -n "$ver" ] && echo "${name}-${ver}"
+                if [ -z "$ver" ]; then ver="VERSION_MISSING"; fi
+                echo "${name}-${ver}"
             done
         fi
         # 2. Custom packages (version is the file content)
@@ -280,7 +282,8 @@ lfs_get_local_packages() {
                 [ -f "$f" ] || continue
                 name=$(basename "$f")
                 ver=$(head -n 1 "$f" | tr -d "[:space:]")
-                [ -n "$ver" ] && echo "${name}-${ver}"
+                if [ -z "$ver" ]; then ver="VERSION_MISSING"; fi
+                echo "${name}-${ver}"
             done
         fi
     ' | sort -u | tr -d '\r'
@@ -560,6 +563,7 @@ lfs_update_all() {
 
     echo "Checking for updates..."
     local updates=()
+    local update_msgs=()
 
     while read -r local_pkg; do
         [[ -z "$local_pkg" ]] && continue
@@ -595,6 +599,7 @@ lfs_update_all() {
                 if [[ "$higher" == "$remote_base" ]]; then
                     echo "Found update: $name: $local_ver->$remote_ver"
                     updates+=("$name")
+                    update_msgs+=("${name}: ${local_ver}->${remote_ver}")
                 fi
             fi
         fi
@@ -628,6 +633,7 @@ lfs_update_all() {
         
         printf "Found custom update: %s: %s->%s\n" "$name" "$local_ver" "$remote_ver"
         custom_updates_list+=("$name")
+        update_msgs+=("${name}: ${local_ver}->${remote_ver}")
     done <<< "$custom_updates"
 
     if [[ ${#updates[@]} -eq 0 && ${#custom_updates_list[@]} -eq 0 ]]; then
@@ -843,6 +849,18 @@ for pkg in sorted_pkgs:
                 fi
             fi
         done < /tmp/lfs_preserved_cleanup_list.txt && sudo rm -f /tmp/lfs_preserved_cleanup_list.txt'
+    fi
+
+    # Git commit and push if everything is healthy
+    if [[ "$dry_run" == "false" && ${#updates[@]} -gt 0 ]]; then
+        echo "Checking system health before committing updates..."
+        local broken=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && echo 1; done')
+        if [[ -z "$broken" ]]; then
+            echo "System healthy. Triggering automated registry commit..."
+            ssh_lfs "lfs_package_commit"
+        else
+            echo "Warning: Some packages are still missing file inventories. Skipping commit."
+        fi
     fi
     fi
 
