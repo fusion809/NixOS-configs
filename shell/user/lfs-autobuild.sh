@@ -1749,6 +1749,7 @@ ${COMMANDS}"
             in_loop = 1; 
             loop_content = $0; 
             loop_content = loop_content "\n    cd /sources/archives";
+            loop_content = loop_content "\n    [[ -z \"$line\" || \"$line\" == [[:space:]]*#* ]] && continue";
             loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x22{print \\$2}\x22 | sed \x22s/\\.tar\\.[a-z2]\\+//\x22)";
             loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
             loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
@@ -1967,7 +1968,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
         fi
     elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
-        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?}g) { print $& }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE Frameworks version: $UPSTREAM_VERSION"
         fi
@@ -2953,7 +2954,10 @@ rm -f "$RS_FILE"
   
   # Inject version information for inventory recording
   RECORDED_VERSION="$LFS_VERSION"
-  [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && RECORDED_VERSION="$UPSTREAM_VERSION"
+  if [[ "$UPSTREAM" == "true" ]]; then
+      if [[ -n "$UPSTREAM_FULL" ]]; then RECORDED_VERSION="$UPSTREAM_FULL";
+      elif [[ -n "$UPSTREAM_VERSION" ]]; then RECORDED_VERSION="$UPSTREAM_VERSION"; fi
+  fi
   printf 'VERSION_TO_RECORD="%s"\n' "$RECORDED_VERSION"
 
   # Inject BS_B64 from a temporary file to avoid shell argument limits
