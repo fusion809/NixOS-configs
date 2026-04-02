@@ -3193,20 +3193,24 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
     if [ -f "$MAIN_FILENAME" ]; then
         echo "Enriching inventory from archive manifest for $PACKAGE..."
+        local enrich_tmp="/tmp/enrich_${PACKAGE}"
+        rm -f "$enrich_tmp"
         tar -tf "$MAIN_FILENAME" | sed 's|^[^/]*||; s|^/||' | while read f; do
             [ -z "$f" ] && continue
             # Common prefixes in BLFS
             for pref in /usr / /opt /etc; do
                 target="${pref}${f}"
                 if [ -e "$target" ] && [ ! -d "$target" ]; then
-                    echo "$target" | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+                    echo "$target" >> "$enrich_tmp"
                     break
                 fi
             done
         done
-        sudo sort -u "/var/lib/book-packages/${PACKAGE}" -o "/var/lib/book-packages/${PACKAGE}"
-        sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
+        [ -f "$enrich_tmp" ] && { sudo bash -c "cat '$enrich_tmp' >> '/var/lib/book-packages/${PACKAGE}'"; rm -f "$enrich_tmp"; }
     fi
+    # Deduplicate but preserve version on line 1
+    sudo bash -c "head -n 1 '/var/lib/book-packages/${PACKAGE}' > '/tmp/pkg_${PACKAGE}'; tail -n +2 '/var/lib/book-packages/${PACKAGE}' | sort -u >> '/tmp/pkg_${PACKAGE}'; mv '/tmp/pkg_${PACKAGE}' '/var/lib/book-packages/${PACKAGE}'"
+    sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
     echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/$PACKAGE"
 fi
 
