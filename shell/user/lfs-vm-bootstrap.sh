@@ -82,10 +82,10 @@ lfs_package_commit() {
         echo "Pushing registry changes..."
         # Use user-defined 'push' function if available, fallback to git push
         if command -v zsh >/dev/null 2>&1; then
-            zsh -c "source ~/.zshrc 2>/dev/null; if declare -f push >/dev/null; then push; else git -C /var/lib/book-packages push; git -C /var/lib/custom-packages push; fi"
+            zsh -c "source ~/.zshrc 2>/dev/null; if declare -f push >/dev/null; then push; else git -C /var/lib/book-packages push origin master; git -C /var/lib/custom-packages push origin master; fi"
         else
-            git -C /var/lib/book-packages push 2>/dev/null || true
-            git -C /var/lib/custom-packages push 2>/dev/null || true
+            git -C /var/lib/book-packages push origin master 2>/dev/null || true
+            git -C /var/lib/custom-packages push origin master 2>/dev/null || true
         fi
     fi
 }
