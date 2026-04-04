@@ -533,6 +533,20 @@ SETUP_COMMANDS=""
 
 if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
 PAGE_URL=$(find_package_page "$PACKAGE")
+
+if [[ -z "$PAGE_URL" ]]; then
+    log "Searching prominent metapackages for component '$PACKAGE'..."
+    for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
+        if curl -s "$BLFS_BOOK/$mp_page" | grep -iqE "${PACKAGE}[-_][0-9].*\.tar"; then
+            PAGE_URL="$BLFS_BOOK/$mp_page"
+            METAPACKAGE_TARGET=$(basename "$mp_page" .html)
+            SINGLE_COMPONENT_MODE="$PACKAGE"
+            log "Found component '$PACKAGE' securely nested within metapackage: $METAPACKAGE_TARGET"
+            break
+        fi
+    done
+fi
+
 if [[ -z "$PAGE_URL" ]]; then
     error "Could not find page for package '$PACKAGE'"
 fi
@@ -540,7 +554,8 @@ fi
 log "Found package page: $PAGE_URL"
 
 if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font)$ ]] || \
-   [[ "$PAGE_URL" =~ x7(lib|app|font)\.html$ ]]; then
+   [[ "$PAGE_URL" =~ x7(lib|app|font)\.html$ ]] || \
+   [[ "$METAPACKAGE_TARGET" =~ ^x7(lib|app|font)$ ]]; then
     XORG_MULTI_MODE=true
     log "Enabling Xorg multi-package mode."
 elif [[ "$PACKAGE" =~ ^(xorg|x7)-driver$ ]]; then
@@ -553,6 +568,7 @@ fi
 # 2. Extract Download URL and Build Commands
 log "Fetching content from $PAGE_URL..."
 HTML_CONTENT=$(curl -s "$PAGE_URL")
+FULL_HTML_CONTENT="$HTML_CONTENT"
 
 if [[ -z "$HTML_CONTENT" ]]; then
     error "Empty content from $PAGE_URL"
@@ -775,6 +791,7 @@ get_commands() {
         grep -vEi '(---[>]|Options ---[>]|^\s*\[[ *]*\] )' | \
         grep -vE '^rm /etc/resolv\.conf$' | \
         grep -vE '^(\s*<[*/]?(M|Y|N)>\s+.*\[.*\]\s*$|.*--->\s*\[.*\]|.*\[USB_|.*\[PARPORT)' | \
+        grep -vE '^[[:space:]]*(and[[:space:]]*)?(CONFIG_[A-Z0-9_]+[,[:space:]]*(and[[:space:]]*)?)+[[:space:]]*$' | \
         sed 's/yes | cpan -i/yes | sudo cpan -i/g' | \
         perl -0777 -pe '
             # 1. Remove trailing && before block ends or start of next markers
@@ -1637,7 +1654,7 @@ fi
 
 # 2.11 Special handling for KDE frameworks6 and plasma-all
 FRAMEWORKS_MODE=false
-if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" ]]; then
+if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${METAPACKAGE_TARGET,,}" == "frameworks6" || "${METAPACKAGE_TARGET,,}" == "plasma-all" ]]; then
     FRAMEWORKS_MODE=true
     log "Enabling special KDE frameworks/plasma loop mode."
     
@@ -1759,6 +1776,8 @@ ${COMMANDS}"
             loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x22{print \\$2}\x22 | sed \x22s/\\.tar\\.[a-z2]\\+//\x22)";
             loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
             loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
+            loop_content = loop_content "\n    # Skip if we only want one package and this is not it";
+            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi";
             loop_content = loop_content "\n    # Skip if already installed (resume feature)";
             loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ]; then";
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
@@ -2061,16 +2080,16 @@ log "Package base name for search: $PKG_BASE"
 if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
     # 0. Primary Links from Page (Robust Extraction)
     # Extract all "Download (HTTP)" and "Download:" links explicitly labeled on the page
-    mapfile -t PRIMARY_DOWNLOADS < <(printf '%s' "$HTML_CONTENT" | perl -0777 -ne 'while (/Download(?:\s*\(HTTP\))?:\s*<a[^>]+href=\s*"([^"]+)"/igs) { print "$1\n" }')
+    mapfile -t PRIMARY_DOWNLOADS < <(printf '%s' "$FULL_HTML_CONTENT" | perl -0777 -ne 'while (/Download(?:\s*\(HTTP\))?:\s*<a[^>]+href=\s*"([^"]+)"/igs) { print "$1\n" }')
     DOWNLOAD_URLS+=("${PRIMARY_DOWNLOADS[@]}")
 
     # Extract "Additional Downloads" or "Optional Downloads" links (e.g. UCD.zip for ibus)
-    mapfile -t ADDITIONAL_DOWNLOADS < <(printf '%s' "$HTML_CONTENT" | perl -0777 -nle 'while (/<h3[^>]*>\s*(?:Additional|Optional)\s*Downloads\s*<\/h3>(.*?)<(?:h[23])/igs) { my $b=$1; while ($b =~ /href=\s*"([^"]+\.(?:tar\.[a-z2]+|zip|patch|tgz|gz|bz2|xz))"/igs) { print "$1\n"; } }')
+    mapfile -t ADDITIONAL_DOWNLOADS < <(printf '%s' "$FULL_HTML_CONTENT" | perl -0777 -nle 'while (/<h3[^>]*>\s*(?:Additional|Optional)\s*Downloads\s*<\/h3>(.*?)<(?:h[23])/igs) { my $b=$1; while ($b =~ /href=\s*"([^"]+\.(?:tar\.[a-z2]+|zip|patch|tgz|gz|bz2|xz))"/igs) { print "$1\n"; } }')
     DOWNLOAD_URLS+=("${ADDITIONAL_DOWNLOADS[@]}")
 
     # 1. Main Page Links (for both LFS and BLFS)
     # Extract all archive and patch links
-    mapfile -t PAGE_LINKS < <(printf '%s' "$HTML_CONTENT" | perl -nle 'while (m{(?i)https?://[^\s"]*(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz)}g) { print $& }' | sort -u)
+    mapfile -t PAGE_LINKS < <(printf '%s' "$FULL_HTML_CONTENT" | perl -nle 'while (m{(?i)https?://[^\s"]*(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz)}g) { print $& }' | sort -u)
     
     # 2. LFS Patches Page (for LFS packages)
     if [[ "$PAGE_URL" == *"/lfs/"* ]]; then

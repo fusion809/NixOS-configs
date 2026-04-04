@@ -19,6 +19,11 @@ while read -r local_pkg; do
     
     (
         name=$(echo "$local_pkg" | sed -E 's#^([-a-zA-Z0-9_\+]+)-[0-9].*#\1#')
+        # Fallback: handle VERSION_MISSING sentinel (lfs_get_local_packages emits name-VERSION_MISSING
+        # for packages whose registry file is empty; the digit regex above won't match those).
+        if [[ -z "$name" || "$name" == "$local_pkg" ]]; then
+            name=$(echo "$local_pkg" | sed -E 's#-(VERSION_MISSING)$##')
+        fi
         local_ver=$(echo "$local_pkg" | sed -E -e 's#^'"$name"'-##' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##' | tr -d '[:space:]')
 
         [[ -z "$name" || "$name" == "$local_pkg" ]] && exit 0
