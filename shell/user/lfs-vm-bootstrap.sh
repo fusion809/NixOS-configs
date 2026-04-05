@@ -71,23 +71,20 @@ lfs_package_commit() {
                 if [ -n "$final_msg" ]; then
                     echo "Committing updates in $dir: $final_msg"
                     git add -A
-                    if git commit -m "$final_msg" 2>/dev/null; then
-                        push_needed=true
+                    git commit -m "$final_msg" 2>/dev/null
+                fi
+
+                # Push if we are ahead of origin
+                if git rev-parse --abbrev-ref HEAD >/dev/null 2>&1; then
+                    local branch=$(git rev-parse --abbrev-ref HEAD)
+                    if [ "$(git rev-list ${branch}...origin/${branch} --count 2>/dev/null || echo 1)" -gt 0 ]; then
+                        echo "Pushing changes in $dir..."
+                        git push origin "$branch" 2>/dev/null || true
                     fi
                 fi
             )
         fi
     done
-    if [ "$push_needed" = "true" ]; then
-        echo "Pushing registry changes..."
-        # Use user-defined 'push' function if available, fallback to git push
-        if command -v zsh >/dev/null 2>&1; then
-            zsh -c "source ~/.zshrc 2>/dev/null; if declare -f push >/dev/null; then push; else git -C /var/lib/book-packages push origin master; git -C /var/lib/custom-packages push origin master; fi"
-        else
-            git -C /var/lib/book-packages push origin master 2>/dev/null || true
-            git -C /var/lib/custom-packages push origin master 2>/dev/null || true
-        fi
-    fi
 }
 export -f lfs_package_commit
 

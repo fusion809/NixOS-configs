@@ -851,17 +851,6 @@ for pkg in sorted_pkgs:
         done < /tmp/lfs_preserved_cleanup_list.txt && sudo rm -f /tmp/lfs_preserved_cleanup_list.txt'
     fi
 
-    # Git commit and push if everything is healthy
-    if [[ "$dry_run" == "false" && ${#updates[@]} -gt 0 ]]; then
-        echo "Checking system health before committing updates..."
-        local broken=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && echo 1; done')
-        if [[ -z "$broken" ]]; then
-            echo "System healthy. Triggering automated registry commit..."
-            ssh_lfs "lfs_package_commit"
-        else
-            echo "Warning: Some packages are still missing file inventories. Skipping commit."
-        fi
-    fi
     fi
 
     echo "Updating Python packages via pip..."
@@ -971,5 +960,17 @@ DEPEOF
                 "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
             fi
         done
+    fi
+
+    # Git commit and push if everything is healthy
+    if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
+        echo "Checking system health before committing updates..."
+        local broken=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && echo 1; done')
+        if [[ -z "$broken" ]]; then
+            echo "System healthy. Triggering automated registry commit..."
+            ssh_lfs "lfs_package_commit"
+        else
+            echo "Warning: Some packages are still missing file inventories. Skipping commit."
+        fi
     fi
 }
