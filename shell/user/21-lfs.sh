@@ -968,7 +968,7 @@ DEPEOF
         local broken=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && echo 1; done')
         if [[ -z "$broken" ]]; then
             echo "System healthy. Triggering automated registry commit..."
-            ssh_lfs "lfs_package_commit"
+            ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit'"
         else
             echo "Warning: Some packages are still missing file inventories. Skipping commit."
         fi

@@ -16,7 +16,9 @@ ssh_lfs() {
             ;;
     esac
 }
-export -f ssh_lfs
+if [ -n "$BASH_VERSION" ]; then
+    export -f ssh_lfs
+fi
 
 # NIXCFG is not meaningful inside the VM, but 21-lfs.sh needs it set.
 export NIXCFG="${HOME}/.lfs_scripts"
@@ -31,7 +33,9 @@ fi
 updates() {
     bash "${HOME}/.lfs_scripts/lfs-updates.sh" "$@"
 }
-export -f updates
+if [ -n "$BASH_VERSION" ]; then
+    export -f updates
+fi
 
 # ---- Commit and Push Registry Changes ----
 lfs_package_commit() {
@@ -86,16 +90,22 @@ lfs_package_commit() {
         fi
     done
 }
-export -f lfs_package_commit
+if [ -n "$BASH_VERSION" ]; then
+    export -f lfs_package_commit
+fi
 
 # ---- Manual Commit Helper ----
 lfs_commit() {
     lfs_package_commit "$@"
 }
-export -f lfs_commit
+if [ -n "$BASH_VERSION" ]; then
+    export -f lfs_commit
+fi
 
 # `update` = lfs_update_all
 update() {
     lfs_update_all "$@"
 }
-export -f update
+if [ -n "$BASH_VERSION" ]; then
+    export -f update
+fi
