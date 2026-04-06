@@ -9,7 +9,6 @@
       user = username;
     };
   };
-  flatpak = { enable = true; };
   gvfs = { enable = true; };
   pipewire = {
     enable = true;
