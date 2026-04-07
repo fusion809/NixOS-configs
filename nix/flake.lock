@@ -106,11 +106,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1775592845,
-        "narHash": "sha256-b2dyfpix0q2J8iS6ssIRGpZdlD2pLQAzBGn5eEUkU1g=",
+        "lastModified": 1775593663,
+        "narHash": "sha256-F5+TPitbhtjwauQrPdwX/jqCknfIfs8d3+a0Kg5kEhs=",
         "ref": "master",
-        "rev": "3b6a4ffcb846e339b09c8eb991b84fe6c40e9ec9",
-        "revCount": 976810,
+        "rev": "7cfe03948df8ea4bb894bd57d78784aab0ab6b88",
+        "revCount": 976816,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -275,11 +275,11 @@
       "flake": false,
       "locked": {
         "allRefs": true,
-        "lastModified": 1775591480,
-        "narHash": "sha256-WVWO9h9DcgEcRa4ddSHUpzczKk96mHpAOBHdTc/JIxw=",
+        "lastModified": 1775593577,
+        "narHash": "sha256-t19cnlV9rZDvQowrbWzH2BtwccyPFOBd0zuheb1hbhk=",
         "ref": "refs/heads/master",
-        "rev": "317351c745caafe1890f5ec0de51bc6aa79fd17a",
-        "revCount": 23373,
+        "rev": "c79edc0df9832715eb2537a8d5e9b91ff191a131",
+        "revCount": 23374,
         "type": "git",
         "url": "https://github.com/vim/vim.git"
       },
