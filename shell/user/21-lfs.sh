@@ -82,6 +82,149 @@ cleanup_old_libraries() {
     ssh_lfs "source ~/.zshrc ; cleanup_old_libraries_gpt"
 }
 
+cleanup_old_libraries_gpt() {
+    local dep_cache="/tmp/lfs_dep_cache.txt"
+    local pkg_cache="/tmp/lfs_pkg_cache.txt"
+    
+    echo "[LFS-AUTOBUILD] Generating dependency and package caches. This ensures accurate and fast cleanup..."
+    
+    # 1. Generate system-wide dependency cache (File -> Shared Libs)
+    # We use -executable OR -name "*.so*" to catch both binaries and libs.
+    # readelf -d extracts the (NEEDED) entries.
+    find /usr/bin /usr/lib /lib /opt -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
+    xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && printf '%s: ' '{}' && readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ' && echo" > "$dep_cache"
+    
+    # 2. Generate package inventory mapping (File -> Package)
+    # This maps every installed file back to the package that registered it in /var/lib/*-packages/
+    grep -r "^/" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null | sed -E 's|/var/lib/[^/]+-packages/([^:]+):(.*)|\2:\1|' > "$pkg_cache"
+
+    echo "[LFS-AUTOBUILD] Caches generated. Evaluating system libraries..."
+
+    # 3. Identify old versions (files only)
+    # A version is old if a newer version with the same base name exists.
+    local old_libs=($(find /usr/lib /lib -type f -name "lib*.so.[0-9]*" ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
+    | sort -V \
+    | awk '
+    {
+        base=$0
+        sub(/\.so\.[0-9.]+$/, ".so", base)
+        if (prev_base && base != prev_base) {
+            for (i=1; i < prev_count; i++) print prev[i]
+            prev_count = 0
+        }
+        prev[++prev_count] = $0
+        prev_base = base
+    }
+    END {
+        for (i=1; i < prev_count; i++) print prev[i]
+    }'))
+
+    if [ ${#old_libs[@]} -eq 0 ]; then
+        echo "No old library versions found to clean up."
+        rm -f "$dep_cache" "$pkg_cache"
+        return
+    fi
+
+    for i in "${old_libs[@]}"; do
+        [ -f "$i" ] || continue
+        echo "------------------------------------------------"
+        echo "Checking obsolete version: $(basename "$i")"
+        echo "Path: $i"
+
+        # Identify all names (the file itself and any symlinks pointing directly to it)
+        # We must check for dependents of both the file AND any symlinks (SONAMEs) pointing to it.
+        local lib_basename=$(basename "$i")
+        local link_names=($(find /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
+        local all_names=("$lib_basename")
+        for link in "${link_names[@]}"; do
+            all_names+=($(basename "$link"))
+        done
+
+        # 4. FAST dependency check for ANY of these names in the cache
+        local deps=()
+        for name in "${all_names[@]}"; do
+            # The cache format is "FILE: lib1 lib2 lib3 "
+            local matches=($(grep " $name " "$dep_cache" | cut -d: -f1))
+            [ ${#matches[@]} -gt 0 ] && deps+=("${matches[@]}")
+        done
+        # Unique list
+        deps=($(printf "%s\n" "${deps[@]}" | sort -u))
+
+        if [ ${#deps[@]} -eq 0 ]; then
+            if [ ${#all_names[@]} -gt 1 ]; then
+                echo "Result: Unused (including symlinks: ${all_names[@]:1}). Deleting $i and its symlinks..."
+                for name in "${all_names[@]:1}"; do
+                   sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
+                done
+            else
+                echo "Result: Unused. Deleting $i..."
+            fi
+            sudo rm -f -- "$i"
+            continue
+        fi
+
+        echo "Status: Library (or its symlinks) has ${#deps[@]} remaining dependents."
+        echo "Names tracked: ${all_names[@]}"
+        echo "Example dependents: ${deps[@]:0:3} ..."
+        
+        # 5. Robust package identification using the inventory cache
+        local found_pkgs=()
+        for d in "${deps[@]}"; do
+            local p=$(grep "^$d:" "$pkg_cache" | cut -d: -f2)
+            [ -n "$p" ] && found_pkgs+=("$p")
+        done
+        
+        # Get unique package names
+        local pkgs=($(printf "%s\n" "${found_pkgs[@]}" | sort -u))
+        
+        if [ ${#pkgs[@]} -eq 0 ]; then
+            echo "Warning: No parent package found for ANY of the ${#deps[@]} dependents."
+            echo "Checking if we should keep $i for safety."
+            continue
+        fi
+
+        echo "Identified parent packages to rebuild: ${pkgs[@]}"
+        
+        local rebuild_success=true
+        for pkg in "${pkgs[@]}"; do
+            echo "Action: Rebuilding $pkg to switch to newer library..."
+            lfs_autobuild --force "$pkg" || {
+                echo "Error: Failed to rebuild $pkg. Cannot delete $lib_basename."
+                rebuild_success=false
+                break
+            }
+        done
+
+        if [ "$rebuild_success" = true ]; then
+             echo "Verification: Re-checking dependencies for ${all_names[@]} after rebuilds..."
+             local remaining=0
+             for d in "${deps[@]}"; do
+                 for name in "${all_names[@]}"; do
+                     if readelf -d "$d" 2>/dev/null | grep -q "\[$name\]"; then
+                          echo "Persistence: $d still depends on $name"
+                          remaining=1
+                          break 2
+                     fi
+                 done
+             done
+             
+             if [ $remaining -eq 0 ]; then
+                 echo "Final Action: All dependencies cleared. Deleting $i and its symlinks."
+                 for name in "${all_names[@]:1}"; do
+                    sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
+                 done
+                 sudo rm -f -- "$i"
+             else
+                 echo "Final Action: Keeping $i (binaries in $(echo ${pkgs[@]} | head -n 1) still linked)."
+             fi
+        else
+            echo "Final Action: Keeping $i (rebuilds incomplete or blocked)."
+        fi
+    done
+    
+    rm -f "$dep_cache" "$pkg_cache"
+}
+
 lfs_get_upstream_version() {
     local pkg="$1"
     case "$pkg" in
