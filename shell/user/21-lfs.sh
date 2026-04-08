@@ -249,13 +249,13 @@ lfs_get_upstream_version() {
         linux)
             curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1
             ;;
-        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)
+        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|gjs|glycin|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)
             local base_url="https://download.gnome.org/sources/$pkg"
             # Some packages might have different names on GNOME servers
             [[ "$pkg" == "libxml2" ]] && base_url="https://download.gnome.org/sources/libxml2"
             [[ "$pkg" == "libxslt" ]] && base_url="https://download.gnome.org/sources/libxslt"
             
-            local major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+            local major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
             if [[ -n "$major" ]]; then
                 curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$pkg"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1
             fi
@@ -313,7 +313,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3" "gnome-shell" "nautilus" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -729,6 +729,18 @@ lfs_update_all() {
     echo "Fetching local package list from VM..."
     local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g' | tr -d '\r')
     
+    # Packages with missing file inventories (≤1 line) need a forced rebuild regardless of version
+    echo "Checking for packages with missing file inventories..."
+    local broken_pkgs_raw=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done' 2>/dev/null | tr -d '\r')
+    local broken_pkgs=()
+    while IFS= read -r bp; do
+        [[ -z "$bp" ]] && continue
+        broken_pkgs+=("$bp")
+    done <<< "$broken_pkgs_raw"
+    if [[ ${#broken_pkgs[@]} -gt 0 ]]; then
+        echo "Packages with missing inventories that will be force-rebuilt: ${broken_pkgs[*]}"
+    fi
+
     # DEBUG: echo "Remote list size: $(echo "$remote_list" | wc -l), Local list size: $(echo "$local_list" | wc -l)"
 
     echo "Checking for updates..."
@@ -810,10 +822,24 @@ lfs_update_all() {
         update_msgs+=("${name}: ${local_ver}->${remote_ver}")
     done <<< "$custom_updates"
 
-    if [[ ${#updates[@]} -eq 0 && ${#custom_updates_list[@]} -eq 0 ]]; then
+    if [[ ${#updates[@]} -eq 0 && ${#custom_updates_list[@]} -eq 0 && ${#broken_pkgs[@]} -eq 0 ]]; then
         echo "No updates found."
         return 0
     fi
+
+    # Add broken packages (missing inventories) to the update list for force-rebuild
+    # Track separately so they get -f flag in the build loop
+    local force_rebuild_pkgs=()
+    for bp in "${broken_pkgs[@]}"; do
+        local already_in=false
+        for p in "${updates[@]}"; do
+            [[ "$p" == "$bp" ]] && already_in=true && break
+        done
+        if [[ "$already_in" == "false" ]]; then
+            updates+=("$bp")
+            force_rebuild_pkgs+=("$bp")
+        fi
+    done
 
     if [[ ${#updates[@]} -gt 0 ]]; then
         echo "Resolving dependencies and determining build order..."
@@ -970,6 +996,13 @@ for pkg in sorted_pkgs:
         [[ "$dry_run" == "true" ]] && build_args+=("--dry-run")
         [[ "$upstream" == "true" ]] && build_args+=("--upstream")
         
+        # Force rebuild if this package only has a missing inventory (not a version update)
+        local is_force=false
+        for fp in "${force_rebuild_pkgs[@]}"; do
+            [[ "$fp" == "$pkg" ]] && is_force=true && break
+        done
+        [[ "$is_force" == "true" ]] && build_args+=("-f")
+
         if [[ "$dry_run" == "true" ]]; then
             echo "DRY RUN: lfs_autobuild ${build_args[*]} $pkg"
             lfs_autobuild "${build_args[@]}" "$pkg"

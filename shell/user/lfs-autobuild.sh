@@ -2073,7 +2073,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
             UPSTREAM_VERSION=$(lfs_get_upstream_version "$PACKAGE")
         else
             base_url="https://download.gnome.org/sources/$PACKAGE"
-            major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+            major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
             [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$PACKAGE"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
         fi
 
