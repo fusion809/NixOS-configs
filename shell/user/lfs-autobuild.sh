@@ -1256,6 +1256,20 @@ if [[ "$PACKAGE" == "svt-av1" ]]; then
     COMMANDS=$(echo "$COMMANDS" | grep -vE "TestVectors|ctest")
 fi
 
+if [[ "$PACKAGE" == "glycin" ]]; then
+    log "Enabling GTK4 support in glycin (required for Nautilus 50.0+)..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's/-D libglycin-gtk4=false/-D libglycin-gtk4=true/g')
+fi
+
+if [[ "$PACKAGE" == "gjs" ]]; then
+    log "Applying gjs gi/info.h patch: fixing gi_callable_info_get_closure_native_address return type (void** -> void*)..."
+    # In newer gobject-introspection, gi_callable_info_get_closure_native_address() returns void* (not void**).
+    # gjs 1.86 still declares its wrapper returning void**, causing a -fpermissive error at compile time.
+    # Fix: change the declared return type of closure_native_address() in gi/info.h to void*.
+    COMMANDS="sed -i 's/void\\*\\* closure_native_address/void* closure_native_address/g' gi/info.h
+${COMMANDS}"
+fi
+
 if [[ "$PACKAGE" == "libpng" ]]; then
     log "Enabling APNG support for libpng (required by Firefox)..."
     # Dynamically extract the APNG patch URL from the page to ensure version alignment
@@ -2052,8 +2066,24 @@ if [[ "$UPSTREAM" == "true" ]]; then
             log "Found upstream libuv version: $UPSTREAM_VERSION"
             DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
         fi
+    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|glycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ ]]; then
+        log "Fetching latest upstream GNOME version for $PACKAGE from download.gnome.org..."
+        # Use helper from 21-lfs.sh if available (it is sourced on the host)
+        if declare -f lfs_get_upstream_version >/dev/null; then
+            UPSTREAM_VERSION=$(lfs_get_upstream_version "$PACKAGE")
+        else
+            base_url="https://download.gnome.org/sources/$PACKAGE"
+            major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+            [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$PACKAGE"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+        fi
+
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream GNOME version for $PACKAGE: $UPSTREAM_VERSION"
+            major_v=${UPSTREAM_VERSION%%.*}
+            DOWNLOAD_URLS+=("https://download.gnome.org/sources/$PACKAGE/$major_v/$PACKAGE-$UPSTREAM_VERSION.tar.xz")
+        fi
     else
-        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, and KDE apps)"
+        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, KDE apps, and GNOME apps)"
     fi
 fi
 fi
@@ -2365,6 +2395,37 @@ if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugi
             DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
         done
         MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//$LFS_VERSION/$UPSTREAM_VERSION}"
+        DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+    fi
+fi
+
+if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ && -n "$UPSTREAM_VERSION" ]]; then
+    # Extract LFS version from the identified main download URL (e.g. gnome-shell-47.0.tar.xz)
+    # GNOME versions might be major.minor or just major for some meta-packages, but mostly major.minor
+    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nlae -F/ '$_=$F[$#F]; /'"${PACKAGE,,}"'-([0-9.]+)/ and print $1')
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{'"${PACKAGE,,}"'-\K[0-9]+(?:\.[0-9]+)+}ig) { print $& }' | sort -V | tail -n 1)
+    fi
+
+    if [[ -n "$LFS_VERSION" ]]; then
+        log "Replacing LFS GNOME version $LFS_VERSION with $UPSTREAM_VERSION in commands and URLs..."
+        LFS_MAJOR=${LFS_VERSION%%.*}
+        UP_MAJOR=${UPSTREAM_VERSION%%.*}
+        
+        # Replace major version directory in URLs (e.g. /47/ -> /50/)
+        COMMANDS="${COMMANDS//\/$LFS_MAJOR\//\/$UP_MAJOR\/}"
+        # Replace full version string
+        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+        
+        # Manually update the download URLs and metadata
+        for i in "${!DOWNLOAD_URLS[@]}"; do
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_MAJOR/$UP_MAJOR}"
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
+        done
+        MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//\/$LFS_MAJOR\//\/$UP_MAJOR\/}"
         MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//$LFS_VERSION/$UPSTREAM_VERSION}"
         DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
         GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"

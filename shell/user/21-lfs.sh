@@ -249,8 +249,24 @@ lfs_get_upstream_version() {
         linux)
             curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1
             ;;
-        qt6)
-            curl -s https://linuxfromscratch.org/blfs/view/systemd/x/qt6.html | perl -nle 'while (m{Qt-([0-9]+\.[0-9]+\.[0-9]+)}g) { print $1; exit }'
+        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)
+            local base_url="https://download.gnome.org/sources/$pkg"
+            # Some packages might have different names on GNOME servers
+            [[ "$pkg" == "libxml2" ]] && base_url="https://download.gnome.org/sources/libxml2"
+            [[ "$pkg" == "libxslt" ]] && base_url="https://download.gnome.org/sources/libxslt"
+            
+            local major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+            if [[ -n "$major" ]]; then
+                curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$pkg"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1
+            fi
+            ;;
+        libgweather)
+            # libgweather uses directory '40' on GNOME servers but actual tarballs are 4.x.x
+            local base_url="https://download.gnome.org/sources/libgweather"
+            local ldir=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K(?!3)[0-9]+(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+            if [[ -n "$ldir" ]]; then
+                curl -sL "$base_url/$ldir/" | perl -nle 'while (m{href="\Klibgweather-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1
+            fi
             ;;
         gtk3)
             # Use BLFS book directly for current version
@@ -297,7 +313,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3" "gnome-shell" "nautilus" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -320,13 +336,22 @@ lfs_get_remote_packages() {
         lfs_progress_bar "$total" "$total" "Upstream checks complete" >&2
         echo "" >&2
         
+        # Efficiently merge upstream updates by filtering out original versions in one pass if possible
+        # or at least avoiding the quadratic echo/grep re-assignments.
+        local replacements_regex=""
         for p in "${upstream_list[@]}"; do
             if [[ -f "$tmp_upstream/$p" ]]; then
-                local res=$(cat "$tmp_upstream/$p")
-                all_pkgs=$(echo "$all_pkgs" | grep -vEi "^${p}-([0-9])")
-                all_pkgs=$(echo -e "${all_pkgs}\n${res}")
+                # Escape dots and other chars for safe regex
+                local safe_p=$(echo "$p" | sed 's/\./\\./g')
+                replacements_regex+="^${safe_p}-([0-9])|"
             fi
         done
+        replacements_regex="${replacements_regex%|}"
+        
+        if [[ -n "$replacements_regex" ]]; then
+            all_pkgs=$(echo "$all_pkgs" | grep -vEi "$replacements_regex")
+            all_pkgs=$(echo -e "${all_pkgs}\n$(cat "$tmp_upstream"/* 2>/dev/null)")
+        fi
         rm -rf "$tmp_upstream"
         all_pkgs=$(echo "$all_pkgs" | sort -u)
     fi
@@ -700,9 +725,11 @@ lfs_update_all() {
 
 
     echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
-    local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream"))
+    local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream") | tr -d '\r')
     echo "Fetching local package list from VM..."
-    local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g')
+    local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g' | tr -d '\r')
+    
+    # DEBUG: echo "Remote list size: $(echo "$remote_list" | wc -l), Local list size: $(echo "$local_list" | wc -l)"
 
     echo "Checking for updates..."
     local updates=()
@@ -729,6 +756,10 @@ lfs_update_all() {
             [[ -n "$name_base" ]] && remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}-([0-9])" | head -n 1)
         fi
         
+        # if [[ "$name" =~ "gnome" ]] || [[ "$name" == "adwaita-icon-theme" ]] || [[ "$name" == "mutter" ]] || [[ "$name" == "nautilus" ]]; then
+        #      echo "DEBUG: Checked $name. Local: $local_ver, Remote Pkg Found: ${remote_pkg:-NONE}"
+        # fi
+
         if [[ -n "$remote_pkg" ]]; then
             # Extract version carefully (anything after the first hyphen followed by a digit)
             local remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
