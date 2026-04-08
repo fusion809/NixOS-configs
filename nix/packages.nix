@@ -152,5 +152,5 @@ with pkgs; [
   virt-viewer
   virtiofsd
   #(unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
-  winboat
+  (winboat.override { electron = electron_40; })
 ]
