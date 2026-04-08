@@ -1261,6 +1261,11 @@ if [[ "$PACKAGE" == "glycin" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed 's/-D libglycin-gtk4=false/-D libglycin-gtk4=true/g')
 fi
 
+if [[ "$PACKAGE" == "nautilus" ]]; then
+    log "Disabling SELinux support in nautilus (fix missing dependency)..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D selinux=false /g; s/meson setup \.\./meson setup -D selinux=false \.\./g')
+fi
+
 if [[ "$PACKAGE" == "gjs" ]]; then
     log "Applying gjs gi/info.h patch: fixing gi_callable_info_get_closure_native_address return type (void** -> void*)..."
     # In newer gobject-introspection, gi_callable_info_get_closure_native_address() returns void* (not void**).
