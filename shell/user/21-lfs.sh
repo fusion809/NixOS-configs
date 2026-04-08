@@ -119,47 +119,97 @@ cleanup_old_libraries_gpt() {
         for (i=1; i < prev_count; i++) print prev[i]
     }'))
 
-    if [ ${#old_libs[@]} -eq 0 ]; then
+    # 3b. Identify old versions (directories only)
+    local old_dirs=($(find /usr/lib /lib -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+    | sort -V \
+    | awk '
+    {
+        base=$0
+        sub(/-[0-9]+(\.[0-9]+)*$/, "", base)
+        if (base != $0) {
+            if (prev_base && base == prev_base) {
+                for (i=1; i <= prev_count; i++) print prev[i]
+                prev_count = 0
+            } else {
+                prev_count = 0
+            }
+            prev[++prev_count] = $0
+            prev_base = base
+        }
+    }'))
+
+    local old_items=("${old_libs[@]}" "${old_dirs[@]}")
+
+    if [ ${#old_items[@]} -eq 0 ]; then
         echo "No old library versions found to clean up."
         rm -f "$dep_cache" "$pkg_cache"
         return
     fi
 
-    for i in "${old_libs[@]}"; do
-        [ -f "$i" ] || continue
+    for i in "${old_items[@]}"; do
+        [ -e "$i" ] || continue
         echo "------------------------------------------------"
-        echo "Checking obsolete version: $(basename "$i")"
-        echo "Path: $i"
-
-        # Identify all names (the file itself and any symlinks pointing directly to it)
-        # We must check for dependents of both the file AND any symlinks (SONAMEs) pointing to it.
-        local lib_basename=$(basename "$i")
-        local link_names=($(find /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
-        local all_names=("$lib_basename")
-        for link in "${link_names[@]}"; do
-            all_names+=($(basename "$link"))
-        done
+        
+        local all_names=()
+        if [ -d "$i" ]; then
+            echo "Checking obsolete version (directory): $(basename "$i")"
+            echo "Path: $i"
+            local dir_basename=$(basename "$i")
+            all_names=($(find "$i" -name "*.so*" -printf "%f\n" 2>/dev/null | sort -u))
+            local outside_libs=($(find /usr/lib /lib -maxdepth 1 -name "lib${dir_basename}*.so*" -printf "%f\n" 2>/dev/null))
+            all_names+=("${outside_libs[@]}")
+        else
+            echo "Checking obsolete version (file): $(basename "$i")"
+            echo "Path: $i"
+            local lib_basename=$(basename "$i")
+            local link_names=($(find /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
+            all_names=("$lib_basename")
+            for link in "${link_names[@]}"; do
+                all_names+=($(basename "$link"))
+            done
+        fi
+        
+        # Ensure unique all_names and avoid empty checks
+        all_names=($(printf "%s\n" "${all_names[@]}" | sort -u | grep -v "^$"))
 
         # 4. FAST dependency check for ANY of these names in the cache
         local deps=()
-        for name in "${all_names[@]}"; do
-            # The cache format is "FILE: lib1 lib2 lib3 "
-            local matches=($(grep " $name " "$dep_cache" | cut -d: -f1))
-            [ ${#matches[@]} -gt 0 ] && deps+=("${matches[@]}")
-        done
+        if [ ${#all_names[@]} -gt 0 ]; then
+            for name in "${all_names[@]}"; do
+                # The cache format is "FILE: lib1 lib2 lib3 "
+                local matches=($(grep " $name " "$dep_cache" | cut -d: -f1))
+                [ ${#matches[@]} -gt 0 ] && deps+=("${matches[@]}")
+            done
+        fi
         # Unique list
         deps=($(printf "%s\n" "${deps[@]}" | sort -u))
 
+        # Filter out deps that are inside the old directory itself
+        if [ -d "$i" ] && [ ${#deps[@]} -gt 0 ]; then
+            local outside_deps=()
+            for d in "${deps[@]}"; do
+                if [[ "$d" != "$i/"* ]]; then
+                    outside_deps+=("$d")
+                fi
+            done
+            deps=("${outside_deps[@]}")
+        fi
+
         if [ ${#deps[@]} -eq 0 ]; then
-            if [ ${#all_names[@]} -gt 1 ]; then
-                echo "Result: Unused (including symlinks: ${all_names[@]:1}). Deleting $i and its symlinks..."
-                for name in "${all_names[@]:1}"; do
-                   sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
-                done
+            if [ -d "$i" ]; then
+                echo "Result: Unused. Deleting directory $i..."
+                sudo rm -rf -- "$i"
             else
-                echo "Result: Unused. Deleting $i..."
+                if [ ${#all_names[@]} -gt 1 ]; then
+                    echo "Result: Unused (including symlinks: ${all_names[@]:1}). Deleting $i and its symlinks..."
+                    for name in "${all_names[@]:1}"; do
+                       sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
+                    done
+                else
+                    echo "Result: Unused. Deleting $i..."
+                fi
+                sudo rm -f -- "$i"
             fi
-            sudo rm -f -- "$i"
             continue
         fi
 
@@ -189,7 +239,8 @@ cleanup_old_libraries_gpt() {
         for pkg in "${pkgs[@]}"; do
             echo "Action: Rebuilding $pkg to switch to newer library..."
             lfs_autobuild --force "$pkg" || {
-                echo "Error: Failed to rebuild $pkg. Cannot delete $lib_basename."
+                local item_name=$(basename "$i")
+                echo "Error: Failed to rebuild $pkg. Cannot delete $item_name."
                 rebuild_success=false
                 break
             }
@@ -209,11 +260,16 @@ cleanup_old_libraries_gpt() {
              done
              
              if [ $remaining -eq 0 ]; then
-                 echo "Final Action: All dependencies cleared. Deleting $i and its symlinks."
-                 for name in "${all_names[@]:1}"; do
-                    sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
-                 done
-                 sudo rm -f -- "$i"
+                 if [ -d "$i" ]; then
+                     echo "Final Action: All dependencies cleared. Deleting directory $i."
+                     sudo rm -rf -- "$i"
+                 else
+                     echo "Final Action: All dependencies cleared. Deleting $i and its symlinks."
+                     for name in "${all_names[@]:1}"; do
+                        sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
+                     done
+                     sudo rm -f -- "$i"
+                 fi
              else
                  echo "Final Action: Keeping $i (binaries in $(echo ${pkgs[@]} | head -n 1) still linked)."
              fi
@@ -249,7 +305,11 @@ lfs_get_upstream_version() {
         linux)
             curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1
             ;;
-        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|gjs|glycin|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)
+        libpeas)
+            # Use GitLab API to fetch the latest guaranteed 1.x stable tag by strictly filtering for 'libpeas-' prefix
+            curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
+            ;;
+        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|libpeas|gjs|glycin|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)
             local base_url="https://download.gnome.org/sources/$pkg"
             # Some packages might have different names on GNOME servers
             [[ "$pkg" == "libxml2" ]] && base_url="https://download.gnome.org/sources/libxml2"
@@ -313,7 +373,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)

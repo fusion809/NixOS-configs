@@ -1266,6 +1266,14 @@ if [[ "$PACKAGE" == "nautilus" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D selinux=false /g; s/meson setup \.\./meson setup -D selinux=false \.\./g')
 fi
 
+if [[ "$PACKAGE" == "pango" ]]; then
+    log "Applying pango upstream fix: removing obsolete man-pages and documentation options..."
+    # The upstream version of Pango has altered/removed 'man-pages' option causing meson configure to fail.
+    # We will safely strip out the separate meson configure doc-building steps altogether.
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/meson configure -D (man-pages|documentation)=(true|enabled)[[:space:]]*&&?//g')
+    COMMANDS=$(echo "$COMMANDS" | sed '/docs_dir =/d')
+fi
+
 if [[ "$PACKAGE" == "gjs" ]]; then
     log "Applying gjs gi/info.h patch: fixing gi_callable_info_get_closure_native_address return type (void** -> void*)..."
     # In newer gobject-introspection, gi_callable_info_get_closure_native_address() returns void* (not void**).
@@ -2073,13 +2081,18 @@ if [[ "$UPSTREAM" == "true" ]]; then
         fi
     elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|lglycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ ]]; then
         log "Fetching latest upstream GNOME version for $PACKAGE from download.gnome.org..."
-        # Use helper from 21-lfs.sh if available (it is sourced on the host)
+        # Use helper from 21-lfs.sh if available (it is sourced on the host, but we can source the VM copy)
+        [ -f ~/.lfs_scripts/21-lfs.sh ] && source ~/.lfs_scripts/21-lfs.sh 2>/dev/null
         if declare -f lfs_get_upstream_version >/dev/null; then
             UPSTREAM_VERSION=$(lfs_get_upstream_version "$PACKAGE")
         else
-            base_url="https://download.gnome.org/sources/$PACKAGE"
-            major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
-            [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$PACKAGE"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+            if [[ "$PACKAGE" == "libpeas" ]]; then
+                UPSTREAM_VERSION=$(curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1)
+            else
+                base_url="https://download.gnome.org/sources/$PACKAGE"
+                major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+                [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$PACKAGE"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+            fi
         fi
 
         if [[ -n "$UPSTREAM_VERSION" ]]; then
