@@ -2080,6 +2080,9 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream GNOME version for $PACKAGE: $UPSTREAM_VERSION"
             major_v=${UPSTREAM_VERSION%%.*}
+            if [[ "$major_v" =~ ^[0-9]+$ ]] && [ "$major_v" -lt 40 ]; then
+                major_v=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
+            fi
             DOWNLOAD_URLS+=("https://download.gnome.org/sources/$PACKAGE/$major_v/$PACKAGE-$UPSTREAM_VERSION.tar.xz")
         fi
     else
