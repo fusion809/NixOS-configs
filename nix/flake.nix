@@ -8,6 +8,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # Hyprland
+    hyprsession.url = "github:joshurtree/hyprsession";
     # nixpkgs
     nixpkgs-oldstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
@@ -59,6 +60,7 @@
                 hyprlandPlugins = prev.hyprlandPlugins // {
                   hy3 = final.master.hyprlandPlugins.hy3;
                 };
+                hyprsession = inputs.hyprsession.packages.${prev.system}.default;
               })
             ];
           }
