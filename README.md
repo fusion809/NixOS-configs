@@ -1,8 +1,8 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 18 January 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-01-18.png)
-**Figure 1: Hyprland NixOS configuration as of 18 January 2026.**
+![Hyprland on NixOS screenshot as of 10 April 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-04-10.png)
+**Figure 1: Hyprland NixOS configuration as of 10 April 2026.**
 
-These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
+These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC with dual 1080p monitor setup. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
 # Language breakdown
 <!-- STATS START -->
