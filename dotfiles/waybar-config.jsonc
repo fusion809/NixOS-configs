@@ -13,7 +13,7 @@
         "custom/weather",
         "custom/keyboard-layout",
         "pulseaudio",
-        "custom/uptime",
+        //"custom/uptime",
         "custom/wallpaper-no",
         "custom/wallpaper-rm",
         "custom/wallpaper-previous",
@@ -36,7 +36,7 @@
         "custom/gpu-memory",
         "custom/gpu-utilization",
         "custom/updates",
-        "clock"
+        "custom/clock"
     ],
     // Modules configuration
     "custom/nixosicon": {
@@ -146,37 +146,37 @@
         "interval": 1, // Don’t poll or update automatically
         "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/list-wallpapers --title \"List of wallpapers\""
     },
-    "custom/wallpaper-rm": {
-        "format": "󰆴",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-rm",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/show-rmed-wallpapers",
-        "tooltip": true,
-        "tooltip-format": "Remove currently displayed wallpaper and move onto next wallpaper (Win+e)."
-    },
-    "custom/wallpaper-previous": {
-        "format": "",
-        "tooltip": true,
-        "tooltip-format": "Previous wallpaper. Win+z achieves the same thing.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic previous"
-    },
-    "custom/wallpaper-random": {
-        "format": "",
-        "tooltip": true,
-        "tooltip-format": "Random wallpaper. Win+Shift+s achieves the same thing.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper random"
-    },
-    "custom/wallpaper-next": {
-        "format": "",
-        "tooltip": true,
-        "tooltip-format": "Next wallpaper. Win+w achieves the same thing.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic next"
-    },
-    "custom/wallpaper-no-specify": {
-        "format": "",
-        "tooltip": true,
-        "tooltip-format": "Enter the number of the next wallpaper you want to see.",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-no-specify"
-    },
+    // "custom/wallpaper-rm": {
+    //     "format": "󰆴",
+    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-rm",
+    //     "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/show-rmed-wallpapers",
+    //     "tooltip": true,
+    //     "tooltip-format": "Remove currently displayed wallpaper and move onto next wallpaper (Win+e)."
+    // },
+    // "custom/wallpaper-previous": {
+    //     "format": "",
+    //     "tooltip": true,
+    //     "tooltip-format": "Previous wallpaper. Win+z achieves the same thing.",
+    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic previous"
+    // },
+    // "custom/wallpaper-random": {
+    //     "format": "",
+    //     "tooltip": true,
+    //     "tooltip-format": "Random wallpaper. Win+Shift+s achieves the same thing.",
+    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper random"
+    // },
+    // "custom/wallpaper-next": {
+    //     "format": "",
+    //     "tooltip": true,
+    //     "tooltip-format": "Next wallpaper. Win+w achieves the same thing.",
+    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic next"
+    // },
+    // "custom/wallpaper-no-specify": {
+    //     "format": "",
+    //     "tooltip": true,
+    //     "tooltip-format": "Enter the number of the next wallpaper you want to see.",
+    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-no-specify"
+    // },
     "hyprland/window": {
         "format": "{title}",
         "max-length": 100,
@@ -245,7 +245,7 @@
         "tooltip-format": "Data file system usage"
     },
     "custom/network-down": {
-        "format": " {}",
+        "format": "{}",
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
         "return-type": "json",
@@ -256,7 +256,7 @@
         "tooltip-format": "Network download speed"
     },
     "custom/network-up": {
-        "format": " {}",
+        "format": "{}",
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
         "return-type": "json",
@@ -267,7 +267,7 @@
         "tooltip-format": "Network upload speed"
     },
     "custom/cpu": {
-        "format": " {}",
+        "format": "{}",
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-system cpu",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/cpu",
@@ -277,7 +277,7 @@
         "interval": 1
     },
     "custom/memory": {
-        "format": "󰍛 {}",
+        "format": "󰍛{}",
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-system memory",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
@@ -287,7 +287,7 @@
         "interval": 1
     },
     "custom/gpu-memory": {
-        "format": " {}",
+        "format": "{}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",
         "tooltip": true,
         "tooltip-format": "GPU memory usage",
@@ -297,7 +297,7 @@
         "interval": 1
     },
     "custom/gpu-utilization": {
-        "format": "󱃏 {}",
+        "format": "󱃏{}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-utilization",
         "tooltip": true,
         "tooltip-format": "GPU utilization",
@@ -313,10 +313,9 @@
         "signal": 8,
         "interval": 60
     },
-    "clock": {
-        "timezone": "Australia/Brisbane",
-        "tooltip-format": "<big>{:%I:%M:%S%p %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
-        "format": "{:%I:%M:%S%p %a %d/%m}",
+    "custom/clock": {
+        "format": "{}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/clock",
         "interval": 1
     },
     "power-profiles-daemon": {

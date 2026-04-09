@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-awk '{printf("%d:%02d:%02d\n",($1/3600),($1%3600)/60,$1%60)}' /proc/uptime
+awk '{printf("%d:%02d\n",($1/3600),($1%3600)/60)}' /proc/uptime
