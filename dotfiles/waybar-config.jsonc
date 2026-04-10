@@ -297,7 +297,7 @@
         "interval": 1
     },
     "custom/gpu-memory": {
-        "format": "{}",
+        "format": " {}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",
         "tooltip": true,
         "tooltip-format": "GPU memory usage",
