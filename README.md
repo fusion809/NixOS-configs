@@ -8,8 +8,11 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 4188 | 100.00% | 515 | 100.00% |
-| **Total** | **4188** | **100.00%** | **515** | **100.00%** |
+| CSS | 784 | 62.27% | 0 | 0.00% |
+| JSONC | 384 | 30.50% | 0 | 0.00% |
+| XML | 78 | 6.20% | 0 | 0.00% |
+| TOML | 13 | 1.03% | 0 | 0.00% |
+| **Total** | **1259** | **100.00%** | **0** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile

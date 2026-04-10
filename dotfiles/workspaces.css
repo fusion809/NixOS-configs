@@ -1,35 +1,35 @@
-/* Automatically generated workspace colors */
-#workspaces button.workspace-15,
-#workspaces button.workspace-15 label { color: #000000; }
-#workspaces button.workspace-7,
-#workspaces button.workspace-7 label { color: #000000; }
-#workspaces button.workspace-1,
-#workspaces button.workspace-1 label { color: #000000; }
-#workspaces button.workspace-3,
-#workspaces button.workspace-3 label { color: #008B8B; }
-#workspaces button.workspace-4,
-#workspaces button.workspace-4 label { color: #008B8B; }
-#workspaces button.workspace-8,
-#workspaces button.workspace-8 label { color: #008B8B; }
-#workspaces button.workspace-13,
-#workspaces button.workspace-13 label { color: #008B8B; }
-#workspaces button.workspace-12,
-#workspaces button.workspace-12 label { color: #008B8B; }
-#workspaces button.workspace-19,
-#workspaces button.workspace-19 label { color: #008B8B; }
-#workspaces button.workspace-20,
-#workspaces button.workspace-20 label { color: #008B8B; }
-#workspaces button.workspace-14,
-#workspaces button.workspace-14 label { color: #008B8B; }
-#workspaces button.workspace-11,
-#workspaces button.workspace-11 label { color: #008B8B; }
-#workspaces button.workspace-2,
-#workspaces button.workspace-2 label { color: #000000; }
-#workspaces button.workspace-29,
-#workspaces button.workspace-29 label { color: #008B8B; }
-#workspaces button.workspace-18,
-#workspaces button.workspace-18 label { color: #000000; }
-#workspaces button.workspace-5,
-#workspaces button.workspace-5 label { color: #008B8B; }
-#workspaces button.workspace-9,
-#workspaces button.workspace-9 label { color: #008B8B; }
+/* Automatically generated workspace colors (nth-child approach) */
+#workspaces button:nth-child(1):not(:hover):not(.active) { background-color: #212121; }
+#workspaces button:nth-child(1):hover { color: #212121; }
+#workspaces button:nth-child(2):not(:hover):not(.active) { background-color: #212121; }
+#workspaces button:nth-child(2):hover { color: #212121; }
+#workspaces button:nth-child(3):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(3):hover { color: #008B8B; }
+#workspaces button:nth-child(4):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(4):hover { color: #008B8B; }
+#workspaces button:nth-child(5):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(5):hover { color: #008B8B; }
+#workspaces button:nth-child(6):not(:hover):not(.active) { background-color: #212121; }
+#workspaces button:nth-child(6):hover { color: #212121; }
+#workspaces button:nth-child(7):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(7):hover { color: #008B8B; }
+#workspaces button:nth-child(8):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(8):hover { color: #008B8B; }
+#workspaces button:nth-child(9):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(9):hover { color: #008B8B; }
+#workspaces button:nth-child(10):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(10):hover { color: #008B8B; }
+#workspaces button:nth-child(11):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(11):hover { color: #008B8B; }
+#workspaces button:nth-child(12):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(12):hover { color: #008B8B; }
+#workspaces button:nth-child(13):not(:hover):not(.active) { background-color: #212121; }
+#workspaces button:nth-child(13):hover { color: #212121; }
+#workspaces button:nth-child(14):not(:hover):not(.active) { background-color: #212121; }
+#workspaces button:nth-child(14):hover { color: #212121; }
+#workspaces button:nth-child(15):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(15):hover { color: #008B8B; }
+#workspaces button:nth-child(16):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(16):hover { color: #008B8B; }
+#workspaces button:nth-child(17):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(17):hover { color: #008B8B; }

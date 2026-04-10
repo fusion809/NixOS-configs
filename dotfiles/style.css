@@ -1,4 +1,5 @@
 @import url("workspaces.css");
+
 * {
   border: none;
   border-radius: 0;
@@ -57,20 +58,15 @@ window#waybar.hidden {
   color: #cdd6f4;
 }
 
-
-/* DIAGNOSTIC TEST: The first workspace button should have a thick white border and red text */
-#workspaces button:first-child label,
-#workspaces button:first-child {
-  color: #FF0000;
-  font-size: 40px;
-  border: 5px solid #FFFFFF;
+#workspaces button.active {
+  color: #263238;
+  background-color: #B2EBF2;
 }
 
 #workspaces button:hover {
   box-shadow: inherit;
   text-shadow: inherit;
-  color: #263238;
-  background-color: #ECEFF1;
+  background-color: #cdd6f4;
 }
 
 #workspaces button.urgent {
