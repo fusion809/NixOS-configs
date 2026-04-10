@@ -33,7 +33,7 @@
 #workspaces button:nth-child(16):hover { color: #008B8B; }
 #workspaces button:nth-child(17):not(:hover):not(.active) { background-color: #008B8B; }
 #workspaces button:nth-child(17):hover { color: #008B8B; }
-#workspaces button:nth-child(18):not(:hover):not(.active) { background-color: #212121; }
-#workspaces button:nth-child(18):hover { color: #212121; }
+#workspaces button:nth-child(18):not(:hover):not(.active) { background-color: #008B8B; }
+#workspaces button:nth-child(18):hover { color: #008B8B; }
 #workspaces button:nth-child(19):not(:hover):not(.active) { background-color: #008B8B; }
 #workspaces button:nth-child(19):hover { color: #008B8B; }

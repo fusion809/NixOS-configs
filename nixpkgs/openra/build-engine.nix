@@ -19,12 +19,12 @@ in
 buildDotnetModule {
   inherit pname version dotnet-sdk;
 
-  src = fetchFromGitHub {
+  src = engine.src or (fetchFromGitHub {
     owner = "OpenRA";
     repo = "OpenRA";
     rev = if lib.hasAttr "rev" engine then engine.rev else "${engine.build}-${engine.version}";
     inherit (engine) hash;
-  };
+  });
 
   passthru = {
     updateScript = {
