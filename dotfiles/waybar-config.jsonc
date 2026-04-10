@@ -255,7 +255,7 @@
         "tooltip-format": "Data file system usage"
     },
     "custom/network-down": {
-        "format": "{}",
+        "format": " {}",
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
         "return-type": "json",
@@ -266,7 +266,7 @@
         "tooltip-format": "Network download speed"
     },
     "custom/network-up": {
-        "format": "{}",
+        "format": " {}",
         "interval": 1,
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
         "return-type": "json",
@@ -287,7 +287,7 @@
         "interval": 1
     },
     "custom/memory": {
-        "format": "󰍛{}",
+        "format": "󰍛 {}",
         "on-click": "alacritty -e gtop --title \"gtop\"",
         "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-system memory",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
@@ -297,7 +297,7 @@
         "interval": 1
     },
     "custom/gpu-memory": {
-        "format": " {}",
+        "format": "  {}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",
         "tooltip": true,
         "tooltip-format": "GPU memory usage",
@@ -307,7 +307,7 @@
         "interval": 1
     },
     "custom/gpu-utilization": {
-        "format": "󱃏{}",
+        "format": "󱃏 {}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-utilization",
         "tooltip": true,
         "tooltip-format": "GPU utilization",
