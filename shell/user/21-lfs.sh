@@ -771,7 +771,7 @@ EOF
     done <<< "$results"
 }
 
-lfs_update_all() {
+lfs_update() {
     local dry_run=false
     local upstream=true
     
@@ -1262,4 +1262,5 @@ DEPEOF
             echo "Warning: Some packages are still missing file inventories. Skipping commit."
         fi
     fi
+    ssh_lfs "upos"
 }

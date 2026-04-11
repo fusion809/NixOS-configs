@@ -108,9 +108,9 @@ if [ -n "$BASH_VERSION" ]; then
     export -f lfs_commit
 fi
 
-# `update` = lfs_update_all
+# `update` = lfs_update
 update() {
-    lfs_update_all "$@"
+    lfs_update "$@"
 }
 if [ -n "$BASH_VERSION" ]; then
     export -f update
