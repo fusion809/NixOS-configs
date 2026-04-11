@@ -64,7 +64,7 @@ export PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
 
 DRY_RUN=false
 STRIP=false
-UPSTREAM=false
+UPSTREAM=true
 INCLUDE_CONFIG=false
 RM_LIBS=false
 SEARCH_LFS=true
@@ -75,11 +75,11 @@ FORCE=false
 YES=false
 
 usage() {
-    echo "Usage: $0 [options] <package-name> [package-name-2...]"
+    echo "Usage: autobuild [options] <package-name> [package-name-2...]"
     echo "Options:"
     echo "  --dry-run             Show commands without executing them"
     echo "  --strip               Run stripping commands after build"
-    echo "  --upstream            Attempt to find the latest upstream version (linux, firefox, rustc, and llvm)"
+    echo "  --no-upstream         Disable upstream version searching [DEFAULT is to track upstream]"
     echo "  --include-config      Include configuration commands in the LFS/BLFS book entry"
     echo "  --rm-libs             Remove old library versions after build (disabled by default)"
     echo "  --lfs                 Search only in the LFS book"
@@ -95,7 +95,8 @@ while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --dry-run) DRY_RUN=true ;;
         --strip) STRIP=true ;;
-        --upstream) UPSTREAM=true ;;
+        --no-upstream) UPSTREAM=false ;;
+        --upstream) UPSTREAM=true ;; # Hidden compatibility flag
         --include-config) INCLUDE_CONFIG=true ;;
         --rm-libs) RM_LIBS=true ;;
         --lfs)
@@ -128,7 +129,7 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -f|--force) FORCE=true ;;
         -y|--yes) YES=true ;;
-        -h|--help) usage ;;
+        -h|--help) usage; exit 0 ;;
         -*) echo "Unknown option: $1"; usage ;;
         *) PACKAGES+=("$1") ;;
     esac
@@ -146,6 +147,7 @@ target_run() {
 
 if [[ ${#PACKAGES[@]} -eq 0 ]]; then
     usage
+    exit 1
 fi
 
 log() { echo "[$(date +'%H:%M:%S')] $*"; }

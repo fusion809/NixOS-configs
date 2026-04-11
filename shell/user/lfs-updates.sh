@@ -1,12 +1,28 @@
 source "$(dirname "${BASH_SOURCE[0]}")/21-lfs.sh"
 
 # Main
-upstream=false
-if [[ "$1" == "--upstream" ]]; then
-    upstream=true
-fi
+upstream=true
 
-REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream") | tr -d '\r')
+# Pre-parse help to avoid any initial output
+for arg in "$@"; do
+    if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+        echo "Usage: updates [options]"
+        echo "Options:"
+        echo "  --no-upstream  Check only LFS/BLFS book versions (disable upstream tracking) [DEFAULT is to track upstream]"
+        echo "  -h, --help     Show this help message"
+        exit 0
+    fi
+done
+
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --no-upstream) upstream=false ;;
+        --upstream) upstream=true ;; # Hidden compatibility flag
+    esac
+    shift
+done
+
+REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
 # Identify packages with missing file inventories (line count <= 1)
 BROKEN_PKGS=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done' | tr -d '\r')

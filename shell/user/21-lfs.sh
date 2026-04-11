@@ -336,9 +336,9 @@ lfs_get_upstream_version() {
 }
 
 lfs_get_remote_packages() {
-    local upstream=false
-    if [[ "$1" == "--upstream" ]]; then
-        upstream=true
+    local upstream=true
+    if [[ "$1" == "--no-upstream" ]]; then
+        upstream=false
     fi
 
     KERNEL_VER=$(curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -Vr | head -n 1)
@@ -773,11 +773,25 @@ EOF
 
 lfs_update_all() {
     local dry_run=false
-    local upstream=false
-    while [[ "$1" == "-"* ]]; do
+    local upstream=true
+    
+    # Pre-parse help to avoid any initial output
+    for arg in "$@"; do
+        if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
+            echo "Usage: update [options]"
+            echo "Options:"
+            echo "  --dry-run      Show what would be updated without downloading/building"
+            echo "  --no-upstream  Check only LFS/BLFS book versions (disable upstream tracking) [DEFAULT is to track upstream]"
+            echo "  -h, --help     Show this help message"
+            return 0
+        fi
+    done
+
+    while [[ "$#" -gt 0 ]]; do
         case "$1" in
             --dry-run) dry_run=true ;;
-            --upstream) upstream=true ;;
+            --no-upstream) upstream=false ;;
+            --upstream) upstream=true ;; # Hidden compatibility flag
         esac
         shift
     done
@@ -785,7 +799,7 @@ lfs_update_all() {
 
 
     echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
-    local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "true" ]] && echo "--upstream") | tr -d '\r')
+    local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
     echo "Fetching local package list from VM..."
     local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g' | tr -d '\r')
     
@@ -1053,8 +1067,12 @@ for pkg in sorted_pkgs:
 
     for pkg in "${updates[@]}"; do
         local build_args=()
-        [[ "$dry_run" == "true" ]] && build_args+=("--dry-run")
-        [[ "$upstream" == "true" ]] && build_args+=("--upstream")
+        if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
+        if [[ "$upstream" == "true" ]]; then
+            build_args+=("--upstream")
+        else
+            build_args+=("--no-upstream")
+        fi
         
         # Force rebuild if this package only has a missing inventory (not a version update)
         local is_force=false
@@ -1216,8 +1234,12 @@ DEPEOF
 
         for pkg in "${custom_updates_list[@]}"; do
             local build_args=()
-            [[ "$dry_run" == "true" ]] && build_args+=("--dry-run")
-            [[ "$upstream" == "true" ]] && build_args+=("--upstream")
+            if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
+            if [[ "$upstream" == "true" ]]; then
+                build_args+=("--upstream")
+            else
+                build_args+=("--no-upstream")
+            fi
 
             if [[ "$dry_run" == "true" ]]; then
                 echo "DRY RUN: lfs_autobuild ${build_args[*]} $pkg"

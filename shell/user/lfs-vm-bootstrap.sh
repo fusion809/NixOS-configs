@@ -39,6 +39,12 @@ fi
 
 # ---- Commit and Push Registry Changes ----
 lfs_package_commit() {
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        echo "Usage: lfs_commit [message]"
+        echo "Example: lfs_commit 'Updated kernel to 6.6.1'"
+        echo "If no message is provided, one will be auto-generated based on changes."
+        return 0
+    fi
     local msg="$1"
     local push_needed=false
     for dir in /var/lib/book-packages /var/lib/custom-packages; do
@@ -108,4 +114,12 @@ update() {
 }
 if [ -n "$BASH_VERSION" ]; then
     export -f update
+fi
+
+# `autobuild` = lfs_autobuild
+autobuild() {
+    lfs_autobuild "$@"
+}
+if [ -n "$BASH_VERSION" ]; then
+    export -f autobuild
 fi
