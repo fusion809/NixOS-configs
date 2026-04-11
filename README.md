@@ -369,6 +369,8 @@ Workspace 7: Terminal and Chrome windows for dealing with HPC job submission (<k
 Workspace 15: Brave (<kbd>Insert</kbd>).
 Workspace 16: Instagram (<kbd>Home</kbd>).
 Workspace 18: Okular (<kbd>Win</kbd>+<kbd>Delete</kbd>).
+Workspace 21: Steam (<kbd>Win</kbd>+<kbd>F1</kbd>).
+Workspace 25: VLC media player (<kbd>Win</kbd>+<kbd>F5</kbd>).
 
 ### Monitor 2
 Workspace 3: Bluetooth (<kbd>F3</kbd>).
@@ -380,9 +382,15 @@ Workspace 10: Google Chat (<kbd>F10</kbd>).
 Workspace 11: Discord (<kbd>F11</kbd>).
 Workspace 12: Boo (<kbd>F12</kbd>).
 Workspace 13: Nautilus file manager (<kbd>Win</kbd>+<kbd>Print</kbd>).
-Workspace 14: Video player (<kbd>Pause</kbd>).
-Workspace 27: Brave Tor.
-
+Workspace 14: Chrome (<kbd>Pause</kbd>).
+Workspace 19: Duolingo (<kbd>End</kbd>).
+Workspace 20: Terminal (<kbd>Page Down</kbd>).
+Workspace 22: Payday 2 (<kbd>Win</kbd>+<kbd>F2</kbd>).
+Workspace 23: Google Earth (<kbd>Win</kbd>+<kbd>F3</kbd>).
+Workspace 24: Boo (<kbd>Win</kbd>+<kbd>F4</kbd>).
+Workspace 26: VLC media player (<kbd>Win</kbd>+<kbd>F6</kbd>).
+Workspace 27: Brave private window (<kbd>Win</kbd>+<kbd>F7</kbd>).
+Workspaces 28-30: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd> to <kbd>F10</kbd>).
 
 # History
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
