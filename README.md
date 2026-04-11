@@ -4,9 +4,7 @@
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC with dual 1080p monitor setup. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
-<details>
-<summary><b>Table of Contents (click to expand)</b></summary>
-
+# Table of Contents
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -31,7 +29,6 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-</details>
 
 # Language breakdown
 <!-- STATS START -->
