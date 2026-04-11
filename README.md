@@ -238,7 +238,7 @@ The direction argument, which is only applicable if the first argument is algori
 The waybar has the following components, going from left to right:
 
 <ul>
-<li>The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):
+<li>(<i>Only shown on monitor 1</i>) The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):
 <ul>
 <li>Opening up the Nerd font cheat sheet websites.</li>
 <li>Opening up NixOS-configs repo on GitHub.</li>
@@ -262,12 +262,12 @@ The waybar has the following components, going from left to right:
 The background colour of this depends on the temperature. Temperatures of &lt;10&deg;C are <span style="color: #1565C0;">blue</span>, between 10 and <15&deg;C are <span style="color: #2196F3">lighter blue</span>, between 15 and <20&deg;C are <span style="color: #03DAC6">cyan</span>, between 20 and <25&deg;C are <span style="color: #4CAF50">green</span>, between 25 and <30&deg;C are <span style="color: #EF6C00">orange</span>, between 30 and <35&deg;C are <span style="color: #FF5722">light red</span>, between 35 and <40&deg;C are <span style="color: #D32F2F">medium red</span> and &geq;40&deg;C are <span style="color: #B71C1C">dark red</span>.</li>
 <li>Keyboard layout (  followed by its two-letter initial). I have two colours set up for this widget: us=<span style="color: #018786">teal</span>, which is also the default, and br=<span style="color: #AD1457">purple</span>.</li>
 <li>Pulseaudio showing the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol.</li>
-<li>Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.</li>
+<li>(<i>Only shown on monitor 1</i>) Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.</li>
 <!-- <li>A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.</li> -->
-<li>A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).</li>
-<li>A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.</li>
-<li>A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one.</li> 
-<li>A collection of numbers () that, when clicked, changes your wallpaper to a wallpaper whose number you specify in a pop-up window.</li> 
+<li>(<i>Only shown on monitor 1</i>) A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).</li>
+<li>(<i>Only shown on monitor 1</i>) A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.</li>
+<li>(<i>Only shown on monitor 1</i>) A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one.</li> 
+<li>(<i>Only shown on monitor 1</i>) A collection of numbers () that, when clicked, changes your wallpaper to a wallpaper whose number you specify in a pop-up window.</li> 
 <li>The title of your currently focused window.</li>
 <li>Motherboard temperature () according to sensors. 
 <br/><br/>
