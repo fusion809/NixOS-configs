@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 clock=$(date +"%l:%M:%S%p %a %d/%m")
 up=$(awk '{printf("%d:%02d\n",($1/3600),($1%3600)/60)}' /proc/uptime)
-printf '󰔚 %s%s' "$up" "$clock"
+printf '󰔚 %s|%s' "$up" "$clock"

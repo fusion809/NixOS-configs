@@ -50,24 +50,17 @@
             "/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"
         ],
         "modules-left": [
-            "custom/nixosicon",
             "hyprland/workspaces",
             "custom/weather",
             "custom/keyboard-layout",
             "pulseaudio",
             "custom/uptime",
-            "custom/wallpaper-no",
-            //"custom/wallpaper-rm",
-            "custom/wallpaper-previous",
-            "custom/wallpaper-random",
-            "custom/wallpaper-next",
-            "custom/wallpaper-no-specify"
+            "custom/temperature"
         ],
         "modules-center": [
             "hyprland/window"
         ],
         "modules-right": [
-            "custom/temperature",
             "custom/root",
             "custom/arch",
             "custom/data",

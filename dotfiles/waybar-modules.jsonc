@@ -282,6 +282,11 @@
         "signal": 8,
         "interval": 60
     },
+    "custom/clock": {
+        "format": "{}",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/clock",
+        "interval": 1
+    },
     "clock": {
         "timezone": "Australia/Brisbane",
         "tooltip-format": "<big>{:%I:%M:%S%p %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",

@@ -617,6 +617,16 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
+#custom-clock {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 2px;
+  font-family: JetBrainsMono Nerd Font;
+  font-weight: bold;
+  background-color: violet;
+  color: #000000;
+}
+
 /* -----------------------------------------------------------------------------
  * Tooltips and Unused/Other
  * -------------------------------------------------------------------------- */
