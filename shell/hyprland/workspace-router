@@ -30,6 +30,21 @@ handle() {
                hyprctl dispatch movetoworkspacesilent "$choice,address:0x$w_address"
            fi
        ) &
+    elif [[ "$w_class" == "google-chrome" ]]; then
+       (
+           choice=$(echo -e "1(main)\n7(PBS)\n12(Boo)\n14(2nd main)" | rofi -dmenu -p "Select Workspace for Chrome:")
+           if [[ -n "$choice" ]]; then
+            choice=$(echo "$choice" | cut -d '(' -f 1)
+            hyprctl dispatch movetoworkspacesilent "$choice,address:0x$w_address"
+           fi
+       ) &
+    elif [[ "$w_class" == "virt-viewer" ]]; then
+       (
+           choice=$(echo -e "28\n29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
+           if [[ -n "$choice" ]]; then
+               hyprctl dispatch movetoworkspacesilent "$choice,address:0x$w_address"
+           fi
+       ) &
     fi
   fi
 }
