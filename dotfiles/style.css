@@ -613,8 +613,8 @@ window#waybar.hidden {
   padding: 3px 2px;
   font-family: JetBrainsMono Nerd Font;
   font-weight: bold;
-  background-color: #ff4444;
-  color: #ffffff;
+  background-color: skyblue;
+  color: #000000;
 }
 
 #custom-clock {
@@ -623,7 +623,7 @@ window#waybar.hidden {
   padding: 3px 2px;
   font-family: JetBrainsMono Nerd Font;
   font-weight: bold;
-  background-color: violet;
+  background-color: skyblue;
   color: #000000;
 }
 
