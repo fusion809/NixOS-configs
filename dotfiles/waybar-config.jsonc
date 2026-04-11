@@ -1,354 +1,78 @@
-// -*- mode: jsonc -*-
-// Font awesome is required for waybar's usual fonts
-{
-    "layer": "top", // Waybar at top layer
-    "exclusive": true, // Ensure windows don't overlap with Waybar's space
-    //"height": 30, // Waybar height (to be removed for auto height)
-    // "width": 1280, // Waybar width
-    "spacing": 4, // Gaps between modules (4px)
-    // Choose the order of the modules
-    "modules-left": [
-        "custom/nixosicon",
-        "hyprland/workspaces",
-        "custom/weather",
-        "custom/keyboard-layout",
-        "pulseaudio",
-        //"custom/uptime",
-        "custom/wallpaper-no",
-        "custom/wallpaper-rm",
-        "custom/wallpaper-previous",
-        "custom/wallpaper-random",
-        "custom/wallpaper-next",
-        "custom/wallpaper-no-specify"
-    ],
-    "modules-center": [
-        "hyprland/window"
-    ],
-    "modules-right": [
-        "custom/temperature",
-        "custom/root",
-        "custom/arch",
-        "custom/data",
-        "custom/network-down",
-        "custom/network-up",
-        "custom/cpu",
-        "custom/memory",
-        "custom/gpu-memory",
-        "custom/gpu-utilization",
-        "custom/updates",
-        "custom/clock"
-    ],
-    // Modules configuration
-    "custom/nixosicon": {
-        "format": "",
-        "tooltip": false,
-        "menu": "on-click",
-        "menu-file": "$HOME/GitHub/mine/config/NixOS-configs/dotfiles/nixos_menu.xml", // Menu file in resources folder
-        "menu-actions": {
-            "nerdfonts": "xdg-open https://www.nerdfonts.com/cheat-sheet",
-            "wiki": "xdg-open https://wiki.nixos.org",
-            "update": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
-            "rebuild": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/rebuild",
-            "repair": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/repair",
-            "nixpkgs": "xdg-open https://search.nixos.org/packages",
-            "options": "xdg-open https://search.nixos.org/options",
-            "nixosconfigs": "antigravity $HOME/GitHub/mine/config/NixOS-configs",
-            "nixosconfigsrepo": "xdg-open https://github.com/fusion809/NixOS-configs",
-            "shutdown": "sudo poweroff",
-            "reboot": "sudo reboot",
-            "logout": "hyprctl dispatch exit",
-            "suspend": "sudo systemctl suspend",
-            "hibernate": "sudo systemctl hibernate"
-        }
+[
+    // HDMI Monitor
+    {
+        "output": "HDMI-A-1",
+        "layer": "top",
+        "exclusive": true,
+        "spacing": 4,
+        "include": ["/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"],
+        "modules-left": [
+            "custom/nixosicon",
+            "hyprland/workspaces",
+            "custom/weather",
+            "custom/keyboard-layout",
+            "pulseaudio",
+            "custom/wallpaper-no",
+            "custom/wallpaper-rm",
+            "custom/wallpaper-previous",
+            "custom/wallpaper-random",
+            "custom/wallpaper-next",
+            "custom/wallpaper-no-specify"
+        ],
+        "modules-center": [
+            "hyprland/window"
+        ],
+        "modules-right": [
+            "custom/temperature",
+            "custom/root",
+            "custom/arch",
+            "custom/data",
+            "custom/network-down",
+            "custom/network-up",
+            "custom/cpu",
+            "custom/memory",
+            "custom/gpu-memory",
+            "custom/gpu-utilization",
+            "custom/updates",
+            "custom/clock"
+        ]
     },
-    "hyprland/workspaces": {
-        "on-scroll-up": "hyprctl dispatch workspace e+1",
-        "on-scroll-down": "hyprctl dispatch workspace e-1",
-        "all-outputs": true,
-        "on-click": "activate",
-        "format": "{name}{icon}",
-        "format-icons": {
-            "1": " ",
-            "2": "󰹑 ",
-            "3": "󰂯 ",
-            "4": " ",
-            "5": " ",
-            "6": " ",
-            "7": "󱉟 ",
-            "8": " ",
-            "9": " ",
-            "10": "󰭹 ",
-            "11": " ",
-            "12": " ",
-            "13": " ",
-            "14": " ",
-            "15": "󰣩 ",
-            "16": " ",
-            "17": " ",
-            "18": " ",
-            "19": " ",
-            "20": " ",
-            "21": " ",
-            "22": " ",
-            "23": "󰊷 ",
-            "24": " ",
-            "25": "󰕼 ",
-            "26": "󰕼 ",
-            "27": " ",
-            "28": " ",
-            "29": " ",
-            "30": " ",
-            "urgent": " ",
-            "focused": " ",
-            "default": " "
-        }
-    },
-    "custom/weather": {
-        "format": "{}°C",
-        "tooltip": true,
-        "interval": 600,
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/weather",
-        "return-type": "json"
-    },
-    "custom/keyboard-layout": {
-        "format": " {}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/keyboard-layout",
-        "return-type": "json",
-        "on-click": "hyprctl switchxkblayout current next",
-        "tooltip": true,
-        "interval": 1,
-        "tooltip-format": "Keyboard layout; click or press Win+Space to change it."
-    },
-    "pulseaudio": {
-        // "scroll-step": 1, // %, can be a float
-        "format": "{icon}{volume}%",
-        "format-bluetooth": "{icon}{volume}%",
-        "format-bluetooth-muted": "{icon}",
-        "format-muted": " ",
-        "format-source": "",
-        //"format-source": "{volume}% ",
-        "format-source-muted": "",
-        "format-icons": {
-            "headphone": "",
-            "hands-free": "",
-            "headset": "",
-            "phone": "",
-            "portable": "",
-            "car": "",
-            "default": [
-                "",
-                "",
-                ""
-            ]
-        },
-        "on-click": "pavucontrol"
-    },
-    "custom/uptime": {
-        "format": "󰔚 {}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/uptime",
-        "interval": 1
-    },
-    "custom/wallpaper-no": {
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/no-wallpapers",
-        "format": "󰸉 {}", // Nerd Font “wallpaper” icon
-        "tooltip": true,
-        "tooltip-format": "Wallpaper: number selected/total number",
-        "interval": 1, // Don’t poll or update automatically
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/list-wallpapers --title \"List of wallpapers\""
-    },
-    // "custom/wallpaper-rm": {
-    //     "format": "󰆴",
-    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-rm",
-    //     "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/show-rmed-wallpapers",
-    //     "tooltip": true,
-    //     "tooltip-format": "Remove currently displayed wallpaper and move onto next wallpaper (Win+e)."
-    // },
-    // "custom/wallpaper-previous": {
-    //     "format": "",
-    //     "tooltip": true,
-    //     "tooltip-format": "Previous wallpaper. Win+z achieves the same thing.",
-    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic previous"
-    // },
-    // "custom/wallpaper-random": {
-    //     "format": "",
-    //     "tooltip": true,
-    //     "tooltip-format": "Random wallpaper. Win+Shift+s achieves the same thing.",
-    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper random"
-    // },
-    // "custom/wallpaper-next": {
-    //     "format": "",
-    //     "tooltip": true,
-    //     "tooltip-format": "Next wallpaper. Win+w achieves the same thing.",
-    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper systematic next"
-    // },
-    // "custom/wallpaper-no-specify": {
-    //     "format": "",
-    //     "tooltip": true,
-    //     "tooltip-format": "Enter the number of the next wallpaper you want to see.",
-    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/wallpaper-no-specify"
-    // },
-    "hyprland/window": {
-        "format": "{title}",
-        "max-length": 100,
-        "rewrite": {
-            "Google Earth - Google Chrome": "󰊷",
-            "(.*) - Google Chrome": " $1",
-            "(.*) - Brave": " $1",
-            "(.*) - VSCodium": " $1",
-            "fusion809@nixos(.*)": " fusion809@nixos: $1",
-            "root@nixos(.*)": " root@nixos: $1",
-            "Alacritty(.*)": " $1",
-            "Kitty(.*)": " $1",
-            "kitty(.*)": " $1",
-            "vim(.*)": "$1",
-            "nvim(.*)": "$1",
-            "(.*) - Discord": " $1",
-            "(.*) - Antigravity - (.*)": "󰨞 $2 - $1",
-            "(.*) - Visual Studio Code": "󰨞 $1",
-            "(.*) - VLC media player": "󰕼 $1",
-            "Steam": "",
-            "Friends List": " Friends List",
-            "Virtual Machine Manager": "",
-            "Instagram(.*)": " $1",
-            "Google Chat - Chat": "󰭹",
-            "WhatsApp Web": "",
-            "Duolingo - (.*)": "  $1",
-            "WinBoat": "",
-            "Bluetooth Devices": "",
-            "Debian 13.*": "",
-            ".*@hpc-login-prd-t1:(.*)": "󰇅 $1"
-        }
-    },
-    "custom/temperature": {
-        "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/temperature",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-temperature",
-        "interval": 1,
-        "return-type": "json",
-        "tooltip": true,
-        "tooltip-format": "Motherboard temperature"
-    },
-    "custom/root": {
-        "format": "{}",
-        "interval": 5,
-        "on-click": "alacritty -e gtop --title \"gtop\"",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/nixcg",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/root",
-        "return-type": "json",
-        "tooltip": true,
-        "tooltip-format": "Root file system usage"
-    },
-    "custom/arch": {
-        "format": "{}",
-        "interval": 5,
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/arch",
-        "return-type": "json",
-        "tooltip": true,
-        "tooltip-format": "Data file system usage"
-    },
-    "custom/data": {
-        "format": "{}",
-        "interval": 5,
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/data",
-        "return-type": "json",
-        "tooltip": true,
-        "tooltip-format": "Data file system usage"
-    },
-    "custom/network-down": {
-        "format": " {}",
-        "interval": 1,
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network down",
-        "return-type": "json",
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor --title \"Network monitor\"",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified --title \"Network monitor over specified period\"",
-        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network download",
-        "tooltip": true,
-        "tooltip-format": "Network download speed"
-    },
-    "custom/network-up": {
-        "format": " {}",
-        "interval": 1,
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network up",
-        "return-type": "json",
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor --title \"Network monitor\"",
-        "on-click-right": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/network-monitor-specified --title \"Network monitor over specified period\"",
-        "on-click-middle": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-network upload",
-        "tooltip": true,
-        "tooltip-format": "Network upload speed"
-    },
-    "custom/cpu": {
-        "format": "{}",
-        "on-click": "alacritty -e gtop --title \"gtop\"",
-        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-system cpu",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/cpu",
-        "tooltip": true,
-        "tooltip-format": "CPU usage",
-        "return-type": "json",
-        "interval": 1
-    },
-    "custom/memory": {
-        "format": "󰍛 {}",
-        "on-click": "alacritty -e gtop --title \"gtop\"",
-        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-system memory",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/memory",
-        "tooltip": true,
-        "tooltip-format": "Memory usage",
-        "return-type": "json",
-        "interval": 1
-    },
-    "custom/gpu-memory": {
-        "format": "  {}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",
-        "tooltip": true,
-        "tooltip-format": "GPU memory usage",
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-info --title \"GPU info\"",
-        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-gpu memory",
-        "return-type": "json",
-        "interval": 1
-    },
-    "custom/gpu-utilization": {
-        "format": "󱃏 {}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-utilization",
-        "tooltip": true,
-        "tooltip-format": "GPU utilization",
-        "on-click": "alacritty -e $HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-info --title \"GPU info\"",
-        "on-click-right": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/graph-gpu utilization",
-        "return-type": "json",
-        "interval": 1
-    },
-    "custom/updates": {
-        "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
-        "signal": 8,
-        "interval": 60
-    },
-    "custom/clock": {
-        "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/clock",
-        "interval": 1
-    },
-    "power-profiles-daemon": {
-        "format": "{icon}",
-        "tooltip-format": "Power profile: {profile}\nDriver: {driver}",
-        "tooltip": true,
-        "format-icons": {
-            "default": "",
-            "performance": "",
-            "balanced": "",
-            "power-saver": ""
-        }
+    // DVI Monitor
+    {
+        "output": "DVI-D-1",
+        "layer": "top",
+        "exclusive": true,
+        "spacing": 4,
+        "include": ["/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"],
+        "modules-left": [
+            "custom/nixosicon",
+            "hyprland/workspaces",
+            "custom/weather",
+            "custom/keyboard-layout",
+            "pulseaudio",
+            "custom/wallpaper-no",
+            "custom/wallpaper-rm",
+            "custom/wallpaper-previous",
+            "custom/wallpaper-random",
+            "custom/wallpaper-next",
+            "custom/wallpaper-no-specify"
+        ],
+        "modules-center": [
+            "hyprland/window"
+        ],
+        "modules-right": [
+            "custom/temperature",
+            "custom/root",
+            "custom/arch",
+            "custom/data",
+            "custom/network-down",
+            "custom/network-up",
+            "custom/cpu",
+            "custom/memory",
+            "custom/gpu-memory",
+            "custom/gpu-utilization",
+            "custom/updates",
+            "custom/clock"
+        ]
     }
-    /*"custom/media": {
-        "format": "{icon} {text}",
-        "return-type": "json",
-        "max-length": 40,
-        "format-icons": {
-            "spotify": "",
-            "default": "🎜"
-        },
-        "escape": true,
-        "exec": "$HOME/.config/waybar/mediaplayer.py 2> /dev/null" // Script in resources folder
-        // "exec": "$HOME/.config/waybar/mediaplayer.py --player spotify 2> /dev/null" // Filter player based on name
-    },*/
-}
+]

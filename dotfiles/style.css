@@ -1,4 +1,4 @@
-@import url("workspaces.css");
+/* @import url("workspaces.css"); */
 
 * {
   border: none;
@@ -54,7 +54,7 @@ window#waybar.hidden {
   padding: 0px 0px;
   margin: 0px 0px;
   border-radius: 0px;
-  background-color: #263238;
+  background-color: #212121;
   color: #cdd6f4;
 }
 
@@ -67,6 +67,7 @@ window#waybar.hidden {
   box-shadow: inherit;
   text-shadow: inherit;
   background-color: #cdd6f4;
+  color: #212121;
 }
 
 #workspaces button.urgent {
