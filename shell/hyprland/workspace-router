@@ -7,46 +7,99 @@ else
     SOCKET="/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
 fi
 
+LOGFILE="/tmp/workspace-router.log"
+
 handle() {
+  echo "Event: $1" >> "$LOGFILE"
   if [[ "$1" == openwindow\>\>* ]]; then
-    # Payload format: address,workspace,class,title
     local payload="${1#openwindow>>}"
-    
-    # title can contain commas, so read only up to class
+    # Use comma as delimiter, but title can contain commas
     IFS=',' read -r w_address w_workspace w_class w_title <<< "$payload"
+    echo "Payload: address=$w_address, workspace=$w_workspace, class=$w_class, title=$w_title" >> "$LOGFILE"
     
     if [[ "$w_class" == "brave-browser" ]]; then
-       # Run prompt async so we don't block IPC reading
-       (
-           choice=$(echo -e "15\n27" | rofi -dmenu -p "Select Workspace for Brave:")
-           if [[ -n "$choice" ]]; then
-               hyprctl dispatch movetoworkspacesilent "$choice,address:0x$w_address"
-           fi
-       ) &
+        if [[ "$w_title" == "New Private Tab - Brave" ]]; then
+            target=27
+        else
+            target=15
+        fi
+        hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
+
     elif [[ "$w_class" == "vlc" ]]; then
        (
-           choice=$(echo -e "25\n26" | rofi -dmenu -p "Select Workspace for VLC:")
-           if [[ -n "$choice" ]]; then
-               hyprctl dispatch movetoworkspacesilent "$choice,address:0x$w_address"
+           count_25=$(hyprctl workspaces -j | jq 'map(select(.id == 25)) | .[0].windows // 0')
+           count_26=$(hyprctl workspaces -j | jq 'map(select(.id == 26)) | .[0].windows // 0')
+           
+           if [ "$count_25" -eq 0 ]; then
+               target=25
+           elif [ "$count_26" -eq 0 ]; then
+               target=26
+           elif [ "$count_25" -le "$count_26" ]; then
+               target=25
+           else
+               target=26
            fi
+           hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
        ) &
+
     elif [[ "$w_class" == "google-chrome" ]]; then
        (
-           choice=$(echo -e "1(main)\n7(PBS)\n12(Boo)\n14(2nd main)" | rofi -dmenu -p "Select Workspace for Chrome:")
-           if [[ -n "$choice" ]]; then
-            choice=$(echo "$choice" | cut -d '(' -f 1)
-            hyprctl dispatch movetoworkspacesilent "$choice,address:0x$w_address"
+           # Priority routing for specific titles
+           if [[ "$w_title" == *"PBS Job"* ]] || [[ "$w_title" == *"u1126705@umail.usq.edu.au"* ]]; then
+               chrome_on_7=$(hyprctl clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 7)] | length')
+               if [ "$chrome_on_7" -eq 0 ]; then
+                   hyprctl dispatch movetoworkspacesilent "7,address:0x$w_address"
+                   exit 0
+               fi
+           elif [[ "$w_title" == *"Boo"* ]]; then
+               chrome_on_12=$(hyprctl clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 12)] | length')
+               if [ "$chrome_on_12" -eq 0 ]; then
+                   hyprctl dispatch movetoworkspacesilent "12,address:0x$w_address"
+                   exit 0
+               fi
+           fi
+
+           # Automatic check for empty workspaces using window count
+           count_1=$(hyprctl workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
+           count_14=$(hyprctl workspaces -j | jq 'map(select(.id == 14)) | .[0].windows // 0')
+           
+           existing_title_1=$(hyprctl clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
+           if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
+               target=1
+           elif [ "$count_14" -eq 0 ]; then
+               target=14
+           else
+               # If all are occupied, prompt the user
+               choice=$(echo -e "1(main)\n7(PBS)\n12(Boo)\n14(2nd main)" | rofi -dmenu -p "Select Workspace for Chrome:")
+               if [[ -n "$choice" ]]; then
+                   target=$(echo "$choice" | cut -d '(' -f 1)
+               fi
+           fi
+
+           if [[ -n "$target" ]]; then
+               hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
            fi
        ) &
-    elif [[ "$w_class" == "virt-viewer" ]]; then
+
+    elif [[ "$w_class" == "virt-viewer" ]] || ( [[ "$w_class" == ".virt-manager-wrapped" ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
        (
-           choice=$(echo -e "29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
-           if [[ -n "$choice" ]]; then
-               hyprctl dispatch movetoworkspacesilent "$choice,address:0x$w_address"
+           count_29=$(hyprctl workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
+           count_30=$(hyprctl workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
+           
+           if [ "$count_29" -eq 0 ]; then
+               target=29
+           elif [ "$count_30" -eq 0 ]; then
+               target=30
+           else
+               target=$(echo -e "29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
+           fi
+
+           if [[ -n "$target" ]]; then
+               hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
            fi
        ) &
     fi
   fi
 }
 
-nc -U "$SOCKET" | while read -r line; do handle "$line"; done
+nc -U "$SOCKET" < /dev/null | while read -r line; do handle "$line"; done
