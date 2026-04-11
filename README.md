@@ -9,7 +9,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-- [My NixOS configuration files](#my-nixos-configuration-files)
+
 - [Language breakdown](#language-breakdown)
 - [Shell profile](#shell-profile)
   - [Package management commands](#package-management-commands)
@@ -24,6 +24,9 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
   - [Wallpaper script](#wallpaper-script)
     - [Syntax](#syntax)
   - [Waybar](#waybar)
+  - [Workspaces](#workspaces)
+    - [Monitor 1](#monitor-1)
+    - [Monitor 2](#monitor-2)
 - [History](#history)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
