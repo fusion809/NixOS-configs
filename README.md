@@ -4,6 +4,32 @@
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC with dual 1080p monitor setup. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
+<details>
+<summary><b>Table of Contents (click to expand)</b></summary>
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+- [My NixOS configuration files](#my-nixos-configuration-files)
+- [Language breakdown](#language-breakdown)
+- [Shell profile](#shell-profile)
+  - [Package management commands](#package-management-commands)
+- [nixpkgs](#nixpkgs)
+  - [Antigravity package](#antigravity-package)
+  - [Marvin package](#marvin-package)
+  - [OpenRA package](#openra-package)
+- [Hyprland](#hyprland)
+  - [Autostart](#autostart)
+  - [Default apps](#default-apps)
+  - [Keyboard shortcuts](#keyboard-shortcuts)
+  - [Wallpaper script](#wallpaper-script)
+    - [Syntax](#syntax)
+  - [Waybar](#waybar)
+- [History](#history)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+</details>
+
 # Language breakdown
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |

@@ -23,12 +23,16 @@ function gitsw {
 function push {
   if ! git rev-parse --git-dir > /dev/null 2>&1; then
     $NIXCFG/python/analysis.py
+    doctoc "$NIXCFG/README.md" --notitle
+    sed -i '/generated with \[DocToc\]/d' "$NIXCFG/README.md"
     git -C "$NIXCFG" add --all
     git -C "$NIXCFG" commit -m "$1"
     git -C "$NIXCFG" push origin $(git-branch "$NIXCFG") $2
   else
     if echo $PWD | grep $NIXCFG &> /dev/null ; then
       $NIXCFG/python/analysis.py
+      doctoc README.md --notitle
+      sed -i '/generated with \[DocToc\]/d' README.md
     fi
     git add --all
     git commit -m "$1"

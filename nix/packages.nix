@@ -41,6 +41,7 @@ with pkgs; [
   aria2
   dnsmasq
   fastfetch
+  doctoc
   fdupes
   ffmpeg-full
   git
