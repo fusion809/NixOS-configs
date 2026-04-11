@@ -96,7 +96,7 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Insert</kbd>                                                 | Open worksapce #15    |
 | <kbd>Home</kbd>                                                   | Open workspace #16    |
 | <kbd>Page Up</kbd>                                                | Open worksapce #17    |
-| <kbd>Win</kbd>+<kbd>Delete</kbd>                                                 | Open workspace #18    |
+| <kbd>Win</kbd>+<kbd>Delete</kbd>                                  | Open workspace #18    |
 | <kbd>End</kbd>                                                    | Open worksapce #19    |
 | <kbd>Page Down</kbd>                                              | Open workspace #20    |
 | <kbd>Print</kbd>                                                  | Take a screenshot and copy it to clipboard. | 
@@ -110,6 +110,8 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Win</kbd>+<kbd>F8</kbd>                                      | Open workspace #28    |
 | <kbd>Win</kbd>+<kbd>F9</kbd>                                      | Open workspace #29    |
 | <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #30    |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>1</kbd>                       | Move selected workspace to monitor 1 |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>2</kbd>                       | Move selected workspace to monitor 2 |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>                      | Move focused window (silently) to workspace #1     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd>                      | Move focused window (silently) to workspace #2     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>3</kbd>                      | Move focused window (silently) to workspace #3     |
@@ -254,14 +256,14 @@ The waybar has the following components, going from left to right:
 <li>Reboot.</li>
 </ul>
 </li>
-<li>Workspaces (which are numbered).</li>
+<li>Workspaces (which are numbered). Workspaces are shown here only on the monitor in which they're active.</li>
 <li>Weather conditions, obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 <br/><br/>
 The background colour of this depends on the temperature. Temperatures of &lt;10&deg;C are <span style="color: #1565C0;">blue</span>, between 10 and <15&deg;C are <span style="color: #2196F3">lighter blue</span>, between 15 and <20&deg;C are <span style="color: #03DAC6">cyan</span>, between 20 and <25&deg;C are <span style="color: #4CAF50">green</span>, between 25 and <30&deg;C are <span style="color: #EF6C00">orange</span>, between 30 and <35&deg;C are <span style="color: #FF5722">light red</span>, between 35 and <40&deg;C are <span style="color: #D32F2F">medium red</span> and &geq;40&deg;C are <span style="color: #B71C1C">dark red</span>.</li>
 <li>Keyboard layout (  followed by its two-letter initial). I have two colours set up for this widget: us=<span style="color: #018786">teal</span>, which is also the default, and br=<span style="color: #AD1457">purple</span>.</li>
 <li>Pulseaudio showing the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol.</li>
 <li>Wallpaper number widget (󰸉): it displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.</li>
-<li>A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.</li>
+<!-- <li>A bin icon (󰆴) that, when clicked, will delete your current wallpaper and load the next wallpaper.</li> -->
 <li>A left arrow () that, when clicked, changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).</li>
 <li>A shuffling arrow () that, when clicked, changes your wallpaper to a randomly selected one.</li>
 <li>A forward arrow () that, when clicked, changes your wallpaper to the next systematically selected one.</li> 
@@ -277,10 +279,10 @@ Left clicking this opens a graph showing the history of the motherboard temperat
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
 <br/><br/>
 Left clicking this opens gtop in Alacritty. Right clicking runs `nixcg` in Alacritty.</li>
-<li>Used space (/arch) on your data file system. 
+<li>Used space (A) on your Arch file system. 
 <br/><br/>
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to &lt;50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to &lt;75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.</li>
-<li>Used space (/data) on your data file system. 
+<li>Used space (D) on your data file system. 
 <br/><br/>
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to &lt;50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to &lt;75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.</li>
 <li>Internet download speed () on enp24s0 interface in bps.
