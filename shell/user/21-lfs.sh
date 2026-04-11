@@ -1220,11 +1220,11 @@ DEPEOF
             [[ "$upstream" == "true" ]] && build_args+=("--upstream")
 
             if [[ "$dry_run" == "true" ]]; then
-                echo "DRY RUN: $NIXCFG/shell/user/lfs-autobuild.sh ${build_args[*]} $pkg"
-                "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
+                echo "DRY RUN: lfs_autobuild ${build_args[*]} $pkg"
+                lfs_autobuild "${build_args[@]}" "$pkg"
             else
                 echo "Building custom package $pkg..."
-                "$NIXCFG/shell/user/lfs-autobuild.sh" "${build_args[@]}" "$pkg"
+                lfs_autobuild "${build_args[@]}" "$pkg"
             fi
         done
     fi
