@@ -390,7 +390,8 @@ Workspace 23: Google Earth (<kbd>Win</kbd>+<kbd>F3</kbd>).<br/>
 Workspace 24: Boo (<kbd>Win</kbd>+<kbd>F4</kbd>).<br/>
 Workspace 26: VLC media player (<kbd>Win</kbd>+<kbd>F6</kbd>).<br/>
 Workspace 27: Brave private window (<kbd>Win</kbd>+<kbd>F7</kbd>).<br/>
-Workspaces 28-30: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd> to <kbd>F10</kbd>).
+Workspace 28: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd>)
+Workspaces 29-30: Virt Viewer (<kbd>Win</kbd>+<kbd>F9</kbd> to <kbd>F10</kbd>).
 
 # History
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
