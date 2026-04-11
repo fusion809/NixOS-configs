@@ -148,15 +148,15 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>8</kbd>                      | Move focused window (silently) to workspace #8     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>9</kbd>                      | Move focused window (silently) to workspace #9     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd>                      | Move focused window (silently) to workspace #10    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F1</kbd>                     | Move focused window (silently) to workspace #11     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F2</kbd>                     | Move focused window (silently) to workspace #12     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F3</kbd>                     | Move focused window (silently) to workspace #13     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F4</kbd>                     | Move focused window (silently) to workspace #14     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>                     | Move focused window (silently) to workspace #15     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F6</kbd>                     | Move focused window (silently) to workspace #16     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F7</kbd>                     | Move focused window (silently) to workspace #17     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F8</kbd>                     | Move focused window (silently) to workspace #18     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F9</kbd>                     | Move focused window (silently) to workspace #19     |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F1</kbd>                     | Move focused window (silently) to workspace #11    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F2</kbd>                     | Move focused window (silently) to workspace #12    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F3</kbd>                     | Move focused window (silently) to workspace #13    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F4</kbd>                     | Move focused window (silently) to workspace #14    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>                     | Move focused window (silently) to workspace #15    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F6</kbd>                     | Move focused window (silently) to workspace #16    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F7</kbd>                     | Move focused window (silently) to workspace #17    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F8</kbd>                     | Move focused window (silently) to workspace #18    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F9</kbd>                     | Move focused window (silently) to workspace #19    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F10</kbd>                    | Move focused window (silently) to workspace #20    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F11</kbd>                    | Move focused window (silently) to workspace #21    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F12</kbd>                    | Move focused window (silently) to workspace #22    |
@@ -359,6 +359,30 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 
 Footnotes:
 1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`.
+
+## Workspaces
+### Monitor 1
+Workspace 1: Chrome (<kbd>F1</kbd>).
+Workspace 2: Kitty terminal that takes up just enough of the screen to show Hyfetch output, useful for taking screenshots(<kbd>Win</kbd>+<kbd>2</kbd>).
+Workspace 5: Antigravity/VSCode (<kbd>F5</kbd>).
+Workspace 7: Terminal and Chrome windows for dealing with HPC job submission (<kbd>F7</kbd>).
+Workspace 15: Brave (<kbd>Insert</kbd>).
+Workspace 16: Instagram (<kbd>Home</kbd>).
+Workspace 18: Okular (<kbd>Win</kbd>+<kbd>Delete</kbd>).
+
+### Monitor 2
+Workspace 3: Bluetooth (<kbd>F3</kbd>).
+Workspace 4: WinBoat (<kbd>F4</kbd>).
+Workspace 6: WinBoat FreeRDP window for working in Word (<kbd>F6</kbd>).
+Workspace 8: Gaming, especially RuneScape or OpenRA (<kbd>F8</kbd>).
+Workspace 9: WhatsApp Web (<kbd>F9</kbd>).
+Workspace 10: Google Chat (<kbd>F10</kbd>).
+Workspace 11: Discord (<kbd>F11</kbd>).
+Workspace 12: Boo (<kbd>F12</kbd>).
+Workspace 13: Nautilus file manager (<kbd>Win</kbd>+<kbd>Print</kbd>).
+Workspace 14: Video player (<kbd>Pause</kbd>).
+Workspace 27: Brave Tor.
+
 
 # History
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
