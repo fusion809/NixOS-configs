@@ -94,7 +94,11 @@
             "phone": "",
             "portable": "",
             "car": "",
-            "default": ["", "", ""]
+            "default": [
+                "",
+                "",
+                ""
+            ]
         },
         "on-click": "pavucontrol"
     },
@@ -278,9 +282,10 @@
         "signal": 8,
         "interval": 60
     },
-    "custom/clock": {
-        "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/clock",
+    "clock": {
+        "timezone": "Australia/Brisbane",
+        "tooltip-format": "<big>{:%I:%M:%S%p %a %d/%m/%y}</big>\n<tt><small>{calendar}</small></tt>",
+        "format": "{:%I:%M:%S%p %a %d/%m}",
         "interval": 1
     },
     "power-profiles-daemon": {

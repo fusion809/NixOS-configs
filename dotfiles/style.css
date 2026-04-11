@@ -607,13 +607,14 @@ window#waybar.hidden {
 }
 
 /* Module: clock */
-#custom-clock {
+#clock {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 2px;
   font-family: JetBrainsMono Nerd Font;
-  background-color: violet;
-  color: #000000;
+  font-weight: bold;
+  background-color: #ff4444;
+  color: #ffffff;
 }
 
 /* -----------------------------------------------------------------------------

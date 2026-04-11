@@ -5,13 +5,16 @@
         "layer": "top",
         "exclusive": true,
         "spacing": 4,
-        "include": ["/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"],
+        "include": [
+            "/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"
+        ],
         "modules-left": [
             "custom/nixosicon",
             "hyprland/workspaces",
             "custom/weather",
             "custom/keyboard-layout",
             "pulseaudio",
+            "custom/uptime",
             "custom/wallpaper-no",
             "custom/wallpaper-rm",
             "custom/wallpaper-previous",
@@ -34,7 +37,7 @@
             "custom/gpu-memory",
             "custom/gpu-utilization",
             "custom/updates",
-            "custom/clock"
+            "clock"
         ]
     },
     // DVI Monitor
@@ -43,13 +46,16 @@
         "layer": "top",
         "exclusive": true,
         "spacing": 4,
-        "include": ["/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"],
+        "include": [
+            "/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"
+        ],
         "modules-left": [
             "custom/nixosicon",
             "hyprland/workspaces",
             "custom/weather",
             "custom/keyboard-layout",
             "pulseaudio",
+            "custom/uptime",
             "custom/wallpaper-no",
             "custom/wallpaper-rm",
             "custom/wallpaper-previous",
@@ -72,7 +78,7 @@
             "custom/gpu-memory",
             "custom/gpu-utilization",
             "custom/updates",
-            "custom/clock"
+            "clock"
         ]
     }
 ]

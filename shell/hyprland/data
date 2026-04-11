@@ -19,4 +19,4 @@ else
 fi
 
 # Output JSON with icon
-printf '{"text":"%s","class":"%s"}' "D$percent%" "$class"
+printf '{"text":"%s","class":"%s"}' "/data $percent%" "$class"
