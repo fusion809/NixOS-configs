@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 10 April 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-04-10.png)
-**Figure 1: Hyprland NixOS configuration as of 10 April 2026.**
+![Hyprland on NixOS screenshot as of 11 April 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-04-11.png)
+**Figure 1: Hyprland NixOS configuration as of 11 April 2026.**
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC with dual 1080p monitor setup. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
@@ -54,7 +54,7 @@ nix-build --arg pkgs '(import <nixpkgs> {})' -A engines.git
 in [nixpkgs/openra](/nixpkgs/openra/). Or simply run `openraup`. The package assumes you have a local copy of the OpenRA git repo at `${homeDir}/GitHub/others/OpenRA` (where `${homeDir}` is from `nix/lib.nix`).
 
 # Hyprland
-I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs)' Hyprland is not the latest version. It is managed by my [nix/flake.nix](nix/flake.nix) file and the [shell/hyprland/updates](/shell/hyprland/updates) script &mdash; which is run by Waybar's custom/updates widget &mdash; updates it. I also utilize the [hy3](https://github.com/outfoxxed/hy3) plugin to provide the window tabbing I am used to from i3. 
+I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs)' Hyprland is not the latest version. It is managed by my [nix/flake.nix](nix/flake.nix) file and the [shell/hyprland/updates](/shell/hyprland/updates) script &mdash; which is run by Waybar's custom/updates widget &mdash; updates it. I also utilize the [hy3](https://github.com/outfoxxed/hy3) plugin to provide the window tabbing I am used to from i3 and [hyprsession](https://github.com/joshurtree/hyprsession) to provide a backup of old sessions. 
 
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. 
 
@@ -89,19 +89,27 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>F8</kbd>                                                     | Open workspace #8     |
 | <kbd>F9</kbd>                                                     | Open workspace #9     |
 | <kbd>F10</kbd>                                                    | Open workspace #10    |
-| <kbd>F11</kbd>                                                    | Open workspace of Google Chrome.  |
-| <kbd>F12</kbd>                                                    | Open workspace of Nautilus        
+| <kbd>F11</kbd>                                                    | Open workspace #11    |
+| <kbd>F12</kbd>                                                    | Open workspace #12    |
+| <kbd>Win</kbd>+<kbd>Print</kbd>                                   | Open workspace #13    |
+| <kbd>Pause</kbd>                                                  | Open workspace #14    |
+| <kbd>Insert</kbd>                                                 | Open worksapce #15    |
+| <kbd>Home</kbd>                                                   | Open workspace #16    |
+| <kbd>Page Up</kbd>                                                | Open worksapce #17    |
+| <kbd>Win</kbd>+<kbd>Delete</kbd>                                                 | Open workspace #18    |
+| <kbd>End</kbd>                                                    | Open worksapce #19    |
+| <kbd>Page Down</kbd>                                              | Open workspace #20    |
 | <kbd>Print</kbd>                                                  | Take a screenshot and copy it to clipboard. | 
-| <kbd>Win</kbd>+<kbd>F1</kbd>                                      | Open workspace #11    |
-| <kbd>Win</kbd>+<kbd>F2</kbd>                                      | Open workspace #12    |
-| <kbd>Win</kbd>+<kbd>F3</kbd>                                      | Open workspace #13    |
-| <kbd>Win</kbd>+<kbd>F4</kbd>                                      | Open workspace #14    |
-| <kbd>Win</kbd>+<kbd>F5</kbd>                                      | Open workspace #15    |
-| <kbd>Win</kbd>+<kbd>F6</kbd>                                      | Open workspace #16    |
-| <kbd>Win</kbd>+<kbd>F7</kbd>                                      | Open workspace #17    |
-| <kbd>Win</kbd>+<kbd>F8</kbd>                                      | Open workspace #18    |
-| <kbd>Win</kbd>+<kbd>F9</kbd>                                      | Open workspace #19    |
-| <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #20    |
+| <kbd>Win</kbd>+<kbd>F1</kbd>                                      | Open workspace #21    |
+| <kbd>Win</kbd>+<kbd>F2</kbd>                                      | Open workspace #22    |
+| <kbd>Win</kbd>+<kbd>F3</kbd>                                      | Open workspace #23    |
+| <kbd>Win</kbd>+<kbd>F4</kbd>                                      | Open workspace #24    |
+| <kbd>Win</kbd>+<kbd>F5</kbd>                                      | Open workspace #25    |
+| <kbd>Win</kbd>+<kbd>F6</kbd>                                      | Open workspace #26    |
+| <kbd>Win</kbd>+<kbd>F7</kbd>                                      | Open workspace #27    |
+| <kbd>Win</kbd>+<kbd>F8</kbd>                                      | Open workspace #28    |
+| <kbd>Win</kbd>+<kbd>F9</kbd>                                      | Open workspace #29    |
+| <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #30    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>                      | Move focused window (silently) to workspace #1     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd>                      | Move focused window (silently) to workspace #2     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>3</kbd>                      | Move focused window (silently) to workspace #3     |
@@ -122,6 +130,16 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F8</kbd>                     | Move focused window (silently) to workspace #18     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F9</kbd>                     | Move focused window (silently) to workspace #19     |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F10</kbd>                    | Move focused window (silently) to workspace #20    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F11</kbd>                    | Move focused window (silently) to workspace #21    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F12</kbd>                    | Move focused window (silently) to workspace #22    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Print</kbd>                  | Move focused window (silently) to workspace #23    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Pause</kbd>                  | Move focused window (silently) to workspace #24    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Insert</kbd>                 | Move focused window (silently) to workspace #25    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Home</kbd>                   | Move focused window (silently) to workspace #26    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Up</kbd>                | Move focused window (silently) to workspace #27    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd>                 | Move focused window (silently) to workspace #28    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>End</kbd>                    | Move focused window (silently) to workspace #29    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Down</kbd>              | Move focused window (silently) to workspace #30    |
 | <kbd>Win</kbd>+<kbd>a</kbd>                                       | Expand out of tabbed mode |  
 | <kbd>Win</kbd>+<kbd>b</kbd>                                       | Open Brave. |
 | <kbd>Win</kbd>+<kbd>c</kbd>                                       | Open Google Chat Chrome app |
