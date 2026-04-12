@@ -99,7 +99,7 @@ Applications and programs autostarted include the default browser, virtual machi
 * File manager is [GNOME Files](https://apps.gnome.org/en-GB/Nautilus/), as it has among the best Wayland support of any graphical file manager. 
 * Terminal is [Alacritty](https://alacritty.org/), although [Kitty](https://sw.kovidgoyal.net/kitty/) is also installed and used for creating [Hyfetch](https://github.com/hykilpikonna/hyfetch) output-inclusive screenshots. 
 * Text editor/IDE is [Antigravity](https://antigravity.google/). [Neovim](https://neovim.io/) and [Visual Studio Code](https://code.visualstudio.com/) are also installed. 
-* Web browser is [Google Chrome](https://www.google.com/chrome/), although [Brave](https://brave.com/) is also installed. 
+* Web browser is [Google Chrome](https://www.google.com/chrome/), although [Brave](https://brave.com/) and [Firefox](https://www.firefox.com/en-US/) are also installed. 
 
 ## Keyboard shortcuts
 | Keyboard combination                                              | Action                |
