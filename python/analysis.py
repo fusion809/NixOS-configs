@@ -4,15 +4,19 @@ import subprocess
 import json
 import sys
 import shutil
+import os
 
 def main():
     if not shutil.which("scc"):
         print("Error: 'scc' is not installed or not in PATH.", file=sys.stderr)
         sys.exit(1)
 
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(script_dir)
+    
     try:
-        # Run scc and get JSON output
-        result = subprocess.run(["scc", "-f", "json"], capture_output=True, text=True, check=True)
+        # Run scc on the repository root and get JSON output
+        result = subprocess.run(["scc", "-f", "json", repo_root], capture_output=True, text=True, check=True)
         data = json.loads(result.stdout)
     except subprocess.CalledProcessError as e:
         print(f"Error running scc: {e}", file=sys.stderr)
@@ -94,7 +98,7 @@ def main():
     print(markdown_table)
     
     # Update README.md
-    readme_path = "../README.md"
+    readme_path = os.path.join(repo_root, "README.md")
     try:
         with open(readme_path, "r") as f:
             lines = f.readlines()
