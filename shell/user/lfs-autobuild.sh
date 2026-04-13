@@ -2012,9 +2012,15 @@ if [[ "$UPSTREAM" == "true" ]]; then
         log "Fetching latest mainline Linux kernel version..."
         KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1)
         if [[ -n "$KERNEL_VER" ]]; then
-            # Append .0 if version doesn't have two dots (e.g., 6.19 -> 6.19.0)
+            # User rule: if version ends in "0" and has only one dot (e.g. 7.0), no .0 is added.
+            # But if it doesn't end in "0" (e.g. 6.19), a .0 is added.
             if [[ $(echo "$KERNEL_VER" | grep -o '\.' | wc -l) -eq 1 ]]; then
-                KERNEL_VER="${KERNEL_VER}.0"
+                if [[ "$KERNEL_VER" =~ 0$ ]]; then
+                    log "Kernel version $KERNEL_VER ends in 0; keeping as-is."
+                else
+                    log "Kernel version $KERNEL_VER does not end in 0; appending .0 for consistency."
+                    KERNEL_VER="${KERNEL_VER}.0"
+                fi
             fi
             MAJOR=$(echo "$KERNEL_VER" | cut -d. -f1)
             DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VER}.tar.xz")
@@ -2315,7 +2321,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
                   sed 's/lfs-//g' | sed 's/-systemd//g')
     
     # Extract LFS kernel version from commands
-    LFS_KERNEL_VER=$(echo "$COMMANDS" | perl -nle 'while (m{linux-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+    LFS_KERNEL_VER=$(echo "$COMMANDS" | perl -nle 'while (m{linux-\K[0-9]+\.[0-9]+(\.[0-9]+)?}g) { print $& }' | head -n 1)
     
     if [[ -n "$LFS_KERNEL_VER" ]]; then
         log "Processing Linux kernel commands..."
@@ -2398,13 +2404,13 @@ fi
 
 if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from the identified main download URL (e.g. konsole-24.12.2.tar.xz)
-    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle "while (m{${PKG_BASE}-\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }" | head -n 1)
+    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle "while (m{${PKG_BASE}-\K[0-9]+(?:\.[0-9]+)+}g) { print $& }" | head -n 1)
     if [[ -z "$LFS_VERSION" ]]; then
-        LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+        LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[0-9]+(?:\.[0-9]+)+}g) { print $& }' | head -n 1)
     fi
     if [[ -z "$LFS_VERSION" ]]; then
         # Fallback
-        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{[0-9]+(?:\.[0-9]+)+}g) { print $& }' | head -n 1)
     fi
 
     if [[ -n "$LFS_VERSION" ]]; then
@@ -2457,12 +2463,12 @@ fi
 
 if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "libuv" && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from HTML content (before it gets overwritten or supplemented)
-    LFS_VERSION=$(echo "$HTML_CONTENT" | perl -nle 'while (m{libuv-v\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+    LFS_VERSION=$(echo "$HTML_CONTENT" | perl -nle 'while (m{libuv-v\K[0-9]+(?:\.[0-9]+)+}g) { print $& }' | head -n 1)
     if [[ -z "$LFS_VERSION" ]]; then
-        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{libuv-v\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{libuv-v\K[0-9]+(?:\.[0-9]+)+}g) { print $& }' | head -n 1)
     fi
     if [[ -z "$LFS_VERSION" ]]; then
-        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{v\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | head -n 1)
+        LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{v\K[0-9]+(?:\.[0-9]+)+}g) { print $& }' | head -n 1)
     fi
     if [[ -n "$LFS_VERSION" ]]; then
         log "Replacing LFS libuv version $LFS_VERSION with $UPSTREAM_VERSION in commands and URLs..."
@@ -2577,7 +2583,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" && -n "$UPSTREAM_VERSION" ]]
     FOUND_VERSIONS=()
     while IFS= read -r v; do
         [[ -n "$v" ]] && FOUND_VERSIONS+=("$v")
-    done < <(echo "$COMMANDS ${DOWNLOAD_URLS[*]}" | perl -nle 'while (m{[0-9]+\.[0-9]+\.[0-9]+}g) { print "$&\n" }' | sort -u)
+    done < <(echo "$COMMANDS ${DOWNLOAD_URLS[*]}" | perl -nle 'while (m{[0-9]+(?:\.[0-9]+)+}g) { print "$&\n" }' | sort -u)
     for v in "${FOUND_VERSIONS[@]}"; do
         [[ -z "$v" ]] && continue
         if [[ "$v" != "$UPSTREAM_VERSION" ]]; then
@@ -3153,6 +3159,24 @@ for url in "${DOWNLOAD_URLS[@]}"; do
                             break
                         fi
                     done
+                    
+                    # Second Fallback: Strip redundant .0 from point-zero releases (x.y.0 -> x.y)
+                    if [ "$success" = "false" ] && [[ "$base_url_no_ext" == *".0" ]]; then
+                        alt_ver_base=$(echo "$base_url_no_ext" | sed 's/\.0$//')
+                        echo "Attempting version fallback (stripping .0): $alt_ver_base"
+                        for ext in .tar.xz .tar.gz .tar.bz2 .tar.lz .zip; do
+                            alt_url="${alt_ver_base}${ext}"
+                            echo "Trying: $alt_url"
+                            if wget -T 30 -t 2 "$alt_url"; then
+                                MAIN_FILENAME=$(basename "$alt_url")
+                                ALL_FILENAMES+=("$MAIN_FILENAME")
+                                echo "Successfully downloaded version fallback: $MAIN_FILENAME"
+                                success=true
+                                break
+                            fi
+                        done
+                    fi
+                    
                     if [ "$success" = "false" ]; then
                         echo "[ERROR] Could not download primary archive or any common fallbacks."
                         exit 1
