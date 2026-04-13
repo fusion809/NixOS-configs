@@ -1262,5 +1262,5 @@ DEPEOF
             echo "Warning: Some packages are still missing file inventories. Skipping commit."
         fi
     fi
-    ssh_lfs "upos"
+    ssh_lfs "zsh -ic upos"
 }
