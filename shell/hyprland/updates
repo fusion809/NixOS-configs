@@ -145,12 +145,9 @@ fi
 if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 	old_rev=$(jq -r '.nodes."nixpkgs-master".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
 	
-	# Automatically extract master package names from packages.nix
-	master_pkgs=$(grep -o 'master\.[a-zA-Z0-9_-]*' $NIXCFG/nix/packages.nix | sed 's/master\.//' | sort -u | tr '\n' ' ')
-	
-	# Compare master packages
-	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$old_rev\"; packageNames = \"$master_pkgs\"; }")
-	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"master\"; masterRev = \"$curr_m\"; packageNames = \"$master_pkgs\"; masterPath = \"$path_m\"; }")
+	# Check if packages changed (keeping stable/unstable/oldstable constant)
+	old_out=$(check_packages "$curr_s" "$curr_u" "$old_rev" "$curr_os" "$curr_vim" "$path_s" "$path_u" "" "$path_os" "$path_vim")
+	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_os" "$path_vim")
 
 	# Log only the differences
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
@@ -287,88 +284,27 @@ nixcg_log="$HOME/.cache/nixcg.$current_date"
 } > "$nixcg_log" 2>&1
 
 if [[ ${#pushStr} -gt 0 ]]; then
-	# Get current list of modified files
-	files_after=$(git -C $NIXCFG diff --name-only | sort)
-	
-	# Files that were already modified before the script ran
-	# These are OK because they're not the script's responsibility
-	files_already_modified="$files_before"
-	
-	# Check each modified file
-	safe_to_push=true
-	
-	for file in $(echo "$files_after"); do
-		# flake.lock is always OK for the script to modify
-		if [[ "$file" == "nix/flake.lock" ]]; then
-			continue
-		fi
+	# We only want to commit files we explicitly checked or managed
+	files_to_commit=()
 
+	if git -C $NIXCFG diff --name-only | grep -q "^nix/flake.lock$"; then
+		files_to_commit+=("nix/flake.lock")
+	fi
 
-		# marvin package.nix is OK
-		if [[ "$file" == "nixpkgs/marvin/package.nix" ]]; then
-			continue
-		fi
+	if git -C $NIXCFG diff --name-only | grep -q "^nixpkgs/marvin/package.nix$"; then
+		files_to_commit+=("nixpkgs/marvin/package.nix")
+	fi
 
-		# # antigravity files are OK
-		# if [[ "$file" == "nixpkgs/antigravity/package.nix" ]] || [[ "$file" == "nixpkgs/antigravity/update.js" ]] || [[ "$file" == "nixpkgs/antigravity/information.json" ]]; then
-		# 	continue
-		# fi
+	if git -C $NIXCFG diff --name-only | grep -q "^nixpkgs/openra/engines/git/default.nix$"; then
+		files_to_commit+=("nixpkgs/openra/engines/git/default.nix")
+	fi
 
-		# openra files are OK
-		if [[ "$file" == "nixpkgs/openra/engines/git/default.nix" ]]; then
-			continue
-		fi
-
-		# Skip files that were already modified before the script ran
-		if echo "$files_already_modified" | grep -q "^${file}$"; then
-			echo "Skipping push: file '$file' was already modified before script ran"
-			safe_to_push=false
-			break
-		fi
-		
-		# For flake.nix, check if changes are ONLY the hy3/hyprland URL updates
-		if [[ "$file" == "nix/flake.nix" ]]; then
-			# Get the diff for flake.nix
-			diff_output=$(git -C $NIXCFG diff nix/flake.nix)
-			
-			# Extract only the changed lines (lines starting with + or -)
-			# Exclude the +++ and --- header lines
-			changed_lines=$(echo "$diff_output" | grep -E '^[+-]' | grep -v -E '^(---|\+\+\+)')
-			
-			# Check if all changes match the expected patterns
-			# Expected patterns: lines with hy3 or Hyprland URLs with version tags
-			while IFS= read -r line; do
-				# Skip empty lines
-				[[ -z "$line" ]] && continue
-				
-				# Check if line is a hy3 or Hyprland URL change
-				if echo "$line" | grep -qE '(github.com/outfoxxed/hy3\?ref=refs/tags/|github.com/hyprwm/Hyprland\?submodules=1&ref=refs/tags/)'; then
-					continue
-				else
-					echo "Skipping push: flake.nix has unexpected changes:"
-
-					echo "$line"
-					safe_to_push=false
-					break
-				fi
-			done <<< "$changed_lines"
-			
-			[[ "$safe_to_push" == "false" ]] && break
-		else
-			# Any other file is unexpected
-			echo "Skipping push: unexpected file modified: $file"
-			safe_to_push=false
-			break
-		fi
-	done
-	
-	echo "safe_to_push=$safe_to_push"
-
-	if [[ "$safe_to_push" == "true" ]]; then
-		# Only script-made changes exist, safe to push
-		git -C $NIXCFG add --all
+	if [[ ${#files_to_commit[@]} -gt 0 ]]; then
+		git -C $NIXCFG add "${files_to_commit[@]}"
 		git -C $NIXCFG commit -m "$pushStr"
 		git -C $NIXCFG push origin $(git -C $NIXCFG rev-parse --abbrev-ref HEAD)
+	else
+		echo "No script-managed changes detected to push."
 	fi
 fi
 
