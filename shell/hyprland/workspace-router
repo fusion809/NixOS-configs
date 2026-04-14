@@ -83,19 +83,31 @@ handle() {
 
     elif [[ "$w_class" == "virt-viewer" ]] || ( [[ "$w_class" == ".virt-manager-wrapped" ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
        (
+           is_floating=$(hyprctl clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating')
+           echo "DEBUG virt: addr=0x$w_address class=$w_class title=$w_title is_floating=$is_floating" >> "$LOGFILE"
+           if [[ "$is_floating" == "true" ]]; then
+               echo "DEBUG virt: floating → skipping routing" >> "$LOGFILE"
+               exit 0
+           fi
+
+           count_28=$(hyprctl workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
            count_29=$(hyprctl workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
            count_30=$(hyprctl workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
            
-           if [ "$count_29" -eq 0 ]; then
+           if [ "$count_28" -eq 0 ]; then
+               target=28
+           elif [ "$count_29" -eq 0 ]; then
                target=29
            elif [ "$count_30" -eq 0 ]; then
                target=30
            else
-               target=$(echo -e "29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
+               target=$(echo -e "28\n29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
            fi
 
+           echo "DEBUG virt: routing to target=$target" >> "$LOGFILE"
            if [[ -n "$target" ]]; then
                hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
+               hyprctl dispatch workspace "$target"
            fi
        ) &
     fi

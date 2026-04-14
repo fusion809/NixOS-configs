@@ -2012,19 +2012,15 @@ if [[ "$UPSTREAM" == "true" ]]; then
         log "Fetching latest mainline Linux kernel version..."
         KERNEL_VER=$(curl -s https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1)
         if [[ -n "$KERNEL_VER" ]]; then
-            # User rule: if version ends in "0" and has only one dot (e.g. 7.0), no .0 is added.
-            # But if it doesn't end in "0" (e.g. 6.19), a .0 is added.
-            if [[ $(echo "$KERNEL_VER" | grep -o '\.' | wc -l) -eq 1 ]]; then
-                if [[ "$KERNEL_VER" =~ 0$ ]]; then
-                    log "Kernel version $KERNEL_VER ends in 0; keeping as-is."
-                else
-                    log "Kernel version $KERNEL_VER does not end in 0; appending .0 for consistency."
-                    KERNEL_VER="${KERNEL_VER}.0"
-                fi
-            fi
             MAJOR=$(echo "$KERNEL_VER" | cut -d. -f1)
-            DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VER}.tar.xz")
-            UPSTREAM_VERSION="$KERNEL_VER"
+            # Use 2-part version for download (7.0) but 3-part for identification (7.0.0)
+            DOWNLOAD_VER="$KERNEL_VER"
+            if [[ $(echo "$KERNEL_VER" | grep -o '\.' | wc -l) -eq 1 ]]; then
+                UPSTREAM_VERSION="${KERNEL_VER}.0"
+            else
+                UPSTREAM_VERSION="$KERNEL_VER"
+            fi
+            DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${DOWNLOAD_VER}.tar.xz")
         fi
     elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
@@ -2333,6 +2329,14 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
         # Replace kernel version strings
         COMMANDS="${COMMANDS//$LFS_KERNEL_VER/$UPSTREAM_VERSION}"
         
+        # If we standardized to x.y.0, filenames and directories in commands 
+        # must still use the x.y naming since that's how they are archived/extracted.
+        if [[ "$UPSTREAM_VERSION" =~ \.0$ ]]; then
+            SHORT_VER="${UPSTREAM_VERSION%.0}"
+            log "Adjusting filenames/directories in commands to use $SHORT_VER..."
+            COMMANDS="${COMMANDS//linux-$UPSTREAM_VERSION/linux-$SHORT_VER}"
+        fi
+        
         # Replace LFS release version in vmlinuz path (e.g., r12.4-84)
         if [[ -n "$LFS_RELEASE" ]]; then
             # Extract old LFS release from commands (pattern: lfs-rX.Y.Z-NN)
@@ -2365,7 +2369,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
         # Add initramfs generation after make modules_install
         # Add grub-mkconfig after vmlinuz copy
         COMMANDS=$(echo "$COMMANDS" | awk -v ver="$UPSTREAM_VERSION" -v lfs_rel="$LFS_RELEASE" '
-            /^make modules_install/ {
+            /^[[:space:]]*make modules_install[[:space:]]*$/ {
                 print
                 print ""
                 print "mkinitramfs " ver
@@ -2373,12 +2377,16 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "linux" && -n "$UPSTREAM_VERSION" ]
                 next
             }
             /^cp -iv arch\/x86\/boot\/bzImage \/boot\/vmlinuz-/ {
+                sub(/-iv/, "-v")
                 print
                 print ""
                 print "grub-mkconfig -o /boot/grub/grub.cfg"
                 next
             }
-            { print }
+            { 
+                if ($0 ~ /^cp -iv/) sub(/-iv/, "-v")
+                print 
+            }
         ')
     fi
 fi
@@ -2702,7 +2710,7 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && "$PACKAGE" != "rustc" ]
         # If it is an archive for this package but has a different version, skip it.
         # We check for .tar.*, .zip, .tgz to avoid accidentally skipping patches.
         if [[ "$fname" =~ ^${PKG_BASE}[-_]?[0-9] ]] && [[ "$fname" =~ \.(tar\.[a-z2]+|zip|tgz)$ ]]; then
-            if [[ "$fname" == *"$UPSTREAM_VERSION"* ]]; then
+            if [[ "$fname" == *"$UPSTREAM_VERSION"* ]] || { [[ "$UPSTREAM_VERSION" =~ \.0$ ]] && [[ "$fname" == *"${UPSTREAM_VERSION%.0}"* ]]; }; then
                 NEW_URLS+=("$url")
             else
                 log "Pruning redundant stable version: $fname"
@@ -3320,7 +3328,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
     if [ -f "$MAIN_FILENAME" ]; then
         echo "Enriching inventory from archive manifest for $PACKAGE..."
-        local enrich_tmp="/tmp/enrich_${PACKAGE}"
+        enrich_tmp="/tmp/enrich_${PACKAGE}"
         rm -f "$enrich_tmp"
         tar -tf "$MAIN_FILENAME" | sed 's|^[^/]*||; s|^/||' | while read f; do
             [ -z "$f" ] && continue

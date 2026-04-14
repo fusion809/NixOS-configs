@@ -82,6 +82,78 @@ cleanup_old_libraries() {
     ssh_lfs "source ~/.zshrc ; cleanup_old_libraries_gpt"
 }
 
+# Remove /usr/share/doc directories belonging to superseded package versions.
+# A directory is deleted only when BOTH conditions hold:
+#   1. A newer versioned directory for the same package base name exists in
+#      /usr/share/doc  (e.g. cmake-3.29.0 alongside cmake-3.28.1)
+#   2. The directory path is NOT listed in any file under
+#      /var/lib/book-packages or /var/lib/custom-packages
+#
+# Examples:
+#   zsh-5.9  alone (no zsh-5.10 present)  → always kept, regardless of registry
+#   cmake-3.28.1 alongside cmake-3.29.0, not in registry → deleted
+#   cmake-3.28.1 alongside cmake-3.29.0, listed in registry → kept
+#
+# Run directly inside the LFS VM, or use cleanup_old_doc_dirs from the host.
+cleanup_old_doc_dirs_gpt() {
+    local doc_root="/usr/share/doc"
+    local dry_run=false
+    for arg in "$@"; do
+        case "$arg" in
+            --dry-run) dry_run=true ;;
+            /*) doc_root="$arg" ;;
+        esac
+    done
+    [[ "$dry_run" == "true" ]] && echo "[DRY RUN] No files will be deleted."
+    echo "Scanning $doc_root for stale old-version directories..."
+
+    # Pass 1: determine the newest versioned dir for each package base name.
+    declare -A latest=()
+    local dir base pkg_base
+    while IFS= read -r dir; do
+        base=$(basename "$dir")
+        pkg_base=$(echo "$base" | sed -E 's/-[0-9][0-9a-zA-Z._+-]*$//')
+        [[ "$pkg_base" == "$base" ]] && continue   # no version suffix → skip
+        latest["$pkg_base"]="$dir"                 # sort -V: last wins = newest
+    done < <(find "$doc_root" -mindepth 1 -maxdepth 1 -type d | sort -V)
+
+    # Pass 2: for every versioned dir that is NOT the newest for its base,
+    # delete it only if it is not listed in any package registry file.
+    local removed=0 kept_registered=0
+    while IFS= read -r dir; do
+        base=$(basename "$dir")
+        pkg_base=$(echo "$base" | sed -E 's/-[0-9][0-9a-zA-Z._+-]*$//')
+        [[ "$pkg_base" == "$base" ]] && continue
+
+        # Condition 1: is there a newer dir for this package?
+        [[ "${latest[$pkg_base]}" == "$dir" ]] && continue   # this IS the newest → keep
+
+        # Condition 2: is this dir listed in any registry file?
+        if grep -qrl "^${dir}" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null; then
+            echo "Keeping $base (older but listed in registry)"
+            kept_registered=$((kept_registered + 1))
+            continue
+        fi
+
+        # Older AND not in registry → stale, safe to delete.
+        echo "Removing stale: $base  (newer: $(basename "${latest[$pkg_base]}"))"
+        if [[ "$dry_run" == "false" ]]; then
+            sudo rm -rf -- "$dir"
+        fi
+        removed=$((removed + 1))
+    done < <(find "$doc_root" -mindepth 1 -maxdepth 1 -type d | sort -V)
+
+    echo "---"
+    echo "Removed          : $removed"
+    echo "Kept (registered): $kept_registered"
+}
+
+# Host-side wrapper: ships the function to the LFS VM and runs it there.
+cleanup_old_doc_dirs() {
+    ssh_lfs "$(declare -f cleanup_old_doc_dirs_gpt); cleanup_old_doc_dirs_gpt $*"
+}
+
+
 cleanup_old_libraries_gpt() {
     local dep_cache="/tmp/lfs_dep_cache.txt"
     local pkg_cache="/tmp/lfs_pkg_cache.txt"
