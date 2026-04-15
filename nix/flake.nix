@@ -53,18 +53,6 @@
               extraSpecialArgs = { inherit inputs username; };
             };
           }
-          {
-            nixpkgs.overlays = [
-              (final: prev: {
-                hyprland = final.master.hyprland;
-                hyprlandPlugins = prev.hyprlandPlugins // {
-                  hy3 = final.master.hyprlandPlugins.hy3;
-                };
-                hyprsession = inputs.hyprsession.packages.${prev.system}.default;
-              })
-            ];
-          }
-
         ];
       };
     };

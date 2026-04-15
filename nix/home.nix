@@ -47,6 +47,7 @@
     EDITOR = "vim";
     USER = username;
     NIXCFG = "/home/${username}/GitHub/mine/config/NixOS-configs";
+    NIXOS_OZONE_WL = "1";
   };
 
   # Let Home Manager install and manage itself.

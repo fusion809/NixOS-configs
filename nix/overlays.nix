@@ -24,6 +24,12 @@
       openra-git = openraPackages.engines.git; # Access the git engine directly
       marvin = callPackage (forkNixpkgsPath + /marvin/package.nix) { };
 
+      hyprland = pkgs.master.hyprland;
+      hyprlandPlugins = super.hyprlandPlugins // {
+        hy3 = pkgs.master.hyprlandPlugins.hy3;
+      };
+      hyprsession = inputs.hyprsession.packages.${super.stdenv.hostPlatform.system}.default or null;
+
       vim-latest = pkgs.master.vim.overrideAttrs (oldAttrs: {
         version = "latest";
         src = inputs.vim-src;

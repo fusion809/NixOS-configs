@@ -106,6 +106,7 @@ with pkgs; [
   gnome-mahjongg
   gnuchess
   kdePackages.kmines
+  lutris
   openra-git
   space-cadet-pinball
   superTux

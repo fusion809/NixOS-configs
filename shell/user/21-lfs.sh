@@ -55,9 +55,11 @@ lfs_autobuild() {
         ssh_lfs "cat > ~/.lfs_scripts/lfs-vm-bootstrap.sh" \
             < "$NIXCFG/shell/user/lfs-vm-bootstrap.sh"
         ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
+        echo "Building $@..." | tee -a "$logfile" >/dev/null
         ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")" 2>&1 | tee -a "$logfile"
     else
         # Running directly on the VM, no syncing needed, just execute it locally
+        echo "Building $@..." | tee -a "$logfile" >/dev/null
         bash ~/.lfs_autobuild.sh "$@" 2>&1 | tee -a "$logfile"
     fi
 }
@@ -1326,12 +1328,25 @@ DEPEOF
     # Git commit and push if everything is healthy
     if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
         echo "Checking system health before committing updates..."
-        local broken=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && echo 1; done')
-        if [[ -z "$broken" ]]; then
+        local broken_pkgs=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done')
+        if [[ -z "$broken_pkgs" ]]; then
             echo "System healthy. Triggering automated registry commit..."
             ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit'"
         else
-            echo "Warning: Some packages are still missing file inventories. Skipping commit."
+            echo "Warning: The following packages are missing inventories:"
+            echo "$broken_pkgs"
+            echo "--------------------------------------------------------------------------------"
+            while read -r pkg; do
+                [[ -z "$pkg" ]] && continue
+                echo ">>> Last 5 lines of output for $pkg:"
+                if [[ -f "/tmp/lfs-autobuild.log" ]]; then
+                    sed -n "/Building .*$pkg\.\.\./,/Building /p" /tmp/lfs-autobuild.log | grep -v "Building " | tail -n 5
+                else
+                    echo "  Log file /tmp/lfs-autobuild.log not found."
+                fi
+                echo "--------------------------------------------------------------------------------"
+            done <<< "$broken_pkgs"
+            echo "Skipping commit."
         fi
     fi
     ssh_lfs "zsh -ic upos"

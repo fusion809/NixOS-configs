@@ -135,10 +135,12 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 	new_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$curr_hm\"; hmPath = \"$path_hm\"; }")
 	# Treat paths as single-item arrays to match diff style
 	diff_out=$(jq -n --arg old "$old_out" --arg new "$new_out" 'if $old == $new then [] else [$new] end')
-	if [[ "$diff_out" != "[]" ]]; then
+	if [[ "$diff_out" != "[]" ]] && [[ -n "$diff_out" ]]; then
 		echo "home-manager changes: $diff_out"
-		count=$(echo "$diff_out" | jq 'length')
-		add_symbol "h$count"
+		count=$(echo "$diff_out" | jq 'length' 2>/dev/null)
+		if [[ -n "$count" ]]; then
+			add_symbol "h$count"
+		fi
 	fi
 fi
 
@@ -151,10 +153,12 @@ if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 
 	# Log only the differences
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
-	if [[ "$diff_out" != "[]" ]]; then
+	if [[ "$diff_out" != "[]" ]] && [[ -n "$diff_out" ]]; then
 		echo "master changes: $diff_out"
-		count=$(echo "$diff_out" | jq 'length')
-		add_symbol "m$count"
+		count=$(echo "$diff_out" | jq 'length' 2>/dev/null)
+		if [[ -n "$count" ]]; then
+			add_symbol "m$count"
+		fi
 	fi
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
@@ -166,10 +170,12 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_os" "$path_vim")
 	# Log only the differences
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
-	if [[ "$diff_out" != "[]" ]]; then
+	if [[ "$diff_out" != "[]" ]] && [[ -n "$diff_out" ]]; then
 		echo "stable changes: $diff_out"
-		count=$(echo "$diff_out" | jq 'length')
-		add_symbol "s$count"
+		count=$(echo "$diff_out" | jq 'length' 2>/dev/null)
+		if [[ -n "$count" ]]; then
+			add_symbol "s$count"
+		fi
 	fi
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs-oldstable "* ]]; then
@@ -180,10 +186,12 @@ if [[ " ${changed_nodes} " == *" nixpkgs-oldstable "* ]]; then
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_os" "$path_vim")
 	# Log only the differences
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
-	if [[ "$diff_out" != "[]" ]]; then
+	if [[ "$diff_out" != "[]" ]] && [[ -n "$diff_out" ]]; then
 		echo "oldstable changes: $diff_out"
-		count=$(echo "$diff_out" | jq 'length')
-		add_symbol "o$count"
+		count=$(echo "$diff_out" | jq 'length' 2>/dev/null)
+		if [[ -n "$count" ]]; then
+			add_symbol "o$count"
+		fi
 	fi
 fi
 if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
@@ -194,10 +202,12 @@ if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
 	new_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "$path_u" "$path_m" "$path_os" "$path_vim")
 	# Log only the differences
 	diff_out=$(jq -n --argjson old "$old_out" --argjson new "$new_out" '($new - $old)')
-	if [[ "$diff_out" != "[]" ]]; then
+	if [[ "$diff_out" != "[]" ]] && [[ -n "$diff_out" ]]; then
 		echo "unstable changes: $diff_out"
-		count=$(echo "$diff_out" | jq 'length')
-		add_symbol "u$count"
+		count=$(echo "$diff_out" | jq 'length' 2>/dev/null)
+		if [[ -n "$count" ]]; then
+			add_symbol "u$count"
+		fi
 	fi
 fi
 
