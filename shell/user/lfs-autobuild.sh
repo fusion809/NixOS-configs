@@ -793,6 +793,7 @@ get_commands() {
         grep -vEi '(---[>]|Options ---[>]|^\s*\[[ *]*\] )' | \
         grep -vE '^rm /etc/resolv\.conf$' | \
         grep -vE '^\s*\.{3,}\s*$' | \
+        grep -vE '\[[A-Z0-9_]{3,}\]$|--->' | \
         grep -vE '^(\s*<[*/]?(M|Y|N)>\s+.*\[.*\]\s*$|.*--->\s*\[.*\]|.*\[USB_|.*\[PARPORT)' | \
         grep -vE '^[[:space:]]*(and[[:space:]]*)?(CONFIG_[A-Z0-9_]+[,[:space:]]*(and[[:space:]]*)?)+[[:space:]]*$' | \
         sed 's/yes | cpan -i/yes | sudo cpan -i/g' | \
@@ -962,7 +963,7 @@ while IFS= read -r line; do
 
         # 3. Skip kernel configuration blocks from BLFS 'Kernel Configuration' sections
         # These contain <*/M> notation for kconfig options and are NOT shell commands
-        if grep -qE '<\*/M>|<\*>|<M>[[:space:]]+[A-Z_]+$|\[USB_|USB_PRINTER\]|\[PARPORT' <<< "$CURRENT_BLOCK"; then
+        if grep -qE '<\*/M>|<\*>|<M>[[:space:]]+[A-Z_]+$|\[USB_|USB_PRINTER\]|\[PARPORT|\[DRM\]' <<< "$CURRENT_BLOCK"; then
             log "Skipping kernel configuration block." >&2
             continue
         fi

@@ -1328,13 +1328,13 @@ DEPEOF
     # Git commit and push if everything is healthy
     if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
         echo "Checking system health before committing updates..."
-        local broken_pkgs=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done')
-        if [[ -z "$broken_pkgs" ]]; then
+        local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done')
+        if [[ -z "$broken_pkgs_check" ]]; then
             echo "System healthy. Triggering automated registry commit..."
             ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit'"
         else
             echo "Warning: The following packages are missing inventories:"
-            echo "$broken_pkgs"
+            echo "$broken_pkgs_check"
             echo "--------------------------------------------------------------------------------"
             while read -r pkg; do
                 [[ -z "$pkg" ]] && continue
@@ -1345,7 +1345,7 @@ DEPEOF
                     echo "  Log file /tmp/lfs-autobuild.log not found."
                 fi
                 echo "--------------------------------------------------------------------------------"
-            done <<< "$broken_pkgs"
+            done <<< "$broken_pkgs_check"
             echo "Skipping commit."
         fi
     fi
