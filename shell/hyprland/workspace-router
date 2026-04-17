@@ -8,6 +8,7 @@ else
 fi
 
 LOGFILE="/tmp/workspace-router.log"
+HYPRCTL="$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/tools/hyprctl-fixed.sh"
 
 handle() {
   echo "Event: $1" >> "$LOGFILE"
@@ -23,12 +24,12 @@ handle() {
         else
             target=15
         fi
-        hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
+        $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
 
     elif [[ "$w_class" == "vlc" ]]; then
        (
-           count_25=$(hyprctl workspaces -j | jq 'map(select(.id == 25)) | .[0].windows // 0')
-           count_26=$(hyprctl workspaces -j | jq 'map(select(.id == 26)) | .[0].windows // 0')
+           count_25=$($HYPRCTL workspaces -j | jq 'map(select(.id == 25)) | .[0].windows // 0')
+           count_26=$($HYPRCTL workspaces -j | jq 'map(select(.id == 26)) | .[0].windows // 0')
            
            if [ "$count_25" -eq 0 ]; then
                target=25
@@ -39,31 +40,31 @@ handle() {
            else
                target=26
            fi
-           hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
+           $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
        ) &
 
     elif [[ "$w_class" == "google-chrome" ]]; then
        (
            # Priority routing for specific titles
            if [[ "$w_title" == *"PBS Job"* ]] || [[ "$w_title" == *"u1126705@umail.usq.edu.au"* ]]; then
-               chrome_on_7=$(hyprctl clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 7)] | length')
+               chrome_on_7=$($HYPRCTL clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 7)] | length')
                if [ "$chrome_on_7" -eq 0 ]; then
-                   hyprctl dispatch movetoworkspacesilent "7,address:0x$w_address"
+                   $HYPRCTL dispatch movetoworkspacesilent "7,address:0x$w_address"
                    exit 0
                fi
            elif [[ "$w_title" == *"Boo"* ]]; then
-               chrome_on_12=$(hyprctl clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 12)] | length')
+               chrome_on_12=$($HYPRCTL clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 12)] | length')
                if [ "$chrome_on_12" -eq 0 ]; then
-                   hyprctl dispatch movetoworkspacesilent "12,address:0x$w_address"
+                   $HYPRCTL dispatch movetoworkspacesilent "12,address:0x$w_address"
                    exit 0
                fi
            fi
 
            # Automatic check for empty workspaces using window count
-           count_1=$(hyprctl workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
-           count_14=$(hyprctl workspaces -j | jq 'map(select(.id == 14)) | .[0].windows // 0')
+           count_1=$($HYPRCTL workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
+           count_14=$($HYPRCTL workspaces -j | jq 'map(select(.id == 14)) | .[0].windows // 0')
            
-           existing_title_1=$(hyprctl clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
+           existing_title_1=$($HYPRCTL clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
            if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
                target=1
            elif [ "$count_14" -eq 0 ]; then
@@ -77,22 +78,22 @@ handle() {
            fi
 
            if [[ -n "$target" ]]; then
-               hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
+               $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
            fi
        ) &
 
     elif [[ "$w_class" == "virt-viewer" ]] || ( [[ "$w_class" == ".virt-manager-wrapped" ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
        (
-           is_floating=$(hyprctl clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating')
+           is_floating=$($HYPRCTL clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating')
            echo "DEBUG virt: addr=0x$w_address class=$w_class title=$w_title is_floating=$is_floating" >> "$LOGFILE"
            if [[ "$is_floating" == "true" ]]; then
                echo "DEBUG virt: floating → skipping routing" >> "$LOGFILE"
                exit 0
            fi
 
-           count_28=$(hyprctl workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
-           count_29=$(hyprctl workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
-           count_30=$(hyprctl workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
+           count_28=$($HYPRCTL workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
+           count_29=$($HYPRCTL workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
+           count_30=$($HYPRCTL workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
            
            if [ "$count_28" -eq 0 ]; then
                target=28
@@ -106,11 +107,19 @@ handle() {
 
            echo "DEBUG virt: routing to target=$target" >> "$LOGFILE"
            if [[ -n "$target" ]]; then
-               hyprctl dispatch movetoworkspacesilent "$target,address:0x$w_address"
-               hyprctl dispatch workspace "$target"
+               $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
+               $HYPRCTL dispatch workspace "$target"
            fi
        ) &
-    fi
+
+    elif [[ "$w_class" == "steam_app_1343400" ]]; then
+       (
+           # RuneScape (steam_app_1343400) - move to workspace 8 silently
+           target=8
+           $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
+           echo "Routed RuneScape (0x$w_address) to workspace $target" >> "$LOGFILE"
+       ) &
+     fi
   fi
 }
 

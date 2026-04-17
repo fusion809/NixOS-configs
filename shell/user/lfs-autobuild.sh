@@ -1367,10 +1367,13 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     
     # 2. Universal injection for Autotools (Safe flags only)
     if [[ "$COMMANDS" == *"./configure"* || "$COMMANDS" == *"../configure"* ]]; then
-        # Use only --disable-doc which is safer across custom scripts like ffmpeg
-        # Autoconf based ones often use --disable-docs (plural) but almost all honor --disable-doc 
-        # or ignore unknown flags. ffmpeg is the exception that fails on unknown ones.
-        COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "s/configure/configure --disable-doc/g")
+        # Use --disable-doc and --disable-docs to cover more packages.
+        # ffmpeg is the exception that fails on unknown flags; it only supports --disable-doc.
+        if [[ "$PACKAGE" == "ffmpeg" ]]; then
+            COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "s/configure/configure --disable-doc/g")
+        else
+            COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "s/configure/configure --disable-doc --disable-docs/g")
+        fi
     fi
     
     if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
