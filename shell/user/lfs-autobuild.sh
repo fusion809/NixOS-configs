@@ -151,6 +151,17 @@ if [[ ${#PACKAGES[@]} -eq 0 ]]; then
 fi
 
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
+
+# Synchronize clock to prevent build errors from time skew
+if [[ "$DRY_RUN" == "false" ]]; then
+    if [[ "$HOST_MODE" == "true" ]]; then
+        log "Synchronizing LFS guest clock to host..."
+        ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
+    else
+        log "Synchronizing LFS clock from hardware clock..."
+        as_root hwclock -s >/dev/null 2>&1
+    fi
+fi
 error() { echo "[ERROR] $*" >&2; echo "$COMMANDS" > /tmp/cmds_final.out; exit 1; }
 
 # Guard against circular dependencies across recursive invocations
@@ -3271,7 +3282,8 @@ else
                 fi
             fi
             # Flatten archives that extract into a single nested subfolder (common when archives have a leading ./ prefix)
-            if [[ $(ls -A "$TARGET_DIR" | wc -l) -eq 1 ]] && [[ -d "$TARGET_DIR/$(ls -A "$TARGET_DIR")" ]]; then
+            # Skip this for NSS as its build system and book commands expect the nested nss/ directory
+            if [[ $(ls -A "$TARGET_DIR" | wc -l) -eq 1 ]] && [[ -d "$TARGET_DIR/$(ls -A "$TARGET_DIR")" ]] && [[ "$PACKAGE" != "nss" ]]; then
                 SUBDIR=$(ls -A "$TARGET_DIR")
                 echo "Detected nested directory '$SUBDIR' after extraction. Moving contents up."
                 mv "$TARGET_DIR/$SUBDIR"/{.[!.]*,*} "$TARGET_DIR/" 2>/dev/null || true

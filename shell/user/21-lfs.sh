@@ -37,6 +37,10 @@ lfs_sync_to_vm() {
 
 lfs_autobuild() {
     local logfile="/tmp/lfs-autobuild.log"
+    # Truncate log if it exceeds 100MB to keep searches fast
+    if [[ -f "$logfile" ]] && [[ $(stat -c%s "$logfile") -gt 104857600 ]]; then
+        echo "--- Log truncated at $(date) (over 100MB) ---" > "$logfile"
+    fi
     echo "--- Build session starting at $(date) ---" | tee -a "$logfile" >/dev/null
     
     # Only source SSH helpers and sync scripts when running on the host
@@ -870,7 +874,19 @@ lfs_update() {
         shift
     done
 
-
+    # Synchronize clock to prevent build errors from time skew
+    if [[ "$dry_run" == "false" ]]; then
+        if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
+            # Running from host: sync VM clock to host time
+            echo "Synchronizing LFS guest clock to host..."
+            [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
+            ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
+        else
+            # Running on VM: try to sync from hardware clock
+            echo "Synchronizing LFS clock from hardware clock..."
+            sudo hwclock -s >/dev/null 2>&1
+        fi
+    fi
 
     echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
     local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
@@ -1340,7 +1356,8 @@ DEPEOF
                 [[ -z "$pkg" ]] && continue
                 echo ">>> Last 5 lines of output for $pkg:"
                 if [[ -f "/tmp/lfs-autobuild.log" ]]; then
-                    sed -n "/Building .*$pkg\.\.\./,/Building /p" /tmp/lfs-autobuild.log | grep -v "Building " | tail -n 5
+                    # Search only the last 500,000 lines to keep it fast even if the log is huge
+                    tail -n 500000 /tmp/lfs-autobuild.log | sed -n "/Building .*$pkg\.\.\./,/Building /p" | grep -v "Building " | tail -n 5
                 else
                     echo "  Log file /tmp/lfs-autobuild.log not found."
                 fi

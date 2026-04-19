@@ -22,6 +22,15 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Synchronize clock to prevent fetch errors from time skew
+if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
+    echo "Synchronizing LFS guest clock to host..."
+    ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
+else
+    echo "Synchronizing LFS clock from hardware clock..."
+    sudo hwclock -s >/dev/null 2>&1
+fi
+
 REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
 # Identify packages with missing file inventories (line count <= 1)
