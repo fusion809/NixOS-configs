@@ -3,7 +3,7 @@ rootant=$(find /arch/usr/share/antergos/wallpapers -name "*.*g" -type f | wc -l)
 root=$(find /arch/usr/share/{backgrounds,[wW]allpapers} -name "*.*g" -type f | wc -l) ; 
 root=$(($root+$rootant))
 userls=$(find /arch$HOME/.local/share/{backgrounds,wallpapers} -name "*.*g" -type f | wc -l);
-userpi=$(find /arch$HOME/Pictures/Wallpapers -name "*.*g" -type f | wc -l);
+userpi=$(find -L /arch$HOME/Pictures/Wallpapers -name "*.*g" -type f | wc -l);
 user=$(($userpi+$userls))
 no=$(($root+$user-1))
 if (( $no < 0 )); then

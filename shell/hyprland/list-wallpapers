@@ -1,12 +1,15 @@
 #!/usr/bin/env zsh
-find /arch/usr/share/antergos/wallpapers \
-     /arch/usr/share/backgrounds \
-     /arch/usr/share/wallpapers \
-     /arch/usr/share/Wallpapers \
-     "/arch$HOME/.local/share/backgrounds" \
-     "/arch$HOME/.local/share/wallpapers" \
-     "/arch$HOME/Pictures/Wallpapers" \
-     -type f \( -iname '*.*g' \) \
-     2>/dev/null | nl > /arch$HOME/.cache/wallpapers-list
+{ find /arch/usr/share/antergos/wallpapers \
+       /arch/usr/share/backgrounds \
+       /arch/usr/share/wallpapers \
+       /arch/usr/share/Wallpapers \
+       "/arch$HOME/.local/share/backgrounds" \
+       "/arch$HOME/.local/share/wallpapers" \
+       -type f \( -iname '*.*g' \) \
+       2>/dev/null
+  find -L "/arch$HOME/Pictures/Wallpapers" \
+       -type f \( -iname '*.*g' \) \
+       2>/dev/null
+} | nl > /arch$HOME/.cache/wallpapers-list
 zenity --info --text "Keep in mind that the shown wallpaper numberings are 1 higher than that used by the wallpaper script."
 nvim /arch$HOME/.cache/wallpapers-list +$(($($HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/no-wallpapers | cut -d '/' -f 1)+1))

@@ -18,9 +18,15 @@ for dir in "${DIRS[@]}"; do
 	echo "dir = $dir"
 echo "Found ${#WALLS[@]} wallpapers"
     if [[ -d "$dir" ]]; then
-        while IFS= read -r -d '' file; do
-            WALLS+=("$file")
-        done < <(find "$dir" -type f -name "*.*g" -print0)
+        if [[ "$dir" == *"Pictures/Wallpapers"* ]]; then
+            while IFS= read -r -d '' file; do
+                WALLS+=("$file")
+            done < <(find -L "$dir" -type f -name "*.*g" -print0)
+        else
+            while IFS= read -r -d '' file; do
+                WALLS+=("$file")
+            done < <(find "$dir" -type f -name "*.*g" -print0)
+        fi
     fi
 done
 echo "Found ${#WALLS[@]} wallpapers"
