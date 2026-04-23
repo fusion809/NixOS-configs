@@ -43,6 +43,8 @@ echo "PATH=$PATH"
 
 # Capture files with uncommitted changes before script makes any modifications
 files_before=$(git -C $NIXCFG diff --name-only | sort)
+# Cache the HEAD flake.lock before nixfu may update it - used for all old_rev comparisons
+head_flake_lock=$(git -C $NIXCFG show HEAD:nix/flake.lock)
 
 if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 	export git_clean=true
@@ -60,11 +62,12 @@ if $git_clean && [[ $diffLen -gt 0 ]]; then
 fi
 echo "pushStr @L83=$pushStr"
 # Get the list of changed nodes
-changed_nodes=$(jq -n -r --slurpfile old <(git -C "$NIXCFG" show HEAD:nix/flake.lock) --slurpfile new "$NIXCFG/nix/flake.lock" '
-	($old[0].nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
+changed_nodes=$(jq -n -r --argjson old "$head_flake_lock" --slurpfile new "$NIXCFG/nix/flake.lock" '
+	($old.nodes | keys) as $k1 | ($new[0].nodes | keys) as $k2 |
 	($k1 - $k2) + ($k2 - $k1) +
-	([$k1[] | select($old[0].nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
+	([$k1[] | select($old.nodes[.] != $new[0].nodes[.])]) | unique | join(" ")
 ')
+echo "changed_nodes=$changed_nodes"
 outputStr=""
 # Function to retry commands on failure
 retry() {
@@ -111,13 +114,15 @@ check_packages() {
 # Get current revisions and store paths
 # Use nix flake archive to get store paths for inputs (avoids re-downloading)
 archive_json=$(nix flake archive $NIXCFG/nix --json)
+# Note: nix flake archive --json does NOT include locked.rev; get revisions from flake.lock directly
+flake_lock="$NIXCFG/nix/flake.lock"
 
-curr_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.locked.rev')
-curr_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".locked.rev')
-curr_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".locked.rev')
-curr_os=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-oldstable".locked.rev')
-curr_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".locked.rev')
-curr_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".locked.rev')
+curr_s=$(jq -r '.nodes.nixpkgs.locked.rev' "$flake_lock")
+curr_u=$(jq -r '.nodes."nixpkgs-unstable".locked.rev' "$flake_lock")
+curr_m=$(jq -r '.nodes."nixpkgs-master".locked.rev' "$flake_lock")
+curr_os=$(jq -r '.nodes."nixpkgs-oldstable".locked.rev' "$flake_lock")
+curr_vim=$(jq -r '.nodes."vim-src".locked.rev' "$flake_lock")
+curr_hm=$(jq -r '.nodes."home-manager".locked.rev' "$flake_lock")
 
 path_s=$(echo "$archive_json" | jq -r '.inputs.nixpkgs.path')
 path_u=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-unstable".path')
@@ -126,9 +131,11 @@ path_os=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-oldstable".path')
 path_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".path')
 path_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".path')
 
+echo "curr_s=$curr_s curr_u=$curr_u curr_m=$curr_m curr_os=$curr_os curr_vim=$curr_vim curr_hm=$curr_hm"
+
 
 if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
-	old_hm=$(jq -r '.nodes."home-manager".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_hm=$(echo "$head_flake_lock" | jq -r '.nodes."home-manager".locked.rev')
 	
 	# Compare home-manager modules directory paths
 	old_out=$(retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"home\"; hmRev = \"$old_hm\"; }")
@@ -145,7 +152,7 @@ if [[ " ${changed_nodes} " == *" home-manager "* ]]; then
 fi
 
 if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
-	old_rev=$(jq -r '.nodes."nixpkgs-master".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_rev=$(echo "$head_flake_lock" | jq -r '.nodes."nixpkgs-master".locked.rev')
 	
 	# Check if packages changed (keeping stable/unstable/oldstable constant)
 	old_out=$(check_packages "$curr_s" "$curr_u" "$old_rev" "$curr_os" "$curr_vim" "$path_s" "$path_u" "" "$path_os" "$path_vim")
@@ -162,7 +169,7 @@ if [[ " ${changed_nodes} " == *" nixpkgs-master "* ]]; then
 	fi
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
-	old_rev=$(jq -r '.nodes.nixpkgs.locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_rev=$(echo "$head_flake_lock" | jq -r '.nodes.nixpkgs.locked.rev')
 	
 	# Check if packages changed (keeping unstable/master/oldstable constant)
 	# For old check, we use old stable rev (fetched), but keep current unstable/master/oldstable/vim paths (local)
@@ -179,7 +186,7 @@ if [[ " ${changed_nodes} " == *" nixpkgs "* ]]; then
 	fi
 fi
 if [[ " ${changed_nodes} " == *" nixpkgs-oldstable "* ]]; then
-	old_rev=$(jq -r '.nodes."nixpkgs-oldstable".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_rev=$(echo "$head_flake_lock" | jq -r '.nodes."nixpkgs-oldstable".locked.rev')
 	
 	# Check if packages changed (keeping stable/unstable/master constant)
 	old_out=$(check_packages "$curr_s" "$curr_u" "$curr_m" "$old_rev" "$curr_vim" "$path_s" "$path_u" "$path_m" "" "$path_vim")
@@ -195,7 +202,7 @@ if [[ " ${changed_nodes} " == *" nixpkgs-oldstable "* ]]; then
 	fi
 fi
 if [[ " $changed_nodes " == *" nixpkgs-unstable "* ]]; then
-	old_rev=$(jq -r '.nodes."nixpkgs-unstable".locked.rev' <(git -C $NIXCFG show HEAD:nix/flake.lock))
+	old_rev=$(echo "$head_flake_lock" | jq -r '.nodes."nixpkgs-unstable".locked.rev')
 	
 	# Check if packages changed (keeping stable/master/oldstable constant)
 	old_out=$(check_packages "$curr_s" "$old_rev" "$curr_m" "$curr_os" "$curr_vim" "$path_s" "" "$path_m" "$path_os" "$path_vim")

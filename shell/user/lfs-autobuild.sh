@@ -2666,7 +2666,21 @@ if [[ "$FORCE" != "true" ]]; then
     # Identify target version for comparison
     TARGET_VER="$LFS_VERSION"
     [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && TARGET_VER="$UPSTREAM_VERSION"
-    
+
+    # In Xorg multi-package mode, LFS_VERSION is never extracted from the URL block.
+    # Try to recover it from DOWNLOAD_URLS by finding the URL that matches $PACKAGE.
+    if [[ -z "$TARGET_VER" && "$XORG_MULTI_MODE" == "true" && ${#DOWNLOAD_URLS[@]} -gt 0 ]]; then
+        pkg_lower="${PACKAGE,,}"
+        for _url in "${DOWNLOAD_URLS[@]}"; do
+            _fname=$(basename "$_url")
+            # Match: libXpm-3.5.17.tar.xz  (case-insensitive on package name)
+            if echo "$_fname" | grep -qi "^${pkg_lower}[-_][0-9]"; then
+                TARGET_VER=$(echo "$_fname" | perl -nle 'while (m{[-_]\K[0-9][0-9a-z.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2)$//')
+                [[ -n "$TARGET_VER" ]] && log "Extracted Xorg multi-mode version for $PACKAGE from URL: $TARGET_VER" && break
+            fi
+        done
+    fi
+
     # Identify installed version
     INSTALLED_VER=$(ssh_lfs "[ -f /var/lib/book-packages/$PACKAGE ] && head -n 1 /var/lib/book-packages/$PACKAGE" 2>/dev/null | tr -d '\r')
     

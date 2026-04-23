@@ -77,7 +77,11 @@ in rec {
     persistencedSha256 = "sha256-j74m3tAYON/q8WLU9Xioo3CkOSXfo1CwGmDx/ot0uUo=";
 
     postPatch = ''
-      echo "Applying Linux 6.19 compatibility hacks..."
+      echo "Applying Linux 6.19 and 7.0 compatibility hacks..."
+      # Linux 7.0 hack: VMA locking API was drastically changed. Bypass it completely to avoid compilation errors.
+      sed -i -E 's/__is_vma_write_locked\([^)]*\)/1/g' kernel/nvidia/nv-mmap.c || true
+      sed -i 's/VMA_LOCK_OFFSET/0/g' kernel/nvidia/nv-mmap.c || true
+
       # Fix uvm_hmm.c (AUR fix)
       sed -i 's/#if defined(NV_ZONE_DEVICE_PAGE_INIT_HAS_ORDER_ARG)/#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 19, 0)\n#define ZONE_DEVICE_PAGE_INIT(page)   zone_device_page_init(page, page_pgmap(page), 0)\n#elif defined(NV_ZONE_DEVICE_PAGE_INIT_HAS_ORDER_ARG)/' kernel/nvidia-uvm/uvm_hmm.c || true
 
