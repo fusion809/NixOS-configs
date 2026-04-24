@@ -1492,7 +1492,7 @@ export XORG_CONFIG=\"--prefix=\$XORG_PREFIX --sysconfdir=/etc --localstatedir=/v
     fi
     # AESTHETIC FIX: Prevent recursive symlink loops if XORG_PREFIX is /usr
     # Strips commands like: ln -sv $XORG_PREFIX/lib/X11 /usr/lib/X11
-    COMMANDS=$(echo "$COMMANDS" | perl -pe 's/ln -sv? \$XORG_PREFIX\/(lib|include)\/X11 \/usr\/\1\/X11\s*(&&|;)?//g')
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's/^[[:space:]]*ln -sv? \$XORG_PREFIX\/(lib|include)\/X11 \/usr\/\1\/X11.*$//g')
 fi
 
 # Special handling for Xorg multi-package targets (libs, apps, fonts, drivers)
@@ -1501,6 +1501,7 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
 
     # Pre-fix relative MD5 paths for Xorg as well
     COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9.-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')    # Fix the bash subshell and execution for Xorg loops
+    echo "$COMMANDS" > /tmp/cmds_pre_awk.log
     log "Converting Xorg build loop into a standalone script..."
     COMMANDS=$(echo "$COMMANDS" | awk '
         BEGIN {
@@ -1620,7 +1621,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     }
                     vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
+                    # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
+                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
                     next;
                 }
@@ -1635,7 +1637,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     vm_cmds = vm_cmds "\n    fi";
                     vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    sort -u \"/var/lib/book-packages/${PKGNAME}\" -o \"/var/lib/book-packages/${PKGNAME}\"";
+                    # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
+                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
                     next;
                 }
