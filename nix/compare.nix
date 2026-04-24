@@ -40,7 +40,7 @@ let
   # All packages comparison
   comparePackages = { stableRev, unstableRev, masterRev, oldstableRev, vimRev
     , username, stablePath ? null, unstablePath ? null, masterPath ? null
-    , oldstablePath ? null, vimPath ? null }:
+    , oldstablePath ? null, vimPath ? null, hyprsessionPath ? null }:
     let
       fetch = rev:
         builtins.fetchGit {
@@ -71,6 +71,10 @@ let
           url = "https://github.com/vim/vim.git";
           rev = vimRev;
         };
+      hyprsessionSrc = if hyprsessionPath != null && hyprsessionPath != "" && hyprsessionPath != "null" then
+        builtins.toPath hyprsessionPath
+      else
+        null;
 
       # Mock inputs for overlays.nix
       inputs = {
@@ -78,6 +82,17 @@ let
         nixpkgs-master = masterSrc;
         nixpkgs-oldstable = oldstableSrc;
         vim-src = vimSrc;
+        hyprsession = if hyprsessionSrc != null then
+          if builtins.pathExists (hyprsessionSrc + "/flake.nix") then
+            builtins.getFlake (toString hyprsessionSrc)
+          else if builtins.pathExists (hyprsessionSrc + "/default.nix") then {
+            packages.x86_64-linux.default = import hyprsessionSrc {
+              pkgs = import stableSrc { system = "x86_64-linux"; };
+            };
+          } else
+            null
+        else
+          null;
       };
 
       # Import overlays
@@ -111,7 +126,9 @@ let
 
       # Import packages.nix
       packageList = import ./packages.nix { inherit pkgs; };
-    in builtins.toJSON (map (p: p.outPath) packageList);
+      # Filter out nulls to prevent crashes if some packages are conditionally null
+      validPackages = builtins.filter (p: p != null) packageList;
+    in builtins.toJSON (map (p: p.outPath) validPackages);
 
 in if mode == "home" then
   compareHome (builtins.removeAttrs args [ "mode" ])
