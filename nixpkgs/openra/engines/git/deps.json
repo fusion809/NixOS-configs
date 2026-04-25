@@ -81,8 +81,8 @@
   },
   {
     "pname": "NuGet.CommandLine",
-    "version": "6.12.2",
-    "hash": "sha256-cGqYcL06GolruYUIhgdxykVDRk8l4sFUmFsfQffwaJw="
+    "version": "6.12.5",
+    "hash": "sha256-MvgQolWeZSF9N7VkklEGFFTM2sYXCQAo+29tJQ4V85U="
   },
   {
     "pname": "NUnit",
