@@ -40,3 +40,11 @@ function gist {
 function pstart {
 	ps -eo pid,lstart | grep  "$1" | sed "s/\s*$1 //g"
 }
+
+function bm3u8 {
+	page=$(wget -cqO- "$1")
+	m3u8URL=$(echo "$page" | grep "hlsAuto" | cut -d '"' -f 4 | sed 's/\\//g')
+	filename=$(echo "$page" | grep "<title>" | sed 's/<[/]*title>//g' | head -n 1 | sed 's/\s*- [A-Za-z]*.com//g')
+	cddf
+	wget -c "$m3u8URL" -O "$filename.m3u8"
+}

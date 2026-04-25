@@ -58,4 +58,10 @@ if [[ -z "$target_name" || "$target_name" == "$name_basis" ]]; then
      target_name=$(echo "$target_name" | sed -r 's/ +(\([0-9]+\))?$//')
 fi
 
-mv "$dest" "$target_name ($duration).mp4"
+# Only append duration if it's not already in the target_name (checking for MM:SS or HH:MM:SS, with : or -)
+if [[ ! "$target_name" =~ \([0-9]{1,2}[:\-][0-9]{1,2}([:\-][0-9]{1,2})?\) ]]; then
+    mv "$dest" "$target_name ($duration).mp4"
+else
+    # If duration already exists, just ensure extension is correct if we merged
+    mv "$dest" "${target_name}.mp4"
+fi
