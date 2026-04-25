@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+# Get swap info from /proc/swaps
+# Filename Type Size Used Priority
+swapinfo=$(tail -n 1 /proc/swaps)
+
+# Read fields
+read -r filename type size used priority <<< "$swapinfo"
+
+# Check if swap is active
+if [[ "$filename" == "Filename" ]] || [[ -z "$size" ]] || [[ "$size" -eq 0 ]]; then
+    perc=0
+else
+    # Calculate percentage
+    perc=$(( used * 100 / size ))
+fi
+
+# Determine class based on usage (matching memory logic)
+if (( perc >= 90 )); then
+    class="critical"
+elif (( perc >= 75 )); then
+    class="high"
+elif (( perc >= 50 )); then
+    class="medium"
+elif (( perc >= 25 )); then
+    class="low"
+else
+    class="idle"
+fi
+
+# Output JSON with padding (matching memory's %2d%%)
+# This will be " 5%" or "10%" or "100%"
+printf '{"text":"%2d%%","class":"%s"}' $perc "$class"

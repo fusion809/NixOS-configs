@@ -255,6 +255,15 @@
         "return-type": "json",
         "interval": 1
     },
+    "custom/swap": {
+        "format": "󰓡 {}",
+        "on-click": "alacritty -e gtop --title \"gtop\"",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/swap",
+        "tooltip": true,
+        "tooltip-format": "Swap usage",
+        "return-type": "json",
+        "interval": 1
+    },
     "custom/gpu-memory": {
         "format": "  {}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",
