@@ -2236,6 +2236,25 @@ if [[ "$PACKAGE" == "ghostscript" ]]; then
             fi
         fi
     done
+# Fix NSS Mozilla archive URLs (often mismatch between version and RTM directory)
+elif [[ "$PACKAGE" == "nss" ]]; then
+    for i in "${!DOWNLOAD_URLS[@]}"; do
+        url="${DOWNLOAD_URLS[$i]}"
+        if [[ "$url" == *"archive.mozilla.org/pub/security/nss/releases/NSS_"* ]]; then
+            # Extract version from filename (e.g. nss-3.123.1.tar.gz -> 3.123.1)
+            nss_version=$(basename "$url" | sed -E 's/nss-([0-9.]+)\.tar\..*/\1/')
+            if [[ -n "$nss_version" ]]; then
+                # Convert version to tag format: 3.123.1 -> 3_123_1 (ensure no space/newline)
+                nss_tag=$(echo "$nss_version" | tr '.' '_' | tr -d '[:space:]')
+                # Replace incorrect tag in URL with correct one (e.g. /NSS_3_123_RTM/ -> /NSS_3_123_1_RTM/)
+                old_url="${DOWNLOAD_URLS[$i]}"
+                DOWNLOAD_URLS[$i]=$(echo "$url" | sed -E "s|/NSS_[0-9_]+_RTM/|/NSS_${nss_tag}_RTM/|")
+                if [[ "$old_url" != "${DOWNLOAD_URLS[$i]}" ]]; then
+                    log "Fixed NSS URL directory tag to match version: $nss_tag"
+                fi
+            fi
+        fi
+    done
 # Generic fix for other GitHub releases where the tag in the path does not match the filename version
 else
     for i in "${!DOWNLOAD_URLS[@]}"; do
