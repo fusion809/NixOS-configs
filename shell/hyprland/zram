@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+# Sum up all zram swap devices from /proc/swaps
+zram_stats=$(grep "zram" /proc/swaps)
+
+if [[ -z "$zram_stats" ]]; then
+    printf '{"text":"0%%","class":"idle"}'
+    exit 0
+fi
+
+total_size=0
+total_used=0
+
+while read -r filename type size used priority; do
+    total_size=$((total_size + size))
+    total_used=$((total_used + used))
+done <<< "$zram_stats"
+
+if [[ "$total_size" -eq 0 ]]; then
+    perc=0
+else
+    perc=$(( total_used * 100 / total_size ))
+fi
+
+# Determine class
+if (( perc >= 90 )); then
+    class="critical"
+elif (( perc >= 75 )); then
+    class="high"
+elif (( perc >= 50 )); then
+    class="medium"
+elif (( perc >= 25 )); then
+    class="low"
+else
+    class="idle"
+fi
+
+printf '{"text":"%2d%%","class":"%s"}' $perc "$class"

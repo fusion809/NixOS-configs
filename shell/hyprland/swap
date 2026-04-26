@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 
-# Get swap info from /proc/swaps
-# Filename Type Size Used Priority
-swapinfo=$(tail -n 1 /proc/swaps)
+# Get non-zram swap info from /proc/swaps
+swap_stats=$(grep -v "zram" /proc/swaps | tail -n +2)
 
-# Read fields
-read -r filename type size used priority <<< "$swapinfo"
-
-# Check if swap is active
-if [[ "$filename" == "Filename" ]] || [[ -z "$size" ]] || [[ "$size" -eq 0 ]]; then
+if [[ -z "$swap_stats" ]]; then
     perc=0
 else
-    # Calculate percentage
-    perc=$(( used * 100 / size ))
+    total_size=0
+    total_used=0
+    while read -r filename type size used priority; do
+        total_size=$((total_size + size))
+        total_used=$((total_used + used))
+    done <<< "$swap_stats"
+
+    if [[ "$total_size" -eq 0 ]]; then
+        perc=0
+    else
+        perc=$(( total_used * 100 / total_size ))
+    fi
 fi
 
 # Determine class based on usage (matching memory logic)

@@ -264,6 +264,15 @@
         "return-type": "json",
         "interval": 1
     },
+    "custom/zram": {
+        "format": "󰾆 {}",
+        "on-click": "alacritty -e gtop --title \"gtop\"",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/zram",
+        "tooltip": true,
+        "tooltip-format": "zRAM usage",
+        "return-type": "json",
+        "interval": 1
+    },
     "custom/gpu-memory": {
         "format": "  {}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/gpu-memory",

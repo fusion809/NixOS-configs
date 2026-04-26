@@ -560,6 +560,41 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
+/* Module: custom/zram */
+#custom-zram {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 3px;
+  background-color: #212121;
+  color: #ffffff;
+}
+
+/* zRAM usage-based classes */
+#custom-zram.idle {
+  background-color: #66BB6A;
+  color: #000000;
+}
+
+#custom-zram.low {
+  background-color: #9CCC65;
+  color: #000000;
+}
+
+#custom-zram.medium {
+  background-color: #FFCA28;
+  color: #000000;
+}
+
+#custom-zram.high {
+  background-color: #FF7043;
+  color: #000000;
+}
+
+#custom-zram.critical {
+  background-color: #EF5350;
+  color: #ffffff;
+}
+
 /* Module: custom/gpu-utilization */
 #custom-gpu-utilization {
   border-radius: 4px;
