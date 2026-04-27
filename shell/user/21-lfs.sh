@@ -597,6 +597,31 @@ lfs_get_local_packages() {
     ' | sort -u | tr -d '\r'
 }
 
+lfs_pkg_dump() {
+    local LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
+    if [[ -z "$LOCAL_PKGS" ]]; then
+        echo "No LFS packages found."
+        return
+    fi
+
+    echo "------------------------------------------------------------"
+    printf "%-35s | %-20s\n" "Package" "Version"
+    echo "------------------------------------------------------------"
+
+    while read -r local_pkg; do
+        [[ -z "$local_pkg" ]] && continue
+        
+        name=$(echo "$local_pkg" | sed -E 's#^([-a-zA-Z0-9_\+]+)-[0-9].*#\1#')
+        if [[ -z "$name" || "$name" == "$local_pkg" ]]; then
+            name=$(echo "$local_pkg" | sed -E 's#-(VERSION_MISSING)$##')
+        fi
+        local_ver=$(echo "$local_pkg" | sed -E -e 's#^'"$name"'-##' -e 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##' | tr -d '[:space:]')
+
+        printf "%-35s | %-20s\n" "$name" "$local_ver"
+    done <<< "$LOCAL_PKGS"
+    echo "------------------------------------------------------------"
+}
+
 lfs_map_bin_to_pkg() {
     local bin_path="$1"
     local bin_name=$(basename "$bin_path")
