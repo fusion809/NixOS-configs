@@ -12,11 +12,9 @@
             "custom/nixosicon",
             "hyprland/workspaces",
             "custom/weather",
-            "custom/keyboard-layout",
             "pulseaudio",
             "custom/uptime",
             "custom/wallpaper-no",
-            //"custom/wallpaper-rm",
             "custom/wallpaper-previous",
             "custom/wallpaper-random",
             "custom/wallpaper-next",
@@ -27,17 +25,12 @@
         ],
         "modules-right": [
             "custom/temperature",
-            "custom/root",
-            "custom/arch",
-            "custom/data",
             "custom/network-down",
             "custom/network-up",
             "custom/cpu",
             "custom/memory",
             "custom/zram",
             "custom/swap",
-            "custom/gpu-memory",
-            "custom/gpu-utilization",
             "custom/updates",
             "clock"
         ]
@@ -52,26 +45,16 @@
             "/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/waybar-modules.jsonc"
         ],
         "modules-left": [
-            "hyprland/workspaces",
-            "custom/weather",
-            "custom/keyboard-layout",
-            "pulseaudio",
-            "custom/uptime",
-            "custom/temperature"
+            "hyprland/workspaces"
         ],
         "modules-center": [
             "hyprland/window"
         ],
         "modules-right": [
-            "custom/root",
-            "custom/arch",
-            "custom/data",
-            "custom/network-down",
-            "custom/network-up",
-            "custom/cpu",
-            "custom/memory",
-            "custom/zram",
-            "custom/swap",
+            "custom/keyboard-layout",
+            "pulseaudio",
+            "custom/uptime",
+            "custom/temperature",
             "custom/gpu-memory",
             "custom/gpu-utilization",
             "custom/updates",

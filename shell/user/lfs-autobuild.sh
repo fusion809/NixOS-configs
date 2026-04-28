@@ -892,6 +892,18 @@ ${RAW_CONTENT}"
         RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/meson setup/meson setup -Ddoc=disabled -Dintrospection=disabled/g')
     fi
 
+    if [[ "$PACKAGE" == "fltk" ]]; then
+        log "Disabling doxygen support and documentation for fltk..."
+        # 1. Disable Doxygen in CMake
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/cmake -D/cmake -D CMAKE_DISABLE_FIND_PACKAGE_Doxygen=TRUE -D/g')
+        # 2. Strip out documentation installation blocks which are prone to failure
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -ne '
+            my $content = $_;
+            $content =~ s/___BLOCK_START_(ROOT|USER)___.*?(documentation\/html|\/usr\/share\/doc\/fltk).*?___BLOCK_END___//gs;
+            print $content;
+        ')
+    fi
+
     # Process blocks: Parallel make and Test filtering
 CRITICAL_PKGS="gcc binutils glibc"
 is_critical=false
