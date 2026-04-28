@@ -18,18 +18,16 @@
             "custom/wallpaper-previous",
             "custom/wallpaper-random",
             "custom/wallpaper-next",
-            "custom/wallpaper-no-specify",
-            "custom/root"
+            "custom/wallpaper-no-specify"
         ],
         "modules-center": [
             "hyprland/window"
         ],
         "modules-right": [
             "custom/temperature",
+            "custom/root",
             "custom/arch",
             "custom/data",
-            "custom/network-down",
-            "custom/network-up",
             "custom/cpu",
             "custom/memory",
             "custom/zram",
@@ -55,9 +53,9 @@
         ],
         "modules-right": [
             "custom/keyboard-layout",
-            "pulseaudio",
-            "custom/uptime",
             "custom/temperature",
+            "custom/network-down",
+            "custom/network-up",
             "custom/gpu-memory",
             "custom/gpu-utilization",
             "custom/updates",
