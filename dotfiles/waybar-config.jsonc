@@ -18,13 +18,16 @@
             "custom/wallpaper-previous",
             "custom/wallpaper-random",
             "custom/wallpaper-next",
-            "custom/wallpaper-no-specify"
+            "custom/wallpaper-no-specify",
+            "custom/root"
         ],
         "modules-center": [
             "hyprland/window"
         ],
         "modules-right": [
             "custom/temperature",
+            "custom/arch",
+            "custom/data",
             "custom/network-down",
             "custom/network-up",
             "custom/cpu",
