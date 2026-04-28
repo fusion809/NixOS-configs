@@ -375,13 +375,13 @@ find_package_page() {
             iceauth|sessreg|setxkbmap|smproxy|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
                                   echo "$BLFS_BOOK/x/x7app.html#xorg-app"; return 0 ;;
             xorg-font|x7font)     echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
-            font-*)               echo "$BLFS_BOOK/x/x7font.html#xorg-font"; return 0 ;;
+            font-*)               echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
             xorg-driver|x7driver) echo "$BLFS_BOOK/x/x7driver.html"; return 0 ;;
-            xorg-libinput|xf86-input-libinput) echo "$BLFS_BOOK/x/x7driver.html#xorg-libinput-driver"; return 0 ;;
-            xorg-evdev-driver|xf86-input-evdev) echo "$BLFS_BOOK/x/x7driver.html#xorg-evdev-driver"; return 0 ;;
-            xf86-input-synaptics) echo "$BLFS_BOOK/x/x7driver.html#xorg-synaptics-driver"; return 0 ;;
-            xf86-input-vmmouse)   echo "$BLFS_BOOK/x/x7driver.html#xorg-vmmouse-driver"; return 0 ;;
-            xf86-video-*)         echo "$BLFS_BOOK/x/x7driver.html#xorg-video-drivers"; return 0 ;;
+            xorg-libinput|xf86-input-libinput) echo "$BLFS_BOOK/x/x7driver.html#xorg7-libinput-driver"; return 0 ;;
+            xorg-evdev-driver|xf86-input-evdev) echo "$BLFS_BOOK/x/x7driver.html#xorg7-evdev-driver"; return 0 ;;
+            xf86-input-synaptics) echo "$BLFS_BOOK/x/x7driver.html#xorg7-synaptics-driver"; return 0 ;;
+            xf86-input-vmmouse)   echo "$BLFS_BOOK/x/x7driver.html#xorg7-vmmouse-driver"; return 0 ;;
+            xf86-video-*)         echo "$BLFS_BOOK/x/x7driver.html#xorg7-video-drivers"; return 0 ;;
             sdl2-compat) echo "$BLFS_BOOK/multimedia/sdl2.html"; return 0 ;;
         esac
 
@@ -594,14 +594,19 @@ if [[ -n "$FRAG" ]]; then
     log "Slicing HTML content for fragment: $FRAG_ID"
     # Extract starting from the anchor or container with the id $FRAG_ID up to the next sect/header
     HTML_CONTENT=$(printf '%s' "$HTML_CONTENT" | perl -0777 -nse '
-        if (/(<(?:a|div|h[1-6]|section|p|li)\s+[^>]*?\b(?:id|name)="\Q$id\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[1-2]|id="(?!\Q$id\E)[^"]+")/is) {
+        if (/(<(?:a|div|h[1-6]|section|p|li)\s+[^>]*?\b(?:id|name)="\Q$id\E"[^>]*>.*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$id\E)[^"]+")/is) {
+            print $1;
+        } elsif (/(id="\Q$id\E".*?)(?=<div\s+class="sect[12]"|<h[12]|id="(?!\Q$id\E)[^"]+")/is) {
             print $1;
         } elsif (/(<(?:a|div|h[1-6]|section|p|li)\s+[^>]*?\b(?:id|name)="\Q$id\E"[^>]*>.*)/is) {
+            print $1;
+        } elsif (/(id="\Q$id\E".*)/is) {
             print $1;
         }
     ' -- -id="$FRAG_ID")
     if [[ -z "$HTML_CONTENT" ]]; then
-         error "Failed to slice HTML for fragment $FRAG_ID in $PAGE_URL"
+         log "Fallback: Fragment $FRAG_ID not found in slice, using full content."
+         HTML_CONTENT="$FULL_HTML_CONTENT"
     fi
 fi
 
@@ -896,12 +901,10 @@ ${RAW_CONTENT}"
         log "Disabling doxygen support and documentation for fltk..."
         # 1. Disable Doxygen in CMake
         RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/cmake -D/cmake -D CMAKE_DISABLE_FIND_PACKAGE_Doxygen=TRUE -D/g')
-        # 2. Strip out documentation installation blocks which are prone to failure
-        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -ne '
-            my $content = $_;
-            $content =~ s/___BLOCK_START_(ROOT|USER)___.*?(documentation\/html|\/usr\/share\/doc\/fltk).*?___BLOCK_END___//gs;
-            print $content;
-        ')
+        # 2. Strip out documentation installation lines
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | grep -vEi "documentation/html|/usr/share/doc/fltk|ninja documentation")
+        # 3. Clean up any empty blocks that might have been created
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
     fi
 
     # Process blocks: Parallel make and Test filtering
