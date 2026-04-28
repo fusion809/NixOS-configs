@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+NIXCFG="$HOME/GitHub/mine/config/NixOS-configs"
+CONFIG_BASE="$NIXCFG/dotfiles/waybar-config.jsonc"
+STYLE="$NIXCFG/dotfiles/style.css"
+
+# Kill all existing waybar instances forcefully
+pkill -9 waybar
+sleep 0.2
+
+# Get all monitors and start waybar for each independently
+hyprctl monitors -j | jq -r '.[] | .name' | while read -r m; do
+    tmp_config="/tmp/waybar-config-$m.jsonc"
+    # Strip comments for jq
+    sed 's/\/\/.*//g' "$CONFIG_BASE" | jq ".[] | select(.output == \"$m\")" > "$tmp_config"
+    waybar -c "$tmp_config" -s "$STYLE" &
+done
