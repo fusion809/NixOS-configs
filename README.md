@@ -268,7 +268,7 @@ An alternative to the algorithm argument is the no argument which specifies the 
 The direction argument, which is only applicable if the first argument is algorithm, can be "previous" or something else. If it is previous and the first argument is "systematic", this will lead to the previous wallpaper being shown. Otherwise the next wallpaper will be shown. This is also the default behaviour if direction is omitted.
 
 ## Waybar
-The waybar has the following components, going from left to right:
+The waybar has the below components. The order below formerly referred to their order left to right, but that's not the case anymore.
 
 <ul>
 <li>(<i>Only shown on monitor 1</i>) The NixOS menu () which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):
