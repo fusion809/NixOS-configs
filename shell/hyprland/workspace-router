@@ -71,8 +71,8 @@ handle() {
                target=14
            else
                # If all are occupied, prompt the user
-               choice=$(echo -e "1(main)\n7(PBS)\n12(Boo)\n14(2nd main)" | rofi -dmenu -p "Select Workspace for Chrome:")
-               if [[ -n "$choice" ]]; then
+               choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)\n14(2nd main)" | rofi -dmenu -p "Select Workspace for Chrome:")
+               if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
                    target=$(echo "$choice" | cut -d '(' -f 1)
                fi
            fi
@@ -102,7 +102,10 @@ handle() {
            elif [ "$count_30" -eq 0 ]; then
                target=30
            else
-               target=$(echo -e "28\n29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
+               choice=$(echo -e "Current\n28\n29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
+               if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
+                   target="$choice"
+               fi
            fi
 
            echo "DEBUG virt: routing to target=$target" >> "$LOGFILE"

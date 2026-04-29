@@ -74,6 +74,10 @@ function cdphd {
   cd /arch$HOME/PhD/$1
 }
 
+function cdrec {
+  cd $ARCHGM/recipes/$1
+}
+
 function cdv {
   cd $HOME/Videos/$1
 }
