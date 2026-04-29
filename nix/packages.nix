@@ -44,12 +44,14 @@ with pkgs; [
   doctoc
   fdupes
   ffmpeg-full
+  ghostscript
   git
   gnuplot
   gtop
   jq
   keychain
   hyfetch
+  imagemagick
   libnotify
   nethogs
   nh
