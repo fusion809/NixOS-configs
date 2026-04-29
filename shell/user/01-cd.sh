@@ -75,7 +75,7 @@ function cdphd {
 }
 
 function cdrec {
-  cd $ARCHGM/recipes/$1
+  cd $ARCHGBM/recipes/$1
 }
 
 function cdv {
