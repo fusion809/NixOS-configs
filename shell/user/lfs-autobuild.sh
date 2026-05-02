@@ -547,10 +547,11 @@ SETUP_COMMANDS=""
 if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
 PAGE_URL=$(find_package_page "$PACKAGE")
 
-if [[ -z "$PAGE_URL" ]]; then
+# Prioritize KDE/Plasma metapackages even before searching the index for common names
+if [[ -z "$PAGE_URL" || "$PACKAGE" =~ ^(kconfig|kservice|kauth|kcoreaddons|ki18n|kcodecs|kwidgetsaddons|kcompletion|kconfigwidgets|kxmlgui|kitemviews|ktextwidgets|kdeclarative|kcmutils|kio|kparts|knotifications|kjobwidgets|kiconthemes|kservice|kwindowsystem|kguiaddons|karchive|kdbusaddons|kdnssd|kitemmodels|kplotting|ksyntaxhighlighting|kunitconversion|kwindowsystem|kcoreaddons|kauth|kcodecs|kconfig|kwidgetsaddons|ki18n|kcompletion|kconfigwidgets|kitemviews|ktextwidgets|kxmlgui|kdeclarative|kcmutils|kio|kparts|knotifications|kjobwidgets|kiconthemes|kservice|kwindowsystem|kguiaddons|karchive|kdbusaddons|kdnssd|kitemmodels|kplotting|ksyntaxhighlighting|kunitconversion|kwindowsystem)$ ]]; then
     log "Searching prominent metapackages for component '$PACKAGE'..."
     for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
-        if curl -s "$BLFS_BOOK/$mp_page" | grep -iqE "${PACKAGE}[-_][0-9].*\.tar"; then
+        if curl -s "$BLFS_BOOK/$mp_page" | grep -iqE "href=\"${PACKAGE}\.html\"|${PACKAGE}[-_][0-9].*\.tar"; then
             PAGE_URL="$BLFS_BOOK/$mp_page"
             METAPACKAGE_TARGET=$(basename "$mp_page" .html)
             SINGLE_COMPONENT_MODE="$PACKAGE"
@@ -1888,7 +1889,7 @@ ${COMMANDS}"
                 
                 real_cmd = $0;
                 if (real_cmd ~ /pip3.*install/ && real_cmd !~ /ignore-installed/) {
-                    sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed", real_cmd);
+                    sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed --no-deps", real_cmd);
                 }
                 # Now the actual install to the system
                 loop_content = loop_content "\n    " real_cmd;
@@ -2074,6 +2075,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/release-service/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE App version: $UPSTREAM_VERSION"
+            DOWNLOAD_URLS+=("https://download.kde.org/stable/release-service/${UPSTREAM_VERSION}/src/${PACKAGE}-${UPSTREAM_VERSION}.tar.xz")
         fi
     elif [[ "$PACKAGE" == "rustc" ]]; then
         log "Fetching latest upstream Rust version..."
@@ -2136,7 +2138,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
 
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream GNOME version for $PACKAGE: $UPSTREAM_VERSION"
-            major_v=${UPSTREAM_VERSION%%.*}
+                major_v=${UPSTREAM_VERSION%%.*}
             if [[ "$major_v" =~ ^[0-9]+$ ]] && [ "$major_v" -lt 40 ]; then
                 major_v=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
             fi
@@ -2144,6 +2146,19 @@ if [[ "$UPSTREAM" == "true" ]]; then
         fi
     else
         log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, KDE apps, and GNOME apps)"
+        UPSTREAM="false"
+    fi
+
+    # Add specific tarball to DOWNLOAD_URLS for KDE sub-packages to bypass recursive wget issues
+    if [[ -n "$UPSTREAM_VERSION" ]]; then
+        if [[ "${METAPACKAGE_TARGET,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma-all" ]]; then
+            # We don't always know the exact filename extension, but .tar.xz is standard for KDE
+            DOWNLOAD_URLS+=("https://download.kde.org/stable/plasma/${UPSTREAM_VERSION}/${PACKAGE}-${UPSTREAM_VERSION}.tar.xz")
+        elif [[ "${METAPACKAGE_TARGET,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
+            # Frameworks sub-packages are in /stable/frameworks/MAJOR.MINOR/
+            MM=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
+            DOWNLOAD_URLS+=("https://download.kde.org/stable/frameworks/${MM}/${PACKAGE}-${UPSTREAM_VERSION}.tar.xz")
+        fi
     fi
 fi
 fi
@@ -2812,10 +2827,13 @@ if [[ ${#DOWNLOAD_URLS[@]} -gt 0 ]]; then
 fi
 
 # For plasma/frameworks, prevent wget -r from re-downloading already-fetched archives
-# when it revisits directory sort-order links (?C=N;O=A etc)
+# and avoid the "rejected" loop caused by -A and mirror redirects.
 if [[ "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all" || \
-      "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6" ]]; then
-    COMMANDS=$(echo "$COMMANDS" | sed 's/wget -r /wget -r --no-clobber /g')
+      "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6" || \
+      "${METAPACKAGE_TARGET,,}" == "plasma-all" || "${METAPACKAGE_TARGET,,}" == "frameworks6" ]]; then
+    # Replace recursive wget with a non-clobbering direct wget. 
+    # We remove -r, -A, -nd, -nH etc and just use -nc to skip if file exists.
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/wget -r -nH -nd -A [^ ]+ -np/wget -nc/g; s/wget -r /wget -nc /g')
 fi
 
 if [[ "$PACKAGE" == "sddm" ]]; then
@@ -3023,7 +3041,7 @@ _gen_build_script() {
     echo "as_root() {"
     echo "  if [ \${EUID:-\$(id -u)} = 0 ]; then"
     echo "    \"\$@\""
-    echo "  elif [ -x /usr/bin/sudo ]; then"
+    echo "  elif command -v sudo >/dev/null 2>&1; then"
     echo "    sudo \"\$@\""
     echo "  else"
     echo "    su -c \"\$*\""
