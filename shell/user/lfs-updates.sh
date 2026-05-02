@@ -62,33 +62,37 @@ while read -r local_pkg; do
         # is_broken already set above
 
 
-        remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${name}-([0-9])" | head -n 1)
+        remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${name}-([0-9]|FAILED)" | head -n 1)
         if [[ -z "$remote_pkg" ]]; then
             # Try fuzzy match: strip numeric suffix like 6 in qt6 and try matching Qt- or qt6-
             name_base=$(echo "$name" | sed -E 's/[0-9]+$//')
-            [[ -n "$name_base" ]] && remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${name_base}[0-9]?-([0-9])" | head -n 1)
+            [[ -n "$name_base" ]] && remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${name_base}[0-9]?-([0-9]|FAILED)" | head -n 1)
         fi
         
         if [[ "$is_broken" == "true" ]]; then
             remote_ver="${local_ver}"
             if [[ -n "$remote_pkg" ]]; then
-                remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/' | tr -d '[:space:]')
+                remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*|FAILED)/\1/' | tr -d '[:space:]')
             fi
             label="[FILES MISSING]"
             [[ "$local_ver" == "VERSION_MISSING" ]] && label="[VERSION MISSING]"
             printf "%-30s | %-15s | %-15s %s\n" "$name" "$local_ver" "$remote_ver" "$label" > "$tmp_lfs/$name"
         elif [[ -n "$remote_pkg" ]]; then
-            # Strip everything before the first hyphen followed by a digit to get the version
-            remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/' | tr -d '[:space:]')
+            # Strip everything before the first hyphen followed by a digit or FAILED to get the version
+            remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*|FAILED)/\1/' | tr -d '[:space:]')
             
-            # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
-            local_base=$(echo "$local_ver" | sed -E 's#-[-a-zA-Z]+$##')
-            remote_base=$(echo "$remote_ver" | sed -E 's#-[-a-zA-Z]+$##')
+            if [[ "$remote_ver" == "FAILED" ]]; then
+                printf "%-30s | %-15s | %-15s [FAILED]\n" "$name" "$local_ver" "$remote_ver" > "$tmp_lfs/$name"
+            else
+                # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
+                local_base=$(echo "$local_ver" | sed -E 's#-[-a-zA-Z]+$##')
+                remote_base=$(echo "$remote_ver" | sed -E 's#-[-a-zA-Z]+$##')
 
-            if [[ "$local_base" != "$remote_base" ]]; then
-                higher=$(echo -e "$local_base\n$remote_base" | tr -d '\r' | sort -V | tail -n 1)
-                if [[ "$higher" == "$remote_base" ]]; then
-                    printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver" > "$tmp_lfs/$name"
+                if [[ "$local_base" != "$remote_base" ]]; then
+                    higher=$(echo -e "$local_base\n$remote_base" | tr -d '\r' | sort -V | tail -n 1)
+                    if [[ "$higher" == "$remote_base" ]]; then
+                        printf "%-30s | %-15s | %-15s [UPDATE]\n" "$name" "$local_ver" "$remote_ver" > "$tmp_lfs/$name"
+                    fi
                 fi
             fi
         fi

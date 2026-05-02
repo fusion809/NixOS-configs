@@ -372,7 +372,7 @@ lfs_get_upstream_version() {
             curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
         frameworks|frameworks6)
-            curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
+            curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=/")}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1
             ;;
         plasma|plasma-all)
             curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
@@ -442,16 +442,27 @@ lfs_get_remote_packages() {
     # BLFS meta-pages for extra coverage (Xorg, KDE, etc.)
     local blfs_metapages=("x/x7lib.html" "x/x7app.html" "x/x7font.html" "x/x7driver.html" "kde/frameworks6.html" "kde/plasma-all.html" "kde/plasma.html")
     local blfs_extra=""
+    local plasma_pkg_names=""
+    local frameworks_pkg_names=""
     for page in "${blfs_metapages[@]}"; do
-        blfs_extra+="$(curl -s "$BLFS_DEV_BOOK/$page" | tr -d '\r' | \
+        local page_pkgs="$(curl -s "$BLFS_DEV_BOOK/$page" | tr -d '\r' | \
             grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.(tar\.[a-z0-9]+|zip)' | \
-            sed 's/\.tar.*//; s/\.zip//' | sort -u)"$'\n'
+            sed 's/\.tar.*//; s/\.zip//' | sort -u)"
+        blfs_extra+="${page_pkgs}"$'\n'
+        
+        if [[ "$page" == "kde/plasma"* ]]; then
+            plasma_pkg_names+=$(echo "$page_pkgs" | sed -E 's/-[0-9].*//')
+            plasma_pkg_names+=$'\n'
+        elif [[ "$page" == "kde/frameworks6.html" ]]; then
+            frameworks_pkg_names+=$(echo "$page_pkgs" | sed -E 's/-[0-9].*//')
+            frameworks_pkg_names+=$'\n'
+        fi
     done
     
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "firefox" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "qt6" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -461,6 +472,8 @@ lfs_get_remote_packages() {
                 uv=$(lfs_get_upstream_version "$p")
                 if [[ -n "$uv" ]]; then
                     echo "${p}-${uv}" > "$tmp_upstream/$p"
+                else
+                    echo "${p}-FAILED" > "$tmp_upstream/$p"
                 fi
             ) &
             
@@ -474,11 +487,31 @@ lfs_get_remote_packages() {
         lfs_progress_bar "$total" "$total" "Upstream checks complete" >&2
         echo "" >&2
         
+        # Expand metapackage versions (plasma, frameworks) to all their constituent packages
+        if [[ -f "$tmp_upstream/plasma" ]]; then
+            local plasma_up_ver=$(cat "$tmp_upstream/plasma" | cut -d- -f2)
+            for p in $(echo "$plasma_pkg_names" | sort -u); do
+                [[ -n "$p" ]] && echo "${p}-${plasma_up_ver}" > "$tmp_upstream/$p"
+            done
+        fi
+        
+        if [[ -f "$tmp_upstream/frameworks6" || -f "$tmp_upstream/frameworks" ]]; then
+            local fw_up_ver=""
+            [[ -f "$tmp_upstream/frameworks6" ]] && fw_up_ver=$(cat "$tmp_upstream/frameworks6" | cut -d- -f2)
+            [[ -z "$fw_up_ver" && -f "$tmp_upstream/frameworks" ]] && fw_up_ver=$(cat "$tmp_upstream/frameworks" | cut -d- -f2)
+            if [[ -n "$fw_up_ver" ]]; then
+                for p in $(echo "$frameworks_pkg_names" | sort -u); do
+                    [[ -n "$p" ]] && echo "${p}-${fw_up_ver}" > "$tmp_upstream/$p"
+                done
+            fi
+        fi
+
         # Efficiently merge upstream updates by filtering out original versions in one pass if possible
         # or at least avoiding the quadratic echo/grep re-assignments.
         local replacements_regex=""
-        for p in "${upstream_list[@]}"; do
-            if [[ -f "$tmp_upstream/$p" ]]; then
+        for f in "$tmp_upstream"/*; do
+            if [[ -f "$f" ]]; then
+                local p=$(basename "$f")
                 # Escape dots and other chars for safe regex
                 local safe_p=$(echo "$p" | sed 's/\./\\./g')
                 replacements_regex+="^${safe_p}-([0-9])|"
@@ -952,11 +985,11 @@ lfs_update() {
         [[ -z "$name" || "$name" == "$local_pkg" ]] && continue
 
         # Find matching package in remote list (case-insensitive)
-        local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9])" | head -n 1)
+        local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9]|FAILED)" | head -n 1)
         if [[ -z "$remote_pkg" ]]; then
             # Try fuzzy match: strip numeric suffix like 3 in gtk3 and try matching GTK-
             local name_base=$(echo "$name" | sed -E 's/[0-9]+$//')
-            [[ -n "$name_base" ]] && remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}-([0-9])" | head -n 1)
+            [[ -n "$name_base" ]] && remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}[0-9]?-([0-9]|FAILED)" | head -n 1)
         fi
         
         # if [[ "$name" =~ "gnome" ]] || [[ "$name" == "adwaita-icon-theme" ]] || [[ "$name" == "mutter" ]] || [[ "$name" == "nautilus" ]]; then
@@ -964,8 +997,13 @@ lfs_update() {
         # fi
 
         if [[ -n "$remote_pkg" ]]; then
-            # Extract version carefully (anything after the first hyphen followed by a digit)
-            local remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
+            # Extract version carefully (anything after the first hyphen followed by a digit or FAILED)
+            local remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*|FAILED)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
+            
+            if [[ "$remote_ver" == "FAILED" ]]; then
+                echo "Failed to get upstream version for: $name"
+                continue
+            fi
             
             # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
             local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
