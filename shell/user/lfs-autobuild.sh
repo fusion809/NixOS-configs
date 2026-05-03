@@ -1677,6 +1677,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                 if (line ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
                     host_cmds = host_cmds "\n" line " 2>/dev/null || true";
                 } else {
+                    # Fix awk $2 escaping in for loops (e.g. for package in $(... awk '{print $2}'))
+                    gsub(/\$2/, "\\$2", line);
                     host_cmds = host_cmds "\n" line
                 }
                 next;
@@ -1835,10 +1837,10 @@ ${COMMANDS}"
         }
         /^[[:space:]]*while read -r line; do/ { 
             in_loop = 1; 
-            loop_content = $0; 
+            loop_content = "    while read -r line; do"; 
             loop_content = loop_content "\n    cd /sources/archives";
             loop_content = loop_content "\n    [[ -z \"$line\" || \"$line\" == [[:space:]]*#* ]] && continue";
-            loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x22{print \\$2}\x22 | sed \x22s/\\.tar\\.[a-z2]\\+//\x22)";
+            loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x27{print \$2}\x27 | sed \x27s/\\\\.tar\\\\.[a-z2]\\\\+//\x27)";
             loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
             loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
             loop_content = loop_content "\n    # Skip if we only want one package and this is not it";
@@ -1884,7 +1886,7 @@ ${COMMANDS}"
                 
                 loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
                 loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                loop_content = loop_content "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n    fi";
                 
                 real_cmd = $0;
@@ -1917,7 +1919,7 @@ ${COMMANDS}"
                 loop_content = loop_content "\n        if [ -f \"/var/lib/book-packages/${PKGNAME}\" ]; then";
                 loop_content = loop_content "\n            TMP_INV=\$(mktemp)";
                 loop_content = loop_content "\n            echo \"\${PKGVER}\" > \"\$TMP_INV\"";
-                loop_content = loop_content "\n            grep -v -x \"\${PKGVER}\" \"/var/lib/book-packages/${PKGNAME}\" | grep -v \"^[[:space:]]*\\$\" | sort -u >> \"\$TMP_INV\"";
+                loop_content = loop_content "\n            grep -v -x \"\${PKGVER}\" \"/var/lib/book-packages/${PKGNAME}\" | grep -v \"^[[:space:]]*\$\" | sort -u >> \"\$TMP_INV\"";
                 loop_content = loop_content "\n            sudo mv \"\$TMP_INV\" \"/var/lib/book-packages/${PKGNAME}\"";
                 loop_content = loop_content "\n            sudo chmod 755 \"/var/lib/book-packages/${PKGNAME}\"";
                 loop_content = loop_content "\n        fi";
@@ -2149,16 +2151,44 @@ if [[ "$UPSTREAM" == "true" ]]; then
         UPSTREAM="false"
     fi
 
-    # Add specific tarball to DOWNLOAD_URLS for KDE sub-packages to bypass recursive wget issues
-    if [[ -n "$UPSTREAM_VERSION" ]]; then
-        if [[ "${METAPACKAGE_TARGET,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma-all" ]]; then
-            # We don't always know the exact filename extension, but .tar.xz is standard for KDE
-            DOWNLOAD_URLS+=("https://download.kde.org/stable/plasma/${UPSTREAM_VERSION}/${PACKAGE}-${UPSTREAM_VERSION}.tar.xz")
-        elif [[ "${METAPACKAGE_TARGET,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" ]]; then
-            # Frameworks sub-packages are in /stable/frameworks/MAJOR.MINOR/
+fi
+
+# Populate DOWNLOAD_URLS from MD5 file for metapackages (Xorg/KDE) to ensure all sub-packages are available
+if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
+    if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
             MM=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
-            DOWNLOAD_URLS+=("https://download.kde.org/stable/frameworks/${MM}/${PACKAGE}-${UPSTREAM_VERSION}.tar.xz")
+            BASE_URL="https://download.kde.org/stable/frameworks/${MM}/"
+        else
+            BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/url=(https?:\/\/\S+)/) { print $1; exit }')
         fi
+        [[ -z "$BASE_URL" ]] && BASE_URL="https://download.kde.org/stable/frameworks/$(echo "$LFS_VERSION" | cut -d. -f1,2)/"
+    else
+        # Extract base URL for Xorg
+        BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/ -B\s+(https?:\/\/\S+)/) { print $1; exit }')
+        if [[ -z "$BASE_URL" ]]; then
+            case "$PACKAGE" in
+                xorg-lib|x7lib)       BASE_URL="https://www.x.org/pub/individual/lib/" ;;
+                xorg-app|x7app)       BASE_URL="https://www.x.org/pub/individual/app/" ;;
+                xorg-font|x7font)     BASE_URL="https://www.x.org/pub/individual/font/" ;;
+                xorg-driver|x7driver) BASE_URL="https://www.x.org/pub/individual/driver/" ;;
+            esac
+        fi
+    fi
+    
+    # Extract filenames from the MD5 block in COMMANDS
+    FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /\s(\S+\.tar\.[a-z2]+)/g) { print "$1\n" } }')
+    if [[ -z "$FILENAMES" ]]; then
+        FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^.*\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
+    fi
+    
+    if [[ -n "$FILENAMES" ]]; then
+        for f in $FILENAMES; do
+            # Only add if it's the target package OR if we are in full metapackage mode
+            if [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" == *"$PACKAGE"* ]]; then
+                DOWNLOAD_URLS+=("${BASE_URL}${f}")
+            fi
+        done
     fi
 fi
 fi
