@@ -1844,9 +1844,9 @@ ${COMMANDS}"
             loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
             loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
             loop_content = loop_content "\n    # Skip if we only want one package and this is not it";
-            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi";
+            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ] && [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi";
             loop_content = loop_content "\n    # Skip if already installed (resume feature)";
-            loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ]; then";
+            loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ] && [ \"$FORCE\" != \"true\" ]; then";
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
             loop_content = loop_content "\n        continue";
             loop_content = loop_content "\n    fi";
@@ -2150,7 +2150,23 @@ if [[ "$UPSTREAM" == "true" ]]; then
         log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, KDE apps, and GNOME apps)"
         UPSTREAM="false"
     fi
+fi
 
+# Identify LFS version from COMMANDS for KDE/Plasma/Metapackage substitution
+# This must happen before DOWNLOAD_URLS population to ensure correct versions are fetched
+LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules|kdecoration|libkscreen)-\K[0-9]+(\.[0-9]+)+}g) { print $& }' | sort -V | tail -n 1)
+if [[ -z "$LFS_VERSION" ]]; then
+    LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{/archives/(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules|kdecoration|libkscreen)-\K[0-9]+(\.[0-9]+)+}g) { print $& }' | sort -V | tail -n 1)
+fi
+[[ -z "$LFS_VERSION" ]] && LFS_VERSION=$(echo "$COMMANDS" | grep -oE '-(6\.[0-9]+\.[0-9]+)\.tar' | head -n 1 | sed 's/-//; s/\.tar//')
+LFS_MM=$(echo "$LFS_VERSION" | cut -d. -f1,2)
+
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$LFS_VERSION" ]]; then
+    UPSTREAM_FULL="${UPSTREAM_VERSION}"
+    if [[ $(echo "$UPSTREAM_FULL" | grep -o '\.' | wc -l) -eq 1 ]]; then
+        UPSTREAM_FULL="${UPSTREAM_FULL}.0"
+    fi
+    UPSTREAM_MM=$(echo "$UPSTREAM_FULL" | cut -d. -f1,2)
 fi
 
 # Populate DOWNLOAD_URLS from MD5 file for metapackages (Xorg/KDE) to ensure all sub-packages are available
@@ -2183,6 +2199,10 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
     fi
     
     if [[ -n "$FILENAMES" ]]; then
+        # Apply version substitution to FILENAMES if we are in upstream mode
+        if [[ -n "$UPSTREAM_FULL" && -n "$LFS_VERSION" ]]; then
+            FILENAMES=$(echo "$FILENAMES" | sed "s/$LFS_VERSION/$UPSTREAM_FULL/g; s/$LFS_MM/$UPSTREAM_MM/g")
+        fi
         for f in $FILENAMES; do
             # Only add if it's the target package OR if we are in full metapackage mode
             if [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" == *"$PACKAGE"* ]]; then
