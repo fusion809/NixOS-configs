@@ -388,7 +388,7 @@ find_package_page() {
         log "Searching for '$pkg' in BLFS index..." >&2
 
         local search_pkg="$pkg"
-        if [[ "$pkg" =~ ^gst-plugins-(base|good|bad|ugly)$ ]]; then
+        if [[ "$pkg" =~ ^gst-plugins-(base|good|bad|ugly|libav|vaapi)$ ]]; then
             search_pkg="gst10-plugins-${BASH_REMATCH[1]}"
         elif [[ "$pkg" == "rustc" ]]; then
             search_pkg="rust"
@@ -1576,10 +1576,10 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     vm_cmds = vm_cmds "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
                     vm_cmds = vm_cmds "\n    if [ -n \"${PACKAGE}\" ] && [ \"$pkg_match\" != \"${PACKAGE}\" ] && [ \"$package\" != \"${PACKAGE}\" ]; then continue; fi"
 
-                    vm_cmds = vm_cmds "\n    PKGNAME=$(echo $package | sed -E \"s/[-_][0-9].*//\")";
-                    vm_cmds = vm_cmds "\n    PKGVER=$(echo $package | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/\\.tar\\..*//\")";
-                    vm_cmds = vm_cmds "\n    touch /tmp/build_start_${PKGNAME}";
-                    vm_cmds = vm_cmds "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    PKGNAME=$(echo \$package | sed -E \"s/[-_][0-9].*//\")";
+                    vm_cmds = vm_cmds "\n    PKGVER=$(echo \$package | sed \"s/^\${PKGNAME}-//; s/^\${PKGNAME}_//; s/\\.tar\\..*//\")";
+                    vm_cmds = vm_cmds "\n    touch /tmp/build_start_\${PKGNAME}";
+                    vm_cmds = vm_cmds "\n    echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     next;
                 }
                 # Pass function definitions through verbatim (e.g. do_build() { make; })
@@ -1635,11 +1635,11 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                             }
                         }
                     }
-                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
-                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
+                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/\${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    sudo rm -rf \"\$DDIR\"";
                     next;
                 }
                 # Intercept do_install wrapper calls used by xorg-lib loop
@@ -1649,12 +1649,12 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                     vm_cmds = vm_cmds "\n    do_install";
                     vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    fi";
-                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
-                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/\${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
                     next;
                 }
@@ -1840,18 +1840,27 @@ ${COMMANDS}"
             loop_content = "    while read -r line; do"; 
             loop_content = loop_content "\n    cd /sources/archives";
             loop_content = loop_content "\n    [[ -z \"$line\" || \"$line\" == [[:space:]]*#* ]] && continue";
-            loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x27{print \$2}\x27 | sed \x27s/\\\\.tar\\\\.[a-z2]\\\\+//\x27)";
+            loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x27{print $2}\x27 | sed -E \x27s/\\.tar\\.[a-z0-9.]+$//\x27)";
             loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
             loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
             loop_content = loop_content "\n    # Skip if we only want one package and this is not it";
-            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ] && [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi";
+            loop_content = loop_content "\n    # Filter: Only build the requested package (or all if metapackage targeted)";
+            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then";
+            loop_content = loop_content "\n        if [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi";
+            loop_content = loop_content "\n    fi";
+            loop_content = loop_content "\n    # Skip if source archive is missing (and we are not building the whole metapackage)";
+            loop_content = loop_content "\n    TARBALL=$(echo \"$line\" | awk \x27{print $2}\x27)";
+            loop_content = loop_content "\n    if [ ! -f \"/sources/archives/${TARBALL}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then";
+            loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping missing archive: ${TARBALL} (not requested)\"";
+            loop_content = loop_content "\n        continue";
+            loop_content = loop_content "\n    fi";
             loop_content = loop_content "\n    # Skip if already installed (resume feature)";
             loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ] && [ \"$FORCE\" != \"true\" ]; then";
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
             loop_content = loop_content "\n        continue";
             loop_content = loop_content "\n    fi";
-            loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
-            loop_content = loop_content "\n    echo \"$PKGVER\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+            loop_content = loop_content "\n    touch /tmp/build_start_\${PKGNAME}";
+            loop_content = loop_content "\n    echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
             next;
         }
         /mkdir build/ { if (in_loop) { loop_content = loop_content "\nrm -rf build"; loop_content = loop_content "\n" $0; next } }
@@ -1886,7 +1895,7 @@ ${COMMANDS}"
                 
                 loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
                 loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                loop_content = loop_content "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\\\n\" | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n    fi";
                 
                 real_cmd = $0;
@@ -1897,11 +1906,11 @@ ${COMMANDS}"
                 loop_content = loop_content "\n    " real_cmd;
                 
                 # Backup -newer check
-                loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                 # Cleanup and record: Keep the version header at line 1, sort the rest uniquely
-                loop_content = loop_content "\n    (head -n 1 \"/var/lib/book-packages/${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n    sudo chmod 755 \"/var/lib/book-packages/${PKGNAME}\"";
-                loop_content = loop_content "\n    as_root rm -rf \"$DDIR\"";
+                loop_content = loop_content "\n    (head -n 1 \"/var/lib/book-packages/\${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n    sudo chmod 755 \"/var/lib/book-packages/\${PKGNAME}\"";
+                loop_content = loop_content "\n    as_root rm -rf \"\$DDIR\"";
                 loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
                 next;
             }
@@ -1909,23 +1918,23 @@ ${COMMANDS}"
         # Intercept do_install wrapper calls in frameworks loop
         /^[[:space:]]*do_install[[:space:]]*$/ {
             if (in_loop) {
-                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Installing and recording inventory for ${PKGNAME}...\"";
+                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Installing and recording inventory for \${PKGNAME}...\"";
                 loop_content = loop_content "\n    if do_install; then";
                 loop_content = loop_content "\n        # Record inventory ONLY on success";
-                loop_content = loop_content "\n        echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n        echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n        # Find files installed by this specific component";
-                loop_content = loop_content "\n        find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer \"/tmp/build_start_${PKGNAME}\" 2>/dev/null | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
+                loop_content = loop_content "\n        find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer \"/tmp/build_start_\${PKGNAME}\" 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                 loop_content = loop_content "\n        # Clean duplicate version lines and orphaned paths";
-                loop_content = loop_content "\n        if [ -f \"/var/lib/book-packages/${PKGNAME}\" ]; then";
+                loop_content = loop_content "\n        if [ -f \"/var/lib/book-packages/\${PKGNAME}\" ]; then";
                 loop_content = loop_content "\n            TMP_INV=\$(mktemp)";
                 loop_content = loop_content "\n            echo \"\${PKGVER}\" > \"\$TMP_INV\"";
-                loop_content = loop_content "\n            grep -v -x \"\${PKGVER}\" \"/var/lib/book-packages/${PKGNAME}\" | grep -v \"^[[:space:]]*\$\" | sort -u >> \"\$TMP_INV\"";
-                loop_content = loop_content "\n            sudo mv \"\$TMP_INV\" \"/var/lib/book-packages/${PKGNAME}\"";
-                loop_content = loop_content "\n            sudo chmod 755 \"/var/lib/book-packages/${PKGNAME}\"";
+                loop_content = loop_content "\n            grep -v -x \"\${PKGVER}\" \"/var/lib/book-packages/\${PKGNAME}\" | grep -v \"^[[:space:]]*\$\" | sort -u >> \"\$TMP_INV\"";
+                loop_content = loop_content "\n            sudo mv \"\$TMP_INV\" \"/var/lib/book-packages/\${PKGNAME}\"";
+                loop_content = loop_content "\n            sudo chmod 755 \"/var/lib/book-packages/\${PKGNAME}\"";
                 loop_content = loop_content "\n        fi";
-                loop_content = loop_content "\n        touch \"/sources/archives/${DIRNAME}.installed\"";
+                loop_content = loop_content "\n        touch \"/sources/archives/\${DIRNAME}.installed\"";
                 loop_content = loop_content "\n    else";
-                loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Build for ${PKGNAME} failed. Skipping inventory recording.\"";
+                loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Build for \${PKGNAME} failed. Skipping inventory recording.\"";
                 loop_content = loop_content "\n        exit 1";
                 loop_content = loop_content "\n    fi";
                 next;
@@ -2951,6 +2960,8 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
                     my $footer = $3;
                     $body =~ s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
                     $body =~ s/6\.\d+(?:\.\d+){0,2}/$uf/og; # Fallback generic replacement
+                    # 2.1 Uncomment lines that match the target version (ensure we build everything in the release)
+                    $body =~ s/^\s*#\s*([a-f0-9]{32}\s+.*$uf\.tar\.[a-z2]+)/$1/mg;
                     $header . $body . $footer
                 }
             !gse;

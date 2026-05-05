@@ -371,7 +371,7 @@ lfs_get_upstream_version() {
         libuv)
             curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
-        frameworks|frameworks6)
+        frameworks|frameworks6|extra-cmake-modules|breeze-icons)
             curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=/")}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1
             ;;
         plasma|plasma-all)
@@ -387,7 +387,7 @@ lfs_get_upstream_version() {
             # Use GitLab API to fetch the latest guaranteed 1.x stable tag by strictly filtering for 'libpeas-' prefix
             curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
             ;;
-        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|libpeas|gjs|glycin|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)
+        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|libpeas|gjs|glycin|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|dconf-editor|polkit-gnome|geocode-glib|libshumate|libsecret)
             local base_url="https://download.gnome.org/sources/$pkg"
             # Some packages might have different names on GNOME servers
             [[ "$pkg" == "libxml2" ]] && base_url="https://download.gnome.org/sources/libxml2"
@@ -409,6 +409,12 @@ lfs_get_upstream_version() {
         gtk3)
             # Use BLFS book directly for current version
             curl -s https://linuxfromscratch.org/blfs/view/systemd/x/gtk3.html | perl -nle 'while (m{GTK-([0-9]+\.[0-9]+\.[0-9]+)}g) { print $1; exit }'
+            ;;
+        libdisplay-info)
+            curl -sL "https://gitlab.freedesktop.org/api/v4/projects/emersion%2Flibdisplay-info/repository/tags" | perl -nle 'while (m{"name":"([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
+            ;;
+        libjxl)
+            curl -sL "https://api.github.com/repos/libjxl/libjxl/releases/latest" | perl -nle 'while (m{"tag_name":"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
     esac
 }
@@ -462,7 +468,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "frameworks" "frameworks6" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "frameworks" "frameworks6" "extra-cmake-modules" "breeze-icons" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners" "libshumate" "libjxl" "libdisplay-info")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -1136,7 +1142,7 @@ def extract_deps(url):
 pkg_urls = {}
 for pkg in updates:
     search_pkg = pkg
-    if re.match(r"^gst-plugins-(base|good|bad|ugly)$", pkg):
+    if re.match(r"^gst-plugins-(base|good|bad|ugly|libav|vaapi)$", pkg):
         search_pkg = "gst10-plugins-" + pkg.split("-")[-1]
     
     # Try exact match in longindex
