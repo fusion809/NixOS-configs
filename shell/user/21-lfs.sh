@@ -371,6 +371,9 @@ lfs_get_upstream_version() {
         libuv)
             curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
+        appstream)
+            curl -s -H "User-Agent: bash" https://api.github.com/repos/ximion/appstream/tags | perl -nle 'while (m{"name":"v([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
+            ;;
         frameworks|frameworks6|extra-cmake-modules|breeze-icons)
             curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=/")}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1
             ;;
@@ -414,7 +417,7 @@ lfs_get_upstream_version() {
             curl -sL "https://gitlab.freedesktop.org/api/v4/projects/emersion%2Flibdisplay-info/repository/tags" | perl -nle 'while (m{"name":"([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
             ;;
         libjxl)
-            curl -sL "https://api.github.com/repos/libjxl/libjxl/releases/latest" | perl -nle 'while (m{"tag_name":"v([0-9.]+)"}g) { print $1 }' | head -n 1
+            curl -s -H "User-Agent: bash" https://api.github.com/repos/libjxl/libjxl/releases/latest | perl -nle 'while (m{"tag_name":"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
     esac
 }
@@ -468,7 +471,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "frameworks" "frameworks6" "extra-cmake-modules" "breeze-icons" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners" "libshumate" "libjxl" "libdisplay-info")
+        local upstream_list=("linux" "rustc" "llvm" "libuv" "frameworks" "frameworks6" "extra-cmake-modules" "breeze-icons" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners" "libshumate" "libjxl" "libdisplay-info" "appstream")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -1134,11 +1137,7 @@ def extract_deps(url):
         pass
     return deps
 
-# Build graph: node -> set of depends-on nodes (edges from dependency to dependent)
-# We want to build graph where A depends on B -> B must come before A
-# The graph for topological sort typically expects: node -> iterable of nodes it depends on
-# We will use graphlib if available (Python 3.9+) or do a simple Kahn array sort.
-
+# 2.2 Resolve and build required dependencies before this package
 pkg_urls = {}
 for pkg in updates:
     search_pkg = pkg
@@ -1158,53 +1157,68 @@ for pkg in updates:
         # Check LFS if not in BLFS
         if pkg == "linux":
             pkg_urls[pkg] = f"{lfs_book}/chapter10/kernel.html"
-        else:
-            # Not fully resolving LFS pages here as they rarely depend on BLFS.
-            # Assuming LFS packages just have no deps mapped for now
-            pass
 
 graph = {pkg: set() for pkg in updates}
 
 for pkg in updates:
     if pkg in pkg_urls:
         deps = extract_deps(pkg_urls[pkg])
-        # Only care about dependencies that are also in the update list
         for dep in deps:
-            # We need to map the parsed page name back to our update list name
-            # which could be an exact match, or a prefix match (e.g. gstreamer matches gstreamer)
             matched_dep = None
             for p in updates:
-                # If the dependency page name is the package, or package starts with page name
                 if p == dep or p.startswith(dep + "-") or dep.startswith(p + "-"):
                     matched_dep = p
                     break
             
             if matched_dep and matched_dep != pkg:
-                graph[pkg].add(matched_dep)
+                # Avoid circular deps within the same page (common on metapackage pages)
+                if pkg_urls.get(pkg) == pkg_urls.get(matched_dep):
+                    # Only enforce order for critical build tools
+                    if matched_dep in ["extra-cmake-modules", "breeze-icons"]:
+                        graph[pkg].add(matched_dep)
+                else:
+                    graph[pkg].add(matched_dep)
 
 # Perform topological sort
 def toposort(graph):
-    # Calculate in-degrees (how many things does a node depend on)
+    # Calculate in-degrees
+    in_degree = {u: 0 for u in graph}
+    for u in graph:
+        for v in graph[u]:
+            in_degree[u] += 1
+    
+    # We want to build nodes with in_degree 0 first
+    # So we need to reverse the graph: dependency -> dependents
+    adj = {u: [] for u in graph}
+    for u in graph:
+        for v in graph[u]:
+            adj[v].append(u)
+    
+    # Recalculate in_degree: count how many nodes each node depends on
     in_degree = {u: len(graph[u]) for u in graph}
     
-    queue = [u for u in in_degree if in_degree[u] == 0]
-    result = []
+    # Prioritize critical build tools by artificially reducing their in-degree if they are in the update list
+    priority_pkgs = ["extra-cmake-modules", "breeze-icons"]
     
+    queue = [u for u in in_degree if in_degree[u] == 0]
+    # Sort queue to put priority packages first among those with 0 in-degree
+    queue.sort(key=lambda x: (x not in priority_pkgs, x))
+    
+    result = []
     while queue:
         u = queue.pop(0)
         result.append(u)
         
-        # When u is resolved, anything depending on u gets -1 to their in_degree
-        for v in graph:
-            if u in graph[v]:
-                in_degree[v] -= 1
-                if in_degree[v] == 0:
-                    queue.append(v)
+        for v in adj[u]:
+            in_degree[v] -= 1
+            if in_degree[v] == 0:
+                queue.append(v)
+                queue.sort(key=lambda x: (x not in priority_pkgs, x))
                     
-    # Handle cycles or missing nodes by just appending whatever is left
-    for node in graph:
-        if node not in result:
-            result.append(node)
+    # Handle cycles by appending remaining nodes
+    remaining = [node for node in graph if node not in result]
+    remaining.sort(key=lambda x: (x not in priority_pkgs, x))
+    result.extend(remaining)
             
     return result
 

@@ -646,6 +646,26 @@ if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
             cat > "$_dep_check_script" <<DEPCHECK
 dep='$dep'
 # 1. Standard pkg-config check
+# Special check for KDE/Plasma upstream dependencies to ensure version compatibility
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]]; then
+    # Identify KDE components that usually share the Frameworks/Plasma version
+    if [[ "$dep" =~ ^(k[a-z0-9]+|breeze-icons|extra-cmake-modules|attica|polkit-kde-agent-1|libkscreen|libksysguard|milou|plasma-|sddm-kcm|khotkeys|kwrited|kscreenlocker|ksshaskpass|kgamma|kdecoration|ksysguard)$ ]]; then
+        # Check if the installed version in our registry matches the target upstream version
+        for reg_dir in "/var/lib/book-packages" "/var/lib/custom-packages"; do
+            if [ -f "\$reg_dir/\$dep" ]; then
+                INSTALLED_VER=\$(head -n 1 "\$reg_dir/\$dep" | grep -v "^#" | tr -d "[:space:]")
+                # Compare only major.minor if it's a dot-zero release or if versions match exactly
+                if [[ "\$INSTALLED_VER" == "$UPSTREAM_VERSION" ]] || [[ "\$INSTALLED_VER" == "${UPSTREAM_VERSION}.0" ]] || [[ "\${INSTALLED_VER}.0" == "$UPSTREAM_VERSION" ]]; then
+                    echo installed && exit 0
+                else
+                    echo "outdated (\$INSTALLED_VER vs $UPSTREAM_VERSION)" >&2
+                    exit 1
+                fi
+            fi
+        done
+    fi
+fi
+
 pkg-config --exists "$dep" 2>/dev/null && echo installed && exit 0
 pkg-config --exists "${dep}-1" "${dep}-0" 2>/dev/null && echo installed && exit 0
 
@@ -2822,6 +2842,7 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && [[ "${DOWNLOAD_URLS[
         for i in "${!DOWNLOAD_URLS[@]}"; do
             DOWNLOAD_URLS[$i]=$(echo "${DOWNLOAD_URLS[$i]}" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g; s|/$KDE_LFS_MM/|/$KDE_UP_MM/|g")
         done
+        MAIN_DOWNLOAD_URL=$(echo "$MAIN_DOWNLOAD_URL" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g; s|/$KDE_LFS_MM/|/$KDE_UP_MM/|g")
         # Also substitute the LFS_VERSION inside COMMANDS since these simple packages don't have an MD5 heredoc!
         COMMANDS=$(echo "$COMMANDS" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g")
     fi
