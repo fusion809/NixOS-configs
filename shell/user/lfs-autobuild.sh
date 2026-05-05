@@ -1308,6 +1308,11 @@ if [[ "$PACKAGE" == "svt-av1" ]]; then
     COMMANDS=$(echo "$COMMANDS" | grep -vE "TestVectors|ctest")
 fi
 
+if [[ "$PACKAGE" == "appstream" ]]; then
+    log "Enabling Qt6 support in appstream (required for KDE Discover / AppStreamQt)..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D qt=true /g')
+fi
+
 if [[ "$PACKAGE" == "glycin" ]]; then
     log "Enabling GTK4 support in glycin (required for Nautilus 50.0+)..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/-D libglycin-gtk4=false/-D libglycin-gtk4=true/g')
@@ -1879,8 +1884,9 @@ ${COMMANDS}"
             loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
             loop_content = loop_content "\n        continue";
             loop_content = loop_content "\n    fi";
-            loop_content = loop_content "\n    touch /tmp/build_start_\${PKGNAME}";
-            loop_content = loop_content "\n    echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+            loop_content = loop_content "\n    # Only write the version stub now that we know we will actually build this package";
+            loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
+            loop_content = loop_content "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
             next;
         }
         /mkdir build/ { if (in_loop) { loop_content = loop_content "\nrm -rf build"; loop_content = loop_content "\n" $0; next } }
@@ -2981,8 +2987,7 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
                     my $footer = $3;
                     $body =~ s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
                     $body =~ s/6\.\d+(?:\.\d+){0,2}/$uf/og; # Fallback generic replacement
-                    # 2.1 Uncomment lines that match the target version (ensure we build everything in the release)
-                    $body =~ s/^\s*#\s*([a-f0-9]{32}\s+.*$uf\.tar\.[a-z2]+)/$1/mg;
+                    # Note: do NOT uncomment commented-out packages - BLFS marks them optional for a reason
                     $header . $body . $footer
                 }
             !gse;
