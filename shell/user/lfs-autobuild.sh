@@ -545,20 +545,22 @@ fi
 SETUP_COMMANDS=""
 
 if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
-PAGE_URL=$(find_package_page "$PACKAGE")
+PAGE_URL=""
 
-# Prioritize KDE/Plasma metapackages even before searching the index for common names
-if [[ -z "$PAGE_URL" || "$PACKAGE" =~ ^(kconfig|kservice|kauth|kcoreaddons|ki18n|kcodecs|kwidgetsaddons|kcompletion|kconfigwidgets|kxmlgui|kitemviews|ktextwidgets|kdeclarative|kcmutils|kio|kparts|knotifications|kjobwidgets|kiconthemes|kservice|kwindowsystem|kguiaddons|karchive|kdbusaddons|kdnssd|kitemmodels|kplotting|ksyntaxhighlighting|kunitconversion|kwindowsystem|kcoreaddons|kauth|kcodecs|kconfig|kwidgetsaddons|ki18n|kcompletion|kconfigwidgets|kitemviews|ktextwidgets|kxmlgui|kdeclarative|kcmutils|kio|kparts|knotifications|kjobwidgets|kiconthemes|kservice|kwindowsystem|kguiaddons|karchive|kdbusaddons|kdnssd|kitemmodels|kplotting|ksyntaxhighlighting|kunitconversion|kwindowsystem)$ ]]; then
-    log "Searching prominent metapackages for component '$PACKAGE'..."
-    for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
-        if curl -s "$BLFS_BOOK/$mp_page" | grep -iqE "href=\"${PACKAGE}\.html\"|${PACKAGE}[-_][0-9].*\.tar"; then
-            PAGE_URL="$BLFS_BOOK/$mp_page"
-            METAPACKAGE_TARGET=$(basename "$mp_page" .html)
-            SINGLE_COMPONENT_MODE="$PACKAGE"
-            log "Found component '$PACKAGE' securely nested within metapackage: $METAPACKAGE_TARGET"
-            break
-        fi
-    done
+# Prioritize KDE/Plasma and Xorg metapackages before searching the index
+log "Searching prominent metapackages for component '$PACKAGE'..."
+for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
+    if curl -s "$BLFS_BOOK/$mp_page" | grep -iqE "href=\"${PACKAGE}\.html\"|${PACKAGE}[-_][0-9].*\.tar"; then
+        PAGE_URL="$BLFS_BOOK/$mp_page"
+        METAPACKAGE_TARGET=$(basename "$mp_page" .html)
+        SINGLE_COMPONENT_MODE="$PACKAGE"
+        log "Found component '$PACKAGE' securely nested within metapackage: $METAPACKAGE_TARGET"
+        break
+    fi
+done
+
+if [[ -z "$PAGE_URL" ]]; then
+    PAGE_URL=$(find_package_page "$PACKAGE")
 fi
 
 if [[ -z "$PAGE_URL" ]]; then
@@ -2095,13 +2097,13 @@ if [[ "$UPSTREAM" == "true" ]]; then
             fi
             DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${DOWNLOAD_VER}.tar.xz")
         fi
-    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" || "${METAPACKAGE_TARGET,,}" == "frameworks6" || "${METAPACKAGE_TARGET,,}" == "frameworks" ]]; then
+    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks6" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE Frameworks version: $UPSTREAM_VERSION"
         fi
-    elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${METAPACKAGE_TARGET,,}" == "plasma-all" || "${METAPACKAGE_TARGET,,}" == "plasma" ]]; then
+    elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "$(basename "${METAPACKAGE_TARGET,,}")" == "plasma-all" || "$(basename "${METAPACKAGE_TARGET,,}")" == "plasma" ]]; then
         log "Fetching latest upstream KDE Plasma version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="([0-9]+\.[0-9]+\.[0-9]+)/?"}g) { print $1 }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
@@ -2157,29 +2159,31 @@ if [[ "$UPSTREAM" == "true" ]]; then
             log "Found upstream libuv version: $UPSTREAM_VERSION"
             DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
         fi
-    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|lglycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ ]]; then
-        log "Fetching latest upstream GNOME version for $PACKAGE from download.gnome.org..."
+    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|lglycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib2?|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ ]]; then
+        GNOME_PKG="$PACKAGE"
+        [[ "$GNOME_PKG" == "glib2" ]] && GNOME_PKG="glib"
+        log "Fetching latest upstream GNOME version for $GNOME_PKG from download.gnome.org..."
         # Use helper from 21-lfs.sh if available (it is sourced on the host, but we can source the VM copy)
         [ -f ~/.lfs_scripts/21-lfs.sh ] && source ~/.lfs_scripts/21-lfs.sh 2>/dev/null
         if declare -f lfs_get_upstream_version >/dev/null; then
-            UPSTREAM_VERSION=$(lfs_get_upstream_version "$PACKAGE")
+            UPSTREAM_VERSION=$(lfs_get_upstream_version "$GNOME_PKG")
         else
-            if [[ "$PACKAGE" == "libpeas" ]]; then
+            if [[ "$GNOME_PKG" == "libpeas" ]]; then
                 UPSTREAM_VERSION=$(curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1)
             else
-                base_url="https://download.gnome.org/sources/$PACKAGE"
+                base_url="https://download.gnome.org/sources/$GNOME_PKG"
                 major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
-                [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$PACKAGE"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+                [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$GNOME_PKG"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
             fi
         fi
 
         if [[ -n "$UPSTREAM_VERSION" ]]; then
-            log "Found upstream GNOME version for $PACKAGE: $UPSTREAM_VERSION"
+            log "Found upstream GNOME version for $GNOME_PKG: $UPSTREAM_VERSION"
                 major_v=${UPSTREAM_VERSION%%.*}
             if [[ "$major_v" =~ ^[0-9]+$ ]] && [ "$major_v" -lt 40 ]; then
                 major_v=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
             fi
-            DOWNLOAD_URLS+=("https://download.gnome.org/sources/$PACKAGE/$major_v/$PACKAGE-$UPSTREAM_VERSION.tar.xz")
+            DOWNLOAD_URLS+=("https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.xz")
         fi
     else
         log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, KDE apps, and GNOME apps)"
@@ -2193,7 +2197,7 @@ LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{(?:frameworks|plasma|breeze
 if [[ -z "$LFS_VERSION" ]]; then
     LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{/archives/(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules|kdecoration|libkscreen)-\K[0-9]+(\.[0-9]+)+}g) { print $& }' | sort -V | tail -n 1)
 fi
-[[ -z "$LFS_VERSION" ]] && LFS_VERSION=$(echo "$COMMANDS" | grep -oE '-(6\.[0-9]+\.[0-9]+)\.tar' | head -n 1 | sed 's/-//; s/\.tar//')
+[[ -z "$LFS_VERSION" ]] && LFS_VERSION=$(echo "$COMMANDS" | grep -oE -- '-(6\.[0-9]+\.[0-9]+)\.tar' | head -n 1 | sed 's/-//; s/\.tar//')
 LFS_MM=$(echo "$LFS_VERSION" | cut -d. -f1,2)
 
 if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$LFS_VERSION" ]]; then
@@ -2240,7 +2244,7 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
         fi
         for f in $FILENAMES; do
             # Only add if it's the target package OR if we are in full metapackage mode
-            if [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" == *"$PACKAGE"* ]]; then
+            if [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" =~ ^${PACKAGE}[-_][0-9] ]]; then
                 DOWNLOAD_URLS+=("${BASE_URL}${f}")
             fi
         done
@@ -2318,8 +2322,8 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
             match_pattern="${PKG_BASE}|${PKG_BASE%[0-9]}"
         fi
 
-        if (grep -Eiq "${match_pattern}" <<< "$link_base" || \
-           ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "firefox" <<< "$link_base")) && \
+        if (grep -Eiq "^(${match_pattern})[-_]?[0-9]" <<< "$link_base" || \
+           ([[ "$PACKAGE" == "spidermonkey" ]] && grep -qi "^firefox[-_]?[0-9]" <<< "$link_base")) && \
            [[ "$link_base" =~ (\.tar\.[a-z2]+|\.zip|\.patch|\.tgz|\.gz|\.sig)$ ]]; then
             DOWNLOAD_URLS+=("$link")
         fi
