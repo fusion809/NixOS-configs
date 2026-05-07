@@ -34,18 +34,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9545 | 61.96% | 1518 | 87.49% |
-| Nix | 2921 | 18.96% | 148 | 8.53% |
+| Shell | 9545 | 61.92% | 1518 | 87.49% |
+| Nix | 2921 | 18.95% | 148 | 8.53% |
 | CSS | 880 | 5.71% | 0 | 0.00% |
-| JSONC | 451 | 2.93% | 0 | 0.00% |
-| Markdown | 433 | 2.81% | 0 | 0.00% |
+| JSONC | 453 | 2.94% | 0 | 0.00% |
+| Markdown | 440 | 2.85% | 0 | 0.00% |
 | Patch | 396 | 2.57% | 0 | 0.00% |
 | JSON | 337 | 2.19% | 0 | 0.00% |
 | Python | 310 | 2.01% | 65 | 3.75% |
 | XML | 78 | 0.51% | 0 | 0.00% |
 | JavaScript | 41 | 0.27% | 4 | 0.23% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15405** | **100.00%** | **1735** | **100.00%** |
+| **Total** | **15414** | **100.00%** | **1735** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -145,6 +145,7 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Win</kbd>+<kbd>F9</kbd>                                      | Open workspace #29    |
 | <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #30    |
 | <kbd>Win</kbd>+<kbd>F11</kbd>                                     | Open workspace #31    |
+| <kbd>Win</kbd>+<kbd>F12</kbd>                                     | Open workspace #32    |
 | <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>1</kbd>                       | Move selected workspace to monitor 1 |
 | <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>2</kbd>                       | Move selected workspace to monitor 2 |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>                      | Move focused window (silently) to workspace #1     |
@@ -177,7 +178,8 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd>                 | Move focused window (silently) to workspace #28    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>End</kbd>                    | Move focused window (silently) to workspace #29    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Down</kbd>              | Move focused window (silently) to workspace #30    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Grave</kbd>                  | Move focused window (silently) to workspace #31    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>`</kbd> (Grave)              | Move focused window (silently) to workspace #31    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>-</kbd> (Minus)              | Move focused window (silently) to workspace #32    |
 | <kbd>Win</kbd>+<kbd>a</kbd>                                       | Expand out of tabbed mode |  
 | <kbd>Win</kbd>+<kbd>b</kbd>                                       | Open Brave. |
 | <kbd>Win</kbd>+<kbd>c</kbd>                                       | Open Google Chat Chrome app |

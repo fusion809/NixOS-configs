@@ -27,7 +27,7 @@ with pkgs; [
   ###############################################################
   # Chemistry software
   ###############################################################
-  avogadro2 # unstable to silence outdated popup msg.
+  unstable.avogadro2 # unstable to silence outdated popup msg.
   (import ./ds-fhs-env.nix { pkgs = pkgs.oldstable; }) # DSV
   (import ./csd-env.nix { inherit pkgs; }) # Mercury / CSD
   jmol
