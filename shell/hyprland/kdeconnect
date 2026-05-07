@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Waybar KDE Connect module: shows phone battery level and charging status.
+# Outputs JSON with text, tooltip, and CSS class for Waybar.
+
+# Find gdbus via pure bash glob — no external commands needed before PATH is set
+GLIB_BIN=""
+for _d in /nix/store/*-glib-*-bin/bin; do
+    [[ -x "$_d/gdbus" ]] && GLIB_BIN="$_d" && break
+done
+export PATH="/run/current-system/sw/bin:/run/current-system/sw/sbin:/usr/bin:/bin${GLIB_BIN:+:$GLIB_BIN}"
+
+# Now id -u works, so we can set the D-Bus session address
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+
+DEVICE_ID=$(kdeconnect-cli --list-available --id-only 2>/dev/null | head -n1 | tr -d '\r')
+
+if [[ -z "$DEVICE_ID" ]]; then
+    # Also try paired but currently unavailable devices
+    DEVICE_ID=$(kdeconnect-cli --list-devices --id-only 2>/dev/null | head -n1 | tr -d '\r')
+fi
+
+if [[ -z "$DEVICE_ID" ]]; then
+    echo '{"text": "󰄷", "tooltip": "No phone connected", "class": "disconnected"}'
+    exit 0
+fi
+
+DEVICE_NAME=$(kdeconnect-cli --list-available 2>/dev/null | grep "$DEVICE_ID" | sed 's/^- \(.*\): .*/\1/' | tr -d '\r')
+DBUS_PATH="/modules/kdeconnect/devices/${DEVICE_ID}/battery"
+
+# Query battery via D-Bus (--battery flag does not exist in kdeconnect-kde 25.x)
+BATT_OUTPUT=$(gdbus call --session \
+    --dest org.kde.kdeconnect \
+    --object-path "$DBUS_PATH" \
+    --method org.freedesktop.DBus.Properties.GetAll \
+    org.kde.kdeconnect.device.battery 2>/dev/null)
+
+if [[ -z "$BATT_OUTPUT" ]]; then
+    echo "{\"text\": \"󰄷\", \"tooltip\": \"${DEVICE_NAME}: battery unavailable\", \"class\": \"unavailable\"}"
+    exit 0
+fi
+
+# Parse output like: ({'charge': <88>, 'isCharging': <false>},)
+CHARGE=$(echo "$BATT_OUTPUT" | grep -oP "(?<=charge': <)\d+")
+IS_CHARGING=$(echo "$BATT_OUTPUT" | grep -oP "(?<=isCharging': <)\w+")
+
+if [[ -z "$CHARGE" ]]; then
+    echo "{\"text\": \"󰄷\", \"tooltip\": \"${DEVICE_NAME}: battery unavailable\", \"class\": \"unavailable\"}"
+    exit 0
+fi
+
+# Pick icon based on charge level and charging state
+if [[ "$IS_CHARGING" == "true" ]]; then
+    if   (( CHARGE >= 90 )); then ICON="󰂅"
+    elif (( CHARGE >= 70 )); then ICON="󰂄"
+    elif (( CHARGE >= 50 )); then ICON="󰂃"
+    elif (( CHARGE >= 30 )); then ICON="󰂂"
+    else                          ICON="󰢜"
+    fi
+    CLASS="charging"
+else
+    if   (( CHARGE >= 90 )); then ICON="󰁹"
+    elif (( CHARGE >= 70 )); then ICON="󰂀"
+    elif (( CHARGE >= 50 )); then ICON="󰁾"
+    elif (( CHARGE >= 30 )); then ICON="󰁼"
+    elif (( CHARGE >= 15 )); then ICON="󰁺"; CLASS="low"
+    else                          ICON="󰁻"; CLASS="critical"
+    fi
+    CLASS="${CLASS:-ok}"
+fi
+
+TOOLTIP="${DEVICE_NAME}: ${CHARGE}%$([ "$IS_CHARGING" == "true" ] && echo " (charging)")"
+echo "{\"text\": \"${ICON} ${CHARGE}%\", \"tooltip\": \"${TOOLTIP}\", \"class\": \"${CLASS}\"}"

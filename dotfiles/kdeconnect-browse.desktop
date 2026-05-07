@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=KDE Connect Browser
+Comment=Browse a KDE Connect device's filesystem
+Exec=/home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/kdeconnect-browse %u
+Type=Application
+MimeType=x-scheme-handler/kdeconnect;
+NoDisplay=true

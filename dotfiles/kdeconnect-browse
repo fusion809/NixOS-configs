@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Handler for kdeconnect:// URLs.
+# Mounts the phone's filesystem via SFTP and opens it in Nautilus.
+
+# xdg-open strips PATH just like Waybar does; restore it
+# Find gdbus via pure bash glob — no external commands needed before PATH is set
+GLIB_BIN=""
+for _d in /nix/store/*-glib-*-bin/bin; do
+    [[ -x "$_d/gdbus" ]] && GLIB_BIN="$_d" && break
+done
+export PATH="/run/current-system/sw/bin:/run/current-system/sw/sbin:/usr/bin:/bin${GLIB_BIN:+:$GLIB_BIN}"
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+
+URL="$1"
+
+# Strip kdeconnect:// prefix and any trailing slash to get the device ID
+DEVICE_ID="${URL#kdeconnect://}"
+DEVICE_ID="${DEVICE_ID%/}"
+DEVICE_ID=$(echo "$DEVICE_ID" | tr -d '\r')
+
+if [[ -z "$DEVICE_ID" ]]; then
+    notify-send "KDE Connect" "No device ID in URL: $URL"
+    exit 1
+fi
+
+SFTP_DBUS="/modules/kdeconnect/devices/${DEVICE_ID}/sftp"
+MOUNT_POINT="/run/user/$(id -u)/${DEVICE_ID}"
+
+# If the mount point exists but is stale (I/O error), unmount it first
+if [[ -d "$MOUNT_POINT" ]]; then
+    IS_MOUNTED=$(gdbus call --session \
+        --dest org.kde.kdeconnect \
+        --object-path "$SFTP_DBUS" \
+        --method org.kde.kdeconnect.device.sftp.isMounted 2>/dev/null | tr -d '\r')
+    if [[ "$IS_MOUNTED" != "(true,)" ]]; then
+        # Stale FUSE mount — force unmount it before remounting
+        fusermount -uz "$MOUNT_POINT" 2>/dev/null || umount -l "$MOUNT_POINT" 2>/dev/null
+    else
+        # Already cleanly mounted — just open it
+        exec nautilus "$MOUNT_POINT"
+    fi
+fi
+
+# Request a fresh mount
+gdbus call --session \
+    --dest org.kde.kdeconnect \
+    --object-path "$SFTP_DBUS" \
+    --method org.kde.kdeconnect.device.sftp.mount \
+    > /dev/null 2>&1
+
+# Wait up to 5 seconds for the mount to become ready
+for i in {1..10}; do
+    IS_MOUNTED=$(gdbus call --session \
+        --dest org.kde.kdeconnect \
+        --object-path "$SFTP_DBUS" \
+        --method org.kde.kdeconnect.device.sftp.isMounted 2>/dev/null | tr -d '\r')
+    if [[ "$IS_MOUNTED" == "(true,)" ]]; then
+        break
+    fi
+    sleep 0.5
+done
+
+if [[ "$IS_MOUNTED" != "(true,)" ]]; then
+    notify-send "KDE Connect" "Failed to mount phone filesystem after 5s. Check the 'Remote filesystem browser' plugin is enabled on your phone."
+    exit 1
+fi
+
+# Get the confirmed mount point path from D-Bus
+MOUNT_POINT=$(gdbus call --session \
+    --dest org.kde.kdeconnect \
+    --object-path "$SFTP_DBUS" \
+    --method org.kde.kdeconnect.device.sftp.mountPoint 2>/dev/null \
+    | tr -d '\r' \
+    | grep -oP "(?<=')[^']+(?=')")
+
+if [[ -z "$MOUNT_POINT" ]]; then
+    notify-send "KDE Connect" "Mount succeeded but could not get mount path."
+    exit 1
+fi
+
+# Open the mount point in Nautilus
+exec nautilus "$MOUNT_POINT"

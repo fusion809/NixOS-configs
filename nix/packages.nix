@@ -46,6 +46,7 @@ with pkgs; [
   ffmpeg-full
   ghostscript
   git
+  glib # provides gdbus, needed by Waybar kdeconnect script
   gnuplot
   gtop
   jq
@@ -65,6 +66,7 @@ with pkgs; [
   scc
   smartmontools
   psmisc # For fuser
+  sshfs # Required for KDE Connect device browsing
   sshpass
   usbutils
   unzip
@@ -86,6 +88,9 @@ with pkgs; [
   eog # For viewing images
   ffmpegthumbnailer
   gnome.gvfs
+  kdePackages.dolphin
+  kdePackages.kio-extras
+  kdePackages.kio-fuse
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
   libmtp
   nautilus

@@ -665,6 +665,38 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
+/* Module: custom/kdeconnect */
+#custom-kdeconnect {
+  border-radius: 4px;
+  margin: 6px 1px;
+  padding: 3px 6px;
+  background-color: #E040FB;
+  /* bright purple/pink */
+  color: #000000;
+}
+
+#custom-kdeconnect.ok,
+#custom-kdeconnect.charging {
+  background-color: #E040FB;
+  color: #000000;
+}
+
+#custom-kdeconnect.low {
+  background-color: #FFD740;
+  color: #000000;
+}
+
+#custom-kdeconnect.critical {
+  background-color: #FF1744;
+  color: #ffffff;
+}
+
+#custom-kdeconnect.disconnected,
+#custom-kdeconnect.unavailable {
+  background-color: #616161;
+  color: #ffffff;
+}
+
 /* Module: custom/updates */
 #custom-updates {
   border-radius: 4px;
@@ -674,6 +706,28 @@ window#waybar.hidden {
   padding-right: 6px;
   color: black;
   background-color: #cf5555;
+}
+
+/* Module: custom/notification (swaync) */
+#custom-notification {
+  border-radius: 10px;
+  margin: 6px 1px;
+  padding: 5px 7px;
+  background-color: #ac22ca;
+  color: #ffffff;
+}
+
+#custom-notification.notification {
+  background-color: #aa4400;
+  color: #ffffff;
+}
+
+#custom-notification.dnd-notification,
+#custom-notification.dnd-none,
+#custom-notification.dnd-inhibited-notification,
+#custom-notification.dnd-inhibited-none {
+  background-color: #abcd00;
+  color: #9E9E9E;
 }
 
 /* Module: clock */
@@ -763,12 +817,7 @@ tooltip label {
   color: #000000;
 }
 
-#custom-notification {
-  border-radius: 4px;
-  margin: 6px 1px;
-  padding: 3px 2px;
-  color: #000000;
-}
+
 
 #battery {
   background-color: #E57373;

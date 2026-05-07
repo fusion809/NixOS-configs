@@ -9,6 +9,7 @@ in {
     enable = true;
     binfmt = true;
   };
+  fuse.userAllowOther = true; # allows kdeconnect SFTP mounts to be readable by Nautilus
   bash.shellInit = ''
     export USER="${username}"
     export NIXCFG="${nixcfgDir}"
@@ -20,6 +21,7 @@ in {
     #   inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     package = pkgs.hyprland;
   };
+  kdeconnect.enable = true; # enables KDE Connect daemon + opens firewall ports 1714-1764
   nano = { enable = false; };
   nixvim = {
     enable = true;
@@ -51,6 +53,12 @@ in {
       nnoremap <M-l> <C-w>k
       nnoremap <M-j> <C-w>l
       nnoremap <M-k> <C-w>h
+    '';
+  };
+  ssh = {
+    extraConfig = ''
+      HostKeyAlgorithms +ssh-rsa
+      PubkeyAcceptedKeyTypes +ssh-rsa
     '';
   };
   steam = {
