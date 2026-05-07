@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 29 April 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-04-29.png)
-**Figure 1: Hyprland NixOS configuration as of 29 April 2026.**
+![Hyprland on NixOS screenshot as of 7 May 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-05-07.png)
+**Figure 1: Hyprland NixOS configuration as of 7 May 2026.**
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC with dual 1080p monitor setup. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
@@ -92,11 +92,12 @@ I run the latest [Hyprland](https://github.com/hyprwm/Hyprland), even when [NixO
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. 
 
 ## Autostart
-Applications and programs autostarted include the default browser, virtual machine manager, the Brave browser, Waybar, Discord, Blueman Manager, Kitty (with Hyfetch), WinBoat, GNOME Files, Alacritty, my Debian 13 virtual machine, and cliphist and wl-clip-persist for managing the clipboard. A command is also run to show the next wallpaper, another kills old processes for showing the wallpaper that are errantly running, and another logs network activity so it can be used for creating graphs if one clicks the network widgets in the Waybar.
+Applications and programs autostarted include the default browser, virtual machine manager, the Brave browser, Waybar, Discord, Blueman Manager, KDE Connect, Kitty (with Hyfetch), WinBoat, GNOME Files, Alacritty, my Debian 13 virtual machine, and cliphist and wl-clip-persist for managing the clipboard. A command is also run to show the next wallpaper, another kills old processes for showing the wallpaper that are errantly running, and another logs network activity so it can be used for creating graphs if one clicks the network widgets in the Waybar.
 
 ## Default apps
 * Application menu is [Rofi](https://github.com/davatorium/rofi).
-* File manager is [GNOME Files](https://apps.gnome.org/en-GB/Nautilus/), as it has among the best Wayland support of any graphical file manager. 
+* File manager is [GNOME Files](https://apps.gnome.org/en-GB/Nautilus/), as it has among the best Wayland support of any graphical file manager. [Dolphin](https://apps.kde.org/dolphin/) is also installed. 
+* [KDE Connect](https://apps.kde.org/kdeconnect/).
 * Terminal is [Alacritty](https://alacritty.org/), although [Kitty](https://sw.kovidgoyal.net/kitty/) is also installed and used for creating [Hyfetch](https://github.com/hykilpikonna/hyfetch) output-inclusive screenshots. 
 * Text editor/IDE is [Antigravity](https://antigravity.google/). [Neovim](https://neovim.io/) and [Visual Studio Code](https://code.visualstudio.com/) are also installed. 
 * Web browser is [Google Chrome](https://www.google.com/chrome/), although [Brave](https://brave.com/) and [Firefox](https://www.firefox.com/en-US/) are also installed. 
@@ -143,6 +144,7 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Win</kbd>+<kbd>F8</kbd>                                      | Open workspace #28    |
 | <kbd>Win</kbd>+<kbd>F9</kbd>                                      | Open workspace #29    |
 | <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #30    |
+| <kbd>Win</kbd>+<kbd>F11</kbd>                                     | Open workspace #31    |
 | <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>1</kbd>                       | Move selected workspace to monitor 1 |
 | <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>2</kbd>                       | Move selected workspace to monitor 2 |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>                      | Move focused window (silently) to workspace #1     |
@@ -175,6 +177,7 @@ Applications and programs autostarted include the default browser, virtual machi
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd>                 | Move focused window (silently) to workspace #28    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>End</kbd>                    | Move focused window (silently) to workspace #29    |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Down</kbd>              | Move focused window (silently) to workspace #30    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Grave</kbd>                  | Move focused window (silently) to workspace #31    |
 | <kbd>Win</kbd>+<kbd>a</kbd>                                       | Expand out of tabbed mode |  
 | <kbd>Win</kbd>+<kbd>b</kbd>                                       | Open Brave. |
 | <kbd>Win</kbd>+<kbd>c</kbd>                                       | Open Google Chat Chrome app |
