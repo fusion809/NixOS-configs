@@ -1293,7 +1293,7 @@ fi
 # SYSTEM-WIDE MOCK: If doc build is disabled, prepend a mock tool directory to PATH to neutralize any direct calls
 if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     SETUP_COMMANDS+="
-MOCK_DOC_DIR=\"/tmp/mock_docs\"
+MOCK_DOC_DIR=\"/tmp/mock_docs_\$\$\"
 TEXLIVE_PREFIX=\"/opt/texlive/2025\"
 mkdir -p \"\$MOCK_DOC_DIR\"
 for m in doxygen makeinfo asciidoc xmlto asciidoctor xmlproc docbook2x pdflatex xelatex lualatex texi2html texi2pdf texi2dvi sphinx-build; do
