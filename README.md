@@ -34,8 +34,8 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9545 | 61.95% | 1518 | 87.49% |
-| Nix | 2923 | 18.97% | 148 | 8.53% |
+| Shell | 9545 | 61.96% | 1518 | 87.49% |
+| Nix | 2921 | 18.96% | 148 | 8.53% |
 | CSS | 880 | 5.71% | 0 | 0.00% |
 | JSONC | 451 | 2.93% | 0 | 0.00% |
 | Markdown | 433 | 2.81% | 0 | 0.00% |
@@ -45,7 +45,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | XML | 78 | 0.51% | 0 | 0.00% |
 | JavaScript | 41 | 0.27% | 4 | 0.23% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15407** | **100.00%** | **1735** | **100.00%** |
+| **Total** | **15405** | **100.00%** | **1735** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile

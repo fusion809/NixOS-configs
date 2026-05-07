@@ -7,7 +7,6 @@ with pkgs; [
   unstable.antigravity
   brave
   discord
-  filezilla
   firefox
   gimp
   google-chrome
@@ -81,7 +80,6 @@ with pkgs; [
   ###############################################################
   grimblast # Screenshots under Hyprland
   hyprlandPlugins.hy3 # Tabbing under Hyprland
-  hyprsession
   swaynotificationcenter # Required for notifications
   ## Core apps
   alacritty
