@@ -712,7 +712,7 @@ window#waybar.hidden {
 #custom-notification {
   border-radius: 10px;
   margin: 6px 1px;
-  padding: 5px 7px;
+  padding: 5px 9px;
   background-color: #ac22ca;
   color: #ffffff;
 }
@@ -726,7 +726,7 @@ window#waybar.hidden {
 #custom-notification.dnd-none,
 #custom-notification.dnd-inhibited-notification,
 #custom-notification.dnd-inhibited-none {
-  background-color: #abcd00;
+  background-color: #678900;
   color: #9E9E9E;
 }
 

@@ -361,6 +361,7 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 <li>󰄻 indicates that Marvin updates are available.</li>
 </li> 
 </ul>
+<li>Notifications from KDE Connect on paired devices. <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #aa4400; color: #ffffff;">󱅫</span>, if there is an unread notification. <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #ac22ca; color: #ffffff;">󰂚</span>, if there are no notifications. <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #678900; color: #ffffff;">󰂛</span>, if in do not disturb mode.</li>
 <li>Clock with AM/PM time with seconds, short day of the week name, day of the month/month of the year (short format).</li>
 </ul>
 
@@ -389,7 +390,7 @@ Workspace 10: Google Chat (<kbd>F10</kbd>).<br/>
 Workspace 11: Discord (<kbd>F11</kbd>).<br/>
 Workspace 12: Boo (<kbd>F12</kbd>).<br/>
 Workspace 13: Nautilus file manager (<kbd>Win</kbd>+<kbd>Print</kbd>).<br/>
-Workspace 14: Chrome (<kbd>Pause</kbd>).<br/>
+Workspace 14: KDE Connect (<kbd>Pause</kbd>).<br/>
 Workspace 19: Duolingo (<kbd>End</kbd>).<br/>
 Workspace 20: Terminal (<kbd>Page Down</kbd>).<br/>
 Workspace 22: Payday 2 (<kbd>Win</kbd>+<kbd>F2</kbd>).<br/>
@@ -397,8 +398,9 @@ Workspace 23: Google Earth (<kbd>Win</kbd>+<kbd>F3</kbd>).<br/>
 Workspace 24: Boo (<kbd>Win</kbd>+<kbd>F4</kbd>).<br/>
 Workspace 26: VLC media player (<kbd>Win</kbd>+<kbd>F6</kbd>).<br/>
 Workspace 27: Brave private window (<kbd>Win</kbd>+<kbd>F7</kbd>).<br/>
-Workspace 28: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd>)
-Workspaces 29-30: Virt Viewer (<kbd>Win</kbd>+<kbd>F9</kbd> to <kbd>F10</kbd>).
+Workspace 28: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd>).<br/>
+Workspaces 29-30: Virt Viewer (<kbd>Win</kbd>+<kbd>F9</kbd> to <kbd>F10</kbd>).<br/>
+Workspace 31: Dolphin (<kbd>Win</kbd>+<kbd>F11</kbd>).<br/>
 
 # History
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
