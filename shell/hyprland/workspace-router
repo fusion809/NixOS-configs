@@ -62,16 +62,13 @@ handle() {
 
            # Automatic check for empty workspaces using window count
            count_1=$($HYPRCTL workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
-           count_14=$($HYPRCTL workspaces -j | jq 'map(select(.id == 14)) | .[0].windows // 0')
            
            existing_title_1=$($HYPRCTL clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
            if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
                target=1
-           elif [ "$count_14" -eq 0 ]; then
-               target=14
            else
                # If all are occupied, prompt the user
-               choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)\n14(2nd main)" | rofi -dmenu -p "Select Workspace for Chrome:")
+               choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
                if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
                    target=$(echo "$choice" | cut -d '(' -f 1)
                fi
