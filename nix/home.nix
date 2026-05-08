@@ -15,13 +15,11 @@
   # release notes.
   home.stateVersion = "25.05"; # Please read the comment before changing.
 
-  # The home.packages option allows you to install Nix packages into your
-  # environment.
-  home.packages = with pkgs;
-    [
-      #gnomeExtensions.show-desktop-button
-      #gnomeExtensions.dash-to-dock
-    ];
+  home.packages = with pkgs; [
+    vlc
+    desktop-file-utils
+    kdePackages.kservice
+  ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
   # plain files is through 'home.file'.

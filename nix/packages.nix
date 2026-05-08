@@ -13,7 +13,7 @@ with pkgs; [
   inkscape
   nixfmt-classic # Needed for Nix IDE extension of vscode/antigravity
   pinta
-  vlc
+
   vscode
   ###############################################################
   # Assorted packages
