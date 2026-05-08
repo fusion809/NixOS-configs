@@ -26,11 +26,12 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
     - [Workspaces (which are numbered): shown on both monitors](#workspaces-which-are-numbered-shown-on-both-monitors)
     - [Weather conditions: shown on monitor 1](#weather-conditions-shown-on-monitor-1)
     - [Pulseaudio: shown on monitor 1](#pulseaudio-shown-on-monitor-1)
+    - [Uptime (󰔚): shown on monitor 1](#uptime-%F3%B0%94%9A-shown-on-monitor-1)
     - [Wallpaper number widget (󰸉): shown on monitor 1](#wallpaper-number-widget-%F3%B0%B8%89-shown-on-monitor-1)
-    - [Wallpaper navigation button: previous (): shown on monitor 1](#wallpaper-navigation-button-previous-%EF%81%A0-shown-on-monitor-1)
-    - [Wallpaper navigation button: random (): shown on monitor 1](#wallpaper-navigation-button-random-%EF%81%B4-shown-on-monitor-1)
-    - [Wallpaper navigation button: forward (): shown on monitor 1](#wallpaper-navigation-button-forward-%EF%81%A1-shown-on-monitor-1)
-    - [Wallpaper navigation button: specification (): shown on monitor 1](#wallpaper-navigation-button-specification-%EF%93%B7-shown-on-monitor-1)
+    - [Previous wallpaper button (): shown on monitor 1](#previous-wallpaper-button-%EF%81%A0-shown-on-monitor-1)
+    - [Random wallpaper button (): shown on monitor 1](#random-wallpaper-button-%EF%81%B4-shown-on-monitor-1)
+    - [Forward wallpaper button (): shown on monitor 1](#forward-wallpaper-button-%EF%81%A1-shown-on-monitor-1)
+    - [Wallpaper specification button (): shown on monitor 1](#wallpaper-specification-button-%EF%93%B7-shown-on-monitor-1)
     - [The title of your currently focused window: shown on both monitors](#the-title-of-your-currently-focused-window-shown-on-both-monitors)
     - [Keyboard layout (): shown on monitor 2](#keyboard-layout-%EF%84%9C-shown-on-monitor-2)
     - [Motherboard temperature (): shown on both monitors](#motherboard-temperature-%EF%8B%87-shown-on-both-monitors)
@@ -61,18 +62,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9586 | 60.84% | 1527 | 85.74% |
-| Nix | 2946 | 18.70% | 146 | 8.20% |
-| CSS | 880 | 5.59% | 0 | 0.00% |
-| Markdown | 494 | 3.14% | 0 | 0.00% |
+| Shell | 9586 | 60.83% | 1527 | 85.74% |
+| Nix | 2946 | 18.69% | 146 | 8.20% |
+| CSS | 880 | 5.58% | 0 | 0.00% |
+| Markdown | 498 | 3.16% | 0 | 0.00% |
 | Python | 480 | 3.05% | 104 | 5.84% |
-| JSONC | 453 | 2.88% | 0 | 0.00% |
+| JSONC | 453 | 2.87% | 0 | 0.00% |
 | Patch | 396 | 2.51% | 0 | 0.00% |
 | JSON | 388 | 2.46% | 0 | 0.00% |
-| XML | 78 | 0.50% | 0 | 0.00% |
+| XML | 78 | 0.49% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.22% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15755** | **100.00%** | **1781** | **100.00%** |
+| **Total** | **15759** | **100.00%** | **1781** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -329,21 +330,24 @@ Obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 The background colour of this depends on the temperature. Temperatures of &lt;10&deg;C are <span style="color: #1565C0;">blue</span>, between 10 and <15&deg;C are <span style="color: #2196F3">lighter blue</span>, between 15 and <20&deg;C are <span style="color: #03DAC6">cyan</span>, between 20 and <25&deg;C are <span style="color: #4CAF50">green</span>, between 25 and <30&deg;C are <span style="color: #EF6C00">orange</span>, between 30 and <35&deg;C are <span style="color: #FF5722">light red</span>, between 35 and <40&deg;C are <span style="color: #D32F2F">medium red</span> and &geq;40&deg;C are <span style="color: #B71C1C">dark red</span>.
 
 ### Pulseaudio: shown on monitor 1
-Shows the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol. If using headphones, the  symbol will be shown; if using bluetooth, the  symbol will be shown.
+Shows the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol. If using headphones, the   symbol will be shown; if using bluetooth, the  symbol will be shown.
+
+### Uptime (󰔚): shown on monitor 1
+Shows the uptime in the format: hour(s):minute(s):second(s).
 
 ### Wallpaper number widget (󰸉): shown on monitor 1
 It displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.
 
-### Wallpaper navigation button: previous (): shown on monitor 1
+### Previous wallpaper button (): shown on monitor 1
 When clicked, this changes your wallpaper to the previous one in your collection (keeping in mind, this is when you're using the systematic algorithm for the wallpaper script).
 
-### Wallpaper navigation button: random (): shown on monitor 1
+### Random wallpaper button (): shown on monitor 1
 When clicked, this changes your wallpaper to a randomly selected one.
 
-### Wallpaper navigation button: forward (): shown on monitor 1
+### Forward wallpaper button (): shown on monitor 1
 When clicked, this changes your wallpaper to the next systematically selected one.
 
-### Wallpaper navigation button: specification (): shown on monitor 1 
+### Wallpaper specification button (): shown on monitor 1 
 When clicked, this changes your wallpaper to a wallpaper whose number you specify in a pop-up window.
 
 ### The title of your currently focused window: shown on both monitors
