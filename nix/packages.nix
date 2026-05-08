@@ -132,6 +132,8 @@ with pkgs; [
   home-manager
   nix-prefetch-git
   linuxPackages_latest.kernel
+  desktop-file-utils
+  kdePackages.kservice
   ###############################################################
   # Office software
   ###############################################################

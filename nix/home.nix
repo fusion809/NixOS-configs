@@ -48,6 +48,41 @@
     USER = username;
     NIXCFG = "/home/${username}/GitHub/mine/config/NixOS-configs";
     NIXOS_OZONE_WL = "1";
+    # Ensure KDE apps like Dolphin find their associations and themes on Hyprland
+    QT_QPA_PLATFORMTHEME = "kde";
+    XDG_CURRENT_DESKTOP = "KDE";
+  };
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "application/pdf" = [ "okularApplication_pdf.desktop" ];
+      "application/vnd.apple.mpegurl" = [ "codium.desktop" ];
+      "audio/mpeg" = [ "vlc.desktop" ];
+      "audio/x-wav" = [ "vlc.desktop" ];
+      "video/mp4" = [ "vlc.desktop" ];
+      "video/quicktime" = [ "vlc.desktop" ];
+      "video/x-matroska" = [ "vlc.desktop" ];
+      "image/jpeg" = [ "org.gnome.eog.desktop" ];
+      "image/png" = [ "org.gnome.eog.desktop" ];
+      "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
+      "text/html" = [ "google-chrome.desktop" ];
+      "text/markdown" = [ "codium.desktop" ];
+      "text/plain" = [ "codium.desktop" ];
+      "text/x-tex" = [ "texstudio.desktop" ];
+      "x-scheme-handler/about" = [ "google-chrome.desktop" ];
+      "x-scheme-handler/http" = [ "google-chrome.desktop" ];
+      "x-scheme-handler/https" = [ "google-chrome.desktop" ];
+      "x-scheme-handler/kdeconnect" = [ "org.kde.dolphin.desktop" ];
+      "x-scheme-handler/unknown" = [ "google-chrome.desktop" ];
+    };
+    associations = {
+      added = {
+        "image/jpeg" = [ "org.gnome.eog.desktop" "eog.desktop" ];
+        "image/png" = [ "gimp.desktop" "org.gnome.eog.desktop" ];
+        "text/html" = [ "google-chrome-stable-2.desktop" "google-chrome-stable.desktop" ];
+      };
+    };
   };
 
   # Let Home Manager install and manage itself.

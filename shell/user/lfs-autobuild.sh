@@ -1296,7 +1296,7 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
 MOCK_DOC_DIR=\"/tmp/mock_docs_\$\$\"
 TEXLIVE_PREFIX=\"/opt/texlive/2025\"
 mkdir -p \"\$MOCK_DOC_DIR\"
-for m in doxygen makeinfo asciidoc xmlto asciidoctor xmlproc docbook2x pdflatex xelatex lualatex texi2html texi2pdf texi2dvi sphinx-build; do
+for m in doxygen makeinfo asciidoc xmlto asciidoctor xmlproc docbook2x pdflatex xelatex lualatex texi2html texi2pdf texi2dvi dvips sphinx-build; do
     ln -sf /bin/true \"\$MOCK_DOC_DIR/\$m\"
 done
 export PATH=\"\$MOCK_DOC_DIR:\$PATH\"
