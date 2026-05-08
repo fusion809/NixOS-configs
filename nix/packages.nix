@@ -140,6 +140,8 @@ with pkgs; [
   home-manager
   nix-prefetch-git
   linuxPackages_latest.kernel
+  python3Packages.pydbus
+  python3Packages.pygobject3
 
   ###############################################################
   # Office software

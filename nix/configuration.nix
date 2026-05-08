@@ -42,7 +42,7 @@
   system = import ./system.nix { inherit username; };
 
   # Set up systemd services
-  systemd = import ./systemd.nix { inherit pkgs; };
+  systemd = import ./systemd.nix { inherit pkgs username; };
 
   # Set your time zone.
   time.timeZone = "Australia/Brisbane";
