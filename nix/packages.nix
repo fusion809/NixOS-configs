@@ -137,6 +137,7 @@ with pkgs; [
   desktop-file-utils
   kdePackages.kservice
   kdePackages.plasma-desktop
+  kdePackages.plasma-workspace
   ###############################################################
   # Office software
   ###############################################################

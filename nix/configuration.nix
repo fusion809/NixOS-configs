@@ -61,5 +61,9 @@
     extraPortals = [ pkgs.kdePackages.xdg-desktop-portal-kde ];
     config.common.default = [ "kde" ];
   };
+
+  # Manually link KDE menu files into /etc/xdg/menus so Dolphin can find them on Hyprland
+  environment.etc."xdg/menus/plasma-applications.menu".source = "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
+  environment.etc."xdg/menus/applications.menu".source = "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
 }
 
