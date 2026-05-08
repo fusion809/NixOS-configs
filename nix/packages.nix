@@ -13,7 +13,6 @@ with pkgs; [
   inkscape
   nixfmt-classic # Needed for Nix IDE extension of vscode/antigravity
   pinta
-
   vscode
   ###############################################################
   # Assorted packages
@@ -80,18 +79,25 @@ with pkgs; [
   ###############################################################
   grimblast # Screenshots under Hyprland
   hyprlandPlugins.hy3 # Tabbing under Hyprland
-  swaynotificationcenter # Required for notifications
+  swaynotificationcenter # Required for phone notifications
   ## Core apps
   alacritty
+  desktop-file-utils
   eog # For viewing images
   ffmpegthumbnailer
   gnome.gvfs
   kdePackages.dolphin
+  # Required to change file associations
+  kdePackages.kde-cli-tools
+  # Required for mimeapps.list file associations to stick in Dolphin
   kdePackages.kio-extras
   kdePackages.kio-fuse
-  kdePackages.kde-cli-tools
-  vlc
+  kdePackages.kservice
+  kdePackages.plasma-desktop
+  kdePackages.plasma-workspace
+  # Other apps
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
+  vlc
   libmtp
   nautilus
   ## Required by Waybar widgets
@@ -134,10 +140,7 @@ with pkgs; [
   home-manager
   nix-prefetch-git
   linuxPackages_latest.kernel
-  desktop-file-utils
-  kdePackages.kservice
-  kdePackages.plasma-desktop
-  kdePackages.plasma-workspace
+
   ###############################################################
   # Office software
   ###############################################################
