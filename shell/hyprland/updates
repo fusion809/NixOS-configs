@@ -253,24 +253,31 @@ fi
 # OpenRA update check
 openra_dir="/home/fusion809/GitHub/others/OpenRA"
 if [[ -d "$openra_dir" ]]; then
-    # Fetch from origin to see if there are updates
+    # 1. Get the latest available commit in the repo
     git -C "$openra_dir" fetch origin bleed --quiet
-    local_rev=$(git -C "$openra_dir" rev-parse bleed)
-    remote_rev=$(git -C "$openra_dir" rev-parse origin/bleed)
+    latest_rev=$(git -C "$openra_dir" log | head -n 1 | cut -d ' ' -f 2)
+    short_latest="${latest_rev:0:7}"
     
-    if [[ "$local_rev" != "$remote_rev" ]]; then
+    # 2. Get the currently installed version from the Nix store path
+    # Example path: /nix/store/...-openra-ra-30799.git.dfde601/bin/openra-ra
+    installed_ver=$(readlink -f $(which openra-ra) | grep -oP '\.git\.\K[a-f0-9]{7}')
+    
+    # 3. Compare and update
+    if [[ -n "$installed_ver" ]] && [[ "$installed_ver" != "$short_latest" ]]; then
         add_symbol "󱢇"
-        # Update the local repo
-        git -C "$openra_dir" merge origin/bleed --ff-only --quiet
         
-        # Now update the Nix package hash
-        openra_pkg_file="$NIXCFG/nixpkgs/openra/engines/git/default.nix"
-        if [[ -f "$openra_pkg_file" ]]; then
-            new_hash=$(nix-prefetch-git --url "file://$openra_dir" --rev "$remote_rev" --quiet | jq -r '.hash')
-            if [[ -n "$new_hash" ]]; then
-                 sed -i "s|hash = \".*\"|hash = \"$new_hash\"|" "$openra_pkg_file"
-                 if [[ ${#pushStr} -gt 0 ]]; then pushStr+="; "; fi
-                 pushStr+="openra: update to ${remote_rev:0:7}"
+        # If we are behind, merge the updates and update the Nix hash
+        if [[ $(git -C "$openra_dir" rev-list bleed..origin/bleed | wc -l) -gt 0 ]]; then
+            git -C "$openra_dir" merge origin/bleed --ff-only --quiet
+            
+            openra_pkg_file="$NIXCFG/nixpkgs/openra/engines/git/default.nix"
+            if [[ -f "$openra_pkg_file" ]]; then
+                new_hash=$(nix-prefetch-git --url "file://$openra_dir" --rev "$latest_rev" --quiet | jq -r '.hash')
+                if [[ -n "$new_hash" ]]; then
+                     sed -i "s|hash = \".*\"|hash = \"$new_hash\"|" "$openra_pkg_file"
+                     if [[ ${#pushStr} -gt 0 ]]; then pushStr+="; "; fi
+                     pushStr+="openra: update to $short_latest"
+                fi
             fi
         fi
     fi
