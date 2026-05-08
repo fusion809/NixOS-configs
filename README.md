@@ -63,7 +63,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | Shell | 9560 | 61.09% | 1521 | 86.77% |
 | Nix | 2947 | 18.83% | 146 | 8.33% |
 | CSS | 880 | 5.62% | 0 | 0.00% |
-| Markdown | 494 | 3.16% | 0 | 0.00% |
+| Markdown | 495 | 3.16% | 0 | 0.00% |
 | JSONC | 453 | 2.89% | 0 | 0.00% |
 | Python | 398 | 2.54% | 82 | 4.68% |
 | Patch | 396 | 2.53% | 0 | 0.00% |
@@ -71,7 +71,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | XML | 78 | 0.50% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.23% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15648** | **100.00%** | **1753** | **100.00%** |
+| **Total** | **15649** | **100.00%** | **1753** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -460,6 +460,7 @@ Workspace 27: Brave private window (<kbd>Win</kbd>+<kbd>F7</kbd>).<br/>
 Workspace 28: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd>).<br/>
 Workspaces 29-30: Virt Viewer (<kbd>Win</kbd>+<kbd>F9</kbd> to <kbd>F10</kbd>).<br/>
 Workspace 31: Dolphin (<kbd>Win</kbd>+<kbd>F11</kbd>).<br/>
+Workspace 32: Chemistry apps (<kbd>Win</kbd>+<kbd>F12</kbd>).<br/>
 
 # History
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
