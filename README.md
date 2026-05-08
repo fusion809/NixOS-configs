@@ -45,7 +45,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
     - [GPU utilization percentage (󱃏): shown on monitor 2](#gpu-utilization-percentage-%F3%B1%83%8F-shown-on-monitor-2)
     - [zRAM utilization (󰾆): shown on monitor 1](#zram-utilization-%F3%B0%BE%86-shown-on-monitor-1)
     - [Swap utilization (󰓡): shown on monitor 1](#swap-utilization-%F3%B0%93%A1-shown-on-monitor-1)
-    - [Updates available<sup>1</sup>: shown on both monitors](#updates-availablesup1sup-shown-on-both-monitors)
+    - [Updates available:<sup>1</sup> shown on both monitors](#updates-availablesup1sup-shown-on-both-monitors)
     - [Notifications from KDE Connect on paired devices.](#notifications-from-kde-connect-on-paired-devices)
     - [Clock](#clock)
   - [Workspaces](#workspaces)
@@ -60,18 +60,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9560 | 61.10% | 1521 | 86.77% |
-| Nix | 2947 | 18.84% | 146 | 8.33% |
+| Shell | 9560 | 61.09% | 1521 | 86.77% |
+| Nix | 2947 | 18.83% | 146 | 8.33% |
 | CSS | 880 | 5.62% | 0 | 0.00% |
-| Markdown | 492 | 3.14% | 0 | 0.00% |
-| JSONC | 453 | 2.90% | 0 | 0.00% |
+| Markdown | 494 | 3.16% | 0 | 0.00% |
+| JSONC | 453 | 2.89% | 0 | 0.00% |
 | Python | 398 | 2.54% | 82 | 4.68% |
 | Patch | 396 | 2.53% | 0 | 0.00% |
 | JSON | 388 | 2.48% | 0 | 0.00% |
 | XML | 78 | 0.50% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.23% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15646** | **100.00%** | **1753** | **100.00%** |
+| **Total** | **15648** | **100.00%** | **1753** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -401,7 +401,7 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 
 ### Swap utilization (󰓡): shown on monitor 1
 
-### Updates available<sup>1</sup>: shown on both monitors
+### Updates available:<sup>1</sup> shown on both monitors
 * "h" indicates updates to home-manager are available.
 * "m" indicates updates to nixpkgs-master are available.
 * "s" indicates that updates to nixpkgs (stable branch) are available.
