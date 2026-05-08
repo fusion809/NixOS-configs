@@ -25,15 +25,15 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
     - [NixOS menu (): only shown on monitor 1](#nixos-menu-%EE%A1%83-only-shown-on-monitor-1)
     - [Workspaces (which are numbered): shown on both monitors](#workspaces-which-are-numbered-shown-on-both-monitors)
     - [Weather conditions: shown on monitor 1](#weather-conditions-shown-on-monitor-1)
-    - [Keyboard layout (): shown on monitor 2](#keyboard-layout-%EF%84%9C-shown-on-monitor-2)
-    - [Pulseaudio ( if connected to wireless headphones): shown on monitor 1](#pulseaudio-%EF%80%A5%EF%8A%94-if-connected-to-wireless-headphones-shown-on-monitor-1)
+    - [Pulseaudio: shown on monitor 1](#pulseaudio-shown-on-monitor-1)
     - [Wallpaper number widget (󰸉): shown on monitor 1](#wallpaper-number-widget-%F3%B0%B8%89-shown-on-monitor-1)
     - [Wallpaper navigation button: previous (): shown on monitor 1](#wallpaper-navigation-button-previous-%EF%81%A0-shown-on-monitor-1)
     - [Wallpaper navigation button: random (): shown on monitor 1](#wallpaper-navigation-button-random-%EF%81%B4-shown-on-monitor-1)
     - [Wallpaper navigation button: forward (): shown on monitor 1](#wallpaper-navigation-button-forward-%EF%81%A1-shown-on-monitor-1)
     - [Wallpaper navigation button: specification (): shown on monitor 1](#wallpaper-navigation-button-specification-%EF%93%B7-shown-on-monitor-1)
     - [The title of your currently focused window: shown on both monitors](#the-title-of-your-currently-focused-window-shown-on-both-monitors)
-    - [Motherboard temperature () according to sensors: shown on monitor 2](#motherboard-temperature-%EF%8B%87-according-to-sensors-shown-on-monitor-2)
+    - [Keyboard layout (): shown on monitor 2](#keyboard-layout-%EF%84%9C-shown-on-monitor-2)
+    - [Motherboard temperature () according to sensors: shown on both monitors](#motherboard-temperature-%EF%8B%87-according-to-sensors-shown-on-both-monitors)
     - [Used space (/) on your root file system: shown on monitor 1](#used-space--on-your-root-file-system-shown-on-monitor-1)
     - [Used space (A) on your Arch file system: shown on monitor 1](#used-space-a-on-your-arch-file-system-shown-on-monitor-1)
     - [Used space (D) on your data file system: shown on monitor 1](#used-space-d-on-your-data-file-system-shown-on-monitor-1)
@@ -43,7 +43,9 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
     - [RAM usage percentage (): shown on monitor 1](#ram-usage-percentage-%EF%83%89-shown-on-monitor-1)
     - [GPU memory usage percentage (): shown on monitor 2](#gpu-memory-usage-percentage-%EE%BF%85-shown-on-monitor-2)
     - [GPU utilization percentage (󱃏): shown on monitor 2](#gpu-utilization-percentage-%F3%B1%83%8F-shown-on-monitor-2)
-    - [Updates available<sup>1</sup>](#updates-availablesup1sup)
+    - [zRAM utilization (󰾆): shown on monitor 1](#zram-utilization-%F3%B0%BE%86-shown-on-monitor-1)
+    - [Swap utilization (󰓡): shown on monitor 1](#swap-utilization-%F3%B0%93%A1-shown-on-monitor-1)
+    - [Updates available<sup>1</sup>: shown on both monitors](#updates-availablesup1sup-shown-on-both-monitors)
     - [Notifications from KDE Connect on paired devices.](#notifications-from-kde-connect-on-paired-devices)
     - [Clock](#clock)
   - [Workspaces](#workspaces)
@@ -58,18 +60,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9560 | 61.20% | 1521 | 86.77% |
-| Nix | 2947 | 18.87% | 146 | 8.33% |
-| CSS | 880 | 5.63% | 0 | 0.00% |
-| Markdown | 467 | 2.99% | 0 | 0.00% |
+| Shell | 9560 | 61.10% | 1521 | 86.77% |
+| Nix | 2947 | 18.84% | 146 | 8.33% |
+| CSS | 880 | 5.62% | 0 | 0.00% |
+| Markdown | 492 | 3.14% | 0 | 0.00% |
 | JSONC | 453 | 2.90% | 0 | 0.00% |
-| Python | 398 | 2.55% | 82 | 4.68% |
-| Patch | 396 | 2.54% | 0 | 0.00% |
+| Python | 398 | 2.54% | 82 | 4.68% |
+| Patch | 396 | 2.53% | 0 | 0.00% |
 | JSON | 388 | 2.48% | 0 | 0.00% |
 | XML | 78 | 0.50% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.23% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15621** | **100.00%** | **1753** | **100.00%** |
+| **Total** | **15646** | **100.00%** | **1753** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -325,11 +327,8 @@ Obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 
 The background colour of this depends on the temperature. Temperatures of &lt;10&deg;C are <span style="color: #1565C0;">blue</span>, between 10 and <15&deg;C are <span style="color: #2196F3">lighter blue</span>, between 15 and <20&deg;C are <span style="color: #03DAC6">cyan</span>, between 20 and <25&deg;C are <span style="color: #4CAF50">green</span>, between 25 and <30&deg;C are <span style="color: #EF6C00">orange</span>, between 30 and <35&deg;C are <span style="color: #FF5722">light red</span>, between 35 and <40&deg;C are <span style="color: #D32F2F">medium red</span> and &geq;40&deg;C are <span style="color: #B71C1C">dark red</span>.
 
-### Keyboard layout (): shown on monitor 2
-Is followed by its two-letter initial. I have two colours set up for this widget: us=<span style="color: #018786">teal</span>, which is also the default, and br=<span style="color: #AD1457">purple</span>.
-
-### Pulseaudio ( if connected to wireless headphones): shown on monitor 1
-Shows the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol.
+### Pulseaudio: shown on monitor 1
+Shows the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol. If using headphones, the  symbol will be shown; if using bluetooth, the  symbol will be shown.
 
 ### Wallpaper number widget (󰸉): shown on monitor 1
 It displays the number of the wallpaper most recently displayed on your desktop, then a forward slash, and then the total number of wallpapers you have installed on your system.
@@ -348,7 +347,10 @@ When clicked, this changes your wallpaper to a wallpaper whose number you specif
 
 ### The title of your currently focused window: shown on both monitors
 
-### Motherboard temperature () according to sensors: shown on monitor 2
+### Keyboard layout (): shown on monitor 2
+Is followed by its two-letter initial. I have two colours set up for this widget: us=<span style="color: #018786">teal</span>, which is also the default, and br=<span style="color: #AD1457">purple</span>.
+
+### Motherboard temperature () according to sensors: shown on both monitors
 It is colour coded with <40&deg;C being <span style="#42A5F5">sky blue</span>, 40 to <60&deg;C being <span style="color: #66BB6A">green</span>, 60 to <75&deg;C being <span style="color: #FFA726">orange</span>, 75 to <85&deg;C being <span style="color: #FF7043">light red</span> and &geq;85&deg;C being <span style="color: #EF5350">deep red</span>. 
 
 Left clicking this opens a graph showing the history of the motherboard temperature.
@@ -395,19 +397,20 @@ If the GPU utilization is less than 25%, it is <span style="color: #66BB6A">gree
 
 Left clicking this opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it). Right clicking this opens a graph of the GPU utilization over time.
 
-### Updates available<sup>1</sup>
-<ul>
-<li>"h" indicates updates to home-manager are available.</li>
-<li>"m" indicates updates to nixpkgs-master are available.</li>
-<li>"s" indicates that updates to nixpkgs (stable branch) are available.</li> 
-<li>"u" indicates updates to nixpkgs-unstable are available.</li>
-<li>󱇛 indicates that hy3 updates are available. </li>
-<li> indicates that Hyprland updates are available. </li>
+### zRAM utilization (󰾆): shown on monitor 1
+
+### Swap utilization (󰓡): shown on monitor 1
+
+### Updates available<sup>1</sup>: shown on both monitors
+* "h" indicates updates to home-manager are available.
+* "m" indicates updates to nixpkgs-master are available.
+* "s" indicates that updates to nixpkgs (stable branch) are available.
+* "u" indicates updates to nixpkgs-unstable are available.
+* 󱇛 indicates that hy3 updates are available.
+*  indicates that Hyprland updates are available.
     <!---  indicates that Vim updates are available.-->
-<li>󱢇 indicates that OpenRA updates are available.</li>
-<li>󰄻 indicates that Marvin updates are available.</li>
-</li> 
-</ul>
+* 󱢇 indicates that OpenRA updates are available.
+* 󰄻 indicates that Marvin updates are available.
 
 ### Notifications from KDE Connect on paired devices.
 Symbolized with: 
