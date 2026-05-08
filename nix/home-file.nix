@@ -62,5 +62,7 @@ in {
     ];
   };
 
-
+  # XDG MIME associations: registers kdeconnect:// URL handler
+  ".config/mimeapps.list".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/mimeapps.list";
 }

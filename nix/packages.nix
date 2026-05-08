@@ -89,6 +89,8 @@ with pkgs; [
   kdePackages.dolphin
   kdePackages.kio-extras
   kdePackages.kio-fuse
+  kdePackages.kde-cli-tools
+  vlc
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
   libmtp
   nautilus
@@ -134,6 +136,7 @@ with pkgs; [
   linuxPackages_latest.kernel
   desktop-file-utils
   kdePackages.kservice
+  kdePackages.plasma-desktop
   ###############################################################
   # Office software
   ###############################################################

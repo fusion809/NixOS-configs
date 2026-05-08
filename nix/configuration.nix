@@ -56,5 +56,10 @@
   #virtualisation.virtualbox.host.addNetworkInterface = false;
   #virtualisation.virtualbox.host.enableExtensionPack = true;
   virtualisation = import ./virtualisation.nix { inherit pkgs; };
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.kdePackages.xdg-desktop-portal-kde ];
+    config.common.default = [ "kde" ];
+  };
 }
 

@@ -13,13 +13,7 @@
   # You should not change this value, even if you update Home Manager. If you do
   # want to update the value, then make sure to first check the Home Manager
   # release notes.
-  home.stateVersion = "25.05"; # Please read the comment before changing.
-
-  home.packages = with pkgs; [
-    vlc
-    desktop-file-utils
-    kdePackages.kservice
-  ];
+  home.stateVersion = "25.05"; # Please read the comment before changing
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
   # plain files is through 'home.file'.
@@ -49,38 +43,7 @@
     # Ensure KDE apps like Dolphin find their associations and themes on Hyprland
     QT_QPA_PLATFORMTHEME = "kde";
     XDG_CURRENT_DESKTOP = "KDE";
-  };
-
-  xdg.mimeApps = {
-    enable = true;
-    defaultApplications = {
-      "application/pdf" = [ "okularApplication_pdf.desktop" ];
-      "application/vnd.apple.mpegurl" = [ "codium.desktop" ];
-      "audio/mpeg" = [ "vlc.desktop" ];
-      "audio/x-wav" = [ "vlc.desktop" ];
-      "video/mp4" = [ "vlc.desktop" ];
-      "video/quicktime" = [ "vlc.desktop" ];
-      "video/x-matroska" = [ "vlc.desktop" ];
-      "image/jpeg" = [ "org.gnome.eog.desktop" ];
-      "image/png" = [ "org.gnome.eog.desktop" ];
-      "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
-      "text/html" = [ "google-chrome.desktop" ];
-      "text/markdown" = [ "codium.desktop" ];
-      "text/plain" = [ "codium.desktop" ];
-      "text/x-tex" = [ "texstudio.desktop" ];
-      "x-scheme-handler/about" = [ "google-chrome.desktop" ];
-      "x-scheme-handler/http" = [ "google-chrome.desktop" ];
-      "x-scheme-handler/https" = [ "google-chrome.desktop" ];
-      "x-scheme-handler/kdeconnect" = [ "org.kde.dolphin.desktop" ];
-      "x-scheme-handler/unknown" = [ "google-chrome.desktop" ];
-    };
-    associations = {
-      added = {
-        "image/jpeg" = [ "org.gnome.eog.desktop" "eog.desktop" ];
-        "image/png" = [ "gimp.desktop" "org.gnome.eog.desktop" ];
-        "text/html" = [ "google-chrome-stable-2.desktop" "google-chrome-stable.desktop" ];
-      };
-    };
+    XDG_MENU_PREFIX = "plasma-";
   };
 
   # Let Home Manager install and manage itself.
