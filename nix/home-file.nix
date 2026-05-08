@@ -62,6 +62,10 @@ in {
     ];
   };
 
+  # SwayNC
+  ".config/swaync/config.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/swaync-config.json";
+
   # XDG MIME associations: registers kdeconnect:// URL handler
   ".config/mimeapps.list".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/mimeapps.list";
