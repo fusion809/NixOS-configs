@@ -36,7 +36,7 @@
     description = "Bridge SwayNC and KDE Connect for notification dismissal";
     wantedBy = [ "graphical-session.target" ];
     after = [ "swaync.service" "kdeconnect.service" ];
-    path = [ pkgs.kdePackages.kdeconnect-kde ];
+    path = [ pkgs.kdePackages.kdeconnect-kde pkgs.dbus ];
     serviceConfig = {
       ExecStart = "${
           pkgs.python3.withPackages (ps: with ps; [

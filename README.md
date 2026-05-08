@@ -60,18 +60,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9560 | 61.09% | 1521 | 86.77% |
-| Nix | 2947 | 18.83% | 146 | 8.33% |
-| CSS | 880 | 5.62% | 0 | 0.00% |
-| Markdown | 495 | 3.16% | 0 | 0.00% |
-| JSONC | 453 | 2.89% | 0 | 0.00% |
-| Python | 398 | 2.54% | 82 | 4.68% |
-| Patch | 396 | 2.53% | 0 | 0.00% |
-| JSON | 388 | 2.48% | 0 | 0.00% |
+| Shell | 9560 | 60.77% | 1521 | 85.69% |
+| Nix | 2946 | 18.73% | 146 | 8.23% |
+| CSS | 880 | 5.59% | 0 | 0.00% |
+| Markdown | 496 | 3.15% | 0 | 0.00% |
+| Python | 480 | 3.05% | 104 | 5.86% |
+| JSONC | 453 | 2.88% | 0 | 0.00% |
+| Patch | 396 | 2.52% | 0 | 0.00% |
+| JSON | 388 | 2.47% | 0 | 0.00% |
 | XML | 78 | 0.50% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.23% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15649** | **100.00%** | **1753** | **100.00%** |
+| **Total** | **15731** | **100.00%** | **1775** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -450,6 +450,7 @@ Workspace 11: Discord (<kbd>F11</kbd>).<br/>
 Workspace 12: Boo (<kbd>F12</kbd>).<br/>
 Workspace 13: Nautilus file manager (<kbd>Win</kbd>+<kbd>Print</kbd>).<br/>
 Workspace 14: KDE Connect (<kbd>Pause</kbd>).<br/>
+Workspace 17: Lutris (<kbd>Page Up</kbd>).<br/>
 Workspace 19: Duolingo (<kbd>End</kbd>).<br/>
 Workspace 20: Terminal (<kbd>Page Down</kbd>).<br/>
 Workspace 22: Payday 2 (<kbd>Win</kbd>+<kbd>F2</kbd>).<br/>

@@ -97,9 +97,8 @@ with pkgs; [
   kdePackages.plasma-workspace
   # Other apps
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
-  vlc
   libmtp
-  nautilus
+  vlc
   ## Required by Waybar widgets
   lm_sensors
   pavucontrol
