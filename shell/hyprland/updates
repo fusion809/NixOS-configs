@@ -250,6 +250,32 @@ if [[ -f "$NIXCFG/nixpkgs/marvin/package.nix" ]]; then
 	fi
 fi
 
+# OpenRA update check
+openra_dir="/home/fusion809/GitHub/others/OpenRA"
+if [[ -d "$openra_dir" ]]; then
+    # Fetch from origin to see if there are updates
+    git -C "$openra_dir" fetch origin bleed --quiet
+    local_rev=$(git -C "$openra_dir" rev-parse bleed)
+    remote_rev=$(git -C "$openra_dir" rev-parse origin/bleed)
+    
+    if [[ "$local_rev" != "$remote_rev" ]]; then
+        add_symbol "󱢇"
+        # Update the local repo
+        git -C "$openra_dir" merge origin/bleed --ff-only --quiet
+        
+        # Now update the Nix package hash
+        openra_pkg_file="$NIXCFG/nixpkgs/openra/engines/git/default.nix"
+        if [[ -f "$openra_pkg_file" ]]; then
+            new_hash=$(nix-prefetch-git --url "file://$openra_dir" --rev "$remote_rev" --quiet | jq -r '.hash')
+            if [[ -n "$new_hash" ]]; then
+                 sed -i "s|hash = \".*\"|hash = \"$new_hash\"|" "$openra_pkg_file"
+                 if [[ ${#pushStr} -gt 0 ]]; then pushStr+="; "; fi
+                 pushStr+="openra: update to ${remote_rev:0:7}"
+            fi
+        fi
+    fi
+fi
+
 # if [[ -f "$NIXCFG/nixpkgs/antigravity/update.js" ]]; then
 # 	echo "Checking for Antigravity updates..."
 # 	# Run update script to update information.json

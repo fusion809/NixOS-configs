@@ -33,21 +33,22 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
     - [Wallpaper navigation button: specification (): shown on monitor 1](#wallpaper-navigation-button-specification-%EF%93%B7-shown-on-monitor-1)
     - [The title of your currently focused window: shown on both monitors](#the-title-of-your-currently-focused-window-shown-on-both-monitors)
     - [Keyboard layout (): shown on monitor 2](#keyboard-layout-%EF%84%9C-shown-on-monitor-2)
-    - [Motherboard temperature () according to sensors: shown on both monitors](#motherboard-temperature-%EF%8B%87-according-to-sensors-shown-on-both-monitors)
-    - [Used space (/) on your root file system: shown on monitor 1](#used-space--on-your-root-file-system-shown-on-monitor-1)
-    - [Used space (A) on your Arch file system: shown on monitor 1](#used-space-a-on-your-arch-file-system-shown-on-monitor-1)
-    - [Used space (D) on your data file system: shown on monitor 1](#used-space-d-on-your-data-file-system-shown-on-monitor-1)
+    - [Motherboard temperature (): shown on both monitors](#motherboard-temperature-%EF%8B%87-shown-on-both-monitors)
+    - [Root file system usage (/): shown on monitor 1](#root-file-system-usage--shown-on-monitor-1)
+    - [Arch file system usage (A): shown on monitor 1](#arch-file-system-usage-a-shown-on-monitor-1)
+    - [Data file system usage (D): shown on monitor 1](#data-file-system-usage-d-shown-on-monitor-1)
     - [Internet download speed () on enp24s0 interface in bps: shown on monitor 2](#internet-download-speed-%EE%AA%9A-on-enp24s0-interface-in-bps-shown-on-monitor-2)
     - [Internet upload speed () on enp24s0 interface in bps: shown on monitor 2](#internet-upload-speed-%EE%AA%A1-on-enp24s0-interface-in-bps-shown-on-monitor-2)
     - [CPU usage percentage (): shown on monitor 1](#cpu-usage-percentage-%EF%8B%9B-shown-on-monitor-1)
     - [RAM usage percentage (): shown on monitor 1](#ram-usage-percentage-%EF%83%89-shown-on-monitor-1)
-    - [GPU memory usage percentage (): shown on monitor 2](#gpu-memory-usage-percentage-%EE%BF%85-shown-on-monitor-2)
-    - [GPU utilization percentage (󱃏): shown on monitor 2](#gpu-utilization-percentage-%F3%B1%83%8F-shown-on-monitor-2)
     - [zRAM utilization (󰾆): shown on monitor 1](#zram-utilization-%F3%B0%BE%86-shown-on-monitor-1)
     - [Swap utilization (󰓡): shown on monitor 1](#swap-utilization-%F3%B0%93%A1-shown-on-monitor-1)
-    - [Updates available:<sup>1</sup> shown on both monitors](#updates-availablesup1sup-shown-on-both-monitors)
+    - [GPU memory usage percentage (): shown on monitor 2](#gpu-memory-usage-percentage-%EE%BF%85-shown-on-monitor-2)
+    - [GPU utilization percentage (󱃏): shown on monitor 2](#gpu-utilization-percentage-%F3%B1%83%8F-shown-on-monitor-2)
+    - [Updates<sup>1</sup> available: shown on both monitors](#updatessup1sup-available-shown-on-both-monitors)
     - [Notifications from KDE Connect on paired devices.](#notifications-from-kde-connect-on-paired-devices)
     - [Clock](#clock)
+    - [Footnotes](#footnotes)
   - [Workspaces](#workspaces)
     - [Monitor 1](#monitor-1)
     - [Monitor 2](#monitor-2)
@@ -60,18 +61,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9560 | 60.77% | 1521 | 85.69% |
-| Nix | 2946 | 18.73% | 146 | 8.23% |
+| Shell | 9586 | 60.84% | 1527 | 85.74% |
+| Nix | 2946 | 18.70% | 146 | 8.20% |
 | CSS | 880 | 5.59% | 0 | 0.00% |
-| Markdown | 496 | 3.15% | 0 | 0.00% |
-| Python | 480 | 3.05% | 104 | 5.86% |
+| Markdown | 494 | 3.14% | 0 | 0.00% |
+| Python | 480 | 3.05% | 104 | 5.84% |
 | JSONC | 453 | 2.88% | 0 | 0.00% |
-| Patch | 396 | 2.52% | 0 | 0.00% |
-| JSON | 388 | 2.47% | 0 | 0.00% |
+| Patch | 396 | 2.51% | 0 | 0.00% |
+| JSON | 388 | 2.46% | 0 | 0.00% |
 | XML | 78 | 0.50% | 0 | 0.00% |
-| JavaScript | 41 | 0.26% | 4 | 0.23% |
+| JavaScript | 41 | 0.26% | 4 | 0.22% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15731** | **100.00%** | **1775** | **100.00%** |
+| **Total** | **15755** | **100.00%** | **1781** | **100.00%** |
 <!-- STATS END -->
 
 # Shell profile
@@ -350,21 +351,20 @@ When clicked, this changes your wallpaper to a wallpaper whose number you specif
 ### Keyboard layout (): shown on monitor 2
 Is followed by its two-letter initial. I have two colours set up for this widget: us=<span style="color: #018786">teal</span>, which is also the default, and br=<span style="color: #AD1457">purple</span>.
 
-### Motherboard temperature () according to sensors: shown on both monitors
+### Motherboard temperature (): shown on both monitors
 It is colour coded with <40&deg;C being <span style="#42A5F5">sky blue</span>, 40 to <60&deg;C being <span style="color: #66BB6A">green</span>, 60 to <75&deg;C being <span style="color: #FFA726">orange</span>, 75 to <85&deg;C being <span style="color: #FF7043">light red</span> and &geq;85&deg;C being <span style="color: #EF5350">deep red</span>. 
 
 Left clicking this opens a graph showing the history of the motherboard temperature.
 
-### Used space (/) on your root file system: shown on monitor 1 
+### Root file system usage (/): shown on monitor 1 
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>.
 
 Left clicking this opens gtop in Alacritty. Right clicking runs `nixcg` in Alacritty.
 
-### Used space (A) on your Arch file system: shown on monitor 1 
+### Arch file system usage (A): shown on monitor 1
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to &lt;50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to &lt;75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.
 
-### Used space (D) on your data file system: shown on monitor 1 
-
+### Data file system usage (D): shown on monitor 1
 If the used disk space is less than 25%, it is <span style="color: #66BB6A">green</span> If it is between 25 to &lt;50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to &lt;75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to &lt;95%, it is <span style="color: #FF7043">orange</span>. If it is &geq;95%, it is <span style="color: #EF5350">red</span>. The reason for the higher boundaries is that my /data partition was already very full when this NixOS install was setup.
 
 ### Internet download speed () on enp24s0 interface in bps: shown on monitor 2
@@ -387,6 +387,12 @@ If the CPU usage is less than 25%, it is <span style="color: #66BB6A">green</spa
 
 Left clicking this opens gtop in Alacritty. Right clicking this opens a graph of the RAM usage over time.
 
+### zRAM utilization (󰾆): shown on monitor 1
+zRAM is only used if RAM is used up.
+
+### Swap utilization (󰓡): shown on monitor 1
+Swap is only used if zRAM and RAM are used up. 
+
 ### GPU memory usage percentage (): shown on monitor 2
 If the GPU memory usage is less than 25%, it is <span style="color: #66BB6A">green</span>. If it is between 25 to <50%, it is <span style="color: #9CCC65">lighter green</span>. If it is between 50 to <75%, it is <span style="color: #FFCA28">yellow</span>. If it is between 75 to <90%, it is <span style="color: #FF7043">orange</span>. If it is &geq;90%, it is <span style="color: #EF5350">red</span>. 
 
@@ -397,34 +403,27 @@ If the GPU utilization is less than 25%, it is <span style="color: #66BB6A">gree
 
 Left clicking this opens up an Alacritty terminal with nvidia-smi output (showing GPU utilization and processes utilizing it). Right clicking this opens a graph of the GPU utilization over time.
 
-### zRAM utilization (󰾆): shown on monitor 1
-
-### Swap utilization (󰓡): shown on monitor 1
-
-### Updates available:<sup>1</sup> shown on both monitors
+### Updates<sup>1</sup> available: shown on both monitors
 * "h" indicates updates to home-manager are available.
 * "m" indicates updates to nixpkgs-master are available.
 * "s" indicates that updates to nixpkgs (stable branch) are available.
 * "u" indicates updates to nixpkgs-unstable are available.
 * 󱇛 indicates that hy3 updates are available.
 *  indicates that Hyprland updates are available.
-    <!---  indicates that Vim updates are available.-->
 * 󱢇 indicates that OpenRA updates are available.
 * 󰄻 indicates that Marvin updates are available.
 
 ### Notifications from KDE Connect on paired devices.
 Symbolized with: 
 
-<ul>
-<li><span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #aa4400; color: #ffffff;">󱅫</span>, if there is a notification.</li>
-<li><span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #ac22ca; color: #ffffff;">󰂚</span>, if there are no notifications.</li>
-<li><span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #678900; color: #ffffff;">󰂛</span>, if in do not disturb mode.</li>
-</ul>
+* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #aa4400; color: #ffffff;">󱅫</span> if there is a notification.
+* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #ac22ca; color: #ffffff;">󰂚</span> if there are no notifications.
+* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #678900; color: #ffffff;">󰂛</span> if in do not disturb mode.
 
 ### Clock
 With AM/PM time with seconds, short day of the week name, day of the month/month of the year (short format).
 
-Footnotes:
+### Footnotes
 1. The script that manages this runs every ~20 minutes, and runs `nixfu` as part of checking for updates. If any are available, you merely need to run `nixfrb` to install them. Left clicking the widget, will open a terminal that runs `nixfrb`.
 
 ## Workspaces
