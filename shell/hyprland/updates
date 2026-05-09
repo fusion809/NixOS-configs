@@ -108,8 +108,7 @@ check_packages() {
 	local m_path=$8
 	local os_path=$9
 	local vim_path=${10}
-	local hs_path=${11}
-	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; oldstableRev = \"$os_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; oldstablePath = \"$os_path\"; vimPath = \"$vim_path\"; hyprsessionPath = \"$hs_path\"; username = \"$USER\"; }"
+	retry nix eval --impure --raw --expr "import $NIXCFG/nix/compare.nix { mode = \"packages\"; stableRev = \"$s_rev\"; unstableRev = \"$u_rev\"; masterRev = \"$m_rev\"; oldstableRev = \"$os_rev\"; vimRev = \"$vim_rev\"; stablePath = \"$s_path\"; unstablePath = \"$u_path\"; masterPath = \"$m_path\"; oldstablePath = \"$os_path\"; vimPath = \"$vim_path\"; username = \"$USER\"; }"
 }
 
 # Get current revisions and store paths
@@ -131,7 +130,7 @@ path_m=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-master".path // empty')
 path_os=$(echo "$archive_json" | jq -r '.inputs."nixpkgs-oldstable".path // empty')
 path_vim=$(echo "$archive_json" | jq -r '.inputs."vim-src".path // empty')
 path_hm=$(echo "$archive_json" | jq -r '.inputs."home-manager".path // empty')
-path_hs=$(echo "$archive_json" | jq -r '.inputs."hyprsession".path // empty')
+# path_hs=$(echo "$archive_json" | jq -r '.inputs."hyprsession".path // empty')
 
 echo "curr_s=$curr_s curr_u=$curr_u curr_m=$curr_m curr_os=$curr_os curr_vim=$curr_vim curr_hm=$curr_hm"
 

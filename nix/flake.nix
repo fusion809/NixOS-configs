@@ -7,8 +7,6 @@
         "git+https://github.com/nix-community/home-manager.git?ref=release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Hyprland
-    hyprsession.url = "github:joshurtree/hyprsession";
     # nixpkgs
     nixpkgs-oldstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
@@ -34,7 +32,7 @@
     in {
       # also set the defaultPackage for this system to hy3 for convenience
       defaultPackage.x86_64-linux =
-        nixpkgs.legacyPackages.x86_64-linux.hyprlandPlugins.hy3;
+        inputs.nixpkgs-master.legacyPackages.x86_64-linux.hyprlandPlugins.hy3;
 
       nixosConfigurations."nixos" = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs username; };

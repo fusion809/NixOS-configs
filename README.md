@@ -62,10 +62,10 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9593 | 60.85% | 1529 | 85.75% |
-| Nix | 2946 | 18.69% | 146 | 8.19% |
+| Shell | 9592 | 60.83% | 1529 | 85.75% |
+| Nix | 2948 | 18.70% | 146 | 8.19% |
 | CSS | 880 | 5.58% | 0 | 0.00% |
-| Markdown | 497 | 3.15% | 0 | 0.00% |
+| Markdown | 499 | 3.16% | 0 | 0.00% |
 | Python | 480 | 3.04% | 104 | 5.83% |
 | JSONC | 453 | 2.87% | 0 | 0.00% |
 | Patch | 396 | 2.51% | 0 | 0.00% |
@@ -73,7 +73,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | XML | 78 | 0.49% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.22% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15765** | **100.00%** | **1783** | **100.00%** |
+| **Total** | **15768** | **100.00%** | **1783** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -91,6 +91,8 @@ Applications and programs autostarted include the default browser, virtual machi
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
 
 # Hyprland
+Hyprland and hy3 is built from the master branch of nixpkgs.
+
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. I used to compile the latest version of Hyprland from source, but recompiling every time I ran `nixfrb` (i.e., rebuild the system) eventually deterred me. 
 
 # Keyboard shortcuts
