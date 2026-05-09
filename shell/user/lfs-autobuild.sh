@@ -550,12 +550,21 @@ PAGE_URL=""
 # Prioritize KDE/Plasma and Xorg metapackages before searching the index
 log "Searching prominent metapackages for component '$PACKAGE'..."
 for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
+    if [[ "$mp_page" == "kde/frameworks6.html" ]] && [[ "${PACKAGE,,}" == "extra-cmake-modules" || "${PACKAGE,,}" == "breeze-icons" ]]; then
+        continue
+    fi
     if curl -s "$BLFS_BOOK/$mp_page" | grep -iqE "href=\"${PACKAGE}\.html\"|${PACKAGE}[-_][0-9].*\.tar"; then
         PAGE_URL="$BLFS_BOOK/$mp_page"
         METAPACKAGE_TARGET=$(basename "$mp_page" .html)
         SINGLE_COMPONENT_MODE="$PACKAGE"
         log "Found component '$PACKAGE' securely nested within metapackage: $METAPACKAGE_TARGET"
         break
+    fi
+    # Detect if it's a KDE Frameworks metapackage component
+    if [[ -z "$PAGE_URL" && "${PACKAGE,,}" != "extra-cmake-modules" && "${PACKAGE,,}" != "breeze-icons" ]] && curl -sL "$BLFS_BOOK/kde/frameworks6.html" | grep -qiE "tar.*${PACKAGE}[-_]?[0-9]"; then
+        PAGE_URL="$BLFS_BOOK/kde/frameworks6.html"
+        METAPACKAGE_TARGET="frameworks6"
+        log "Found component '$PACKAGE' securely nested within metapackage: frameworks6"
     fi
 done
 
@@ -850,8 +859,11 @@ get_commands() {
         '
 }
 
-    log "Extracting build commands..."
-    RAW_CONTENT=$(get_commands "$HTML_CONTENT" "$PACKAGE")
+    if [[ -n "$METAPACKAGE_TARGET" ]]; then
+        RAW_CONTENT=$(get_commands "$HTML_CONTENT")
+    else
+        RAW_CONTENT=$(get_commands "$HTML_CONTENT" "$PACKAGE")
+    fi
 
     # Handle custom hardcoded packages (libelf, elfutils, etc)
     if [[ "$PACKAGE" == "libelf" || "$PACKAGE" == "elfutils" ]]; then
@@ -1139,6 +1151,7 @@ done <<< "$RAW_CONTENT"
 
 # (Linux kernel specific headers block removed from here as it is now integrated into RAW_CONTENT above)
 
+log "Extracted commands: $COMMANDS"
 if [[ -z "$COMMANDS" ]]; then
     error "Could not extract build commands for '$PACKAGE'"
 fi
@@ -1665,8 +1678,8 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
-                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/\${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    sudo rm -rf \"\$DDIR\"";
+                    vm_cmds = vm_cmds "\n    (echo \"\${PKGVER}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
                     next;
                 }
                 # Intercept do_install wrapper calls used by xorg-lib loop
@@ -1675,13 +1688,13 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
                     vm_cmds = vm_cmds "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
                     vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
                     vm_cmds = vm_cmds "\n    do_install";
+                    vm_cmds = vm_cmds "\n    sudo rm -f \"/tmp/pkg_${PKGNAME}\"";
                     vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/tmp/pkg_${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    fi";
-                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/tmp/pkg_${PKGNAME}\" > /dev/null";
                     # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
-                    vm_cmds = vm_cmds "\n    (head -n 1 \"/var/lib/book-packages/\${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    vm_cmds = vm_cmds "\n    (echo \"\${PKGVER}\"; cat \"/tmp/pkg_\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
                     vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
                     next;
                 }
@@ -1748,7 +1761,7 @@ fi
 
 # 2.11 Special handling for KDE frameworks6 and plasma-all
 FRAMEWORKS_MODE=false
-if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${METAPACKAGE_TARGET,,}" == "frameworks6" || "${METAPACKAGE_TARGET,,}" == "plasma-all" ]]; then
+if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${METAPACKAGE_TARGET,,}" == "frameworks6" || "${METAPACKAGE_TARGET,,}" == "plasma-all" || "$COMMANDS" == *"while read line"* || "$COMMANDS" == *"while read -r line"* ]]; then
     FRAMEWORKS_MODE=true
     log "Enabling special KDE frameworks/plasma loop mode."
     
@@ -1809,247 +1822,11 @@ if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PA
 ${COMMANDS}"
     fi
 
-    # Strip desktop session testing commands (startx etc) which break SSH builds
-    COMMANDS=$(echo "$COMMANDS" | sed '/cat > ~\/.xinitrc << "EOF"/,/EOF/d')
-    COMMANDS=$(echo "$COMMANDS" | grep -v "^startx")    # Fix internal script paths for MD5 files (Xorg/KDE) before awk processing
+    # Fix internal script paths for MD5 files (Xorg/KDE) before awk processing
     COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9.-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')
     # Fix invalid syntax on BLFS KDE pages: if $(echo $line | grep -q ...)
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/if \$\(echo \$line \| grep -E -q ([^)]*)\) ; then/if echo \$line | grep -E -q \1 ; then/g; s/if \$\(echo \$line \| grep -E -q ([^)]*)\); then/if echo \$line | grep -E -q \1; then/g')
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's/if \$\(echo \$line \| grep -E -q ([^)]*)\) ; then/if echo \$line | grep -E -q $1 ; then/g; s/if \$\(echo \$line \| grep -E -q ([^)]*)\); then/if echo \$line | grep -E -q $1; then/g')
 
-    # Fix the bash subshell and execution
-    log "Converting build loop into a standalone script..."
-    # Preserve block markers for root identification
-    COMMANDS=$(echo "$COMMANDS" | awk '
-        BEGIN {
-            in_loop = 0
-            in_as_root = 0
-            in_md5 = 0
-            in_root_block = 0
-            as_root_content = ""
-            other_cmds = ""
-            loop_content = ""
-        }
-        /^# __BEGIN_ROOT__/ { 
-            if (in_loop) { in_root_block = 1; next }
-            other_cmds = other_cmds "\nas_root bash << \x27ROOTEOF\x27\n"; 
-            in_root_block = 1; 
-            next 
-        }
-        /^# __BEGIN_USER__/ { 
-            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
-            in_root_block = 0; 
-            next 
-        }
-        /^# __END_ROOT__/ { 
-            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
-            in_root_block = 0; 
-            next 
-        }
-        /^# __END_USER__/ { 
-            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
-            in_root_block = 0; 
-            next 
-        }
-        /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
-        /^bash -e/ { other_cmds = other_cmds "\n" $0; next }
-        /^exit/ { next }
-        # Skip shebangs and basic setup from original text as we provide our own
-        /^#!/ || /^set -e/ || /^set +e/ { next }
-        /^cat > [a-z0-9.-]+\.md5 << "EOF"/ { 
-            in_md5 = 1; 
-            print "[DEBUG] Found MD5 cat command: " $0 > "/dev/stderr";
-            sub(/^cat > /, "cat > /sources/archives/", $0); 
-            other_cmds = other_cmds "\n" $0; 
-            next 
-        }
-        /^[[:space:]]*while read -r line; do/ { 
-            in_loop = 1; 
-            loop_content = "    while read -r line; do"; 
-            loop_content = loop_content "\n    cd /sources/archives";
-            loop_content = loop_content "\n    [[ -z \"$line\" || \"$line\" == [[:space:]]*#* ]] && continue";
-            loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x27{print $2}\x27 | sed -E \x27s/\\.tar\\.[a-z0-9.]+$//\x27)";
-            loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \x22s/[-_][0-9].*//\x22)";
-            loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \x22s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\x22)";
-            loop_content = loop_content "\n    # Skip if we only want one package and this is not it";
-            loop_content = loop_content "\n    # Filter: Only build the requested package (or all if metapackage targeted)";
-            loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then";
-            loop_content = loop_content "\n        if [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi";
-            loop_content = loop_content "\n    fi";
-            loop_content = loop_content "\n    # Skip if source archive is missing (and we are not building the whole metapackage)";
-            loop_content = loop_content "\n    TARBALL=$(echo \"$line\" | awk \x27{print $2}\x27)";
-            loop_content = loop_content "\n    if [ ! -f \"/sources/archives/${TARBALL}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then";
-            loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping missing archive: ${TARBALL} (not requested)\"";
-            loop_content = loop_content "\n        continue";
-            loop_content = loop_content "\n    fi";
-            loop_content = loop_content "\n    # Skip if already installed (resume feature)";
-            loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ] && [ \"$FORCE\" != \"true\" ]; then";
-            loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Skipping already installed component: ${DIRNAME}\"";
-            loop_content = loop_content "\n        continue";
-            loop_content = loop_content "\n    fi";
-            loop_content = loop_content "\n    # Only write the version stub now that we know we will actually build this package";
-            loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
-            loop_content = loop_content "\n    echo \"${PKGVER}\" | sudo tee \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-            next;
-        }
-        /mkdir build/ { if (in_loop) { loop_content = loop_content "\nrm -rf build"; loop_content = loop_content "\n" $0; next } }
-        /-D CMAKE_INSTALL_PREFIX=/ { 
-            if (in_loop && !($0 ~ /CMAKE_INSTALL_LIBDIR/)) { 
-                sub(/-D CMAKE_INSTALL_PREFIX=/, "-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=", $0) 
-            } 
-        }
-        # Pass function definitions through verbatim in frameworks loop
-        /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/ {
-            if (in_loop) { loop_content = loop_content "\n    " $0; next }
-        }
-        /make.*install|ninja.*install|pip3.*install/ {
-            if (in_loop && !($0 ~ /book-packages/)) {
-                # Add robust inventory recording using DESTDIR where possible
-                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
-                loop_content = loop_content "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
-                loop_content = loop_content "\n    rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
-                
-                # Command adaptation for DESTDIR (strip trailing separators, braces and semicolons)
-                cmd = $0;
-                gsub(/ *([|][|]|&&|;|[[:space:]]\}).*$/, "", cmd);
-                
-                if ($0 ~ /make.*install/) {
-                    loop_content = loop_content "\n    " cmd " DESTDIR=\"$DDIR\" || true";
-                } else if ($0 ~ /ninja.*install/) {
-                    loop_content = loop_content "\n    DESTDIR=\"$DDIR\" " cmd " || true";
-                } else if ($0 ~ /pip3.*install/) {
-                    sub(/--root=[^ ]+ /, "", cmd);
-                    loop_content = loop_content "\n    " cmd " --root=\"$DDIR\" --ignore-installed --no-deps || true";
-                }
-                
-                loop_content = loop_content "\n    # Capture from DESTDIR if populated, otherwise fallback to -newer";
-                loop_content = loop_content "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                loop_content = loop_content "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\\\n\" | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n    fi";
-                
-                real_cmd = $0;
-                if (real_cmd ~ /pip3.*install/ && real_cmd !~ /ignore-installed/) {
-                    sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed --no-deps", real_cmd);
-                }
-                # Now the actual install to the system
-                loop_content = loop_content "\n    " real_cmd;
-                
-                # Backup -newer check
-                loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                # Cleanup and record: Keep the version header at line 1, sort the rest uniquely
-                loop_content = loop_content "\n    (head -n 1 \"/var/lib/book-packages/\${PKGNAME}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n    sudo chmod 755 \"/var/lib/book-packages/\${PKGNAME}\"";
-                loop_content = loop_content "\n    as_root rm -rf \"\$DDIR\"";
-                loop_content = loop_content "\n    touch \"/sources/archives/${DIRNAME}.installed\"";
-                next;
-            }
-        }
-        # Intercept do_install wrapper calls in frameworks loop
-        /^[[:space:]]*do_install[[:space:]]*$/ {
-            if (in_loop) {
-                loop_content = loop_content "\n    echo \"[LFS-AUTOBUILD] Installing and recording inventory for \${PKGNAME}...\"";
-                loop_content = loop_content "\n    if do_install; then";
-                loop_content = loop_content "\n        # Record inventory ONLY on success";
-                loop_content = loop_content "\n        echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n        # Find files installed by this specific component";
-                loop_content = loop_content "\n        find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer \"/tmp/build_start_\${PKGNAME}\" 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                loop_content = loop_content "\n        # Clean duplicate version lines and orphaned paths";
-                loop_content = loop_content "\n        if [ -f \"/var/lib/book-packages/\${PKGNAME}\" ]; then";
-                loop_content = loop_content "\n            TMP_INV=\$(mktemp)";
-                loop_content = loop_content "\n            echo \"\${PKGVER}\" > \"\$TMP_INV\"";
-                loop_content = loop_content "\n            grep -v -x \"\${PKGVER}\" \"/var/lib/book-packages/\${PKGNAME}\" | grep -v \"^[[:space:]]*\$\" | sort -u >> \"\$TMP_INV\"";
-                loop_content = loop_content "\n            sudo mv \"\$TMP_INV\" \"/var/lib/book-packages/\${PKGNAME}\"";
-                loop_content = loop_content "\n            sudo chmod 755 \"/var/lib/book-packages/\${PKGNAME}\"";
-                loop_content = loop_content "\n        fi";
-                loop_content = loop_content "\n        touch \"/sources/archives/\${DIRNAME}.installed\"";
-                loop_content = loop_content "\n    else";
-                loop_content = loop_content "\n        echo \"[LFS-AUTOBUILD] Build for \${PKGNAME} failed. Skipping inventory recording.\"";
-                loop_content = loop_content "\n        exit 1";
-                loop_content = loop_content "\n    fi";
-                next;
-            }
-        }
-        {
-            if (in_as_root) {
-                as_root_content = as_root_content "\n" $0
-                if (/export -f as_root/) in_as_root = 0
-            } else if (in_loop) {
-                # Skip diagnostic/log-check commands if the log does not exist
-                if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
-                    loop_content = loop_content "\n    " $0 " 2>/dev/null || true";
-                    next;
-                }
-                # Skip tests in loop
-                if ($0 ~ /(make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests\/run\.sh)/) {
-                    next;
-                }
-
-                # Handle loop end BEFORE adding it to content
-                if ($0 ~ /done[[:space:]]+<.*\.md5/) { 
-                    sub(/done < /, "done < /sources/archives/", $0);
-                    loop_content = loop_content "\n    " $0;
-                    in_loop = 0;
-                    next;
-                }
-
-                loop_content = loop_content "\n    " (in_root_block ? "as_root " : "") $0
-            } else if (in_md5) {
-                other_cmds = other_cmds "\n" $0
-                if (/^EOF$/) in_md5 = 0
-            } else {
-                # Skip diagnostic/log-check commands if the log does not exist (even outside loop)
-                if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
-                    other_cmds = other_cmds "\n" $0 " 2>/dev/null || true";
-                } else {
-                   other_cmds = other_cmds "\n" $0
-                }
-            }
-        }
-        END {
-            # Close any pending root block
-            if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
-            sub(/^\n/, "", other_cmds)
-            print "cd /sources/archives"
-            print "as_root() {"
-            print "  if [ ${EUID:-$(id -u)} = 0 ]; then \"$@\"; else"
-            print "    local cmd=\"$*\""
-            print "    if [[ \"$cmd\" == *\">\"* ]] || [[ \"$cmd\" == *\"<<\"* ]] || [[ \"$cmd\" == *\"|\"* ]]; then"
-            print "      [ -x /usr/bin/sudo ] && sudo bash -c \"$cmd\" || su -c \"$cmd\""
-            print "    else"
-            print "      [ -x /usr/bin/sudo ] && sudo \"$@\" || su -c \"$cmd\""
-            print "    fi"
-            print "  fi"
-            print "}"
-            print "export -f as_root"
-            print other_cmds
-            print "cd /sources/archives"
-            print "cat > build-frameworks.sh << \x27KDEEOF\x27"
-            print "#!/bin/bash"
-            print "set -e"
-            print ""
-            print "cd /sources/archives"
-            print ""
-            print "as_root() {"
-            print "  if [ \${EUID:-\$(id -u)} = 0 ]; then \"\$@\"; else"
-            print "    local cmd=\"\$*\""
-            print "    if [[ \"\$cmd\" == *\">\"* ]] || [[ \"\$cmd\" == *\"<<\"* ]] || [[ \"\$cmd\" == *\"|\"* ]]; then"
-            print "      [ -x /usr/bin/sudo ] && sudo bash -c \"\$cmd\" || su -c \"\$cmd\""
-            print "    else"
-            print "      [ -x /usr/bin/sudo ] && sudo \"\$@\" || su -c \"\$cmd\""
-            print "    fi"
-            print "  fi"
-            print "}"
-            print "export -f as_root"
-            print ""
-            # Skip as_root_content as we provide our own robust version
-            # print as_root_content
-            print ""
-            print loop_content
-            # Close loop if pending
-            if (in_loop) print "done"
-            print "KDEEOF"
-            print "bash build-frameworks.sh"
-        }
-    ')
 fi
 
 if [[ "$SKIP_HTML_EXTRACTION" == "true" ]]; then
@@ -2335,8 +2112,25 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] && [[ "$FRAMEWORKS_MODE" == "false" ]] && [[
     error "Could not find any download URLs for '$PACKAGE'"
 fi
 
-# Remove duplicates while preserving order (to some extent)
+# Remove duplicates while preserving order
 DOWNLOAD_URLS=($(printf "%s\n" "${DOWNLOAD_URLS[@]}" | awk '!x[$0]++'))
+
+# Filter out directory URLs (ending in /) and apply upstream version substitution
+NEW_URLS=()
+for url in "${DOWNLOAD_URLS[@]}"; do
+    # Skip directories (ending in / or appearing to be an index page or version-only path)
+    [[ "$url" =~ /$ ]] && continue
+    [[ "$url" =~ /index\.html$ ]] && continue
+    [[ "$url" =~ /[0-9]+(\.[0-9]+)*$ ]] && continue
+    if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_FULL" && -n "$LFS_VERSION" ]]; then
+        url=$(echo "$url" | sed "s/$LFS_VERSION/$UPSTREAM_FULL/g")
+        if [[ -n "$LFS_MM" && -n "$UPSTREAM_MM" ]]; then
+            url=$(echo "$url" | sed "s/$LFS_MM/$UPSTREAM_MM/g")
+        fi
+    fi
+    NEW_URLS+=("$url")
+done
+DOWNLOAD_URLS=("${NEW_URLS[@]}")
 
 # Special case: Fix ghostscript GitHub releases (BLFS often has wrong tag)
 # The BLFS page may have gs10060 tag for 10.07.0, but need gs10070
@@ -2924,6 +2718,8 @@ if [[ "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all" || \
     # Replace recursive wget with a non-clobbering direct wget. 
     # We remove -r, -A, -nd, -nH etc and just use -nc to skip if file exists.
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/wget -r -nH -nd -A [^ ]+ -np/wget -nc/g; s/wget -r /wget -nc /g')
+    # Remove redundant wget index downloads for KDE
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@wget -nc https://download.kde.org/stable/(frameworks|plasma)/[0-9.]+/?@@g')
 fi
 
 if [[ "$PACKAGE" == "sddm" ]]; then
@@ -2967,13 +2763,14 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
             UPSTREAM_FULL="${UPSTREAM_FULL}.0"
         fi
         
-        LFS_MAJOR_MINOR=$(echo "$LFS_VERSION" | cut -d. -f1,2)
-        UPSTREAM_MAJOR_MINOR=$(echo "$UPSTREAM_FULL" | cut -d. -f1,2)
+        # Define LFS_MM and UPSTREAM_MM (e.g. 6.23 from 6.23.0)
+        LFS_MM=$(echo "$LFS_VERSION" | cut -d. -f1,2)
+        UPSTREAM_MM=$(echo "$UPSTREAM_FULL" | cut -d. -f1,2)
         
-        log "[DEBUG] KDE Version Substitution: LFS_VERSION='$LFS_VERSION', LFS_MM='$LFS_MAJOR_MINOR', UPSTREAM_FULL='$UPSTREAM_FULL', UPSTREAM_MM='$UPSTREAM_MAJOR_MINOR'"
+        log "[DEBUG] KDE Version Substitution: LFS_VERSION='$LFS_VERSION', LFS_MM='$LFS_MM', UPSTREAM_FULL='$UPSTREAM_FULL', UPSTREAM_MM='$UPSTREAM_MM'"
 
         # Use perl for complex heredoc and regex substitution
-        COMMANDS=$(echo "$COMMANDS" | LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" LFS_MM="$LFS_MAJOR_MINOR" UPSTREAM_MM="$UPSTREAM_MAJOR_MINOR" perl -0777 -pe '
+        COMMANDS=$(echo "$COMMANDS" | LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" LFS_MM="$LFS_MM" UPSTREAM_MM="$UPSTREAM_MM" perl -0777 -pe '
             my $lv = $ENV{LFS_VERSION};
             my $uf = $ENV{UPSTREAM_FULL};
             my $lmm = $ENV{LFS_MM};
@@ -2982,16 +2779,17 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
             # 1. Update the MD5 filename in the cat heredoc trigger (match frameworks, plasma, etc. dynamically)
             s!((?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-)$lv\.md5!${1}$uf.md5!g;
             s!(\/sources\/archives\/(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-)$lv\.md5!${1}$uf.md5!g;
+            s!/stable/frameworks/$lmm/!/stable/frameworks/$umm/!g;
+            s!/stable/plasma/$lmm/!/stable/plasma/$umm/!g;
 
             # 2. Process the MD5 file content: update all versions inside the heredoc
-            s!(cat > (?:/sources/archives/)?(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-$uf\.md5 << \"?EOF\"?\n)(.*?)(\nEOF)!
+            s!((cat > (?:/sources/archives/)?(?:frameworks|plasma|breeze-icons|attica|extra-cmake-modules)-)\Q$lv\E\.md5 << \"?EOF\"?\n)(.*?)(\nEOF)!
                 do {
                     my $header = $1;
-                    my $body = $2;
-                    my $footer = $3;
+                    my $body = $3;
+                    my $footer = $4;
                     $body =~ s/\Q$lv\E/$uf/g; # Replace LFS version with upstream
                     $body =~ s/6\.\d+(?:\.\d+){0,2}/$uf/og; # Fallback generic replacement
-                    # Note: do NOT uncomment commented-out packages - BLFS marks them optional for a reason
                     $header . $body . $footer
                 }
             !gse;
@@ -3003,7 +2801,7 @@ if [[ "$UPSTREAM" == "true" && ("${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}
             # Replace full version
             s/\Q$lv\E/$uf/g;
             
-            # Replace major.minor in URLs, e.g. /6.23/ to /6.24/
+            # Replace major.minor in URLs, e.g. /6.23/ to /6.26/
             s!/$lmm/!/$umm/!g;
         ')
         
@@ -3232,10 +3030,142 @@ if [[ "$DRY_RUN" == "true" ]]; then
 fi
 
 # 4. Remote Execution
+
+    # Fix the bash subshell and execution
+    if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
+        log "Converting build loop into a standalone script..."
+        # Preserve block markers for root identification
+        # We use a temporary variable for the awk script to avoid replacing COMMANDS
+        # until the very end, ensuring extractions (filenames, versions) use the full text.
+        KDE_GENERATED_SCRIPT=$(echo "$COMMANDS" | awk -v pkg="$PACKAGE" -v force="$FORCE" '
+            BEGIN {
+                in_loop = 0; in_as_root = 0; in_md5 = 0; in_root_block = 0;
+                as_root_content = ""; other_cmds = ""; loop_content = "";
+            }
+            /^# __BEGIN_ROOT__/ { 
+                if (in_loop) { in_root_block = 1; next }
+                other_cmds = other_cmds "\nas_root bash << \"ROOTEOF\"\n"; 
+                in_root_block = 1; next 
+            }
+            /^# __BEGIN_USER__|^# __END_ROOT__|^# __END_USER__/ { 
+                if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
+                in_root_block = 0; next 
+            }
+            /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
+            /^bash -e/ { next }
+            /^exit/ { next }
+            /^#!/ || /^set -e/ || /^set \+e/ { next }
+            /^cat > [a-z0-9.-]+\.md5 << "EOF"/ { 
+                in_md5 = 1; 
+                sub(/^cat > /, "cat > /sources/archives/", $0); 
+                other_cmds = other_cmds "\n" $0; next 
+            }
+            /^cd \$packagedir/ {
+                loop_content = loop_content "\n" $0
+                loop_content = loop_content "\n    if [ \"$name\" = \"kauth\" ]; then"
+                loop_content = loop_content "\n        perl -0777 -pi -e \x27s/string\\(REPLACE \\$\\{POLKITQT-1_INSTALL_DIR\\}[^)]+\\)/set(_KAUTH_POLICY_FILES_INSTALL_DIR \"\\${CMAKE_INSTALL_PREFIX}\\/share\\/polkit-1\\/actions\")/gs\x27 src/ConfigureChecks.cmake 2>/dev/null || true"
+                loop_content = loop_content "\n    fi"
+                next
+            }
+            /^[[:space:]]*while read (-r )?line; do/ { 
+                in_loop = 1; 
+                loop_content = "    while read -r line; do\n    set -e\n    cd /sources/archives\n    [[ -z \"\$line\" || \"\$line\" == [[:space:]]*#* ]] && continue";
+                loop_content = loop_content "\n    DIRNAME=\$(echo \"\$line\" | awk \"{print \\$2}\" | sed -E \"s/\\\\.tar\\\\.[a-z0-9.]+$//\")";
+                loop_content = loop_content "\n    PKGNAME=\$(echo \"\$DIRNAME\" | sed -E \"s/[-_][0-9].*//\")";
+                loop_content = loop_content "\n    PKGVER=\$(echo \"\$DIRNAME\" | sed \"s/^\${PKGNAME}-//; s/^\${PKGNAME}_//; s/[[:space:]]//g\")";
+                loop_content = loop_content "\n    if [ -n \"\${PACKAGE}\" ] && [ \"\${PACKAGE}\" != \"frameworks6\" ] && [ \"\${PACKAGE}\" != \"plasma-all\" ] && [ \"\${PACKAGE}\" != \"xorg-lib\" ]; then";
+                loop_content = loop_content "\n        if [ \"\$PKGNAME\" != \"\${PACKAGE}\" ] && [ \"\$DIRNAME\" != \"\${PACKAGE}\" ]; then continue; fi\n    fi";
+                loop_content = loop_content "\n    TARBALL=\$(echo \"\$line\" | awk \"{print \\$2}\")";
+                loop_content = loop_content "\n    if [ ! -f \"/sources/archives/\${TARBALL}\" ] && [ \"\${PACKAGE}\" != \"frameworks6\" ] && [ \"\${PACKAGE}\" != \"plasma-all\" ] && [ \"\${PACKAGE}\" != \"xorg-lib\" ]; then continue; fi";
+                loop_content = loop_content "\n    if [ -f \"/sources/archives/\${DIRNAME}.installed\" ] && [ \"\$FORCE\" != \"true\" ]; then continue; fi";
+                loop_content = loop_content "\n    touch /tmp/build_start_\${PKGNAME}";
+                next;
+            }
+            /mkdir build/ { if (in_loop) { loop_content = loop_content "\n    rm -rf build\n    " $0; next } }
+            /-D CMAKE_INSTALL_PREFIX=/ { if (in_loop && !($0 ~ /CMAKE_INSTALL_LIBDIR/)) { sub(/-D CMAKE_INSTALL_PREFIX=/, "-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=", $0) } }
+            /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/ { if (in_loop) { loop_content = loop_content "\n    " $0; next } }
+            /make.*install|ninja.*install|pip3.*install/ {
+                if (in_loop && !($0 ~ /book-packages/)) {
+                    loop_content = loop_content "\n    DDIR=\"/tmp/destdir_\${PKGNAME}\"\n    rm -rf \"\$DDIR\" && mkdir -p \"\$DDIR\"";
+                    cmd = $0; gsub(/ *([|][|]|&&|;|[[:space:]]\}).*$/, "", cmd);
+                    if ($0 ~ /make.*install/) loop_content = loop_content "\n    " cmd " DESTDIR=\"\$DDIR\" || true";
+                    else if ($0 ~ /ninja.*install/) loop_content = loop_content "\n    DESTDIR=\"\$DDIR\" " cmd " || true";
+                    else if ($0 ~ /pip3.*install/) {
+                        sub(/--root=[^ ]+ /, "", cmd);
+                        loop_content = loop_content "\n    " cmd " --root=\"\$DDIR\" --ignore-installed --no-deps || true";
+                    }
+                    loop_content = loop_content "\n    sudo rm -f \"/tmp/pkg_\${PKGNAME}\"";
+                    loop_content = loop_content "\n    if [ -d \"\$DDIR\" ] && [ \"\$(ls -A \"\$DDIR\" 2>/dev/null)\" ]; then\n        find \"\$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/tmp/pkg_\${PKGNAME}\" > /dev/null\n    fi";
+                    real_cmd = $0; if (real_cmd ~ /pip3.*install/ && real_cmd !~ /ignore-installed/) sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed --no-deps", real_cmd);
+                    loop_content = loop_content "\n    " real_cmd;
+                    loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start/\${PKGNAME} 2>/dev/null | sudo tee -a \"/tmp/pkg_\${PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n    (echo \"\${PKGVER}\"; cat \"/tmp/pkg_\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n    sudo chmod 755 \"/var/lib/book-packages/\${PKGNAME}\"\n    as_root rm -rf \"\$DDIR\"\n    touch \"/sources/archives/\${DIRNAME}.installed\"";
+                    next;
+                }
+            }
+            /^[[:space:]]*do_install[[:space:]]*$/ {
+                if (in_loop) {
+                    loop_content = loop_content "\n    sudo rm -f \"/tmp/pkg_\${PKGNAME}\"";
+                    loop_content = loop_content "\n    if do_install; then";
+                    loop_content = loop_content "\n        find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer \"/tmp/build_start/\${PKGNAME}\" 2>/dev/null | sudo tee -a \"/tmp/pkg_\${PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n        (echo \"\${PKGVER}\"; cat \"/tmp/pkg_\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n        touch \"/sources/archives/\${DIRNAME}.installed\"";
+                    loop_content = loop_content "\n    else\n        exit 1\n    fi";
+                    next;
+                }
+            }
+            {
+                if (in_as_root) {
+                    as_root_content = as_root_content "\n" $0;
+                    if (/export -f as_root/) in_as_root = 0;
+                } else if (in_loop) {
+                    if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) { loop_content = loop_content "\n    " $0 " 2>/dev/null || true"; next; }
+                    if ($0 ~ /(make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|<expect>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests\/run\.sh)/) { next; }
+                    if ($0 ~ /done[[:space:]]+<.*\.md5/) { sub(/done < /, "done < /sources/archives/", $0); loop_content = loop_content "\n    " $0; in_loop = 0; next; }
+                    loop_content = loop_content "\n    " (in_root_block ? "as_root " : "") $0;
+                } else if (in_md5) {
+                    other_cmds = other_cmds "\n" $0;
+                    if (/^EOF$/) in_md5 = 0;
+                } else {
+                    if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) { other_cmds = other_cmds "\n" $0 " 2>/dev/null || true"; }
+                    else { other_cmds = other_cmds "\n" $0; }
+                }
+            }
+            END {
+                if (in_root_block && !in_loop) { other_cmds = other_cmds "\nROOTEOF\n" }
+                sub(/^\n/, "", other_cmds);
+                tmpfile = "/tmp/kde_build_script_" pkg ".sh";
+                print "#!/bin/bash\nset -e\nPACKAGE=\"" pkg "\"\nFORCE=\"" force "\"\ncd /sources/archives\nas_root() {\n  if [ ${EUID:-$(id -u)} = 0 ]; then \"$@\"; elif command -v sudo >/dev/null 2>&1; then sudo \"$@\"; else su -c \"$*\"; fi\n}\nexport -f as_root\n" > tmpfile;
+                print other_cmds > tmpfile;
+                print loop_content > tmpfile;
+                if (in_loop) print "done" > tmpfile;
+                close(tmpfile);
+                print "# KDE frameworks build script generated in /tmp/kde_build_script_" pkg ".sh";
+            }
+        ')
+        # Now that the file is generated, we have it ready in /tmp/kde_build_script_${PACKAGE}.sh
+
+    fi
+
 log "Starting remote build for $PACKAGE..."
 
 # Generate the Privilege-Separated build script locally
-BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER" "$SETUP_COMMANDS" "$LFS_VERSION")
+# For KDE frameworks mode, use the pre-generated script from the awk block (bypasses
+# _gen_build_script so we avoid nested-heredoc breakage from the build loop)
+if [[ "$FRAMEWORKS_MODE" == "true" ]] && [[ -f "/tmp/kde_build_script_${PACKAGE}.sh" ]]; then
+    # Apply version substitution (6.23 -> 6.26 etc) now that UPSTREAM_FULL is known
+    if [[ -n "$UPSTREAM_FULL" && -n "$LFS_VERSION" ]]; then
+        LFS_VERSION="$LFS_VERSION" UPSTREAM_FULL="$UPSTREAM_FULL" LFS_MM="$LFS_MM" UPSTREAM_MM="$UPSTREAM_MM" \
+        perl -i -pe 's/\Q$ENV{LFS_VERSION}\E(\.[0-9]+)?/$ENV{UPSTREAM_FULL}/g; s/\Q$ENV{LFS_MM}\E\.[0-9]+/$ENV{UPSTREAM_FULL}/g; s/\Q$ENV{LFS_MM}\E/$ENV{UPSTREAM_MM}/g' \
+            "/tmp/kde_build_script_${PACKAGE}.sh"
+    fi
+    # Prepend SETUP_COMMANDS (KF6/Qt6 env vars) so the build loop has the right env
+    BUILD_SCRIPT_LOCAL=$(printf '#!/bin/bash\nset -e\n%s\n' "$SETUP_COMMANDS"; cat "/tmp/kde_build_script_${PACKAGE}.sh")
+    rm -f "/tmp/kde_build_script_${PACKAGE}.sh"
+else
+    BUILD_SCRIPT_LOCAL=$(_gen_build_script "$GEN_DIRNAME" "$NORMAL_USER" "$SETUP_COMMANDS" "$LFS_VERSION")
+fi
 
 # Generate the Privilege-Separated build script locally by appending to the file directly for maximum robustness
 RS_FILE="/tmp/remote_script_${PACKAGE}.sh"
@@ -3626,7 +3556,7 @@ for f in "${ALL_FILENAMES[@]}"; do
     rm -f "/sources/$f"
 done
 # Remove generated helper scripts
-rm -f "/sources/archives/build-xorg.sh" "/sources/archives/build-frameworks.sh"
+# rm -f "/sources/archives/build-xorg.sh" "/sources/archives/build-frameworks.sh"
 rm -f "/tmp/build-cmds-${PACKAGE}.sh"
 ) 200>/tmp/lfs_autobuild.lock
 REMOTE_EOF
@@ -3643,7 +3573,7 @@ if [[ "$HOST_MODE" == "true" ]]; then
     log "Executing remote build script..."
     ssh_lfs "sudo bash /tmp/remote_script_${PACKAGE}.sh"
     CODE=$?
-    ssh_lfs "rm -f /tmp/remote_script_${PACKAGE}.sh"
+# ssh_lfs "rm -f /tmp/remote_script_${PACKAGE}.sh"
     if [[ $CODE -ne 0 ]]; then
         error "Remote build script failed for $PACKAGE."
     fi

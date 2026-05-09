@@ -91,6 +91,7 @@ handle() {
            count_28=$($HYPRCTL workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
            count_29=$($HYPRCTL workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
            count_30=$($HYPRCTL workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
+           count_31=$($HYPRCTL workspaces -j | jq 'map(select(.id == 31)) | .[0].windows // 0')
            
            if [ "$count_28" -eq 0 ]; then
                target=28
@@ -98,8 +99,10 @@ handle() {
                target=29
            elif [ "$count_30" -eq 0 ]; then
                target=30
+           elif [ "$count_31" -eq 0 ]; then
+               target=31
            else
-               choice=$(echo -e "Current\n28\n29\n30" | rofi -dmenu -p "Select Workspace for virt-viewer:")
+               choice=$(echo -e "Current\n28\n29\n30\n31" | rofi -dmenu -p "Select Workspace for virt-viewer:")
                if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
                    target="$choice"
                fi

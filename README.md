@@ -62,18 +62,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9592 | 60.39% | 1529 | 84.80% |
-| Nix | 2947 | 18.55% | 146 | 8.10% |
+| Shell | 9550 | 60.06% | 1550 | 84.42% |
+| Nix | 2949 | 18.54% | 146 | 7.95% |
 | CSS | 895 | 5.63% | 0 | 0.00% |
-| Python | 580 | 3.65% | 124 | 6.88% |
-| Markdown | 512 | 3.22% | 0 | 0.00% |
+| Python | 636 | 4.00% | 136 | 7.41% |
+| Markdown | 511 | 3.21% | 0 | 0.00% |
 | JSONC | 442 | 2.78% | 0 | 0.00% |
 | Patch | 396 | 2.49% | 0 | 0.00% |
-| JSON | 388 | 2.44% | 0 | 0.00% |
+| JSON | 391 | 2.46% | 0 | 0.00% |
 | XML | 78 | 0.49% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.22% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15884** | **100.00%** | **1803** | **100.00%** |
+| **Total** | **15902** | **100.00%** | **1836** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -81,7 +81,7 @@ Applications and programs autostarted include the default browser, virtual machi
 
 # Default apps
 * Application menu is [Rofi](https://github.com/davatorium/rofi).
-* File manager is [GNOME Files](https://apps.gnome.org/en-GB/Nautilus/), as it has among the best Wayland support of any graphical file manager. [Dolphin](https://apps.kde.org/dolphin/) is also installed. 
+* File manager is [Dolphin](https://apps.kde.org/dolphin/).
 * [KDE Connect](https://apps.kde.org/kdeconnect/).
 * Terminal is [Alacritty](https://alacritty.org/), although [Kitty](https://sw.kovidgoyal.net/kitty/) is also installed and used for creating [Hyfetch](https://github.com/hykilpikonna/hyfetch) output-inclusive screenshots. 
 * Text editor/IDE is [Antigravity](https://antigravity.google/). [Neovim](https://neovim.io/) and [Visual Studio Code](https://code.visualstudio.com/) are also installed. 
@@ -479,5 +479,4 @@ Workspace 26: VLC media player (<kbd>Win</kbd>+<kbd>F6</kbd>).<br/>
 Workspace 27: Brave private window (<kbd>Win</kbd>+<kbd>F7</kbd>).<br/>
 Workspace 28: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd>).<br/>
 Workspaces 29-30: Virt Viewer (<kbd>Win</kbd>+<kbd>F9</kbd> to <kbd>F10</kbd>).<br/>
-Workspace 31: Dolphin (<kbd>Win</kbd>+<kbd>F11</kbd>).<br/>
-Workspace 32: Chemistry apps (<kbd>Win</kbd>+<kbd>F12</kbd>).<br/>
+Workspace 31: Chemistry apps (<kbd>Win</kbd>+<kbd>F11</kbd>).<br/>

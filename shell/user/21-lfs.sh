@@ -61,10 +61,12 @@ lfs_autobuild() {
         ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
         echo "Building $@..." | tee -a "$logfile" >/dev/null
         ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")" 2>&1 | tee -a "$logfile"
+        return ${PIPESTATUS[0]}
     else
         # Running directly on the VM, no syncing needed, just execute it locally
         echo "Building $@..." | tee -a "$logfile" >/dev/null
         bash ~/.lfs_autobuild.sh "$@" 2>&1 | tee -a "$logfile"
+        return ${PIPESTATUS[0]}
     fi
 }
 
@@ -1181,6 +1183,23 @@ for pkg in updates:
                 else:
                     graph[pkg].add(matched_dep)
 
+def fetch_frameworks_order():
+    try:
+        req = urllib.request.Request(f"{blfs_book}/kde/frameworks6.html", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as response:
+            html = response.read().decode("utf-8")
+            # Extract names from the md5 block: e.g. "karchive-6.23.0.tar.xz"
+            tars = re.findall(r"([a-z0-9-]+)-6\.[0-9]+\.[0-9]+\.tar\.xz", html)
+            order = []
+            for t in tars:
+                if t not in order:
+                    order.append(t)
+            return order
+    except Exception as e:
+        return []
+
+frameworks_order = fetch_frameworks_order()
+
 # Perform topological sort
 def toposort(graph):
     # Calculate in-degrees
@@ -1199,12 +1218,15 @@ def toposort(graph):
     # Recalculate in_degree: count how many nodes each node depends on
     in_degree = {u: len(graph[u]) for u in graph}
     
-    # Prioritize critical build tools by artificially reducing their in-degree if they are in the update list
     priority_pkgs = ["extra-cmake-modules", "breeze-icons"]
     
+    def get_sort_key(pkg):
+        prio = 0 if pkg in priority_pkgs else 1
+        fw_index = frameworks_order.index(pkg) if pkg in frameworks_order else 9999
+        return (prio, fw_index, pkg)
+    
     queue = [u for u in in_degree if in_degree[u] == 0]
-    # Sort queue to put priority packages first among those with 0 in-degree
-    queue.sort(key=lambda x: (x not in priority_pkgs, x))
+    queue.sort(key=get_sort_key)
     
     result = []
     while queue:
@@ -1215,7 +1237,7 @@ def toposort(graph):
             in_degree[v] -= 1
             if in_degree[v] == 0:
                 queue.append(v)
-                queue.sort(key=lambda x: (x not in priority_pkgs, x))
+                queue.sort(key=get_sort_key)
                     
     # Handle cycles by appending remaining nodes
     remaining = [node for node in graph if node not in result]
@@ -1263,7 +1285,10 @@ for pkg in sorted_pkgs:
             lfs_autobuild "${build_args[@]}" "$pkg"
         else
             echo "Building $pkg..."
-            lfs_autobuild "${build_args[@]}" "$pkg"
+            if ! lfs_autobuild "${build_args[@]}" "$pkg"; then
+                echo "Error: Build failed for $pkg. Aborting update loop."
+                return 1
+            fi
         fi
 
         # Check for preserved libraries that might require dependent rebuilds

@@ -65,6 +65,8 @@ in {
   # SwayNC
   ".config/swaync/config.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/swaync-config.json";
+  ".config/swaync/style.css".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/style.css";
 
   # XDG MIME associations: registers kdeconnect:// URL handler
   ".config/mimeapps.list".source =

@@ -15,7 +15,7 @@
   "fit-to-screen": true,
   "relative-timestamps": true,
   "notification-visibility": {},
-  "group-notifications": false,
+  "notification-grouping": false,
   "buttons-grid": {
     "actions": []
   },
@@ -26,6 +26,9 @@
     "notifications"
   ],
   "widget-config": {
+    "notifications": {
+      "vexpand": true
+    },
     "inhibitors": {
       "text": "Inhibitors",
       "button-text": "Clear All",
