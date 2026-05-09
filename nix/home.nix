@@ -42,7 +42,6 @@
     NIXOS_OZONE_WL = "1";
     # Ensure KDE apps like Dolphin find their associations and themes on Hyprland
     QT_QPA_PLATFORMTHEME = "kde";
-    XDG_CURRENT_DESKTOP = "KDE";
     XDG_MENU_PREFIX = "plasma-";
   };
 

@@ -8,7 +8,7 @@
   "cssPriority": "application",
   "control-center-width": 500,
   "control-center-height": 600,
-  "cache-notifications": true,
+  "cache-notifications": false,
   "timeout": 10,
   "timeout-low": 5,
   "timeout-critical": 0,
