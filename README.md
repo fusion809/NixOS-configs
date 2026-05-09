@@ -48,8 +48,8 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
   - [GPU memory usage percentage (): shown on monitor 2](#gpu-memory-usage-percentage-%EE%BF%85-shown-on-monitor-2)
   - [GPU utilization percentage (󱃏): shown on monitor 2](#gpu-utilization-percentage-%F3%B1%83%8F-shown-on-monitor-2)
   - [Updates<sup>1</sup> available: shown on both monitors](#updatessup1sup-available-shown-on-both-monitors)
-  - [Battery status and KDE Connect notifications](#battery-status-and-kde-connect-notifications)
-  - [Clock](#clock)
+  - [Phone battery status and notifications: shown on both monitors](#phone-battery-status-and-notifications-shown-on-both-monitors)
+  - [Clock: on both monitors](#clock-on-both-monitors)
   - [Footnotes](#footnotes)
 - [Workspaces](#workspaces)
   - [Monitor 1](#monitor-1)
@@ -420,7 +420,7 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 * 󱢇 indicates that OpenRA updates are available.
 * 󰄻 indicates that Marvin updates are available.
 
-## Battery status and KDE Connect notifications
+## Phone battery status and notifications: shown on both monitors
 Battery status is symbolized with:
 * 󰄷 if the battery is not connected.
 * 󰂅 if the battery is charging and has 90% to 100% charge.
@@ -441,7 +441,7 @@ Notifications are symbolized with:
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #ac22ca; color: #ffffff;">󰂚</span> if there are no notifications.
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #678900; color: #ffffff;">󰂛</span> if in do not disturb mode.
 
-## Clock
+## Clock: on both monitors
 With AM/PM time with seconds, short day of the week name, day of the month/month of the year (short format).
 
 ## Footnotes
