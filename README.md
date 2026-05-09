@@ -62,18 +62,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9592 | 60.42% | 1529 | 84.85% |
-| Nix | 2947 | 18.56% | 146 | 8.10% |
-| CSS | 890 | 5.61% | 0 | 0.00% |
-| Python | 576 | 3.63% | 123 | 6.83% |
-| Markdown | 512 | 3.23% | 0 | 0.00% |
+| Shell | 9592 | 60.39% | 1529 | 84.80% |
+| Nix | 2947 | 18.55% | 146 | 8.10% |
+| CSS | 895 | 5.63% | 0 | 0.00% |
+| Python | 580 | 3.65% | 124 | 6.88% |
+| Markdown | 512 | 3.22% | 0 | 0.00% |
 | JSONC | 442 | 2.78% | 0 | 0.00% |
 | Patch | 396 | 2.49% | 0 | 0.00% |
 | JSON | 388 | 2.44% | 0 | 0.00% |
 | XML | 78 | 0.49% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.22% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15875** | **100.00%** | **1802** | **100.00%** |
+| **Total** | **15884** | **100.00%** | **1803** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -435,7 +435,7 @@ Battery status is symbolized with:
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #FF1744; color: #ffffff;">󰁻</span> if the battery is &lt;15% charge.
 
 Notifications are symbolized with: 
-
+* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #FF1744; color: #ffffff;">󰄷</span> if disconnected.
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #aa4400; color: #ffffff;">󱅫</span> if there is a notification.
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #ac22ca; color: #ffffff;">󰂚</span> if there are no notifications.
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #678900; color: #ffffff;">󰂛</span> if in do not disturb mode.

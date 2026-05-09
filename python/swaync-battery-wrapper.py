@@ -23,7 +23,7 @@ def update_battery():
                 # Only keep the battery text if it's connected (not the disconnected icon)
                 bt = batt_data.get("text", "")
                 if bt.startswith("󰄷"):
-                    battery_text = "" # Don't show anything if disconnected
+                    battery_text = "󰄷" # Show disconnected icon
                     battery_class = "disconnected"
                 else:
                     battery_text = bt
@@ -63,14 +63,18 @@ def print_combined():
         st = ""
         
     parts = []
-    if battery_text: parts.append(battery_text)
-    parts.append(icon)
-    if st: parts.append(st)
+    if battery_text:
+        parts.append(battery_text)
+    
+    if battery_class != "disconnected":
+        parts.append(icon)
+        if st:
+            parts.append(st)
     
     combined["text"] = " ".join(parts)
     
     # If battery is critical or low, use that class for coloring
-    if battery_class in ["critical", "low"]:
+    if battery_class in ["critical", "low", "disconnected"]:
         combined["class"] = battery_class
     else:
         combined["class"] = swaync_state.get("class", "none")
