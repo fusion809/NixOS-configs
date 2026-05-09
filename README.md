@@ -66,14 +66,14 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | Nix | 2947 | 18.56% | 146 | 8.10% |
 | CSS | 890 | 5.61% | 0 | 0.00% |
 | Python | 576 | 3.63% | 123 | 6.83% |
-| Markdown | 513 | 3.23% | 0 | 0.00% |
+| Markdown | 512 | 3.23% | 0 | 0.00% |
 | JSONC | 442 | 2.78% | 0 | 0.00% |
 | Patch | 396 | 2.49% | 0 | 0.00% |
 | JSON | 388 | 2.44% | 0 | 0.00% |
 | XML | 78 | 0.49% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.22% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15876** | **100.00%** | **1802** | **100.00%** |
+| **Total** | **15875** | **100.00%** | **1802** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -422,7 +422,6 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 
 ## Phone battery status and notifications: shown on both monitors
 Battery status is symbolized with:
-* 󰄷 if the battery is not connected.
 * 󰂅 if the battery is charging and has 90% to 100% charge.
 * 󰂄 if the battery is charging and has 70% to <90% charge.
 * 󰂃 if the battery is charging and has 50% to <70% charge.
