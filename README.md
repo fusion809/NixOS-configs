@@ -432,7 +432,7 @@ Battery status is symbolized with:
 * 󰂀 if the battery is not charging and has 70% to <90% charge.
 * 󰁾 if the battery is not charging and has 50% to <70% charge.
 * 󰁼 if the battery is not charging and has 30% to <50% charge.
-* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #FFD740; color: #000000;">󰁺</span> if the battery is 15% to &lt;30%.
+* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #FF7700; color: #000000;">󰁺</span> if the battery is 15% to &lt;30%.
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #FF1744; color: #ffffff;">󰁻</span> if the battery is &lt;15% charge.
 
 Notifications are symbolized with: 
