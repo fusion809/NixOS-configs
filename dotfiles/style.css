@@ -730,6 +730,16 @@ window#waybar.hidden {
   color: #9E9E9E;
 }
 
+#custom-notification.low {
+  background-color: #FFD740;
+  color: #000000;
+}
+
+#custom-notification.critical {
+  background-color: #FF1744;
+  color: #ffffff;
+}
+
 /* Module: clock */
 #clock {
   border-radius: 4px;

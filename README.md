@@ -48,7 +48,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
   - [GPU memory usage percentage (): shown on monitor 2](#gpu-memory-usage-percentage-%EE%BF%85-shown-on-monitor-2)
   - [GPU utilization percentage (󱃏): shown on monitor 2](#gpu-utilization-percentage-%F3%B1%83%8F-shown-on-monitor-2)
   - [Updates<sup>1</sup> available: shown on both monitors](#updatessup1sup-available-shown-on-both-monitors)
-  - [Notifications from KDE Connect on paired devices.](#notifications-from-kde-connect-on-paired-devices)
+  - [Battery status and KDE Connect notifications](#battery-status-and-kde-connect-notifications)
   - [Clock](#clock)
   - [Footnotes](#footnotes)
 - [Workspaces](#workspaces)
@@ -62,18 +62,18 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9592 | 60.83% | 1529 | 85.75% |
-| Nix | 2948 | 18.70% | 146 | 8.19% |
-| CSS | 880 | 5.58% | 0 | 0.00% |
-| Markdown | 499 | 3.16% | 0 | 0.00% |
-| Python | 480 | 3.04% | 104 | 5.83% |
-| JSONC | 453 | 2.87% | 0 | 0.00% |
-| Patch | 396 | 2.51% | 0 | 0.00% |
-| JSON | 388 | 2.46% | 0 | 0.00% |
+| Shell | 9592 | 60.42% | 1529 | 84.85% |
+| Nix | 2947 | 18.56% | 146 | 8.10% |
+| CSS | 890 | 5.61% | 0 | 0.00% |
+| Python | 576 | 3.63% | 123 | 6.83% |
+| Markdown | 513 | 3.23% | 0 | 0.00% |
+| JSONC | 442 | 2.78% | 0 | 0.00% |
+| Patch | 396 | 2.49% | 0 | 0.00% |
+| JSON | 388 | 2.44% | 0 | 0.00% |
 | XML | 78 | 0.49% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.22% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **15768** | **100.00%** | **1783** | **100.00%** |
+| **Total** | **15876** | **100.00%** | **1802** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -420,8 +420,22 @@ Left clicking this opens up an Alacritty terminal with nvidia-smi output (showin
 * 󱢇 indicates that OpenRA updates are available.
 * 󰄻 indicates that Marvin updates are available.
 
-## Notifications from KDE Connect on paired devices.
-Symbolized with: 
+## Battery status and KDE Connect notifications
+Battery status is symbolized with:
+* 󰄷 if the battery is not connected.
+* 󰂅 if the battery is charging and has 90% to 100% charge.
+* 󰂄 if the battery is charging and has 70% to <90% charge.
+* 󰂃 if the battery is charging and has 50% to <70% charge.
+* 󰂂 if the battery is charging and has 30% to <50% charge.
+* 󰢜 if the battery is charging and has <30% charge.
+* 󰁹 if the battery is not charging and has &geq;90% charge.
+* 󰂀 if the battery is not charging and has 70% to <90% charge.
+* 󰁾 if the battery is not charging and has 50% to <70% charge.
+* 󰁼 if the battery is not charging and has 30% to <50% charge.
+* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #FFD740; color: #000000;">󰁺</span> if the battery is 15% to &lt;30%.
+* <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #FF1744; color: #ffffff;">󰁻</span> if the battery is &lt;15% charge.
+
+Notifications are symbolized with: 
 
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #aa4400; color: #ffffff;">󱅫</span> if there is a notification.
 * <span style="margin: 6px 1px; padding: 5px 8px; border-radius: 4px; background-color: #ac22ca; color: #ffffff;">󰂚</span> if there are no notifications.
