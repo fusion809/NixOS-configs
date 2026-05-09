@@ -33,7 +33,6 @@
             "custom/zram",
             "custom/swap",
             "custom/updates",
-            //"custom/kdeconnect",
             "custom/notification",
             "clock"
         ]

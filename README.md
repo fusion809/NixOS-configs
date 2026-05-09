@@ -96,158 +96,158 @@ Hyprland and hy3 is built from the master branch of nixpkgs.
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. I used to compile the latest version of Hyprland from source, but recompiling every time I ran `nixfrb` (i.e., rebuild the system) eventually deterred me. 
 
 # Keyboard shortcuts
-| Keyboard combination                                              | Action                |
-|-------------------------------------------------------------------|-----------------------|
-| <kbd>h</kbd>                                                      | Resize window (only in resize mode) to the left. | 
+| Keyboard combination                                              | Action                                            |
+|-------------------------------------------------------------------|---------------------------------------------------|
+| <kbd>h</kbd>                                                      | Resize window (only in resize mode) to the left.  | 
 | <kbd>l</kbd>                                                      | Resize window (only in resize mode) to the right. | 
-| <kbd>k</kbd>                                                      | Resize window (only in resize mode) down. | 
-| <kbd>j</kbd>                                                      | Resize window (only in resize mode) up. | 
-| <kbd>Left</kbd>                                                   | Resize window (only in resize mode) to the left. | 
+| <kbd>k</kbd>                                                      | Resize window (only in resize mode) down.         | 
+| <kbd>j</kbd>                                                      | Resize window (only in resize mode) up.           | 
+| <kbd>Left</kbd>                                                   | Resize window (only in resize mode) to the left.  | 
 | <kbd>Right</kbd>                                                  | Resize window (only in resize mode) to the right. | 
-| <kbd>Down</kbd>                                                   | Resize window (only in resize mode) down. | 
-| <kbd>Up</kbd>                                                     | Resize window (only in resize mode) up. | 
-| <kbd>F1</kbd>                                                     | Open workspace #1     |
-| <kbd>Win</kbd>+<kbd>2</kbd>                                       | Open workspace #2     |
-| <kbd>F3</kbd>                                                     | Open workspace #3     |
-| <kbd>F4</kbd>                                                     | Open workspace #4     |
-| <kbd>F5</kbd>                                                     | Open workspace #5     |
-| <kbd>F6</kbd>                                                     | Open workspace #6     |
-| <kbd>F7</kbd>                                                     | Open workspace #7     |
-| <kbd>F8</kbd>                                                     | Open workspace #8     |
-| <kbd>F9</kbd>                                                     | Open workspace #9     |
-| <kbd>F10</kbd>                                                    | Open workspace #10    |
-| <kbd>F11</kbd>                                                    | Open workspace #11    |
-| <kbd>F12</kbd>                                                    | Open workspace #12    |
-| <kbd>Win</kbd>+<kbd>Print</kbd>                                   | Open workspace #13    |
-| <kbd>Pause</kbd>                                                  | Open workspace #14    |
-| <kbd>Insert</kbd>                                                 | Open worksapce #15    |
-| <kbd>Home</kbd>                                                   | Open workspace #16    |
-| <kbd>Page Up</kbd>                                                | Open worksapce #17    |
-| <kbd>Win</kbd>+<kbd>Delete</kbd>                                  | Open workspace #18    |
-| <kbd>End</kbd>                                                    | Open worksapce #19    |
-| <kbd>Page Down</kbd>                                              | Open workspace #20    |
-| <kbd>Print</kbd>                                                  | Take a screenshot and copy it to clipboard. | 
-| <kbd>Win</kbd>+<kbd>F1</kbd>                                      | Open workspace #21    |
-| <kbd>Win</kbd>+<kbd>F2</kbd>                                      | Open workspace #22    |
-| <kbd>Win</kbd>+<kbd>F3</kbd>                                      | Open workspace #23    |
-| <kbd>Win</kbd>+<kbd>F4</kbd>                                      | Open workspace #24    |
-| <kbd>Win</kbd>+<kbd>F5</kbd>                                      | Open workspace #25    |
-| <kbd>Win</kbd>+<kbd>F6</kbd>                                      | Open workspace #26    |
-| <kbd>Win</kbd>+<kbd>F7</kbd>                                      | Open workspace #27    |
-| <kbd>Win</kbd>+<kbd>F8</kbd>                                      | Open workspace #28    |
-| <kbd>Win</kbd>+<kbd>F9</kbd>                                      | Open workspace #29    |
-| <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #30    |
-| <kbd>Win</kbd>+<kbd>F11</kbd>                                     | Open workspace #31    |
-| <kbd>Win</kbd>+<kbd>F12</kbd>                                     | Open workspace #32    |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>1</kbd>                       | Move selected workspace to monitor 1 |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>2</kbd>                       | Move selected workspace to monitor 2 |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>                      | Move focused window (silently) to workspace #1     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd>                      | Move focused window (silently) to workspace #2     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>3</kbd>                      | Move focused window (silently) to workspace #3     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd>                      | Move focused window (silently) to workspace #4     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>5</kbd>                      | Move focused window (silently) to workspace #5     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>6</kbd>                      | Move focused window (silently) to workspace #6     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>7</kbd>                      | Move focused window (silently) to workspace #7     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>8</kbd>                      | Move focused window (silently) to workspace #8     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>9</kbd>                      | Move focused window (silently) to workspace #9     |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd>                      | Move focused window (silently) to workspace #10    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F1</kbd>                     | Move focused window (silently) to workspace #11    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F2</kbd>                     | Move focused window (silently) to workspace #12    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F3</kbd>                     | Move focused window (silently) to workspace #13    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F4</kbd>                     | Move focused window (silently) to workspace #14    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>                     | Move focused window (silently) to workspace #15    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F6</kbd>                     | Move focused window (silently) to workspace #16    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F7</kbd>                     | Move focused window (silently) to workspace #17    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F8</kbd>                     | Move focused window (silently) to workspace #18    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F9</kbd>                     | Move focused window (silently) to workspace #19    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F10</kbd>                    | Move focused window (silently) to workspace #20    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F11</kbd>                    | Move focused window (silently) to workspace #21    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F12</kbd>                    | Move focused window (silently) to workspace #22    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Print</kbd>                  | Move focused window (silently) to workspace #23    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Pause</kbd>                  | Move focused window (silently) to workspace #24    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Insert</kbd>                 | Move focused window (silently) to workspace #25    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Home</kbd>                   | Move focused window (silently) to workspace #26    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Up</kbd>                | Move focused window (silently) to workspace #27    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd>                 | Move focused window (silently) to workspace #28    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>End</kbd>                    | Move focused window (silently) to workspace #29    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Down</kbd>              | Move focused window (silently) to workspace #30    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>`</kbd> (Grave)              | Move focused window (silently) to workspace #31    |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>-</kbd> (Minus)              | Move focused window (silently) to workspace #32    |
-| <kbd>Win</kbd>+<kbd>a</kbd>                                       | Expand out of tabbed mode |  
-| <kbd>Win</kbd>+<kbd>b</kbd>                                       | Open Brave. |
-| <kbd>Win</kbd>+<kbd>c</kbd>                                       | Open Google Chat Chrome app |
-| <kbd>Win</kbd>+<kbd>d</kbd>                                       | Open rofi dmenu            |
-| <kbd>Win</kbd>+<kbd>e</kbd>                                       | Delete currently shown wallpaper and show next one. |
-| <kbd>Win</kbd>+<kbd>m</kbd>                                       | Open WhatsApp web |
-| <kbd>Win</kbd>+<kbd>f</kbd>                                       | Set window to full screen. | 
-| <kbd>Win</kbd>+<kbd>g</kbd>                                       | Launch gtop in Alacritty. |
-| <kbd>Win</kbd>+<kbd>h</kbd>                                       | Launch hyfetch in kitty. |
-| <kbd>Win</kbd>+<kbd>k</kbd>                                       | Open kitty terminal. |
-| <kbd>Win</kbd>+<kbd>n</kbd>                                       | Specify the number of wallpaper shown. | 
-| <kbd>Win</kbd>+<kbd>o</kbd>                                       | Open RuneScape. |
-| <kbd>Win</kbd>+<kbd>p</kbd>                                       | Open file manager (Nautilus). |
-| <kbd>Win</kbd>+<kbd>q</kbd>                                       | Close current window. |
-| <kbd>Win</kbd>+<kbd>s</kbd>                                       | Change wallpaper to a randomly selected one. |
-| <kbd>Win</kbd>+<kbd>t</kbd>                                       | Enter tabbed mode.         |
-| <kbd>Win</kbd>+<kbd>v</kbd>                                       | Open VirtualBox. |
-| <kbd>Win</kbd>+<kbd>w</kbd>                                       | Set wallpaper to the one after the current one specified in `$HOME/.cache/swaybg-wallstate` |
-| <kbd>Win</kbd>+<kbd>z</kbd>                                       | Set wallpaper to the one before the current one specified in `$HOME/.cache/swaybg-wallstate` |
-| <kbd>Win</kbd>+<kbd>Left</kbd>                                    | Move focus left. |
-| <kbd>Win</kbd>+<kbd>Right</kbd>                                   | Move focus right. |
-| <kbd>Win</kbd>+<kbd>Down</kbd>                                    | Move focus down. |
-| <kbd>Win</kbd>+<kbd>Up</kbd>                                      | Move focus up. |
+| <kbd>Down</kbd>                                                   | Resize window (only in resize mode) down.         | 
+| <kbd>Up</kbd>                                                     | Resize window (only in resize mode) up.           | 
+| <kbd>F1</kbd>                                                     | Open workspace #1                                 |
+| <kbd>Win</kbd>+<kbd>2</kbd>                                       | Open workspace #2                                 |
+| <kbd>F3</kbd>                                                     | Open workspace #3                                 |
+| <kbd>F4</kbd>                                                     | Open workspace #4                                 |
+| <kbd>F5</kbd>                                                     | Open workspace #5                                 |
+| <kbd>F6</kbd>                                                     | Open workspace #6                                 |
+| <kbd>F7</kbd>                                                     | Open workspace #7                                 |
+| <kbd>F8</kbd>                                                     | Open workspace #8                                 |
+| <kbd>F9</kbd>                                                     | Open workspace #9                                 |
+| <kbd>F10</kbd>                                                    | Open workspace #10                                |
+| <kbd>F11</kbd>                                                    | Open workspace #11                                |
+| <kbd>F12</kbd>                                                    | Open workspace #12                                |
+| <kbd>Win</kbd>+<kbd>Print</kbd>                                   | Open workspace #13                                |
+| <kbd>Pause</kbd>                                                  | Open workspace #14                                |
+| <kbd>Insert</kbd>                                                 | Open worksapce #15                                |
+| <kbd>Home</kbd>                                                   | Open workspace #16                                |
+| <kbd>Page Up</kbd>                                                | Open worksapce #17                                |
+| <kbd>Win</kbd>+<kbd>Delete</kbd>                                  | Open workspace #18                                |
+| <kbd>End</kbd>                                                    | Open worksapce #19                                |
+| <kbd>Page Down</kbd>                                              | Open workspace #20                                |
+| <kbd>Print</kbd>                                                  | Take a screenshot and copy it to clipboard.       |
+| <kbd>Win</kbd>+<kbd>F1</kbd>                                      | Open workspace #21                                |
+| <kbd>Win</kbd>+<kbd>F2</kbd>                                      | Open workspace #22                                |
+| <kbd>Win</kbd>+<kbd>F3</kbd>                                      | Open workspace #23                                |
+| <kbd>Win</kbd>+<kbd>F4</kbd>                                      | Open workspace #24                                |
+| <kbd>Win</kbd>+<kbd>F5</kbd>                                      | Open workspace #25                                |
+| <kbd>Win</kbd>+<kbd>F6</kbd>                                      | Open workspace #26                                |
+| <kbd>Win</kbd>+<kbd>F7</kbd>                                      | Open workspace #27                                |
+| <kbd>Win</kbd>+<kbd>F8</kbd>                                      | Open workspace #28                                |
+| <kbd>Win</kbd>+<kbd>F9</kbd>                                      | Open workspace #29                                |
+| <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #30                                |
+| <kbd>Win</kbd>+<kbd>F11</kbd>                                     | Open workspace #31                                |
+| <kbd>Win</kbd>+<kbd>F12</kbd>                                     | Open workspace #32                                |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>1</kbd>                       | Move selected workspace to monitor 1              |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>2</kbd>                       | Move selected workspace to monitor 2              |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>                      | Move focused window (silently) to workspace #1    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd>                      | Move focused window (silently) to workspace #2    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>3</kbd>                      | Move focused window (silently) to workspace #3    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd>                      | Move focused window (silently) to workspace #4    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>5</kbd>                      | Move focused window (silently) to workspace #5    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>6</kbd>                      | Move focused window (silently) to workspace #6    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>7</kbd>                      | Move focused window (silently) to workspace #7    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>8</kbd>                      | Move focused window (silently) to workspace #8    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>9</kbd>                      | Move focused window (silently) to workspace #9    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd>                      | Move focused window (silently) to workspace #10   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F1</kbd>                     | Move focused window (silently) to workspace #11   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F2</kbd>                     | Move focused window (silently) to workspace #12   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F3</kbd>                     | Move focused window (silently) to workspace #13   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F4</kbd>                     | Move focused window (silently) to workspace #14   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>                     | Move focused window (silently) to workspace #15   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F6</kbd>                     | Move focused window (silently) to workspace #16   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F7</kbd>                     | Move focused window (silently) to workspace #17   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F8</kbd>                     | Move focused window (silently) to workspace #18   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F9</kbd>                     | Move focused window (silently) to workspace #19   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F10</kbd>                    | Move focused window (silently) to workspace #20   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F11</kbd>                    | Move focused window (silently) to workspace #21   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F12</kbd>                    | Move focused window (silently) to workspace #22   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Print</kbd>                  | Move focused window (silently) to workspace #23   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Pause</kbd>                  | Move focused window (silently) to workspace #24   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Insert</kbd>                 | Move focused window (silently) to workspace #25   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Home</kbd>                   | Move focused window (silently) to workspace #26   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Up</kbd>                | Move focused window (silently) to workspace #27   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd>                 | Move focused window (silently) to workspace #28   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>End</kbd>                    | Move focused window (silently) to workspace #29   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Down</kbd>              | Move focused window (silently) to workspace #30   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>`</kbd> (Grave)              | Move focused window (silently) to workspace #31   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>-</kbd> (Minus)              | Move focused window (silently) to workspace #32   |
+| <kbd>Win</kbd>+<kbd>a</kbd>                                       | Expand out of tabbed mode                         |  
+| <kbd>Win</kbd>+<kbd>b</kbd>                                       | Open Brave.                                       | 
+| <kbd>Win</kbd>+<kbd>c</kbd>                                       | Open Google Chat Chrome app                       | 
+| <kbd>Win</kbd>+<kbd>d</kbd>                                       | Open rofi dmenu                                   | 
+| <kbd>Win</kbd>+<kbd>e</kbd>                                       | Delete current wallpaper and show next one.       | 
+| <kbd>Win</kbd>+<kbd>m</kbd>                                       | Open WhatsApp web                                 |
+| <kbd>Win</kbd>+<kbd>f</kbd>                                       | Set window to full screen.                        | 
+| <kbd>Win</kbd>+<kbd>g</kbd>                                       | Launch gtop in Alacritty.                         |
+| <kbd>Win</kbd>+<kbd>h</kbd>                                       | Launch hyfetch in kitty.                          |
+| <kbd>Win</kbd>+<kbd>k</kbd>                                       | Open kitty terminal.                              |
+| <kbd>Win</kbd>+<kbd>n</kbd>                                       | Specify the number of wallpaper shown.            | 
+| <kbd>Win</kbd>+<kbd>o</kbd>                                       | Open RuneScape.                                   |
+| <kbd>Win</kbd>+<kbd>p</kbd>                                       | Open file manager (Nautilus).                     |
+| <kbd>Win</kbd>+<kbd>q</kbd>                                       | Close current window.                             |
+| <kbd>Win</kbd>+<kbd>s</kbd>                                       | Change wallpaper to a randomly selected one.      |
+| <kbd>Win</kbd>+<kbd>t</kbd>                                       | Enter tabbed mode.                                |
+| <kbd>Win</kbd>+<kbd>v</kbd>                                       | Open VirtualBox.                                  |
+| <kbd>Win</kbd>+<kbd>w</kbd>                                       | Change wallpaper to next one in list.             |
+| <kbd>Win</kbd>+<kbd>z</kbd>                                       | Change wallpaper to previous one in list.         |
+| <kbd>Win</kbd>+<kbd>Left</kbd>                                    | Move focus left.                                  |
+| <kbd>Win</kbd>+<kbd>Right</kbd>                                   | Move focus right.                                 |
+| <kbd>Win</kbd>+<kbd>Down</kbd>                                    | Move focus down.                                  |
+| <kbd>Win</kbd>+<kbd>Up</kbd>                                      | Move focus up.                                    |
 | <kbd>Win</kbd>+<kbd>Space</kbd>                                   | Change keyboard (between US and Brazilian Portuguese). |
-| <kbd>Win</kbd>+<kbd>Tab</kbd>                                     | Open Alacritty terminal. |
-| <kbd>Win</kbd>+<kbd>Return</kbd>                                  | Open Alacritty terminal. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>                        | Move focus to tab 1. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>2</kbd>                        | Move focus to tab 2. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>3</kbd>                        | Move focus to tab 3. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>4</kbd>                        | Move focus to tab 4. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>5</kbd>                        | Move focus to tab 5. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>6</kbd>                        | Move focus to tab 6. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>7</kbd>                        | Move focus to tab 7. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>8</kbd>                        | Move focus to tab 8. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>9</kbd>                        | Move focus to tab 9. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>0</kbd>                        | Move focus to tab 10. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F1</kbd>                       | Move focus to tab 11. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F2</kbd>                       | Move focus to tab 12. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F3</kbd>                       | Move focus to tab 13. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F4</kbd>                       | Move focus to tab 14. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F5</kbd>                       | Move focus to tab 15. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F6</kbd>                       | Move focus to tab 16. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F7</kbd>                       | Move focus to tab 17. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F8</kbd>                       | Move focus to tab 18. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F9</kbd>                       | Move focus to tab 19. |
-| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F10</kbd>                      | Move focus to tab 20. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>f</kbd>                       | Open nerd fonts cheat sheet webpage in browser. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>m</kbd>                       | Move selected window to other monitor. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>o</kbd>                       | Open NixOS options search webpage in browser. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>p</kbd>                       | Open NixOS packages search webpage in browser. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>r</kbd>                       | Rebuild NixOS. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>s</kbd>                       | Repair the Nix store. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>u</kbd>                       | Update NixOS without repairing the Nix store. |
-| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>w</kbd>                       | Open NixOS Wiki webpage in browser. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>b</kbd>                      | Open bluetooth manager |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>d</kbd>                      | Launch Duoingo app. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>e</kbd>                      | Exit Hyprland. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>f</kbd>                      | Open Facebook Chrome app. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>i</kbd>                      | Open Instagram Chrome app. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>j</kbd>                      | Move window left (not including tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>k</kbd>                      | Move window down (not including tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>l</kbd>                      | Move window up (not including tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>                      | Edit NixOS configuration files. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>p</kbd>                      | Move tab focus to the left. | 
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>q</kbd>                      | Open Quora Chrome app |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>r</kbd>                      | Enter window resizing mode. | 
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>s</kbd>                      | Shutdown OS. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>w</kbd>                      | Open windows list in rofi |
+| <kbd>Win</kbd>+<kbd>Tab</kbd>                                     | Open Alacritty terminal.                          |
+| <kbd>Win</kbd>+<kbd>Return</kbd>                                  | Open Alacritty terminal.                          |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>                        | Move focus to tab 1.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>2</kbd>                        | Move focus to tab 2.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>3</kbd>                        | Move focus to tab 3.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>4</kbd>                        | Move focus to tab 4.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>5</kbd>                        | Move focus to tab 5.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>6</kbd>                        | Move focus to tab 6.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>7</kbd>                        | Move focus to tab 7.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>8</kbd>                        | Move focus to tab 8.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>9</kbd>                        | Move focus to tab 9.                              |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>0</kbd>                        | Move focus to tab 10.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F1</kbd>                       | Move focus to tab 11.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F2</kbd>                       | Move focus to tab 12.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F3</kbd>                       | Move focus to tab 13.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F4</kbd>                       | Move focus to tab 14.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F5</kbd>                       | Move focus to tab 15.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F6</kbd>                       | Move focus to tab 16.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F7</kbd>                       | Move focus to tab 17.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F8</kbd>                       | Move focus to tab 18.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F9</kbd>                       | Move focus to tab 19.                             |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>F10</kbd>                      | Move focus to tab 20.                             |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>f</kbd>                       | Open nerd fonts cheat sheet webpage in browser.   |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>m</kbd>                       | Move selected window to other monitor.            |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>o</kbd>                       | Open NixOS options search webpage in browser.     |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>p</kbd>                       | Open NixOS packages search webpage in browser.    |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>r</kbd>                       | Rebuild NixOS.                                    |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>s</kbd>                       | Repair the Nix store.                             |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>u</kbd>                       | Update NixOS without repairing the Nix store.     |
+| <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>w</kbd>                       | Open NixOS Wiki webpage in browser.               |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>b</kbd>                      | Open bluetooth manager                            |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>d</kbd>                      | Launch Duoingo app.                               |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>e</kbd>                      | Exit Hyprland.                                    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>f</kbd>                      | Open Facebook Chrome app.                         |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>i</kbd>                      | Open Instagram Chrome app.                        |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>j</kbd>                      | Move window left (not including tabbed windows).  |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>k</kbd>                      | Move window down (not including tabbed windows).  |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>l</kbd>                      | Move window up (not including tabbed windows).    |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>                      | Edit NixOS configuration files.                   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>p</kbd>                      | Move tab focus to the left.                       |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>q</kbd>                      | Open Quora Chrome app                             |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>r</kbd>                      | Enter window resizing mode.                       |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>s</kbd>                      | Shutdown OS.                                      |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>w</kbd>                      | Open windows list in rofi.                        |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>;</kbd>                      | Move window right (not including tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Left</kbd>                   | Move window left (tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Down</kbd>                   | Move window down (tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Up</kbd>                     | Move window up (tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Right</kbd>                  | Move window right (tabbed windows). |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Return</kbd>                 | Open workspace of Alacritty terminal. |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>                  | Toggle float of focused window. | 
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Left</kbd>                   | Move window left (tabbed windows).                |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Down</kbd>                   | Move window down (tabbed windows).                |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Up</kbd>                     | Move window up (tabbed windows).                  |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Right</kbd>                  | Move window right (tabbed windows).               |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Return</kbd>                 | Open workspace of Alacritty terminal.             |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>                  | Toggle float of focused window.                   | 
 
 # nixpkgs
 ## Antigravity package

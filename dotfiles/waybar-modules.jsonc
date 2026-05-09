@@ -333,21 +333,11 @@
         "tooltip-format": "Phone battery level"
     },
     "custom/notification": {
-        "tooltip": false,
-        "format": "{icon}",
-        "format-icons": {
-            "notification": "󱅫",
-            "none": "󰂚",
-            "dnd-notification": "󰂛",
-            "dnd-none": "󰂛",
-            "inhibited-notification": "󱅫",
-            "inhibited-none": "󰂚",
-            "dnd-inhibited-notification": "󰂛",
-            "dnd-inhibited-none": "󰂛"
-        },
+        "tooltip": true,
+        "format": "{text}",
         "return-type": "json",
         "exec-if": "which swaync-client",
-        "exec": "swaync-client -swb",
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/python/swaync-battery-wrapper.py",
         "on-click": "swaync-client -t -sw",
         "on-click-right": "swaync-client -d -sw",
         "escape": true

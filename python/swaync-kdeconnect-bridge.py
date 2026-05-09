@@ -65,10 +65,10 @@ def dismiss_specific_phone_notification(title, body):
 def dbus_monitor_thread():
     # We use dbus-monitor to catch the Notify calls and their returns
     # to map desktop IDs to notification content.
-    cmd = ["dbus-monitor", "type='method_call',interface='org.freedesktop.Notifications',member='Notify'",
+    cmd = ["stdbuf", "-o", "L", "dbus-monitor", "type='method_call',interface='org.freedesktop.Notifications',member='Notify'",
            "type='method_return',sender='org.freedesktop.Notifications'"]
     
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
     
     current_serial = None
     current_summary = None
@@ -131,7 +131,7 @@ def on_notification_closed(id, reason):
     print(f"Desktop notification closed: id={id}, reason={reason}")
     sys.stdout.flush()
     
-    if reason == 2: # User dismissed
+    if reason in (2, 3): # User dismissed or closed by app (e.g., Clear All)
         if id in desktop_map:
             title, body = desktop_map.pop(id)
             print(f"Attempting specific dismissal for: {title}")

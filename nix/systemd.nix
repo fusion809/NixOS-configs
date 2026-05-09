@@ -43,7 +43,7 @@
             ps.pydbus
             ps.pygobject3
           ])
-        }/bin/python3 -u /home/${username}/GitHub/mine/config/NixOS-configs/shell/user/swaync-kdeconnect-bridge.py";
+        }/bin/python3 -u /home/${username}/GitHub/mine/config/NixOS-configs/python/swaync-kdeconnect-bridge.py";
       Restart = "always";
       RestartSec = 5;
     };
