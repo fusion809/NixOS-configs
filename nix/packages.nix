@@ -83,19 +83,24 @@ with pkgs; [
   ## Core apps
   alacritty
   desktop-file-utils
-  eog # For viewing images
-  ffmpegthumbnailer
-  gnome.gvfs
   kdePackages.dolphin
+  ffmpegthumbnailer
+  kdePackages.gwenview
   # Required to change file associations
   kdePackages.kde-cli-tools
   # Required for mimeapps.list file associations to stick in Dolphin
   kdePackages.kio-extras
   kdePackages.kio-fuse
+  kdePackages.kio-gdrive
+  kdePackages.kaccounts-providers
+  kdePackages.kaccounts-integration
+  kdePackages.signon-kwallet-extension
   kdePackages.kservice
   kdePackages.plasma-desktop
   kdePackages.plasma-workspace
+  kdePackages.systemsettings
   # Other apps
+  rclone
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
   libmtp
   vlc

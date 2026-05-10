@@ -24,6 +24,7 @@
   };
   pulseaudio = { enable = false; };
   printing = { enable = false; };
+  accounts-daemon.enable = true;
   xserver = {
     enable = true;
     videoDrivers = [ "nvidia" ];
