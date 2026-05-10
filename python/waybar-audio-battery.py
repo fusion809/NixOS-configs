@@ -63,7 +63,7 @@ def main():
     else:
         # Choose audio icon based on device type and volume
         if is_bluetooth:
-            icon = f"{icon_headphone}{icon_bluetooth}"
+            icon = f"{icon_headphone} {icon_bluetooth}"
         elif "headphone" in desc.lower() or "headset" in desc.lower():
             icon = icon_headphone
         else:
