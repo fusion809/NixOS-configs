@@ -142,7 +142,8 @@ window#waybar.hidden {
 }
 
 /* Module: pulseaudio */
-#pulseaudio {
+#pulseaudio,
+#custom-pulseaudio {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 3px;

@@ -69,4 +69,4 @@ else
 fi
 
 TOOLTIP="${DEVICE_NAME}: ${CHARGE}%$([ "$IS_CHARGING" == "true" ] && echo " (charging)")"
-echo "{\"text\": \"${ICON} ${CHARGE}%\", \"tooltip\": \"${TOOLTIP}\", \"class\": \"${CLASS}\"}"
+echo "{\"text\": \"${ICON}${CHARGE}%\", \"tooltip\": \"${TOOLTIP}\", \"class\": \"${CLASS}\"}"

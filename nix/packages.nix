@@ -100,9 +100,9 @@ with pkgs; [
   kdePackages.plasma-workspace
   kdePackages.systemsettings
   # Other apps
-  rclone
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
   libmtp
+  rclone
   vlc
   ## Required by Waybar widgets
   lm_sensors

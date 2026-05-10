@@ -82,27 +82,15 @@
         "interval": 1,
         "tooltip-format": "Keyboard layout; click or press Win+Space to change it."
     },
-    "pulseaudio": {
-        "format": "{icon}{volume}%",
-        "format-bluetooth": "{icon}{volume}%",
-        "format-bluetooth-muted": "{icon}",
-        "format-muted": " ",
-        "format-source": "",
-        "format-source-muted": "",
-        "format-icons": {
-            "headphone": "",
-            "hands-free": "",
-            "headset": "",
-            "phone": "",
-            "portable": "",
-            "car": "",
-            "default": [
-                "",
-                "",
-                ""
-            ]
-        },
-        "on-click": "pavucontrol"
+    "custom/pulseaudio": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/python/waybar-audio-battery.py",
+        "interval": 2,
+        "on-click": "pavucontrol",
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+        "tooltip": true
     },
     "custom/uptime": {
         "format": "󰔚 {}",

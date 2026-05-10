@@ -12,7 +12,7 @@
             "custom/nixosicon",
             "hyprland/workspaces",
             "custom/weather",
-            "pulseaudio",
+            "custom/pulseaudio",
             "custom/uptime",
             "custom/wallpaper-no",
             "custom/wallpaper-previous",
