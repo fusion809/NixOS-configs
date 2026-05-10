@@ -1559,204 +1559,11 @@ if [[ "$XORG_MULTI_MODE" == "true" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed -E 's|\.\./[a-z0-9.-]+\.md5|/sources/archives/&|g; s|/sources/archives/\.\./|/sources/archives/|g')    # Fix the bash subshell and execution for Xorg loops
     echo "$COMMANDS" > /tmp/cmds_pre_awk.log
     log "Converting Xorg build loop into a standalone script..."
-    COMMANDS=$(echo "$COMMANDS" | awk '
-        BEGIN {
-            in_as_root = 0
-            in_md5 = 0
-            in_vm_script = 1
-            in_root_block = 0
-            as_root_content = ""
-            host_cmds = ""
-            vm_cmds = ""
-        }
-        /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
-        /^bash -e/ { next }
-        /^exit/ { next }
-        /^cat > .*\.md5 << "EOF"/ { 
-            in_md5 = 1; 
-            host_cmds = host_cmds "\n" $0; 
-            next 
-        }
-        /^# __BEGIN_ROOT__/ { 
-            if (in_vm_script && !in_root_block) {
-                vm_cmds = vm_cmds "\nas_root bash << \x27ROOTEOF\x27\n"; 
-                in_root_block = 1
-            }
-            next 
-        }
-        /^# __BEGIN_USER__/ || /^# __END_ROOT__/ || /^# __END_USER__/ { 
-            if (in_vm_script && in_root_block) {
-                vm_cmds = vm_cmds "\nROOTEOF\n"
-                in_root_block = 0
-            }
-            next 
-        }
-        /^for package in/ { in_vm_script = 1 }
-        {
-            if (in_as_root) {
-                as_root_content = as_root_content "\n" $0
-                if ($0 ~ /export -f as_root/) in_as_root = 0
-                next
-            }
-            if (in_md5) {
-                host_cmds = host_cmds "\n" $0
-                if ($0 ~ /^EOF$/) in_md5 = 0
-                next
-            }
-            
-            line = $0;
-            # Fix relative paths to md5 files robustly - ONLY for .md5 files
-            gsub(/\/sources\/archives\/\.\.\/|\.\.\/([a-z0-9.-]+\.md5)/, "/sources/archives/$1", line);
-            if (line ~ /^mkdir [^-]|^mkdir [^ -]/) sub(/^mkdir /, "mkdir -p ", line);
-            
-            if (in_vm_script) {
-                if (line ~ /packagedir=/) { 
-                    vm_cmds = vm_cmds "\n    " line;
-                    vm_cmds = vm_cmds "\n    # Skip if we only want one package and this is not it"
-                    vm_cmds = vm_cmds "\n    pkg_match=$(echo $package | sed -E \"s/[-_][0-9].*//\")"
-                    vm_cmds = vm_cmds "\n    if [ -n \"${PACKAGE}\" ] && [ \"$pkg_match\" != \"${PACKAGE}\" ] && [ \"$package\" != \"${PACKAGE}\" ]; then continue; fi"
-
-                    vm_cmds = vm_cmds "\n    PKGNAME=$(echo \$package | sed -E \"s/[-_][0-9].*//\")";
-                    vm_cmds = vm_cmds "\n    PKGVER=$(echo \$package | sed \"s/^\${PKGNAME}-//; s/^\${PKGNAME}_//; s/\\.tar\\..*//\")";
-                    vm_cmds = vm_cmds "\n    touch /tmp/build_start_\${PKGNAME}";
-                    vm_cmds = vm_cmds "\n    echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    next;
-                }
-                # Pass function definitions through verbatim (e.g. do_build() { make; })
-                if (line ~ /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/) {
-                    vm_cmds = vm_cmds "\n    " line;
-                    next;
-                }
-                if (line ~ /make.*install|ninja.*install|pip3.*install/) {
-                    vm_cmds = vm_cmds "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
-                    vm_cmds = vm_cmds "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
-                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
-                    
-                    if (line ~ /make.*install/) {
-                        cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd); sub(/ --root=[^ ]+ /, "", cmd);
-                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                        vm_cmds = vm_cmds "\n    " cmd " DESTDIR=\"$DDIR\" || true";
-                    } else if (line ~ /ninja.*install/) {
-                        cmd = line; sub(/DESTDIR=[^ ]+ /, "", cmd);
-                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                        vm_cmds = vm_cmds "\n    DESTDIR=\"$DDIR\" " cmd " || true";
-                    } else if (line ~ /pip3.*install/) {
-                        cmd = line; sub(/--root=[^ ]+ /, "", cmd);
-                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                        vm_cmds = vm_cmds "\n    " cmd " --root=\"$DDIR\" --ignore-installed --no-deps || true";
-                    }
-                    
-                    cmd = line; 
-                    if (cmd ~ /pip3.*install/ && cmd !~ /ignore-installed/) {
-                        sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed", cmd);
-                    }
-                    # Only strip trailing operators if not followed by a closing brace (function definition end)
-                    if (!(cmd ~ /;[[:space:]]*\}/)) {
-                        gsub(/ *([|][|]|&&|;).*$/, "", cmd);
-                    } else {
-                        gsub(/ *([|][|]|&&).*$/, "", cmd);
-                    }
-                    vm_cmds = vm_cmds "\n    " cmd;
-                    vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    fi";
-
-                    if (line ~ /DESTDIR=/ || line ~ /--root=/) {
-                        split(line, parts, "DESTDIR=");
-                        if (length(parts) < 2) split(line, parts, "--root=");
-                        if (length(parts) >= 2) {
-                            split(parts[2], val_parts, " ");
-                            destdir = val_parts[1];
-                            gsub(/^["\x27]|["\x27]$|[&|;]+$/, "", destdir);
-                            if (destdir != "") {
-                                vm_cmds = vm_cmds "\n    if [ -d \"" destdir "\" ]; then"
-                                vm_cmds = vm_cmds "\n        find \"" destdir "\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/${PKGNAME}\" > /dev/null"
-                                vm_cmds = vm_cmds "\n    fi"
-                            }
-                        }
-                    }
-                    vm_cmds = vm_cmds "\n    sudo mkdir -p /var/lib/book-packages && echo \"\${PKGVER}\" | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
-                    vm_cmds = vm_cmds "\n    (echo \"\${PKGVER}\"; tail -n +2 \"/var/lib/book-packages/\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
-                    next;
-                }
-                # Intercept do_install wrapper calls used by xorg-lib loop
-                if (line ~ /^[[:space:]]*do_install[[:space:]]*$/) {
-                    vm_cmds = vm_cmds "\n    echo \"[LFS-AUTOBUILD] Recording full inventory for ${PKGNAME}...\"";
-                    vm_cmds = vm_cmds "\n    DDIR=\"/tmp/destdir_${PKGNAME}\"";
-                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\" && mkdir -p \"$DDIR\"";
-                    vm_cmds = vm_cmds "\n    do_install";
-                    vm_cmds = vm_cmds "\n    sudo rm -f \"/tmp/pkg_${PKGNAME}\"";
-                    vm_cmds = vm_cmds "\n    if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then";
-                    vm_cmds = vm_cmds "\n        find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/tmp/pkg_${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    fi";
-                    vm_cmds = vm_cmds "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start_\${PKGNAME} 2>/dev/null | sudo tee -a \"/tmp/pkg_${PKGNAME}\" > /dev/null";
-                    # Clean duplicate version lines and orphaned paths: Keep the version header at line 1, sort the rest uniquely
-                    vm_cmds = vm_cmds "\n    (echo \"\${PKGVER}\"; cat \"/tmp/pkg_\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+\$|^[[:space:]]*\$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    vm_cmds = vm_cmds "\n    sudo rm -rf \"$DDIR\"";
-                    next;
-                }
-                
-                # Diagnostic suppression
-                if (line ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
-                    vm_cmds = vm_cmds "\n    " line " 2>/dev/null || true";
-                    next;
-                }
-                
-                # Test suite suppression
-                if (line ~ /(make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|\<expect\>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests\/run\.sh)/) {
-                    next;
-                }
-                
-                vm_cmds = vm_cmds "\n    " line;
-                next;
-            } else {
-                # Host diagnostic suppression
-                if (line ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) {
-                    host_cmds = host_cmds "\n" line " 2>/dev/null || true";
-                } else {
-                    # Fix awk $2 escaping in for loops (e.g. for package in $(... awk '{print $2}'))
-                    gsub(/\$2/, "\\$2", line);
-                    host_cmds = host_cmds "\n" line
-                }
-                next;
-            }
-        }
-        END {
-            sub(/^\n/, "", host_cmds)
-            print "cd /sources/archives"
-            print "as_root() {"
-            print "  if [ ${EUID:-$(id -u)} = 0 ]; then"
-            print "    [ $# -gt 0 ] && \"$@\" || :"
-            print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo \"$@\""
-            print "  else"
-            print "    su -c \"$*\""
-            print "  fi"
-            print "}"
-            print "export -f as_root"
-            print host_cmds
-            print "cat > build-xorg.sh << \x27XORGEOF\x27"
-            print "#!/bin/bash"
-            print "set -e"
-            print ""
-            print "as_root() {"
-            print "  if [ ${EUID:-$(id -u)} = 0 ]; then"
-            print "    [ $# -gt 0 ] && \"$@\" || :"
-            print "  elif [ -x /usr/bin/sudo ]; then"
-            print "    sudo \"$@\""
-            print "  else"
-            print "    su -c \"$*\""
-            print "  fi"
-            print "}"
-            print "export -f as_root"
-            print vm_cmds
-            print "XORGEOF"
-            print "bash build-xorg.sh"
-        }
-    ')
+    XORG_AWK_SCRIPT="$HOME/.lfs_scripts/xorg_loop.awk"
+    if [ ! -f "$XORG_AWK_SCRIPT" ]; then
+        XORG_AWK_SCRIPT="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/xorg_loop.awk"
+    fi
+    COMMANDS=$(echo "$COMMANDS" | awk -f "$XORG_AWK_SCRIPT")
 fi
 
 # 2.11 Special handling for KDE frameworks6 and plasma-all
@@ -3077,8 +2884,8 @@ fi
                 loop_content = loop_content "\n        if [ \"\$PKGNAME\" != \"\${PACKAGE}\" ] && [ \"\$DIRNAME\" != \"\${PACKAGE}\" ]; then continue; fi\n    fi";
                 loop_content = loop_content "\n    TARBALL=\$(echo \"\$line\" | awk \"{print \\$2}\")";
                 loop_content = loop_content "\n    if [ ! -f \"/sources/archives/\${TARBALL}\" ] && [ \"\${PACKAGE}\" != \"frameworks6\" ] && [ \"\${PACKAGE}\" != \"plasma-all\" ] && [ \"\${PACKAGE}\" != \"xorg-lib\" ]; then continue; fi";
-                loop_content = loop_content "\n    if [ -f \"/sources/archives/\${DIRNAME}.installed\" ] && [ \"\$FORCE\" != \"true\" ]; then continue; fi";
-                loop_content = loop_content "\n    touch /tmp/build_start_\${PKGNAME}";
+                loop_content = loop_content "\n    if [ -f \"/sources/archives/\x24{DIRNAME}.installed\" ] && [ \"\x24FORCE\" != \"true\" ]; then continue; fi";
+                loop_content = loop_content "\n    touch /tmp/build_start_\x24{PKGNAME}";
                 next;
             }
             /mkdir build/ { if (in_loop) { loop_content = loop_content "\n    rm -rf build\n    " $0; next } }
@@ -3086,31 +2893,31 @@ fi
             /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/ { if (in_loop) { loop_content = loop_content "\n    " $0; next } }
             /make.*install|ninja.*install|pip3.*install/ {
                 if (in_loop && !($0 ~ /book-packages/)) {
-                    loop_content = loop_content "\n    DDIR=\"/tmp/destdir_\${PKGNAME}\"\n    rm -rf \"\$DDIR\" && mkdir -p \"\$DDIR\"";
+                    loop_content = loop_content "\n    DDIR=\"/tmp/destdir_\x24{PKGNAME}\"\n    rm -rf \"\x24DDIR\" && mkdir -p \"\x24DDIR\"";
                     cmd = $0; gsub(/ *([|][|]|&&|;|[[:space:]]\}).*$/, "", cmd);
-                    if ($0 ~ /make.*install/) loop_content = loop_content "\n    " cmd " DESTDIR=\"\$DDIR\" || true";
-                    else if ($0 ~ /ninja.*install/) loop_content = loop_content "\n    DESTDIR=\"\$DDIR\" " cmd " || true";
+                    if ($0 ~ /make.*install/) loop_content = loop_content "\n    " cmd " DESTDIR=\"\x24DDIR\" || true";
+                    else if ($0 ~ /ninja.*install/) loop_content = loop_content "\n    DESTDIR=\"\x24DDIR\" " cmd " || true";
                     else if ($0 ~ /pip3.*install/) {
                         sub(/--root=[^ ]+ /, "", cmd);
-                        loop_content = loop_content "\n    " cmd " --root=\"\$DDIR\" --ignore-installed --no-deps || true";
+                        loop_content = loop_content "\n    " cmd " --root=\"\x24DDIR\" --ignore-installed --no-deps || true";
                     }
-                    loop_content = loop_content "\n    sudo rm -f \"/tmp/pkg_\${PKGNAME}\"";
-                    loop_content = loop_content "\n    if [ -d \"\$DDIR\" ] && [ \"\$(ls -A \"\$DDIR\" 2>/dev/null)\" ]; then\n        find \"\$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/tmp/pkg_\${PKGNAME}\" > /dev/null\n    fi";
+                    loop_content = loop_content "\n    sudo rm -f \"/tmp/pkg_\x24{PKGNAME}\"";
+                    loop_content = loop_content "\n    if [ -d \"\x24DDIR\" ] && [ \"\x24(ls -A \"\x24DDIR\" 2>/dev/null)\" ]; then\n        find \"\x24DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/tmp/pkg_\x24{PKGNAME}\" > /dev/null\n    fi";
                     real_cmd = $0; if (real_cmd ~ /pip3.*install/ && real_cmd !~ /ignore-installed/) sub(/pip3[[:space:]]+install/, "pip3 install --ignore-installed --no-deps", real_cmd);
                     loop_content = loop_content "\n    " real_cmd;
-                    loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start/\${PKGNAME} 2>/dev/null | sudo tee -a \"/tmp/pkg_\${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n    (echo \"\${PKGVER}\"; cat \"/tmp/pkg_\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n    sudo chmod 755 \"/var/lib/book-packages/\${PKGNAME}\"\n    as_root rm -rf \"\$DDIR\"\n    touch \"/sources/archives/\${DIRNAME}.installed\"";
+                    loop_content = loop_content "\n    find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer /tmp/build_start/\x24{PKGNAME} 2>/dev/null | sudo tee -a \"/tmp/pkg_\x24{PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n    (echo \"\x24{PKGVER}\"; cat \"/tmp/pkg_\x24{PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\x24{PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n    sudo chmod 755 \"/var/lib/book-packages/\x24{PKGNAME}\"\n    as_root rm -rf \"\x24DDIR\"\n    touch \"/sources/archives/\x24{DIRNAME}.installed\"";
                     next;
                 }
             }
             /^[[:space:]]*do_install[[:space:]]*$/ {
                 if (in_loop) {
-                    loop_content = loop_content "\n    sudo rm -f \"/tmp/pkg_\${PKGNAME}\"";
+                    loop_content = loop_content "\n    sudo rm -f \"/tmp/pkg_\x24{PKGNAME}\"";
                     loop_content = loop_content "\n    if do_install; then";
-                    loop_content = loop_content "\n        find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer \"/tmp/build_start/\${PKGNAME}\" 2>/dev/null | sudo tee -a \"/tmp/pkg_\${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n        (echo \"\${PKGVER}\"; cat \"/tmp/pkg_\${PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\${PKGNAME}\" > /dev/null";
-                    loop_content = loop_content "\n        touch \"/sources/archives/\${DIRNAME}.installed\"";
+                    loop_content = loop_content "\n        find /usr /bin /sbin /lib /lib64 /etc /opt -xdev -newer \"/tmp/build_start/\x24{PKGNAME}\" 2>/dev/null | sudo tee -a \"/tmp/pkg_\x24{PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n        (echo \"\x24{PKGVER}\"; cat \"/tmp/pkg_\x24{PKGNAME}\" 2>/dev/null | grep -v -E \"^[0-9]+(\\.[0-9]+)+$|^[[:space:]]*$\" | sort -u) | sudo tee \"/var/lib/book-packages/\x24{PKGNAME}\" > /dev/null";
+                    loop_content = loop_content "\n        touch \"/sources/archives/\x24{DIRNAME}.installed\"";
                     loop_content = loop_content "\n    else\n        exit 1\n    fi";
                     next;
                 }
