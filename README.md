@@ -1,6 +1,6 @@
 # My NixOS configuration files
-![Hyprland on NixOS screenshot as of 7 May 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-05-07.png)
-**Figure 1: Hyprland NixOS configuration as of 7 May 2026.**
+![Hyprland on NixOS screenshot as of 10 May 2026](https://fusion809.github.io/images/Hyprland/Hyprland_NixOS_2026-05-10.png)
+**Figure 1: Hyprland NixOS configuration as of 10 May 2026.**
 
 These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B90](https://www.msi.com/Motherboard/B450M-BAZOOKA-PLUS/Specification) PC with dual 1080p monitor setup. [Hyprland](https://hypr.land/) is my graphical user interface (GUI). [Flakes](https://nixos.wiki/wiki/Flakes) are used to manage packages. 
 
@@ -63,10 +63,10 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
 | Shell | 9361 | 58.26% | 1551 | 81.50% |
-| Nix | 3020 | 18.80% | 146 | 7.67% |
+| Nix | 3020 | 18.79% | 146 | 7.67% |
 | CSS | 896 | 5.58% | 0 | 0.00% |
 | Python | 733 | 4.56% | 168 | 8.83% |
-| Markdown | 512 | 3.19% | 0 | 0.00% |
+| Markdown | 514 | 3.20% | 0 | 0.00% |
 | JSONC | 430 | 2.68% | 0 | 0.00% |
 | Patch | 396 | 2.46% | 0 | 0.00% |
 | JSON | 391 | 2.43% | 0 | 0.00% |
@@ -74,7 +74,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | XML | 78 | 0.49% | 0 | 0.00% |
 | JavaScript | 41 | 0.26% | 4 | 0.21% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **16067** | **100.00%** | **1903** | **100.00%** |
+| **Total** | **16069** | **100.00%** | **1903** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -334,7 +334,9 @@ Obtained by wttr.in. Beware that wttr.in can be quite unreliable at times.
 The background colour of this depends on the temperature. Temperatures of &lt;10&deg;C are <span style="color: #1565C0;">blue</span>, between 10 and <15&deg;C are <span style="color: #2196F3">lighter blue</span>, between 15 and <20&deg;C are <span style="color: #03DAC6">cyan</span>, between 20 and <25&deg;C are <span style="color: #4CAF50">green</span>, between 25 and <30&deg;C are <span style="color: #EF6C00">orange</span>, between 30 and <35&deg;C are <span style="color: #FF5722">light red</span>, between 35 and <40&deg;C are <span style="color: #D32F2F">medium red</span> and &geq;40&deg;C are <span style="color: #B71C1C">dark red</span>.
 
 ## Pulseaudio: shown on monitor 1
-Shows the volume of your output audio device. Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol. If using headphones, the   symbol will be shown; if using bluetooth, the  symbol will be shown.
+Shows the battery status and volume of your output audio device (as percentages). Has a purple background and white text. You can decrease or increase volume by scrolling on it. Left clicking opens pavucontrol. 
+
+If using headphones, the   symbol will be shown; if using bluetooth, the  symbol will be shown. These will be to the immediate left of the audio volume percentage. If these are wireless, you will also see a battery symbol (the specifics of this symbol will depend on the charge in a way explained in the ["Phone battery status and notifications"](#phone-battery-status-and-notifications-shown-on-both-monitors) section) and the battery charge to its right.
 
 ## Uptime (󰔚): shown on monitor 1
 Shows the uptime in the format: hour(s):minute(s):second(s).
