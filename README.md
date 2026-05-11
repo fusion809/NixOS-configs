@@ -481,5 +481,5 @@ Workspace 24: Boo (<kbd>Win</kbd>+<kbd>F4</kbd>).<br/>
 Workspace 26: VLC media player (<kbd>Win</kbd>+<kbd>F6</kbd>).<br/>
 Workspace 27: Brave private window (<kbd>Win</kbd>+<kbd>F7</kbd>).<br/>
 Workspace 28: Virtual machine manager (<kbd>Win</kbd>+<kbd>F8</kbd>).<br/>
-Workspaces 29-30: Virt Viewer (<kbd>Win</kbd>+<kbd>F9</kbd> to <kbd>F10</kbd>).<br/>
-Workspace 31: Chemistry apps (<kbd>Win</kbd>+<kbd>F11</kbd>).<br/>
+Workspaces 29-31: Virt Viewer (<kbd>Win</kbd>+<kbd>F9</kbd> to <kbd>F11</kbd>).<br/>
+Workspace 32: Chemistry apps (<kbd>Win</kbd>+<kbd>F12</kbd>).<br/>
