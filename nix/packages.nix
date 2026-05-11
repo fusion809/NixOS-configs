@@ -99,6 +99,10 @@ with pkgs; [
   kdePackages.plasma-desktop
   kdePackages.plasma-workspace
   kdePackages.systemsettings
+  kdePackages.knewstuff
+  kdePackages.kdeclarative
+  kdePackages.ksvg
+  kdePackages.qqc2-desktop-style
   # Other apps
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
   libmtp

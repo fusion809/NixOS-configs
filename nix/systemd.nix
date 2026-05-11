@@ -39,10 +39,7 @@
     path = [ pkgs.kdePackages.kdeconnect-kde pkgs.dbus ];
     serviceConfig = {
       ExecStart = "${
-          pkgs.python3.withPackages (ps: with ps; [
-            ps.pydbus
-            ps.pygobject3
-          ])
+          pkgs.python3.withPackages (ps: with ps; [ ps.pydbus ps.pygobject3 ])
         }/bin/python3 -u /home/${username}/GitHub/mine/config/NixOS-configs/python/swaync-kdeconnect-bridge.py";
       Restart = "always";
       RestartSec = 5;
@@ -52,12 +49,16 @@
   # Rclone mounts
   user.services.rclone-dropbox = {
     description = "Rclone mount for Dropbox (Brenton Horne)";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre = "/run/current-system/sw/bin/mkdir -p /home/${username}/DDrive-BrentonHorne";
-      ExecStart = "${pkgs.rclone}/bin/rclone mount dropbox-brentonhorne: /home/${username}/DDrive-BrentonHorne --vfs-cache-mode writes";
-      ExecStop = "/run/current-system/sw/bin/fusermount -u /home/${username}/DDrive-BrentonHorne";
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/DDrive-BrentonHorne";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount dropbox-brentonhorne: /home/${username}/DDrive-BrentonHorne --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/DDrive-BrentonHorne";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -65,12 +66,32 @@
 
   user.services.rclone-gdrive-brenton = {
     description = "Rclone mount for Google Drive (Brenton Horne)";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre = "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-BrentonHorne";
-      ExecStart = "${pkgs.rclone}/bin/rclone mount gdrive-brentonhorne: /home/${username}/GDrive-BrentonHorne --vfs-cache-mode writes";
-      ExecStop = "/run/current-system/sw/bin/fusermount -u /home/${username}/GDrive-BrentonHorne";
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-BrentonHorne";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount gdrive-brentonhorne: /home/${username}/GDrive-BrentonHorne --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-BrentonHorne";
+      Restart = "on-failure";
+      RestartSec = 10;
+    };
+  };
+  user.services.rclone-gdrive-brenton777 = {
+    description = "Rclone mount for Google Drive (Brenton Horne 777)";
+    wantedBy = [ "default.target" ];
+    after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
+    serviceConfig = {
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-BrentonHorne777";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount gdrive-brentonhorne777: /home/${username}/GDrive-BrentonHorne777 --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-BrentonHorne777";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -78,12 +99,16 @@
 
   user.services.rclone-gdrive-william = {
     description = "Rclone mount for Google Drive (William Sutter)";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre = "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-WilliamSutter";
-      ExecStart = "${pkgs.rclone}/bin/rclone mount gdrive-williamsutter: /home/${username}/GDrive-WilliamSutter --vfs-cache-mode writes";
-      ExecStop = "/run/current-system/sw/bin/fusermount -u /home/${username}/GDrive-WilliamSutter";
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-WilliamSutter";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount gdrive-williamsutter: /home/${username}/GDrive-WilliamSutter --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-WilliamSutter";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -91,24 +116,64 @@
 
   user.services.rclone-onedrive-uni = {
     description = "Rclone mount for OneDrive (Uni)";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre = "/run/current-system/sw/bin/mkdir -p /home/${username}/OneDrive-Uni";
-      ExecStart = "${pkgs.rclone}/bin/rclone mount onedrive-uni: /home/${username}/OneDrive-Uni --vfs-cache-mode writes";
-      ExecStop = "/run/current-system/sw/bin/fusermount -u /home/${username}/OneDrive-Uni";
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/OneDrive-Uni";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount onedrive-uni: /home/${username}/OneDrive-Uni --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/OneDrive-Uni";
       Restart = "on-failure";
       RestartSec = 10;
     };
   };
   user.services.rclone-gdrive-rooslus = {
     description = "Rclone mount for Google Drive (Rooslus96)";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre = "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-Rooslus96";
-      ExecStart = "${pkgs.rclone}/bin/rclone mount gdrive-rooslus96: /home/${username}/GDrive-Rooslus96 --vfs-cache-mode writes";
-      ExecStop = "/run/current-system/sw/bin/fusermount -u /home/${username}/GDrive-Rooslus96";
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-Rooslus96";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount gdrive-rooslus96: /home/${username}/GDrive-Rooslus96 --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-Rooslus96";
+      Restart = "on-failure";
+      RestartSec = 10;
+    };
+  };
+  user.services.rclone-gdrive-felicityhorne = {
+    description = "Rclone mount for Google Drive (Felicity Horne)";
+    wantedBy = [ "default.target" ];
+    after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
+    serviceConfig = {
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-FelicityHorne";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount gdrive-felicityhorne: /home/${username}/GDrive-FelicityHorne --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-FelicityHorne";
+      Restart = "on-failure";
+      RestartSec = 10;
+    };
+  };
+  user.services.rclone-gdrive-felicityhorne21 = {
+    description = "Rclone mount for Google Drive (Felicity Horne 21)";
+    wantedBy = [ "default.target" ];
+    after = [ "network-online.target" ];
+    path = [ "/run/wrappers" ];
+    serviceConfig = {
+      ExecStartPre =
+        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-FelicityHorne21";
+      ExecStart =
+        "${pkgs.rclone}/bin/rclone mount gdrive-felicityhorne21: /home/${username}/GDrive-FelicityHorne21 --vfs-cache-mode writes";
+      ExecStop =
+        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-FelicityHorne21";
       Restart = "on-failure";
       RestartSec = 10;
     };

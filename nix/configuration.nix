@@ -62,6 +62,28 @@
     config.common.default = [ "kde" ];
   };
 
+  qt = {
+    enable = true;
+    style = "breeze";
+    platformTheme = "kde";
+  };
+
+  environment.sessionVariables = {
+    QT_PLUGIN_PATH = [
+      "/run/current-system/sw/lib/qt-6/plugins"
+      "/run/current-system/sw/lib/plugins"
+    ];
+    QML2_IMPORT_PATH = [
+      "/run/current-system/sw/lib/qt-6/qml"
+      "/run/current-system/sw/lib/qml"
+    ];
+    QML_IMPORT_PATH = [
+      "/run/current-system/sw/lib/qt-6/qml"
+      "/run/current-system/sw/lib/qml"
+    ];
+  };
+
+
   # Manually link KDE menu files into /etc/xdg/menus so Dolphin can find them on Hyprland
   environment.etc."xdg/menus/plasma-applications.menu".source = "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
   environment.etc."xdg/menus/applications.menu".source = "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
