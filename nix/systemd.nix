@@ -47,18 +47,26 @@
   };
 
   # Rclone mounts
+  tmpfiles.rules = [
+    "d /DDrive-BH 0755 ${username} users"
+    "d /GDrive-BH 0755 ${username} users"
+    "d /GDrive-BH777 0755 ${username} users"
+    "d /GDrive-WS 0755 ${username} users"
+    "d /OneDrive-Uni 0755 ${username} users"
+    "d /GDrive-RL 0755 ${username} users"
+    "d /GDrive-FH 0755 ${username} users"
+    "d /GDrive-FH21 0755 ${username} users"
+  ];
+
   user.services.rclone-dropbox = {
     description = "Rclone mount for Dropbox (Brenton Horne)";
     wantedBy = [ "default.target" ];
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/DDrive-BrentonHorne";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount dropbox-brentonhorne: /home/${username}/DDrive-BrentonHorne --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/DDrive-BrentonHorne";
+        "${pkgs.rclone}/bin/rclone mount dropbox-brentonhorne: /DDrive-BH --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /DDrive-BH";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -70,12 +78,9 @@
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-BrentonHorne";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount gdrive-brentonhorne: /home/${username}/GDrive-BrentonHorne --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-BrentonHorne";
+        "${pkgs.rclone}/bin/rclone mount gdrive-brentonhorne: /GDrive-BH --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /GDrive-BH";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -86,12 +91,9 @@
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-BrentonHorne777";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount gdrive-brentonhorne777: /home/${username}/GDrive-BrentonHorne777 --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-BrentonHorne777";
+        "${pkgs.rclone}/bin/rclone mount gdrive-brentonhorne777: /GDrive-BH777 --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /GDrive-BH777";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -103,12 +105,9 @@
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-WilliamSutter";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount gdrive-williamsutter: /home/${username}/GDrive-WilliamSutter --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-WilliamSutter";
+        "${pkgs.rclone}/bin/rclone mount gdrive-williamsutter: /GDrive-WS --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /GDrive-WS";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -120,12 +119,9 @@
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/OneDrive-Uni";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount onedrive-uni: /home/${username}/OneDrive-Uni --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/OneDrive-Uni";
+        "${pkgs.rclone}/bin/rclone mount onedrive-uni: /OneDrive-Uni --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /OneDrive-Uni";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -136,12 +132,9 @@
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-Rooslus96";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount gdrive-rooslus96: /home/${username}/GDrive-Rooslus96 --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-Rooslus96";
+        "${pkgs.rclone}/bin/rclone mount gdrive-rooslus96: /GDrive-RL --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /GDrive-RL";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -152,12 +145,9 @@
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-FelicityHorne";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount gdrive-felicityhorne: /home/${username}/GDrive-FelicityHorne --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-FelicityHorne";
+        "${pkgs.rclone}/bin/rclone mount gdrive-felicityhorne: /GDrive-FH --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /GDrive-FH";
       Restart = "on-failure";
       RestartSec = 10;
     };
@@ -168,12 +158,9 @@
     after = [ "network-online.target" ];
     path = [ "/run/wrappers" ];
     serviceConfig = {
-      ExecStartPre =
-        "/run/current-system/sw/bin/mkdir -p /home/${username}/GDrive-FelicityHorne21";
       ExecStart =
-        "${pkgs.rclone}/bin/rclone mount gdrive-felicityhorne21: /home/${username}/GDrive-FelicityHorne21 --vfs-cache-mode writes";
-      ExecStop =
-        "/run/wrappers/bin/fusermount -u /home/${username}/GDrive-FelicityHorne21";
+        "${pkgs.rclone}/bin/rclone mount gdrive-felicityhorne21: /GDrive-FH21 --vfs-cache-mode writes --allow-other";
+      ExecStop = "/run/wrappers/bin/fusermount -u /GDrive-FH21";
       Restart = "on-failure";
       RestartSec = 10;
     };
