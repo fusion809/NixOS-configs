@@ -89,20 +89,20 @@ with pkgs; [
   # Required to change file associations
   kdePackages.kde-cli-tools
   # Required for mimeapps.list file associations to stick in Dolphin
+  kdePackages.kaccounts-providers
+  kdePackages.kaccounts-integration
+  kdePackages.kdeclarative
   kdePackages.kio-extras
   kdePackages.kio-fuse
   kdePackages.kio-gdrive
-  kdePackages.kaccounts-providers
-  kdePackages.kaccounts-integration
-  kdePackages.signon-kwallet-extension
+  kdePackages.knewstuff
   kdePackages.kservice
+  kdePackages.ksvg
   kdePackages.plasma-desktop
   kdePackages.plasma-workspace
-  kdePackages.systemsettings
-  kdePackages.knewstuff
-  kdePackages.kdeclarative
-  kdePackages.ksvg
   kdePackages.qqc2-desktop-style
+  kdePackages.signon-kwallet-extension
+  kdePackages.systemsettings
   # Other apps
   unstable.kitty # the stable package for 25.05 didn't have a scrollbar
   libmtp
