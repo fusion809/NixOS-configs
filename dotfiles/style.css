@@ -727,8 +727,8 @@ window#waybar.hidden {
 #custom-notification.dnd-none,
 #custom-notification.dnd-inhibited-notification,
 #custom-notification.dnd-inhibited-none {
-  background-color: #678900;
-  color: #9E9E9E;
+  background-color: #89ab22;
+  color: #121212;
 }
 
 #custom-notification.low {

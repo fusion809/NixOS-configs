@@ -329,6 +329,7 @@
         "exec": "/home/fusion809/GitHub/mine/config/NixOS-configs/python/swaync-battery-wrapper.py",
         "on-click": "swaync-client -t -sw",
         "on-click-right": "swaync-client -d -sw",
+        "on-click-middle": "swaync-client -C",
         "escape": true
     }
 }
