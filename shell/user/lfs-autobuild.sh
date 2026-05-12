@@ -588,6 +588,10 @@ elif [[ "$PACKAGE" =~ ^(xorg|x7)-driver$ ]]; then
     # Only enable multi-mode for the bulk alias if the logic supports it, 
     # but currently x7driver.html is better handled as individual packages.
     XORG_MULTI_MODE=false
+elif [[ "$FRAMEWORKS_MODE" == "true" || "$PLASMA_MODE" == "true" ]]; then
+    # Enable multi-mode for KDE to allow isolating single components from the bulk loop
+    XORG_MULTI_MODE=true
+    log "Enabling KDE multi-package isolation mode."
 fi
 
 # 2. Extract Download URL and Build Commands
@@ -1568,9 +1572,29 @@ fi
 
 # 2.11 Special handling for KDE frameworks6 and plasma-all
 FRAMEWORKS_MODE=false
-if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${METAPACKAGE_TARGET,,}" == "frameworks6" || "${METAPACKAGE_TARGET,,}" == "plasma-all" || "$COMMANDS" == *"while read line"* || "$COMMANDS" == *"while read -r line"* ]]; then
+PLASMA_MODE=false
+if [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${METAPACKAGE_TARGET,,}" == "frameworks6" ]]; then
     FRAMEWORKS_MODE=true
-    log "Enabling special KDE frameworks/plasma loop mode."
+    log "Enabling special KDE frameworks loop mode."
+elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${METAPACKAGE_TARGET,,}" == "plasma-all" ]]; then
+    PLASMA_MODE=true
+    log "Enabling special KDE plasma loop mode."
+elif [[ "$COMMANDS" == *"while read line"* || "$COMMANDS" == *"while read -r line"* ]]; then
+    # Fallback: identify by content if metapackage target not yet known
+    if [[ "$COMMANDS" == *"download.kde.org/stable/frameworks"* ]]; then
+        FRAMEWORKS_MODE=true
+        log "Enabling special KDE frameworks loop mode (detected from commands)."
+    elif [[ "$COMMANDS" == *"download.kde.org/stable/plasma"* ]]; then
+        PLASMA_MODE=true
+        log "Enabling special KDE plasma loop mode (detected from commands)."
+    else
+        # Default to frameworks if indeterminate but has the loop pattern
+        FRAMEWORKS_MODE=true
+        log "Enabling special KDE frameworks loop mode (fallback)."
+    fi
+fi
+
+if [[ "$FRAMEWORKS_MODE" == "true" || "$PLASMA_MODE" == "true" ]]; then
     
     # Remove the descriptive text for wget options that gets erroneously extracted
     COMMANDS=$(echo "$COMMANDS" | awk '
@@ -1793,15 +1817,26 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$LFS_VERSION" ]]; t
 fi
 
 # Populate DOWNLOAD_URLS from MD5 file for metapackages (Xorg/KDE) to ensure all sub-packages are available
-if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
-    if [[ "$FRAMEWORKS_MODE" == "true" ]]; then
+if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" || "$PLASMA_MODE" == "true" ]]; then
+    if [[ "$FRAMEWORKS_MODE" == "true" || "$PLASMA_MODE" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             MM=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
-            BASE_URL="https://download.kde.org/stable/frameworks/${MM}/"
+            if [[ "$PLASMA_MODE" == "true" ]]; then
+                BASE_URL="https://download.kde.org/stable/plasma/${UPSTREAM_VERSION}/"
+            else
+                BASE_URL="https://download.kde.org/stable/frameworks/${MM}/"
+            fi
         else
             BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/url=(https?:\/\/\S+)/) { print $1; exit }')
         fi
-        [[ -z "$BASE_URL" ]] && BASE_URL="https://download.kde.org/stable/frameworks/$(echo "$LFS_VERSION" | cut -d. -f1,2)/"
+        
+        if [[ -z "$BASE_URL" ]]; then
+            if [[ "$PLASMA_MODE" == "true" ]]; then
+                BASE_URL="https://download.kde.org/stable/plasma/${LFS_VERSION}/"
+            else
+                BASE_URL="https://download.kde.org/stable/frameworks/$(echo "$LFS_VERSION" | cut -d. -f1,2)/"
+            fi
+        fi
     else
         # Extract base URL for Xorg
         BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/ -B\s+(https?:\/\/\S+)/) { print $1; exit }')
@@ -1820,6 +1855,18 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
     if [[ -z "$FILENAMES" ]]; then
         FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^.*\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
     fi
+
+    if [[ -z "$FILENAMES" ]] && [[ "$PACKAGE" != "frameworks6" && "$PACKAGE" != "plasma-all" && "$PACKAGE" != "xorg-lib" ]]; then
+        # Fallback: construct the filename for the target package if extraction failed
+        if [[ "$PLASMA_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
+             ver="${UPSTREAM_FULL:-$LFS_VERSION}"
+             [[ -z "$ver" && -n "$TARGET_VER" ]] && ver="$TARGET_VER"
+             if [[ -n "$ver" ]]; then
+                 FILENAMES="${PACKAGE}-${ver}.tar.xz"
+                 log "Constructed fallback KDE filename: $FILENAMES"
+             fi
+        fi
+    fi
     
     if [[ -n "$FILENAMES" ]]; then
         # Apply version substitution to FILENAMES if we are in upstream mode
@@ -1829,7 +1876,7 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
         for f in $FILENAMES; do
             # Only add if it's the target package OR if we are in full metapackage mode
             if [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" =~ ^${PACKAGE}[-_][0-9] ]]; then
-                DOWNLOAD_URLS+=("${BASE_URL}${f}")
+                [[ -n "$f" ]] && DOWNLOAD_URLS+=("${BASE_URL}${f}")
             fi
         done
     fi
@@ -1999,7 +2046,7 @@ else
     done
 fi
 
-if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
+if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     # Identify MAIN_DOWNLOAD_URL (the one that looks most like the source archive)
     MAIN_DOWNLOAD_URL=""
     for url in "${DOWNLOAD_URLS[@]}"; do
@@ -2059,7 +2106,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
         fi
     log "Total files to download: ${#DOWNLOAD_URLS[@]}"
 else
-    log "Frameworks mode: skipping MAIN_DOWNLOAD_URL identification."
+    log "KDE Loop mode: skipping MAIN_DOWNLOAD_URL identification."
 fi
 
 # Fix move command for xorgproto doc in single package mode if it exists
@@ -2454,8 +2501,13 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && [[ "${DOWNLOAD_URLS[
             DOWNLOAD_URLS[$i]=$(echo "${DOWNLOAD_URLS[$i]}" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g; s|/$KDE_LFS_MM/|/$KDE_UP_MM/|g")
         done
         MAIN_DOWNLOAD_URL=$(echo "$MAIN_DOWNLOAD_URL" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g; s|/$KDE_LFS_MM/|/$KDE_UP_MM/|g")
-        # Also substitute the LFS_VERSION inside COMMANDS since these simple packages don't have an MD5 heredoc!
-        COMMANDS=$(echo "$COMMANDS" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g")
+        # Also substitute versions inside COMMANDS
+        if [[ "$PLASMA_MODE" == "true" ]]; then
+            # For Plasma, we must also switch from frameworks to plasma path if the book used it as a template
+            COMMANDS=$(echo "$COMMANDS" | sed "s|/frameworks/$KDE_LFS_MM/|/plasma/$KDE_UP_FULL/|g; s|/frameworks/|/plasma/|g; s/$KDE_LFS_VER/$KDE_UP_FULL/g")
+        else
+            COMMANDS=$(echo "$COMMANDS" | sed "s/$KDE_LFS_VER/$KDE_UP_FULL/g; s|/$KDE_LFS_MM/|/$KDE_UP_MM/|g")
+        fi
     fi
 fi
 

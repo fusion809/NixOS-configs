@@ -29,7 +29,7 @@
             }
             next 
         }
-        /^for package in/ { in_vm_script = 1 }
+        /^[[:space:]]*(for package in|while read)/ { in_vm_script = 1 }
         {
             if (in_as_root) {
                 as_root_content = as_root_content "\n" $0
@@ -48,16 +48,22 @@
             if (line ~ /^mkdir [^-]|^mkdir [^ -]/) sub(/^mkdir /, "mkdir -p ", line);
             
             if (in_vm_script) {
-                if (line ~ /packagedir=/) { 
+                if (line ~ /^[[:space:]]*(packagedir|file|pkg|name|package)=/) { 
                     vm_cmds = vm_cmds "\n    " line;
-                    vm_cmds = vm_cmds "\n    # Skip if we only want one package and this is not it"
-                    vm_cmds = vm_cmds "\n    pkg_match=$(echo \x24package | sed -E \"s/[-_][0-9].*//\")"
-                    vm_cmds = vm_cmds "\n    if [ -n \"\x24{PACKAGE}\" ] && [ \"\x24pkg_match\" != \"\x24{PACKAGE}\" ] && [ \"\x24package\" != \"\x24{PACKAGE}\" ]; then continue; fi"
+                    
+                    # Isolate the package AS SOON AS we have any variable that might contain the filename.
+                    vm_cmds = vm_cmds "\n    _p=\x22\x24{package:-\x24{pkg:-\x24file}}\x22"
+                    vm_cmds = vm_cmds "\n    if [ -n \x22\x24_p\x22 ]; then"
+                    vm_cmds = vm_cmds "\n        _m=$(echo \x24_p | sed -E \x22s/[-_][0-9].*//\x22)"
+                    vm_cmds = vm_cmds "\n        if [ -n \x22\x24{PACKAGE}\x22 ] && [ \x22\x24_m\x22 != \x22\x24{PACKAGE}\x22 ] && [ \x22\x24_p\x22 != \x22\x24{PACKAGE}\x22 ]; then continue; fi"
+                    vm_cmds = vm_cmds "\n    fi"
 
-                    vm_cmds = vm_cmds "\n    PKGNAME=$(echo \x24package | sed -E \"s/[-_][0-9].*//\")";
-                    vm_cmds = vm_cmds "\n    PKGVER=$(echo \x24package | sed \"s/^\x24{PKGNAME}-//; s/^\x24{PKGNAME}_//; s/\\.tar\\..*//\")";
-                    vm_cmds = vm_cmds "\n    touch /tmp/build_start_\x24{PKGNAME}";
-                    vm_cmds = vm_cmds "\n    echo \"\x24{PKGVER}\" | sudo tee \"/var/lib/book-packages/\x24{PKGNAME}\" > /dev/null";
+                    if (line ~ /packagedir=/) {
+                        vm_cmds = vm_cmds "\n    PKGNAME=$(echo \x24_p | sed -E \x22s/[-_][0-9].*//\x22)";
+                        vm_cmds = vm_cmds "\n    PKGVER=$(echo \x24_p | sed \x22s/^\x24{PKGNAME}-//; s/^\x24{PKGNAME}_//; s/\\.tar\\..*//\x22)";
+                        vm_cmds = vm_cmds "\n    touch /tmp/build_start_\x24{PKGNAME}";
+                        vm_cmds = vm_cmds "\n    echo \x22\x24{PKGVER}\x22 | sudo tee \x22/var/lib/book-packages/\x24{PKGNAME}\x22 > /dev/null";
+                    }
                     next;
                 }
                 # Pass function definitions through verbatim (e.g. do_build() { make; })
@@ -156,7 +162,8 @@
                     host_cmds = host_cmds "\n" line " 2>/dev/null || true";
                 } else {
                     # Fix awk $2 escaping in for loops (e.g. for package in $(... awk '{print $2}'))
-                    gsub(/\$2/, "\\$2", line);
+                    # Use [$] to avoid AWK warning about escape sequence \$
+                    gsub(/[$]2/, "\\$2", line);
                     host_cmds = host_cmds "\n" line
                 }
                 next;
