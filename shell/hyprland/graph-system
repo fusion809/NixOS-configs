@@ -85,22 +85,22 @@ done
 # Initial generation
 generate_graph
 
-# Open EOG
-if command -v eog &> /dev/null; then
+# Open gwenview
+if command -v gwenview &> /dev/null; then
     if [[ -f "$IMGFILE" ]]; then
-        eog "$IMGFILE" &
-        EOG_PID=$!
+        gwenview "$IMGFILE" &
+        GWENVIEW_PID=$!
     else
         notify-send "Graph Error" "Failed to generate graph image."
         exit 1
     fi
 else
-    notify-send "Error" "eog not found."
+    notify-send "Error" "gwenview not found."
     exit 1
 fi
 
 # Main Loop: Update Graph
-while kill -0 "$EOG_PID" 2> /dev/null; do
+while kill -0 "$GWENVIEW_PID" 2> /dev/null; do
     sleep 2
     generate_graph
 done
