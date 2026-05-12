@@ -7,8 +7,8 @@ MONITOR=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name')
 TEMP_CONFIG="/tmp/waybar-config-$MONITOR.jsonc"
 
 # Check for a waybar process specifically managing this monitor's config
-if pgrep -f "waybar -c $TEMP_CONFIG" > /dev/null; then
-    pkill -f "waybar -c $TEMP_CONFIG"
+if pgrep -f "$TEMP_CONFIG" > /dev/null; then
+    pkill -f "$TEMP_CONFIG"
 else
     # Extract config for this monitor
     sed 's/\/\/.*//g' "$CONFIG_BASE" | jq ".[] | select(.output == \"$MONITOR\")" > "$TEMP_CONFIG"

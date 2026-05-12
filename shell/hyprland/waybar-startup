@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Start one Waybar instance per monitor using the same config paths
+# that waybar-toggle-monitor uses, so pgrep-based detection works correctly.
+NIXCFG="$HOME/GitHub/mine/config/NixOS-configs"
+CONFIG_BASE="$NIXCFG/dotfiles/waybar-config.jsonc"
+STYLE="$NIXCFG/dotfiles/style.css"
+
+pkill -9 waybar
+sleep 0.2
+
+hyprctl monitors -j | jq -r '.[] | .name' | while read -r m; do
+    tmp_config="/tmp/waybar-config-$m.jsonc"
+    sed 's/\/\/.*//g' "$CONFIG_BASE" | jq ".[] | select(.output == \"$m\")" > "$tmp_config"
+    waybar -c "$tmp_config" -s "$STYLE" &
+done

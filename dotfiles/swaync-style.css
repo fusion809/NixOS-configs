@@ -1,0 +1,116 @@
+* {
+  font-family: "JetBrainsMono Nerd Font";
+}
+
+.notification-row {
+  outline: none;
+  margin: 10px;
+  padding: 0;
+}
+
+.notification {
+  border-radius: 12px;
+  margin: 6px 12px;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,0.3);
+  padding: 0;
+  background: #1e1e2e; /* Catppuccin Mocha Base */
+  color: #cdd6f4;
+}
+
+.notification-content {
+  background: transparent;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.close-button {
+  background: #f38ba8;
+  color: #1e1e2e;
+  text-shadow: none;
+  padding: 2px;
+  border-radius: 100%;
+  margin-top: 5px;
+  margin-right: 5px;
+}
+
+.notification-default-action,
+.notification-action {
+  padding: 4px;
+  margin: 0;
+  box-shadow: none;
+  background: #1e1e2e;
+  border: 1px solid #313244;
+  color: #cdd6f4;
+}
+
+.notification-default-action:hover,
+.notification-action:hover {
+  background: #313244;
+}
+
+.summary {
+  font-size: 14px;
+  font-weight: bold;
+  background: transparent;
+  color: #cdd6f4;
+  text-shadow: none;
+}
+
+.time {
+  font-size: 11px;
+  font-weight: normal;
+  background: transparent;
+  color: #a6adc8;
+  text-shadow: none;
+  margin-right: 20px;
+}
+
+.body {
+  font-size: 13px;
+  font-weight: normal;
+  background: transparent;
+  color: #bac2de;
+  text-shadow: none;
+}
+
+.control-center {
+  background: #181825;
+  border: 1px solid #313244;
+  border-radius: 12px;
+}
+
+.control-center-list {
+  background: transparent;
+}
+
+.widget-title {
+  color: #cdd6f4;
+  background: transparent;
+  padding: 10px;
+  margin: 10px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.widget-title > button {
+  background: #313244;
+  color: #cdd6f4;
+  padding: 5px;
+  border-radius: 8px;
+}
+
+.widget-dnd {
+  background: transparent;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 8px;
+}
+
+.widget-dnd > switch {
+  background: #313244;
+  border-radius: 12px;
+}
+
+.widget-dnd > switch:checked {
+  background: #a6e3a1;
+}
