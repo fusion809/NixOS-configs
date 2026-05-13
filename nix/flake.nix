@@ -32,7 +32,7 @@
     in {
       # also set the defaultPackage for this system to hy3 for convenience
       defaultPackage.x86_64-linux =
-        inputs.nixpkgs-master.legacyPackages.x86_64-linux.hyprlandPlugins.hy3;
+        inputs.nixpkgs-unstable.legacyPackages.x86_64-linux.hyprlandPlugins.hy3;
 
       nixosConfigurations."nixos" = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs username; };

@@ -27,9 +27,9 @@
         version = "latest";
         src = inputs.vim-src;
       });
-      hyprland = pkgs.master.hyprland;
+      hyprland = pkgs.unstable.hyprland;
       hyprlandPlugins = super.hyprlandPlugins // {
-        hy3 = pkgs.master.hyprlandPlugins.hy3;
+        hy3 = pkgs.unstable.hyprlandPlugins.hy3;
       };
       # antigravity = callPackage (forkNixpkgsPath + /antigravity/package.nix) {
       #   buildVscode = { customizeFHSEnv ? null, ... }@args:

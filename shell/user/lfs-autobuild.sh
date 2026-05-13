@@ -2574,11 +2574,10 @@ fi
 if [[ "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all" || \
       "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "frameworks6" || \
       "${METAPACKAGE_TARGET,,}" == "plasma-all" || "${METAPACKAGE_TARGET,,}" == "frameworks6" ]]; then
-    # Replace recursive wget with a non-clobbering direct wget. 
-    # We remove -r, -A, -nd, -nH etc and just use -nc to skip if file exists.
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/wget -r -nH -nd -A [^ ]+ -np/wget -nc/g; s/wget -r /wget -nc /g')
-    # Remove redundant wget index downloads for KDE
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's@wget -nc https://download.kde.org/stable/(frameworks|plasma)/[0-9.]+/?@@g')
+    # We don't need the recursive wget command from the book because we download files directly using DOWNLOAD_URLS
+    COMMANDS=$(echo "$COMMANDS" | sed -E '/^url=https:\/\/download\.kde\.org/d; /^wget -r -nH/d')
+    # Remove redundant wget index downloads for KDE if they were prepended
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@^wget -nc https://download.kde.org/stable/(frameworks|plasma)/[0-9.]+/?\s*$@@g')
 fi
 
 if [[ "$PACKAGE" == "sddm" ]]; then
@@ -2899,7 +2898,7 @@ fi
         KDE_GENERATED_SCRIPT=$(echo "$COMMANDS" | awk -v pkg="$PACKAGE" -v force="$FORCE" '
             BEGIN {
                 in_loop = 0; in_as_root = 0; in_md5 = 0; in_root_block = 0;
-                as_root_content = ""; other_cmds = ""; loop_content = "";
+                as_root_content = ""; other_cmds = "PACKAGE=\"" pkg "\"\nFORCE=\"" force "\""; loop_content = "";
             }
             /^# __BEGIN_ROOT__/ { 
                 if (in_loop) { in_root_block = 1; next }
@@ -2926,7 +2925,7 @@ fi
                 loop_content = loop_content "\n    fi"
                 next
             }
-            /^[[:space:]]*while read (-r )?line; do/ { 
+            /^[[:space:]]*while read( -r)? line; do/ { 
                 in_loop = 1; 
                 loop_content = "    while read -r line; do\n    set -e\n    cd /sources/archives\n    [[ -z \"\$line\" || \"\$line\" == [[:space:]]*#* ]] && continue";
                 loop_content = loop_content "\n    DIRNAME=\$(echo \"\$line\" | awk \"{print \\$2}\" | sed -E \"s/\\\\.tar\\\\.[a-z0-9.]+$//\")";
