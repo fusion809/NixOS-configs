@@ -15,7 +15,7 @@
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
     nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
     nixpkgs-pr.url =
-      "git+https://github.com/NixOS/nixpkgs.git?rev=4fdbc9eff3a9511a8795e13167425cc96f63a946";
+      "git+https://github.com/NixOS/nixpkgs.git?rev=8a62462a67c9c30b311da868e0c66935a8a1ed09";
     # Vim
     vim-src = {
       url = "git+https://github.com/vim/vim.git?allRefs=1";
@@ -25,9 +25,12 @@
       url = "git+https://github.com/nix-community/nixvim.git?ref=nixos-25.11";
       # If using a stable channel you can use `url = "github:nix-community/nixvim/nixos-<version>"`
     };
+    hy3 = {
+      url = "github:outfoxxed/hy3?rev=a7282db2d7ca336d3c9faa5d10d75fc43eed37aa";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixvim, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, nixvim, hy3, ... }@inputs:
     let username = "fusion809";
     in {
       # also set the defaultPackage for this system to hy3 for convenience
