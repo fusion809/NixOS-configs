@@ -29,7 +29,12 @@
       });
       hyprland = pkgs.pr.hyprland;
       hyprlandPlugins = super.hyprlandPlugins // {
-        hy3 = inputs.hy3.packages.${pkgs.stdenv.hostPlatform.system}.hy3;
+        hy3 = (super.hyprlandPlugins.hy3.override {
+          hyprland = self.hyprland;
+        }).overrideAttrs (old: {
+          src = inputs.hy3;
+          cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DHY3_NO_VERSION_CHECK=ON" ];
+        });
       };
       # antigravity = callPackage (forkNixpkgsPath + /antigravity/package.nix) {
       #   buildVscode = { customizeFHSEnv ? null, ... }@args:
