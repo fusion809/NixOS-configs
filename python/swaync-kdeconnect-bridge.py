@@ -12,6 +12,13 @@ import time
 # 1. SwayNC -> Phone: Clicking 'x' in SwayNC dismisses on the phone.
 # 2. Phone -> SwayNC: Dismissing on phone (or opening on PC) clears in SwayNC.
 
+LOG_FILE = "/tmp/swaync-kdeconnect-bridge.log"
+
+def log_msg(msg):
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{time.ctime()}: {msg}\n")
+    print(msg)
+
 class NotificationBridge:
     def __init__(self):
         self.bus = pydbus.SessionBus()
@@ -37,15 +44,15 @@ class NotificationBridge:
             notif_path = f"{device_path}/notifications/{phone_notif_id}"
             try:
                 notif = self.bus.get("org.kde.kdeconnect", notif_path)
-                print(f"Dismissing notification {phone_notif_id} on device {device_id}...")
+                log_msg(f"Dismissing notification {phone_notif_id} on device {device_id}...")
                 notif.dismiss()
                 return True
             except:
                 # Fallback to fuzzy match if ID-based dismissal fails
-                print(f"ID-based dismissal failed for {phone_notif_id}, trying fuzzy match...")
+                log_msg(f"ID-based dismissal failed for {phone_notif_id}, trying fuzzy match...")
                 return self.dismiss_fuzzy(device_id, title, body)
         except Exception as e:
-            print(f"Error in phone dismissal: {e}")
+            log_msg(f"Error in phone dismissal: {e}")
         return False
 
     def dismiss_fuzzy(self, device_id, title, body):
@@ -59,7 +66,7 @@ class NotificationBridge:
                     notif = self.bus.get("org.kde.kdeconnect", child_path)
                     if notif.title == title and (notif.text in body or body in notif.text):
                         if notif.dismissable:
-                            print(f"Fuzzy match found for '{title}', dismissing...")
+                            log_msg(f"Fuzzy match found for '{title}', dismissing...")
                             notif.dismiss()
                             return True
                 except: continue
@@ -68,7 +75,7 @@ class NotificationBridge:
 
     def close_in_swaync(self, desktop_id):
         if not desktop_id: return
-        print(f"Closing desktop notification {desktop_id}...")
+        log_msg(f"Closing desktop notification {desktop_id}...")
         self.closing_by_bridge.add(desktop_id)
         try:
             subprocess.run(["swaync-client", "-close-notification", str(desktop_id)], check=False)
@@ -78,17 +85,24 @@ class NotificationBridge:
 
     def on_desktop_notification_closed(self, id, reason):
         if id in self.closing_by_bridge:
-            print(f"Desktop notification {id} closed by bridge, skipping phone sync.")
+            log_msg(f"Desktop notification {id} closed by bridge, skipping phone sync.")
             return
 
-        print(f"Desktop notification {id} closed (reason={reason}).")
+        log_msg(f"Desktop notification {id} closed (reason={reason}).")
         if reason in (2, 3): # 2=Dismissed, 3=Closed by app/ClearAll
             if id in self.desktop_to_phone:
                 dev_id, p_id, title, body = self.desktop_to_phone.pop(id)
                 self.phone_to_desktop.pop((dev_id, p_id), None)
-                self.dismiss_on_phone(dev_id, p_id, title, body)
+                if p_id:
+                    self.dismiss_on_phone(dev_id, p_id, title, body)
+                else:
+                    # Desktop-originated notification (like Boo), use fuzzy match on all devices
+                    log_msg(f"Desktop-originated notification {id} ('{title}') closed, trying fuzzy match on all devices.")
+                    daemon, devices = self.get_device_info()
+                    for dev in devices:
+                        self.dismiss_fuzzy(dev, title, body)
             else:
-                print(f"No phone mapping for desktop ID {id}.")
+                log_msg(f"No phone mapping for desktop ID {id}.")
 
     def on_phone_notification_removed(self, sender, object, iface, signal, params):
         # Params is (id,)
@@ -98,13 +112,13 @@ class NotificationBridge:
         match = re.search(r'/devices/([^/]+)/notifications', object)
         if match:
             device_id = match.group(1)
-            print(f"Phone notification removed: device={device_id}, id={phone_notif_id}")
+            log_msg(f"Phone notification removed: device={device_id}, id={phone_notif_id}")
             desktop_id = self.phone_to_desktop.pop((device_id, phone_notif_id), None)
             if desktop_id:
                 self.desktop_to_phone.pop(desktop_id, None)
                 self.close_in_swaync(desktop_id)
             else:
-                print(f"No desktop mapping for phone notification {phone_notif_id} on {device_id}.")
+                log_msg(f"No desktop mapping for phone notification {phone_notif_id} on {device_id}.")
 
     def dbus_monitor_thread(self):
         cmd = ["stdbuf", "-o", "L", "dbus-monitor", 
@@ -147,7 +161,7 @@ class NotificationBridge:
                 continue
 
             if state == "PARSE_NOTIFY":
-                print(f"DEBUG: {line.strip()}") # Enable extreme debugging
+                log_msg(f"DEBUG: {line.strip()}") # Enable extreme debugging
                 # Check for hints
                 if "array [" in line: in_hints = True
                 if "]" in line: in_hints = False
@@ -175,8 +189,10 @@ class NotificationBridge:
                 if "int32" in line or "uint32" in line:
                     if string_idx >= 3:
                         # Log and store now that hints are (potentially) parsed
-                        print(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}'")
-                        if phone_id or app_name == "KDE Connect":
+                        log_msg(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}'")
+                        # Track ANY notification that might be mirrored to the phone.
+                        # We include 'KDE Connect' (remote) and 'Antigravity'/'Boo' (local).
+                        if phone_id or app_name in ["KDE Connect", "Antigravity", "Boo", "antigravity"]:
                             self.pending_notifs[serial] = (device_id, phone_id, summary, body)
                         state = "IDLE"
 
@@ -187,11 +203,13 @@ class NotificationBridge:
                     if serial in self.pending_notifs:
                         info = self.pending_notifs.pop(serial)
                         dev_id, p_id, title, text = info
-                        # If phone_id wasn't in hints, we might need to wait or it might not exist
+                        # Always map the desktop ID to its info so we can handle dismissal (even fuzzy)
+                        self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
                         if p_id:
-                            self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
                             self.phone_to_desktop[(dev_id, p_id)] = desktop_id
-                            print(f"Mapped: Desktop {desktop_id} <-> Phone {p_id} on {dev_id}")
+                            log_msg(f"Mapped: Desktop {desktop_id} <-> Phone {p_id} on {dev_id}")
+                        else:
+                            log_msg(f"Mapped (Local/Fuzzy): Desktop {desktop_id} -> '{title}'")
                     state = "IDLE"
 
     def run(self):
@@ -209,7 +227,7 @@ class NotificationBridge:
                           signal="notificationRemoved", 
                           signal_fired=self.on_phone_notification_removed)
         
-        print("SwayNC-KDEConnect Bridge (Two-Way Sync) started.")
+        log_msg("SwayNC-KDEConnect Bridge (Two-Way Sync) started.")
         sys.stdout.flush()
         
         loop = GLib.MainLoop()

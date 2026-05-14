@@ -427,7 +427,7 @@ lfs_get_upstream_version() {
         libjxl)
             curl -s -H "User-Agent: bash" https://api.github.com/repos/libjxl/libjxl/releases/latest | perl -nle 'while (m{"tag_name":"v([0-9.]+)"}g) { print $1 }' | head -n 1
             ;;
-    esac
+    esac | grep -E '^[0-9]+(\.[0-9]+)+$' | head -n 1
 }
 
 lfs_get_remote_packages() {
@@ -507,6 +507,17 @@ lfs_get_remote_packages() {
         # Expand metapackage versions (plasma, frameworks) to all their constituent packages
         if [[ -f "$tmp_upstream/plasma" ]]; then
             local plasma_up_ver=$(cat "$tmp_upstream/plasma" | cut -d- -f2)
+            # Scrape the directory listing directly to get the REAL list of components for this version
+            local remote_dir_url="https://download.kde.org/stable/plasma/${plasma_up_ver}/"
+            local tmp_listing="/tmp/plasma_listing.html"
+            local http_code=$(curl -sL -w "%{http_code}" "$remote_dir_url" -o "$tmp_listing")
+            if [[ "$http_code" == "200" ]]; then
+                local dir_pkgs=$(grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.tar\.xz' "$tmp_listing" | sed -E 's/-[0-9].*//' | sort -u)
+                if [[ -n "$dir_pkgs" ]]; then
+                    plasma_pkg_names="$dir_pkgs"
+                fi
+            fi
+            rm -f "$tmp_listing"
             for p in $(echo "$plasma_pkg_names" | sort -u); do
                 [[ -n "$p" ]] && echo "${p}-${plasma_up_ver}" > "$tmp_upstream/$p"
             done
@@ -517,6 +528,18 @@ lfs_get_remote_packages() {
             [[ -f "$tmp_upstream/frameworks6" ]] && fw_up_ver=$(cat "$tmp_upstream/frameworks6" | cut -d- -f2)
             [[ -z "$fw_up_ver" && -f "$tmp_upstream/frameworks" ]] && fw_up_ver=$(cat "$tmp_upstream/frameworks" | cut -d- -f2)
             if [[ -n "$fw_up_ver" ]]; then
+                # Fetch frameworks directory listing
+                local fw_mm=$(echo "$fw_up_ver" | cut -d. -f1,2)
+                local remote_dir_url="https://download.kde.org/stable/frameworks/${fw_mm}/"
+                local tmp_listing="/tmp/fw_listing.html"
+                local http_code=$(curl -sL -w "%{http_code}" "$remote_dir_url" -o "$tmp_listing")
+                if [[ "$http_code" == "200" ]]; then
+                    local dir_pkgs=$(grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.tar\.xz' "$tmp_listing" | sed -E 's/-[0-9].*//' | sort -u)
+                    if [[ -n "$dir_pkgs" ]]; then
+                        frameworks_pkg_names="$dir_pkgs"
+                    fi
+                fi
+                rm -f "$tmp_listing"
                 for p in $(echo "$frameworks_pkg_names" | sort -u); do
                     [[ -n "$p" ]] && echo "${p}-${fw_up_ver}" > "$tmp_upstream/$p"
                 done
@@ -1030,8 +1053,11 @@ lfs_update() {
                 local higher=$(echo -e "$local_base\n$remote_base" | sort -V | tail -n 1)
                 if [[ "$higher" == "$remote_base" ]]; then
                     echo "Found update: $name: $local_ver->$remote_ver"
-                    updates+=("$name")
-                    update_msgs+=("${name}: ${local_ver}->${remote_ver}")
+                    # Exclude metapackages from updates to prevent redundant build cycles
+                    if [[ "$name" != "plasma-all" && "$name" != "plasma" && "$name" != "frameworks6" && "$name" != "frameworks" ]]; then
+                        updates+=("$name")
+                        update_msgs+=("${name}: ${local_ver}->${remote_ver}")
+                    fi
                 fi
             fi
         fi
@@ -1202,7 +1228,23 @@ def fetch_frameworks_order():
     except Exception as e:
         return []
 
+def fetch_plasma_order():
+    try:
+        req = urllib.request.Request(f"{blfs_book}/kde/plasma-all.html", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as response:
+            html = response.read().decode("utf-8")
+            # Extract names from the md5 block or links
+            tars = re.findall(r"([a-z0-9-]+)-6\.[0-9]+\.[0-9]+\.tar\.xz", html)
+            order = []
+            for t in tars:
+                if t not in order:
+                    order.append(t)
+            return order
+    except Exception as e:
+        return []
+
 frameworks_order = fetch_frameworks_order()
+plasma_order = fetch_plasma_order()
 
 # Perform topological sort
 def toposort(graph):
@@ -1227,7 +1269,8 @@ def toposort(graph):
     def get_sort_key(pkg):
         prio = 0 if pkg in priority_pkgs else 1
         fw_index = frameworks_order.index(pkg) if pkg in frameworks_order else 9999
-        return (prio, fw_index, pkg)
+        plasma_index = plasma_order.index(pkg) if pkg in plasma_order else 9999
+        return (prio, fw_index, plasma_index, pkg)
     
     queue = [u for u in in_degree if in_degree[u] == 0]
     queue.sort(key=get_sort_key)
