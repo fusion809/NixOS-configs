@@ -29,7 +29,7 @@
       });
       hyprland = pkgs.pr.hyprland;
       hyprlandPlugins = super.hyprlandPlugins // {
-        hy3 = inputs.hy3.packages.${pkgs.system}.hy3;
+        hy3 = inputs.hy3.packages.${pkgs.stdenv.hostPlatform.system}.hy3;
       };
       # antigravity = callPackage (forkNixpkgsPath + /antigravity/package.nix) {
       #   buildVscode = { customizeFHSEnv ? null, ... }@args:
