@@ -38,7 +38,17 @@ class NotificationBridge:
         except:
             return None, []
 
+    def wakeup_device(self, device_id):
+        try:
+            ping_path = f"/modules/kdeconnect/devices/{device_id}/ping"
+            ping = self.bus.get("org.kde.kdeconnect", ping_path)
+            ping.sendPing()
+            log_msg(f"Sent wakeup ping to device {device_id}.")
+            time.sleep(0.3)
+        except: pass
+
     def dismiss_on_phone(self, device_id, phone_notif_id, title, body):
+        self.wakeup_device(device_id)
         try:
             device_path = f"/modules/kdeconnect/devices/{device_id}"
             notif_path = f"{device_path}/notifications/{phone_notif_id}"
@@ -46,22 +56,44 @@ class NotificationBridge:
                 notif = self.bus.get("org.kde.kdeconnect", notif_path)
                 log_msg(f"Dismissing notification {phone_notif_id} on device {device_id}...")
                 notif.dismiss()
+                # Verify removal after a short delay
+                threading.Timer(2.0, lambda: self.verify_and_retry(device_id, phone_notif_id, title, body)).start()
                 return True
             except:
-                # Fallback to fuzzy match if ID-based dismissal fails
                 log_msg(f"ID-based dismissal failed for {phone_notif_id}, trying fuzzy match...")
                 return self.dismiss_fuzzy(device_id, title, body)
         except Exception as e:
             log_msg(f"Error in phone dismissal: {e}")
         return False
 
-    def dismiss_fuzzy(self, device_id, title, body):
-        log_msg(f"Fuzzy match attempt on device {device_id}: title='{title}', body_len={len(body) if body else 0}")
+    def verify_and_retry(self, device_id, phone_notif_id, title, body, attempt=1):
+        try:
+            notif_manager_path = f"/modules/kdeconnect/devices/{device_id}/notifications"
+            notif_manager = self.bus.get("org.kde.kdeconnect", notif_manager_path)
+            if phone_notif_id in notif_manager.activeNotifications():
+                if attempt < 3:
+                    log_msg(f"Notification {phone_notif_id} still active on {device_id} (attempt {attempt}), retrying...")
+                    self.wakeup_device(device_id)
+                    try:
+                        notif_path = f"{notif_manager_path}/{phone_notif_id}"
+                        notif = self.bus.get("org.kde.kdeconnect", notif_path)
+                        notif.dismiss()
+                        threading.Timer(3.0, lambda: self.verify_and_retry(device_id, phone_notif_id, title, body, attempt + 1)).start()
+                    except:
+                        self.dismiss_fuzzy(device_id, title, body)
+                else:
+                    log_msg(f"Notification {phone_notif_id} persisted after {attempt} attempts. Trying fuzzy match as last resort.")
+                    self.dismiss_fuzzy(device_id, title, body)
+        except: pass
+
+    def dismiss_fuzzy(self, device_id, title, body, attempt=1):
+        log_msg(f"Fuzzy match attempt on device {device_id} (attempt {attempt}): title='{title}', body_len={len(body) if body else 0}")
         try:
             notif_manager_path = f"/modules/kdeconnect/devices/{device_id}/notifications"
             notif_manager = self.bus.get("org.kde.kdeconnect", notif_manager_path)
             active_notifs = notif_manager.activeNotifications()
-            log_msg(f"Active notifications on phone: {active_notifs}")
+            
+            matched_ids = []
             for nid in active_notifs:
                 child_path = f"{notif_manager_path}/{nid}"
                 try:
@@ -70,29 +102,42 @@ class NotificationBridge:
                     phone_text = getattr(notif, "text", "")
                     phone_app = getattr(notif, "appName", "")
                     
-                    log_msg(f"Checking phone notif: ID={nid}, Title='{phone_title}', App='{phone_app}'")
-                    
-                    # Match criteria:
-                    # 1. Title matches
-                    # 2. Body matches
-                    # 3. Desktop summary matches phone app name (crucial for mirrored notifs like Instagram/WhatsApp)
                     title_match = (title and phone_title and (title in phone_title or phone_title in title))
                     body_match = (body and phone_text and (body in phone_text or phone_text in body))
                     app_match = (title and phone_app and (title.lower() in phone_app.lower() or phone_app.lower() in title.lower()))
                     
                     if title_match or body_match or app_match:
                         if getattr(notif, "dismissable", True):
-                            log_msg(f"Match found (Title={title_match}, Body={body_match}, App={app_match}) for '{title}', dismissing {nid}...")
+                            log_msg(f"Match found for '{title}', dismissing {nid}...")
                             notif.dismiss()
-                            return True
-                        else:
-                            log_msg(f"Match found for '{title}', but notification {nid} is NOT dismissable.")
-                except Exception as e: 
-                    log_msg(f"Error checking child notif {nid}: {e}")
-                    continue
+                            matched_ids.append(nid)
+                except: continue
+            
+            if matched_ids and attempt < 3:
+                # Verify and retry fuzzy for all matched IDs
+                for mid in matched_ids:
+                    threading.Timer(3.0, lambda m=mid: self.verify_and_retry_fuzzy(device_id, m, title, body, attempt)).start()
+                return True
+            elif matched_ids:
+                return True
         except Exception as e:
             log_msg(f"Error in dismiss_fuzzy for device {device_id}: {e}")
         return False
+
+    def verify_and_retry_fuzzy(self, device_id, phone_notif_id, title, body, attempt):
+        try:
+            notif_manager_path = f"/modules/kdeconnect/devices/{device_id}/notifications"
+            notif_manager = self.bus.get("org.kde.kdeconnect", notif_manager_path)
+            if phone_notif_id in notif_manager.activeNotifications():
+                log_msg(f"Fuzzy-matched notification {phone_notif_id} still active, retrying dismissal...")
+                # We don't call dismiss_fuzzy again here, we just retry the specific ID
+                try:
+                    notif_path = f"{notif_manager_path}/{phone_notif_id}"
+                    notif = self.bus.get("org.kde.kdeconnect", notif_path)
+                    notif.dismiss()
+                    threading.Timer(3.0, lambda: self.verify_and_retry_fuzzy(device_id, phone_notif_id, title, body, attempt + 1)).start()
+                except: pass
+        except: pass
 
     def close_in_swaync(self, desktop_id):
         if not desktop_id: return
