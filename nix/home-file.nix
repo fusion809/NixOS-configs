@@ -11,6 +11,8 @@ in {
   # Hyprland
   ".config/hypr/hyprland.conf".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/hyprland.conf";
+  ".config/hypr/hyprland.lua".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/hyprland.lua";
 
   # Waybar
   ".config/waybar/config.jsonc".source =
