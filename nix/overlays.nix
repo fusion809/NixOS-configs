@@ -29,16 +29,19 @@
       });
       hyprland = pkgs.pr.hyprland;
       hyprlandPlugins = super.hyprlandPlugins // {
-        hy3 = (self.unstable.hyprlandPlugins.hy3.override {
-          hyprland = self.hyprland;
-        }).overrideAttrs (old: {
-          src = inputs.hy3;
+        hy3 = pkgs.hyprlandPlugins.mkHyprlandPlugin {
+          pluginName = "hy3";
           version = "0.55.1";
-          cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DHY3_NO_VERSION_CHECK=ON" ];
-          postPatch = (old.postPatch or "") + ''
-            sed -i 's/throw std::runtime_error("\[hy3\] target hyprland version mismatch");//' src/main.cpp
-          '';
-        });
+          src = inputs.hy3;
+          nativeBuildInputs = [ pkgs.cmake ];
+          dontStrip = true;
+          cmakeFlags = [ "-DHY3_NO_VERSION_CHECK=ON" ];
+          meta = {
+            homepage = "https://github.com/outfoxxed/hy3";
+            description = "Hyprland plugin for an i3 / sway like manual tiling layout";
+            license = pkgs.lib.licenses.gpl3;
+          };
+        };
       };
       # antigravity = callPackage (forkNixpkgsPath + /antigravity/package.nix) {
       #   buildVscode = { customizeFHSEnv ? null, ... }@args:
