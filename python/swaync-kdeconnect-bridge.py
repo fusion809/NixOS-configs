@@ -56,21 +56,33 @@ class NotificationBridge:
         return False
 
     def dismiss_fuzzy(self, device_id, title, body):
+        log_msg(f"Fuzzy match attempt on device {device_id}: title='{title}', body_len={len(body) if body else 0}")
         try:
             notif_manager_path = f"/modules/kdeconnect/devices/{device_id}/notifications"
             notif_manager = self.bus.get("org.kde.kdeconnect", notif_manager_path)
             active_notifs = notif_manager.activeNotifications()
+            log_msg(f"Active notifications on phone: {active_notifs}")
             for nid in active_notifs:
                 child_path = f"{notif_manager_path}/{nid}"
                 try:
                     notif = self.bus.get("org.kde.kdeconnect", child_path)
-                    if notif.title == title and (notif.text in body or body in notif.text):
+                    log_msg(f"Checking phone notif: ID={nid}, Title='{notif.title}', Text='{notif.text}'")
+                    # Match if title is in title OR body is in text OR vice versa
+                    title_match = (title and notif.title and (title in notif.title or notif.title in title))
+                    body_match = (body and notif.text and (body in notif.text or notif.text in body))
+                    
+                    if title_match or body_match:
                         if notif.dismissable:
-                            log_msg(f"Fuzzy match found for '{title}', dismissing...")
+                            log_msg(f"Fuzzy match found for '{title}', dismissing phone notification {nid}...")
                             notif.dismiss()
                             return True
-                except: continue
-        except: pass
+                        else:
+                            log_msg(f"Match found for '{title}', but notification {nid} is NOT dismissable.")
+                except Exception as e: 
+                    log_msg(f"Error checking child notif {nid}: {e}")
+                    continue
+        except Exception as e:
+            log_msg(f"Error in dismiss_fuzzy for device {device_id}: {e}")
         return False
 
     def close_in_swaync(self, desktop_id):
@@ -85,11 +97,12 @@ class NotificationBridge:
 
     def on_desktop_notification_closed(self, id, reason):
         if id in self.closing_by_bridge:
-            log_msg(f"Desktop notification {id} closed by bridge, skipping phone sync.")
+            log_msg(f"Desktop notification {id} closed by bridge (reason={reason}), skipping phone sync.")
             return
 
         log_msg(f"Desktop notification {id} closed (reason={reason}).")
-        if reason in (2, 3): # 2=Dismissed, 3=Closed by app/ClearAll
+        # Reasons: 1=Expired, 2=Dismissed, 3=Closed by app, 4=Undefined/ClearAll
+        if reason in (2, 3, 4): 
             if id in self.desktop_to_phone:
                 dev_id, p_id, title, body = self.desktop_to_phone.pop(id)
                 self.phone_to_desktop.pop((dev_id, p_id), None)
@@ -137,6 +150,7 @@ class NotificationBridge:
         string_idx = 0
         in_hints = False
         next_is_phone_id = False
+        next_is_device_id = False
 
         for line in process.stdout:
             line = line.strip()
@@ -150,6 +164,7 @@ class NotificationBridge:
                     string_idx = 0
                     in_hints = False
                     next_is_phone_id = False
+                    next_is_device_id = False
                 continue
 
             if "method return" in line:
@@ -161,7 +176,6 @@ class NotificationBridge:
                 continue
 
             if state == "PARSE_NOTIFY":
-                log_msg(f"DEBUG: {line.strip()}") # Enable extreme debugging
                 # Check for hints
                 if "array [" in line: in_hints = True
                 if "]" in line: in_hints = False
@@ -169,18 +183,28 @@ class NotificationBridge:
                 if in_hints:
                     if 'string "x-kdeconnect-id"' in line:
                         next_is_phone_id = True
+                    elif 'string "x-kde-origin-name"' in line:
+                        # We use origin name to find device if ID is missing
+                        next_is_device_id = True
                     elif next_is_phone_id:
                         m = re.search(r'string "(.*)"', line)
                         if m: 
                             phone_id = m.group(1)
                             next_is_phone_id = False
+                    elif next_is_device_id:
+                        m = re.search(r'string "(.*)"', line)
+                        if m:
+                            device_id = m.group(1)
+                            next_is_device_id = False
                     continue
 
                 m = re.search(r'string "(.*)"', line)
                 if m:
                     val = m.group(1)
                     if string_idx == 0: app_name = val
-                    elif string_idx == 1: device_id = val # app_icon param
+                    elif string_idx == 1: 
+                        # app_icon often contains app name or device ID hint
+                        if not device_id: device_id = val
                     elif string_idx == 2: summary = val
                     elif string_idx == 3: body = val
                     string_idx += 1
@@ -188,10 +212,7 @@ class NotificationBridge:
                 # If we see the end of the Notify call (uint32 or int32 at the end)
                 if "int32" in line or "uint32" in line:
                     if string_idx >= 3:
-                        # Log and store now that hints are (potentially) parsed
-                        log_msg(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}'")
-                        # Track ANY notification that might be mirrored to the phone.
-                        # We include 'KDE Connect' (remote) and 'Antigravity'/'Boo' (local).
+                        log_msg(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}', device_hint='{device_id}'")
                         if phone_id or app_name in ["KDE Connect", "Antigravity", "Boo", "antigravity"]:
                             self.pending_notifs[serial] = (device_id, phone_id, summary, body)
                         state = "IDLE"
@@ -203,7 +224,6 @@ class NotificationBridge:
                     if serial in self.pending_notifs:
                         info = self.pending_notifs.pop(serial)
                         dev_id, p_id, title, text = info
-                        # Always map the desktop ID to its info so we can handle dismissal (even fuzzy)
                         self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
                         if p_id:
                             self.phone_to_desktop[(dev_id, p_id)] = desktop_id
