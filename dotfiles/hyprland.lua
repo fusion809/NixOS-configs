@@ -75,9 +75,10 @@ end
 ---- AUTOSTART ----
 -------------------
 
+hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/waybar-multi-start &"')
+hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/workspace-router &"')
+
 hl.on("hyprland.start", function()
-    hl.exec_cmd(nixcfg .. "/shell/hyprland/waybar-multi-start")
-    hl.exec_cmd(nixcfg .. "/shell/hyprland/workspace-router")
     hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/wallpaper systematic"')
     --hl.exec_cmd("virt-manager")
     --hl.exec_cmd("brave")

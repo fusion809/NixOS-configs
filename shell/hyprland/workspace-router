@@ -1,26 +1,49 @@
 #!/usr/bin/env bash
 
-# Find the socket path correctly whether using /tmp/hypr or $XDG_RUNTIME_DIR/hypr
-if [ -S "$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" ]; then
-    SOCKET="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
-else
-    SOCKET="/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
-fi
+# Use a lock file to ensure only one instance runs
+exec 200>/tmp/workspace-router.lock
+flock -n 200 || exit 1
 
 LOGFILE="/tmp/workspace-router.log"
+echo "--- Starting Workspace Router at $(date) ---" > "$LOGFILE"
+
+# Active socket detection
+SOCKET=$(find /run/user/1000/hypr /tmp/hypr -name ".socket2.sock" -type s -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2)
+
+if [ -z "$SOCKET" ]; then
+    echo "ERROR: Could not find Hyprland socket2.sock!" >> "$LOGFILE"
+    exit 1
+fi
+
+echo "Connected to socket: $SOCKET" >> "$LOGFILE"
+
 HYPRCTL="$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/tools/hyprctl-fixed.sh"
 
 handle() {
-  echo "Event: $1" >> "$LOGFILE"
-  if [[ "$1" == openwindow\>\>* ]]; then
-    local payload="${1#openwindow>>}"
-    # Use comma as delimiter, but title can contain commas
-    IFS=',' read -r w_address w_workspace w_class w_title <<< "$payload"
-    echo "Payload: address=$w_address, workspace=$w_workspace, class=$w_class, title=$w_title" >> "$LOGFILE"
-    
+  # Clean up input and log everything for debugging
+  local line=$(echo "$1" | tr -cd '[:print:]')
+  echo "Event: $line" >> "$LOGFILE"
+  
+  local w_address=""
+  local w_class=""
+  local w_title=""
+  
+  if [[ "$line" == openwindow\>\>* ]]; then
+    local payload="${line#openwindow>>}"
+    IFS=',' read -r w_address w_wsid w_class w_title <<< "$payload"
+    echo "DEBUG: openwindow detected. addr='$w_address' class='$w_class' title='$w_title'" >> "$LOGFILE"
+  elif [[ "$line" == openwindowv2\>\>* ]]; then
+    local payload="${line#openwindowv2>>}"
+    # openwindowv2 payload: ADDRESS,WS_ID,WS_NAME,CLASS,TITLE
+    IFS=',' read -r w_address w_wsid w_wsname w_class w_title <<< "$payload"
+    echo "DEBUG: openwindowv2 detected. addr='$w_address' class='$w_class' title='$w_title'" >> "$LOGFILE"
+  fi
+
+  # If we have a window event, process it
+  if [[ -n "$w_address" ]]; then
     local target=""
 
-    if [[ "$w_class" == "brave-browser" ]]; then
+    if [[ "$w_class" =~ brave-browser ]]; then
         if [[ "$w_title" == "New Private Tab - Brave" ]]; then
             target=27
         else
@@ -28,7 +51,7 @@ handle() {
         fi
         "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $target, window = 'address:0x$w_address', silent = true }))"
 
-    elif [[ "$w_class" == "vlc" ]]; then
+    elif [[ "$w_class" =~ vlc ]]; then
        (
            local count_25=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 25)) | .[0].windows // 0')
            local count_26=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 26)) | .[0].windows // 0')
@@ -46,51 +69,42 @@ handle() {
            "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
        ) &
 
-    elif [[ "$w_class" == "google-chrome" ]]; then
+    elif [[ "$w_class" =~ google-chrome ]] || [[ "$w_class" =~ chrome- ]]; then
        (
-           local t=""
-           # Priority routing for specific titles
-           if [[ "$w_title" == *"PBS Job"* ]] || [[ "$w_title" == *"u1126705@umail.usq.edu.au"* ]]; then
-               local chrome_on_7=$("$HYPRCTL" clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 7)] | length')
-               if [ "$chrome_on_7" -eq 0 ]; then
-                   "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 7, window = 'address:0x$w_address', silent = true }))"
-                   exit 0
-               fi
-           elif [[ "$w_title" == *"Boo"* ]]; then
-               local chrome_on_12=$("$HYPRCTL" clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 12)] | length')
-               if [ "$chrome_on_12" -eq 0 ]; then
-                   "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 12, window = 'address:0x$w_address', silent = true }))"
-                   exit 0
-               fi
+           # Chrome initialization wait
+           if [[ -z "$w_title" ]] || [[ "$w_title" == "Untitled - Google Chrome" ]] || [[ "$w_title" == "New tab - Google Chrome" ]] || [[ "$w_title" == "Google Chrome" ]]; then
+               sleep 1.2
+               w_title=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .title')
            fi
-
-           # Automatic check for empty workspaces using window count
-           local count_1=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
-           local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
            
-           if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
-               t=1
-           else
-               # If all are occupied, prompt the user
-               local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
-               if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
-                   t=$(echo "$choice" | cut -d '(' -f 1)
-               elif [[ "$choice" == "Current" ]]; then
-                   exit 0
-               fi
-           fi
+           echo "Chrome Routing Match: addr=0x$w_address class=$w_class title=$w_title" >> "$LOGFILE"
 
-           if [[ -n "$t" ]]; then
-               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
+           if [[ "$w_title" == *"PBS Job"* ]] || [[ "$w_title" == *"u1126705@umail.usq.edu.au"* ]]; then
+               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 7, window = 'address:0x$w_address', silent = true }))"
+           elif [[ "$w_title" == *"Boo"* ]]; then
+               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 12, window = 'address:0x$w_address', silent = true }))"
+           else
+               # Automatic check for empty workspaces using window count
+               local count_1=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
+               local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
+               
+               if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
+                   "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 1, window = 'address:0x$w_address', silent = true }))"
+               else
+                   # For other Chrome windows, ask the user
+                   local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
+                   if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
+                       local t=$(echo "$choice" | cut -d '(' -f 1)
+                       "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
+                   fi
+               fi
            fi
        ) &
 
-    elif [[ "$w_class" == "virt-viewer" ]] || ( [[ "$w_class" == ".virt-manager-wrapped" ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
+    elif [[ "$w_class" =~ virt-viewer ]] || ( [[ "$w_class" =~ .virt-manager-wrapped ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
        (
            local is_floating=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating')
-           echo "DEBUG virt: addr=0x$w_address class=$w_class title=$w_title is_floating=$is_floating" >> "$LOGFILE"
            if [[ "$is_floating" == "true" ]]; then
-               echo "DEBUG virt: floating → skipping routing" >> "$LOGFILE"
                exit 0
            fi
 
@@ -117,22 +131,26 @@ handle() {
                fi
            fi
 
-           echo "DEBUG virt: routing to target=$t" >> "$LOGFILE"
            if [[ -n "$t" ]]; then
                "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
                "$HYPRCTL" eval "hl.dispatch(hl.dsp.focus({ workspace = $t }))"
            fi
        ) &
 
-    elif [[ "$w_class" == "steam_app_1343400" ]]; then
+    elif [[ "$w_class" =~ steam_app_1343400 ]]; then
        (
-           # RuneScape (steam_app_1343400) - move to workspace 8 silently
            local t=8
            "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
-           echo "Routed RuneScape (0x$w_address) to workspace $t" >> "$LOGFILE"
        ) &
       fi
   fi
 }
 
-nc -U "$SOCKET" < /dev/null | while read -r line; do handle "$line"; done
+# Infinite loop to keep connection alive
+while true; do
+    nc -U "$SOCKET" | while read -r line; do
+        handle "$line"
+    done
+    echo "DEBUG: Connection lost. Reconnecting..." >> "$LOGFILE"
+    sleep 1
+done &
