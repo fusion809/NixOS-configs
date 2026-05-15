@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# workspace-switch: switch to workspace N using the Hyprland Lua API
+# Waybar passes the workspace name as $1 when used as on-click handler
+ws="${1:-1}"
+echo "$(date) | workspace-switch called with arguments: $@" >> /tmp/waybar-workspace-switch.log
+hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$ws\" }))"

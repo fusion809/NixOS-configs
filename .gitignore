@@ -6,3 +6,9 @@ ds-fhs-env
 wget-log
 core
 dmesg*.log
+*.log
+hl*txt
+hy3*txt
+global_dump.txt
+plugin_dump.txt
+plugins_debug.txt

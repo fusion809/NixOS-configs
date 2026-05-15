@@ -28,9 +28,13 @@
     hy3 = {
       url = "github:outfoxxed/hy3?rev=a7282db2d7ca336d3c9faa5d10d75fc43eed37aa";
     };
+    waybar = {
+      url = "github:Alexays/Waybar";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixvim, hy3, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, nixvim, hy3, waybar, ... }@inputs:
     let username = "fusion809";
     in {
       # also set the defaultPackage for this system to hy3 for convenience

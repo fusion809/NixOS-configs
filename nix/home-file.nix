@@ -5,12 +5,12 @@ let
   nixcfgDir = lib.nixcfgDir;
   dotfilesDir = "${nixcfgDir}/dotfiles";
 in {
-  ".local/share/hyprland/plugins/hy3.so".source =
+  ".local/share/hyprland/plugins/hy3_patched.so".source =
     "${pkgs.hyprlandPlugins.hy3}/lib/libhy3.so";
 
   # Hyprland
-  ".config/hypr/hyprland.conf".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/hyprland.conf";
+  # ".config/hypr/hyprland.conf".source =
+  #   config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/hyprland.conf";
   ".config/hypr/hyprland.lua".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/hyprland.lua";
 

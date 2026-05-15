@@ -4,10 +4,20 @@
   blueman = { enable = true; };
   displayManager = {
     sddm.enable = true;
+    defaultSession = "hyprland";
     autoLogin = {
       enable = true;
       user = username;
     };
+    # sessionPackages = [
+    #   (pkgs.writeTextDir "share/wayland-sessions/hyprland-lua.desktop" ''
+    #     [Desktop Entry]
+    #     Name=Hyprland (Lua)
+    #     Comment=An intelligent dynamic tiling Wayland compositor (Lua Config)
+    #     Exec=Hyprland --config /home/${username}/.config/hypr/hyprland.lua
+    #     Type=Application
+    #   '')
+    # ];
   };
   gvfs = { enable = true; };
   pipewire = {

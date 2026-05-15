@@ -36,6 +36,9 @@
           nativeBuildInputs = [ pkgs.cmake ];
           dontStrip = true;
           cmakeFlags = [ "-DHY3_NO_VERSION_CHECK=ON" ];
+          postPatch = ''
+            sed -i 's/target hyprland version mismatch/ANTIGRAVITY CANARY/g' src/main.cpp
+          '';
           meta = {
             homepage = "https://github.com/outfoxxed/hy3";
             description = "Hyprland plugin for an i3 / sway like manual tiling layout";

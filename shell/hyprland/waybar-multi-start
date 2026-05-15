@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 NIXCFG="$HOME/GitHub/mine/config/NixOS-configs"
 CONFIG_BASE="$NIXCFG/dotfiles/waybar-config.jsonc"
+MODULES="$NIXCFG/dotfiles/waybar-modules.jsonc"
 STYLE="$NIXCFG/dotfiles/style.css"
 
 # Kill all existing waybar instances forcefully
@@ -10,7 +11,26 @@ sleep 0.2
 # Get all monitors and start waybar for each independently
 hyprctl monitors -j | jq -r '.[] | .name' | while read -r m; do
     tmp_config="/tmp/waybar-config-$m.jsonc"
-    # Strip comments for jq
-    sed 's/\/\/.*//g' "$CONFIG_BASE" | jq ".[] | select(.output == \"$m\")" > "$tmp_config"
-    waybar -c "$tmp_config" -s "$STYLE" &
+    # Extract per-monitor config, preserving the include directive
+    python3 -c "
+import json, re, sys
+
+def strip_comments(text):
+    return re.sub(r'//[^\n]*', '', text)
+
+with open('$CONFIG_BASE') as f:
+    configs = json.loads(strip_comments(f.read()))
+
+monitor = next((c for c in configs if c.get('output') == '$m'), None)
+if monitor:
+    monitor['include'] = ['$MODULES']
+    print(json.dumps(monitor, indent=2))
+" > "$tmp_config"
+    if [ -s "$tmp_config" ]; then
+        waybar -c "$tmp_config" -s "$STYLE" &
+    else
+        echo "WARNING: empty config for monitor $m, falling back to direct include"
+        echo "{\"output\": \"$m\", \"include\": [\"$MODULES\"]}" > "$tmp_config"
+        waybar -c "$tmp_config" -s "$STYLE" &
+    fi
 done

@@ -11,5 +11,5 @@ monitors=$(hyprctl monitors -j)
 other_monitor_workspace=$(echo "$monitors" | jq -r '.[] | select(.focused == false) | .activeWorkspace.id')
 
 if [ -n "$other_monitor_workspace" ] && [ "$other_monitor_workspace" != "null" ]; then
-    hyprctl dispatch movetoworkspace "$other_monitor_workspace"
+    hyprctl eval "hl.dispatch(hl.dsp.window.move({ workspace = $other_monitor_workspace }))"
 fi

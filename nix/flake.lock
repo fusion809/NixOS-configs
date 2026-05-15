@@ -53,6 +53,22 @@
         "type": "github"
       }
     },
+    "flake-compat_2": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1767039857,
+        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "type": "github"
+      },
+      "original": {
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
@@ -553,11 +569,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1778794387,
-        "narHash": "sha256-BL04pOS9453Awkeb9f90XBJXBSkWxN+vB7HIgnL0iMM=",
+        "lastModified": 1778811341,
+        "narHash": "sha256-HtGxslt+0Bv3L3itcaRqMF1pE7hmay6S9Y/e/ND25vk=",
         "ref": "master",
-        "rev": "8a1b0127302ea51e05bf4ea5a291743fac442406",
-        "revCount": 998133,
+        "rev": "007b340d73e1515956c2dbf46d4846d8aa922ef6",
+        "revCount": 998210,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -726,7 +742,8 @@
         "nixpkgs-pr": "nixpkgs-pr",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixvim": "nixvim",
-        "vim-src": "vim-src"
+        "vim-src": "vim-src",
+        "waybar": "waybar"
       }
     },
     "systems": {
@@ -790,6 +807,27 @@
         "allRefs": true,
         "type": "git",
         "url": "https://github.com/vim/vim.git"
+      }
+    },
+    "waybar": {
+      "inputs": {
+        "flake-compat": "flake-compat_2",
+        "nixpkgs": [
+          "nixpkgs-unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1777929458,
+        "narHash": "sha256-51R3mIt8cLNvh/X5qe9vOqeJCj0U9KRyemVE5y+OhiU=",
+        "owner": "Alexays",
+        "repo": "Waybar",
+        "rev": "05945748dccce28bf96d26d8f64a9e69a8dd49ba",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Alexays",
+        "repo": "Waybar",
+        "type": "github"
       }
     },
     "xdph": {

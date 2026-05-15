@@ -77,7 +77,12 @@ in {
     extraCompatPackages = with pkgs; [ proton-ge-bin ];
   };
   virt-manager.enable = true;
-  waybar.enable = true;
+  waybar = {
+    enable = true;
+    package = let
+      pkg = inputs.waybar.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    in pkg // { override = args: pkg; };
+  };
 
   zsh = {
     autosuggestions.enable = true;

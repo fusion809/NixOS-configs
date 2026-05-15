@@ -18,111 +18,120 @@ handle() {
     IFS=',' read -r w_address w_workspace w_class w_title <<< "$payload"
     echo "Payload: address=$w_address, workspace=$w_workspace, class=$w_class, title=$w_title" >> "$LOGFILE"
     
+    local target=""
+
     if [[ "$w_class" == "brave-browser" ]]; then
         if [[ "$w_title" == "New Private Tab - Brave" ]]; then
             target=27
         else
             target=15
         fi
-        $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
+        "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $target, window = 'address:0x$w_address', silent = true }))"
 
     elif [[ "$w_class" == "vlc" ]]; then
        (
-           count_25=$($HYPRCTL workspaces -j | jq 'map(select(.id == 25)) | .[0].windows // 0')
-           count_26=$($HYPRCTL workspaces -j | jq 'map(select(.id == 26)) | .[0].windows // 0')
+           local count_25=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 25)) | .[0].windows // 0')
+           local count_26=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 26)) | .[0].windows // 0')
+           local t=""
            
            if [ "$count_25" -eq 0 ]; then
-               target=25
+               t=25
            elif [ "$count_26" -eq 0 ]; then
-               target=26
+               t=26
            elif [ "$count_25" -le "$count_26" ]; then
-               target=25
+               t=25
            else
-               target=26
+               t=26
            fi
-           $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
+           "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
        ) &
 
     elif [[ "$w_class" == "google-chrome" ]]; then
        (
+           local t=""
            # Priority routing for specific titles
            if [[ "$w_title" == *"PBS Job"* ]] || [[ "$w_title" == *"u1126705@umail.usq.edu.au"* ]]; then
-               chrome_on_7=$($HYPRCTL clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 7)] | length')
+               local chrome_on_7=$("$HYPRCTL" clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 7)] | length')
                if [ "$chrome_on_7" -eq 0 ]; then
-                   $HYPRCTL dispatch movetoworkspacesilent "7,address:0x$w_address"
+                   "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 7, window = 'address:0x$w_address', silent = true }))"
                    exit 0
                fi
            elif [[ "$w_title" == *"Boo"* ]]; then
-               chrome_on_12=$($HYPRCTL clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 12)] | length')
+               local chrome_on_12=$("$HYPRCTL" clients -j | jq -r '[.[] | select(.class == "google-chrome" and .workspace.id == 12)] | length')
                if [ "$chrome_on_12" -eq 0 ]; then
-                   $HYPRCTL dispatch movetoworkspacesilent "12,address:0x$w_address"
+                   "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 12, window = 'address:0x$w_address', silent = true }))"
                    exit 0
                fi
            fi
 
            # Automatic check for empty workspaces using window count
-           count_1=$($HYPRCTL workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
+           local count_1=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
+           local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
            
-           existing_title_1=$($HYPRCTL clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
            if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
-               target=1
+               t=1
            else
                # If all are occupied, prompt the user
-               choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
+               local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
                if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
-                   target=$(echo "$choice" | cut -d '(' -f 1)
+                   t=$(echo "$choice" | cut -d '(' -f 1)
+               elif [[ "$choice" == "Current" ]]; then
+                   exit 0
                fi
            fi
 
-           if [[ -n "$target" ]]; then
-               $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
+           if [[ -n "$t" ]]; then
+               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
            fi
        ) &
 
     elif [[ "$w_class" == "virt-viewer" ]] || ( [[ "$w_class" == ".virt-manager-wrapped" ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
        (
-           is_floating=$($HYPRCTL clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating')
+           local is_floating=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating')
            echo "DEBUG virt: addr=0x$w_address class=$w_class title=$w_title is_floating=$is_floating" >> "$LOGFILE"
            if [[ "$is_floating" == "true" ]]; then
                echo "DEBUG virt: floating → skipping routing" >> "$LOGFILE"
                exit 0
            fi
 
-           count_28=$($HYPRCTL workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
-           count_29=$($HYPRCTL workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
-           count_30=$($HYPRCTL workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
-           count_31=$($HYPRCTL workspaces -j | jq 'map(select(.id == 31)) | .[0].windows // 0')
+           local count_28=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
+           local count_29=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
+           local count_30=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
+           local count_31=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 31)) | .[0].windows // 0')
+           local t=""
            
            if [ "$count_28" -eq 0 ]; then
-               target=28
+               t=28
            elif [ "$count_29" -eq 0 ]; then
-               target=29
+               t=29
            elif [ "$count_30" -eq 0 ]; then
-               target=30
+               t=30
            elif [ "$count_31" -eq 0 ]; then
-               target=31
+               t=31
            else
-               choice=$(echo -e "Current\n28\n29\n30\n31" | rofi -dmenu -p "Select Workspace for virt-viewer:")
+               local choice=$(echo -e "Current\n28\n29\n30\n31" | rofi -dmenu -p "Select Workspace for virt-viewer:")
                if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
-                   target="$choice"
+                   t="$choice"
+               elif [[ "$choice" == "Current" ]]; then
+                   exit 0
                fi
            fi
 
-           echo "DEBUG virt: routing to target=$target" >> "$LOGFILE"
-           if [[ -n "$target" ]]; then
-               $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
-               $HYPRCTL dispatch workspace "$target"
+           echo "DEBUG virt: routing to target=$t" >> "$LOGFILE"
+           if [[ -n "$t" ]]; then
+               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
+               "$HYPRCTL" eval "hl.dispatch(hl.dsp.focus({ workspace = $t }))"
            fi
        ) &
 
     elif [[ "$w_class" == "steam_app_1343400" ]]; then
        (
            # RuneScape (steam_app_1343400) - move to workspace 8 silently
-           target=8
-           $HYPRCTL dispatch movetoworkspacesilent "$target,address:0x$w_address"
-           echo "Routed RuneScape (0x$w_address) to workspace $target" >> "$LOGFILE"
+           local t=8
+           "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
+           echo "Routed RuneScape (0x$w_address) to workspace $t" >> "$LOGFILE"
        ) &
-     fi
+      fi
   fi
 }
 

@@ -1,10 +1,20 @@
-local hl = require("hyprland")
+-- Load hy3 plugin first
+hl.exec_cmd("hyprctl plugin load " .. os.getenv("HOME") .. "/.local/share/hyprland/plugins/hy3_patched.so")
 
-------------------
----- PLUGINS -----
-------------------
+-- Visual confirmation that the config is loading
+hl.exec_cmd("hyprctl notify 5 5000 \"rgba(00ff00ff)\" \"Hyprland Lua Config Loaded\"")
+hl.exec_cmd("hyprctl configerrors > /home/fusion809/GitHub/mine/config/NixOS-configs/dotfiles/config_errors.log 2>&1")
 
--- hl.plugin(os.getenv("HOME") .. "/.local/share/hyprland/plugins/hy3.so")
+
+-- Verified hy3 dispatcher signatures:
+-- make_group(string), move_focus(string), move_window(string), expand(string)
+-- focus_tab({ direction = string }) or focus_tab({ index = number })
+local hy3 = hl.plugin.hy3
+
+-- Global bridge for Waybar
+_G.workspace = function(id)
+    hl.dispatch(hl.dsp.focus({ workspace = id }))
+end
 
 -------------------
 ---- VARIABLES ----
@@ -18,6 +28,49 @@ local terminal    = "alacritty"
 local nixcfg      = os.getenv("HOME") .. "/GitHub/mine/config/NixOS-configs"
 local mainMod     = "SUPER"
 
+-- Helper for keybindings
+local function bind(keys, name, arg)
+    local ws = tonumber(arg) or arg
+    local d
+
+    -- hy3 plugin dispatchers (verified signatures)
+    if name == "hy3:makegroup" then
+        d = hy3.make_group(arg)
+    elseif name == "hy3:movefocus" then
+        d = hy3.move_focus(arg)
+    elseif name == "hy3:movewindow" then
+        d = hy3.move_window(arg)
+    elseif name == "hy3:expand" then
+        d = hy3.expand(arg)
+    elseif name == "hy3:focustab" then
+        if arg and arg:match("^index") then
+            d = hy3.focus_tab({ index = tonumber(arg:match("%d+")) })
+        elseif arg == "no" or arg == "nowrap" then
+            -- 'no' was used as a nowrap modifier, skip — not supported in native API
+            d = nil
+        else
+            d = hy3.focus_tab({ direction = arg })
+        end
+    elseif name == "hy3:killactive" then
+        d = hy3.kill_active()
+    -- Native system dispatchers
+    elseif name == "submap" then d = hl.dsp.submap(arg)
+    elseif name == "exec" then d = (hl.dsp.exec_cmd or hl.dsp.exec)(arg)
+    elseif name == "workspace" then d = hl.dsp.focus({ workspace = ws })
+    elseif name == "movetoworkspace" then d = hl.dsp.window.move({ workspace = ws })
+    elseif name == "moveworkspacetomonitor" then d = hl.dsp.workspace.move({ monitor = ws })
+    elseif name == "fullscreen" then d = hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" })
+    elseif name == "togglefloating" then d = hl.dsp.window.float({ action = "toggle" })
+    elseif name == "killactive" then
+        local f = hl.dsp.window.close or hl.dsp.window.kill or hl.dsp.window.close_active
+        if f then d = f() end
+    end
+
+    if d then
+        hl.bind(keys, d)
+    end
+end
+
 -------------------
 ---- AUTOSTART ----
 -------------------
@@ -26,28 +79,43 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(nixcfg .. "/shell/hyprland/waybar-multi-start")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/workspace-router")
     hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/wallpaper systematic"')
-    hl.exec_cmd("virt-manager")
-    hl.exec_cmd("brave")
-    hl.exec_cmd("discord")
-    hl.exec_cmd("blueman-manager")
-    hl.exec_cmd("google-chrome-stable")
-    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=mdpkiolbdkhdjpekfbkbmhigcaggjagi")
-    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=jneocipojkkahfcibhjaiilegofacenn")
-    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm")
-    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=akpamiohjfcnimfljfndmaldlcfphjmp")
-    hl.exec_cmd("kitty -e --hold " .. nixcfg .. "/shell/hyprland/hyfetch-run")
-    hl.exec_cmd("winboat")
-    hl.exec_cmd("kdeconnect-app")
-    hl.exec_cmd(fileManager .. " " .. os.getenv("HOME") .. "/.files")
+    --hl.exec_cmd("virt-manager")
+    --hl.exec_cmd("brave")
+    --hl.exec_cmd("discord")
+    --hl.exec_cmd("blueman-manager")
+    --hl.exec_cmd("google-chrome-stable")
+    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=mdpkiolbdkhdjpekfbkbmhigcaggjagi")
+    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=jneocipojkkahfcibhjaiilegofacenn")
+    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm")
+    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=akpamiohjfcnimfljfndmaldlcfphjmp")
+    --hl.exec_cmd("kitty -e --hold " .. nixcfg .. "/shell/hyprland/hyfetch-run")
+    --hl.exec_cmd("winboat")
+    --hl.exec_cmd("kdeconnect-app")
+    --hl.exec_cmd(fileManager .. " " .. os.getenv("HOME") .. "/.files")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/debian13")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/ssh-debian-alacritty")
     hl.exec_cmd("wl-paste --watch cliphist store")
     hl.exec_cmd("wl-clip-persist --clipboard regular")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/killOldSwayBg")
-    hl.exec_cmd(nixcfg .. "/shell/hyprland/network-daemon")
-    hl.exec_cmd(nixcfg .. "/shell/hyprland/gpu-daemon")
-    hl.exec_cmd(nixcfg .. "/shell/hyprland/system-daemon")
+    --hl.exec_cmd(nixcfg .. "/shell/hyprland/network-daemon")
+    --hl.exec_cmd(nixcfg .. "/shell/hyprland/gpu-daemon")
+    --hl.exec_cmd(nixcfg .. "/shell/hyprland/system-daemon")
     hl.exec_cmd("/run/current-system/sw/bin/kdeconnectd")
+    hl.exec_cmd("antigravity")
+    
+    -- Configure hy3 after it has loaded
+    hl.config({
+        ["plugin:hy3:tabs:border_width"] = 0,
+        ["plugin:hy3:tabs:col.active"] = "rgba(ff55ffff)",
+        ["plugin:hy3:tabs:col.active.text"] = "rgba(00000000)",
+        ["plugin:hy3:tabs:col.inactive"] = "rgba(333333ff)",
+        ["plugin:hy3:tabs:col.inactive.text"] = "rgba(ffffffff)",
+        ["plugin:hy3:tabs:col.urgent"] = "rgba(ff0000ff)",
+        ["plugin:hy3:tabs:col.urgent.text"] = "rgba(000000ff)",
+        ["plugin:hy3:autotile:enable"] = true,
+        ["plugin:hy3:autotile:trigger_width"] = 800,
+        ["plugin:hy3:autotile:trigger_height"] = 500,
+    })
 end)
 
 ---------------------------
@@ -62,6 +130,9 @@ hl.env("HYPRCURSOR_SIZE", "24")
 -----------------------
 
 hl.config({
+    plugin = {
+        os.getenv("HOME") .. "/.local/share/hyprland/plugins/hy3_patched.so",
+    },
     general = {
         gaps_in = 0,
         gaps_out = 0,
@@ -143,203 +214,205 @@ hl.workspace_rule({ workspace = 33, monitor = monitors.HDMI })
 ----------------------
 
 -- Resize submap
-hl.bind(mainMod .. " + SHIFT + R", hl.dsp.submap("resize"))
+bind(mainMod .. " + SHIFT + R", "submap", "resize")
 
-hl.submap("resize", {
-    { "", "h", hl.dsp.window.resize({ size = "-10 0" }) },
-    { "", "l", hl.dsp.window.resize({ size = "10 0" }) },
-    { "", "k", hl.dsp.window.resize({ size = "0 -10" }) },
-    { "", "j", hl.dsp.window.resize({ size = "0 10" }) },
-    { "", "left",  hl.dsp.window.resize({ size = "-10 0" }) },
-    { "", "right", hl.dsp.window.resize({ size = "10 0" }) },
-    { "", "up",    hl.dsp.window.resize({ size = "0 -10" }) },
-    { "", "down",  hl.dsp.window.resize({ size = "0 10" }) },
-    { "", "escape", hl.dsp.submap("reset") },
-})
+hl.define_submap("resize", function()
+    bind("h", "resizeactive", "-10 0")
+    bind("l", "resizeactive", "10 0")
+    bind("k", "resizeactive", "0 -10")
+    bind("j", "resizeactive", "0 10")
+    bind("left",  "resizeactive", "-10 0")
+    bind("right", "resizeactive", "10 0")
+    bind("up",    "resizeactive", "0 -10")
+    bind("down",  "resizeactive", "0 10")
+    bind("escape", "submap", "reset")
+end)
 
 -- Common binds
-hl.bind("", "Print", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/screenshot"))
-hl.bind(mainMod .. " + d", hl.dsp.exec_cmd('rofi -show drun -show-icons -icon-theme "WhiteSur-dark"'))
-hl.bind(mainMod .. " + CTRL + f", hl.dsp.exec_cmd(browser .. " https://www.nerdfonts.com/cheat-sheet"))
-hl.bind(mainMod .. " + o", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/runescape"))
-hl.bind(mainMod .. " + SHIFT + p", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + CTRL + n", hl.dsp.exec_cmd(browser .. " https://search.nixos.org/packages"))
-hl.bind(mainMod .. " + CTRL + o", hl.dsp.exec_cmd(browser .. " https://search.nixos.org/options"))
-hl.bind(mainMod .. " + CTRL + r", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/repair"))
-hl.bind(mainMod .. " + CTRL + u", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/update"))
-hl.bind(mainMod .. " + CTRL + w", hl.dsp.exec_cmd(browser .. " https://wiki.nixos.org/"))
-hl.bind(mainMod .. " + SHIFT + n", hl.dsp.exec_cmd(editor .. " " .. nixcfg))
-hl.bind(mainMod .. " + g", hl.dsp.exec_cmd("alacritty -e gtop"))
-hl.bind(mainMod .. " + h", hl.dsp.exec_cmd("kitty -e --hold " .. nixcfg .. "/shell/hyprland/hyfetch-run"))
-hl.bind(mainMod .. " + v", hl.dsp.exec_cmd("virt-manager"))
-hl.bind(mainMod .. " + w", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/wallpaper systematic"))
-hl.bind(mainMod .. " + z", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/wallpaper systematic previous"))
-hl.bind(mainMod .. " + s", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/wallpaper random"))
-hl.bind(mainMod .. " + n", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/wallpaper-no-specify"))
-hl.bind(mainMod .. " + b", hl.dsp.exec_cmd("brave"))
-hl.bind(mainMod .. " + SHIFT + b", hl.dsp.exec_cmd("blueman-manager"))
-hl.bind(mainMod .. " + m", hl.dsp.exec_cmd("/opt/google/chrome/google-chrome --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm"))
-hl.bind(mainMod .. " + c", hl.dsp.exec_cmd("/opt/google/chrome/google-chrome --profile-directory=Default --app-id=mdpkiolbdkhdjpekfbkbmhigcaggjagi"))
-hl.bind(mainMod .. " + e", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/wallpaper-rm"))
-hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd("/opt/google/chrome/google-chrome --profile-directory=Default --app-id=jneocipojkkahfcibhjaiilegofacenn"))
-hl.bind(mainMod .. " + SHIFT + F", hl.dsp.exec_cmd("/opt/google/chrome/google-chrome --profile-directory=Default --app-id=kippjfofjhjlffjecoapiogbkgbpmgej"))
-hl.bind(mainMod .. " + SHIFT + I", hl.dsp.exec_cmd("/opt/google/chrome/google-chrome --profile-directory=Default --app-id=akpamiohjfcnimfljfndmaldlcfphjmp"))
-hl.bind(mainMod .. " + SHIFT + q", hl.dsp.exec_cmd("/opt/google/chrome/google-chrome --profile-directory=Default --app-id=cechoboadpfjgoaooidphlandgelehhi"))
-hl.bind(mainMod .. " + SHIFT + w", hl.dsp.exec_cmd(menu))
+bind("Print", "exec", nixcfg .. "/shell/hyprland/screenshot")
+bind(mainMod .. " + d", "exec", "rofi -show drun -show-icons -icon-theme 'WhiteSur-dark'")
+bind(mainMod .. " + CTRL + f", "exec", browser .. " https://www.nerdfonts.com/cheat-sheet")
+bind(mainMod .. " + o", "exec", nixcfg .. "/shell/hyprland/runescape")
+bind(mainMod .. " + SHIFT + p", "exec", fileManager)
+bind(mainMod .. " + CTRL + n", "exec", browser .. " https://search.nixos.org/packages")
+bind(mainMod .. " + CTRL + o", "exec", browser .. " https://search.nixos.org/options")
+bind(mainMod .. " + CTRL + r", "exec", nixcfg .. "/shell/hyprland/repair")
+bind(mainMod .. " + CTRL + u", "exec", nixcfg .. "/shell/hyprland/update")
+bind(mainMod .. " + CTRL + w", "exec", browser .. " https://wiki.nixos.org/")
+bind(mainMod .. " + SHIFT + n", "exec", editor .. " " .. nixcfg)
+bind(mainMod .. " + g", "exec", "alacritty -e gtop")
+bind(mainMod .. " + h", "exec", "kitty -e --hold " .. nixcfg .. "/shell/hyprland/hyfetch-run")
+bind(mainMod .. " + v", "exec", "virt-manager")
+bind(mainMod .. " + w", "exec", nixcfg .. "/shell/hyprland/wallpaper systematic")
+bind(mainMod .. " + z", "exec", nixcfg .. "/shell/hyprland/wallpaper systematic previous")
+bind(mainMod .. " + s", "exec", nixcfg .. "/shell/hyprland/wallpaper random")
+bind(mainMod .. " + n", "exec", nixcfg .. "/shell/hyprland/wallpaper-no-specify")
+bind(mainMod .. " + b", "exec", "brave")
+bind(mainMod .. " + SHIFT + b", "exec", "blueman-manager")
+bind(mainMod .. " + m", "exec", "/opt/google/chrome/google-chrome --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm")
+bind(mainMod .. " + c", "exec", "/opt/google/chrome/google-chrome --profile-directory=Default --app-id=mdpkiolbdkhdjpekfbkbmhigcaggjagi")
+bind(mainMod .. " + e", "exec", nixcfg .. "/shell/hyprland/wallpaper-rm")
+bind(mainMod .. " + SHIFT + D", "exec", "/opt/google/chrome/google-chrome --profile-directory=Default --app-id=jneocipojkkahfcibhjaiilegofacenn")
+bind(mainMod .. " + SHIFT + F", "exec", "/opt/google/chrome/google-chrome --profile-directory=Default --app-id=kippjfofjhjlffjecoapiogbkgbpmgej")
+bind(mainMod .. " + SHIFT + I", "exec", "/opt/google/chrome/google-chrome --profile-directory=Default --app-id=akpamiohjfcnimfljfndmaldlcfphjmp")
+bind(mainMod .. " + SHIFT + q", "exec", "/opt/google/chrome/google-chrome --profile-directory=Default --app-id=cechoboadpfjgoaooidphlandgelehhi")
+bind(mainMod .. " + SHIFT + w", "exec", menu)
 
 -- Navigation
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+-- Navigation (using hy3 dispatchers for the hy3 layout)
+bind(mainMod .. " + left",  "hy3:movefocus", "l")
+bind(mainMod .. " + right", "hy3:movefocus", "r")
+bind(mainMod .. " + up",    "hy3:movefocus", "u")
+bind(mainMod .. " + down",  "hy3:movefocus", "d")
 
 -- Move windows (using hyprland built-in dispatchers as fallback or hy3 if available via hyprctl)
-hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ direction = "left" }))
-hl.bind(mainMod .. " + SHIFT + K", hl.dsp.window.move({ direction = "down" }))
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.window.move({ direction = "up" }))
-hl.bind(mainMod .. " + SHIFT + semicolon", hl.dsp.window.move({ direction = "right" }))
+-- Move windows
+bind(mainMod .. " + SHIFT + J", "hy3:movewindow", "l")
+bind(mainMod .. " + SHIFT + K", "hy3:movewindow", "d")
+bind(mainMod .. " + SHIFT + L", "hy3:movewindow", "u")
+bind(mainMod .. " + SHIFT + semicolon", "hy3:movewindow", "r")
 
 -- hy3 specifics
-hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.exec_cmd("hyprctl dispatch hy3:movewindow l"))
-hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.exec_cmd("hyprctl dispatch hy3:movewindow d"))
-hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.exec_cmd("hyprctl dispatch hy3:movewindow u"))
-hl.bind(mainMod .. " + SHIFT + right", hl.dsp.exec_cmd("hyprctl dispatch hy3:movewindow r"))
+bind(mainMod .. " + SHIFT + left",  "hy3:movewindow", "l")
+bind(mainMod .. " + SHIFT + down",  "hy3:movewindow", "d")
+bind(mainMod .. " + SHIFT + up",    "hy3:movewindow", "u")
+bind(mainMod .. " + SHIFT + right", "hy3:movewindow", "r")
 
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
-hl.bind(mainMod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd("hyprctl dispatch hy3:killactive"))
+bind(mainMod .. " + F", "fullscreen", "0")
+bind(mainMod .. " + SHIFT + SPACE", "togglefloating")
+bind(mainMod .. " + Q", "killactive")
 
-hl.bind(mainMod .. " + SHIFT + s", hl.dsp.exec_cmd("sudo poweroff"))
-hl.bind("", "XF86HomePage", hl.dsp.exec_cmd("dolphin"))
-hl.bind("", "XF86Calculator", hl.dsp.exec_cmd("octave"))
-hl.bind(mainMod .. " + r", hl.dsp.exec_cmd("hyprctl reload; " .. nixcfg .. "/shell/hyprland/waybar-multi-start"))
+bind(mainMod .. " + SHIFT + s", "exec", "sudo poweroff")
+bind("XF86HomePage", "exec", "dolphin")
+bind("XF86Calculator", "exec", "octave")
+bind(mainMod .. " + r", "exec", "hyprctl reload; " .. nixcfg .. "/shell/hyprland/waybar-multi-start")
 
 -- Monitor workspace move
-hl.bind(mainMod .. " + CTRL + 2", hl.dsp.exec_cmd("hyprctl dispatch moveworkspacetomonitor $(hyprctl activeworkspace -j | jq .id) 0"))
-hl.bind(mainMod .. " + CTRL + 1", hl.dsp.exec_cmd("hyprctl dispatch moveworkspacetomonitor $(hyprctl activeworkspace -j | jq .id) 1"))
-hl.bind(mainMod .. " + CTRL + M", hl.dsp.exec_cmd(nixcfg .. "/shell/user/move-window-to-other-monitor.sh"))
+bind(mainMod .. " + CTRL + 2", "moveworkspacetomonitor", "0")
+bind(mainMod .. " + CTRL + 1", "moveworkspacetomonitor", "1")
+bind(mainMod .. " + CTRL + M", "exec", nixcfg .. "/shell/hyprland/move-window-to-other-monitor")
 
 -- Workspace switching
-hl.bind("", "F1", hl.dsp.workspace.focus(1))
-hl.bind(mainMod .. " + 2", hl.dsp.workspace.focus(2))
-hl.bind("", "F3", hl.dsp.workspace.focus(3))
-hl.bind("", "F4", hl.dsp.workspace.focus(4))
-hl.bind("", "F5", hl.dsp.workspace.focus(5))
-hl.bind("", "F6", hl.dsp.workspace.focus(6))
-hl.bind("", "F7", hl.dsp.workspace.focus(7))
-hl.bind("", "F8", hl.dsp.workspace.focus(8))
-hl.bind("", "F9", hl.dsp.workspace.focus(9))
-hl.bind("", "F10", hl.dsp.workspace.focus(10))
-hl.bind("", "F11", hl.dsp.workspace.focus(11))
-hl.bind("", "F12", hl.dsp.workspace.focus(12))
-hl.bind(mainMod .. " + Print", hl.dsp.workspace.focus(13))
-hl.bind("", "Pause", hl.dsp.workspace.focus(14))
-hl.bind(mainMod .. " + Insert", hl.dsp.workspace.focus(15))
-hl.bind("", "Home", hl.dsp.workspace.focus(16))
-hl.bind("", "Page_Up", hl.dsp.workspace.focus(17))
-hl.bind(mainMod .. " + Delete", hl.dsp.workspace.focus(18))
-hl.bind("", "End", hl.dsp.workspace.focus(19))
-hl.bind("", "Page_Down", hl.dsp.workspace.focus(20))
-hl.bind(mainMod .. " + F1", hl.dsp.workspace.focus(21))
-hl.bind(mainMod .. " + F2", hl.dsp.workspace.focus(22))
-hl.bind(mainMod .. " + F3", hl.dsp.workspace.focus(23))
-hl.bind(mainMod .. " + F4", hl.dsp.workspace.focus(24))
-hl.bind(mainMod .. " + F5", hl.dsp.workspace.focus(25))
-hl.bind(mainMod .. " + F6", hl.dsp.workspace.focus(26))
-hl.bind(mainMod .. " + F7", hl.dsp.workspace.focus(27))
-hl.bind(mainMod .. " + F8", hl.dsp.workspace.focus(28))
-hl.bind(mainMod .. " + F9", hl.dsp.workspace.focus(29))
-hl.bind(mainMod .. " + F10", hl.dsp.workspace.focus(30))
-hl.bind(mainMod .. " + F11", hl.dsp.workspace.focus(31))
-hl.bind(mainMod .. " + F12", hl.dsp.workspace.focus(32))
-hl.bind(mainMod .. " + Pause", hl.dsp.workspace.focus(33))
+bind("F1", "workspace", "1")
+bind(mainMod .. " + 2", "workspace", "2")
+bind("F3", "workspace", "3")
+bind("F4", "workspace", "4")
+bind("F5", "workspace", "5")
+bind("F6", "workspace", "6")
+bind("F7", "workspace", "7")
+bind("F8", "workspace", "8")
+bind("F9", "workspace", "9")
+bind("F10", "workspace", "10")
+bind("F11", "workspace", "11")
+bind("F12", "workspace", "12")
+bind(mainMod .. " + Print", "workspace", "13")
+bind("Pause", "workspace", "14")
+bind(mainMod .. " + Insert", "workspace", "15")
+bind("Home", "workspace", "16")
+bind("Page_Up", "workspace", "17")
+bind(mainMod .. " + Delete", "workspace", "18")
+bind("End", "workspace", "19")
+bind("Page_Down", "workspace", "20")
+bind(mainMod .. " + F1", "workspace", "21")
+bind(mainMod .. " + F2", "workspace", "22")
+bind(mainMod .. " + F3", "workspace", "23")
+bind(mainMod .. " + F4", "workspace", "24")
+bind(mainMod .. " + F5", "workspace", "25")
+bind(mainMod .. " + F6", "workspace", "26")
+bind(mainMod .. " + F7", "workspace", "27")
+bind(mainMod .. " + F8", "workspace", "28")
+bind(mainMod .. " + F9", "workspace", "29")
+bind(mainMod .. " + F10", "workspace", "30")
+bind(mainMod .. " + F11", "workspace", "31")
+bind(mainMod .. " + F12", "workspace", "32")
+bind(mainMod .. " + Pause", "workspace", "33")
 
 -- Move window to workspace
 for i = 1, 10 do
-    hl.bind(mainMod .. " + SHIFT + " .. (i % 10), hl.dsp.window.move({ workspace = i, silent = true }))
+    bind(mainMod .. " + SHIFT + " .. (i % 10), "movetoworkspace", tostring(i))
 end
 
-hl.bind(mainMod .. " + SHIFT + F1", hl.dsp.window.move({ workspace = 11, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F2", hl.dsp.window.move({ workspace = 12, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F3", hl.dsp.window.move({ workspace = 13, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F4", hl.dsp.window.move({ workspace = 14, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F5", hl.dsp.window.move({ workspace = 15, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F6", hl.dsp.window.move({ workspace = 16, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F7", hl.dsp.window.move({ workspace = 17, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F8", hl.dsp.window.move({ workspace = 18, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F9", hl.dsp.window.move({ workspace = 19, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F10", hl.dsp.window.move({ workspace = 20, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F11", hl.dsp.window.move({ workspace = 21, silent = true }))
-hl.bind(mainMod .. " + SHIFT + F12", hl.dsp.window.move({ workspace = 22, silent = true }))
-hl.bind(mainMod .. " + SHIFT + Print", hl.dsp.window.move({ workspace = 23, silent = true }))
-hl.bind(mainMod .. " + SHIFT + Pause", hl.dsp.window.move({ workspace = 24, silent = true }))
-hl.bind(mainMod .. " + SHIFT + Insert", hl.dsp.window.move({ workspace = 25, silent = true }))
-hl.bind(mainMod .. " + SHIFT + Home", hl.dsp.window.move({ workspace = 26, silent = true }))
-hl.bind(mainMod .. " + SHIFT + Page_Up", hl.dsp.window.move({ workspace = 27, silent = true }))
-hl.bind(mainMod .. " + SHIFT + Delete", hl.dsp.window.move({ workspace = 28, silent = true }))
-hl.bind(mainMod .. " + SHIFT + End", hl.dsp.window.move({ workspace = 29, silent = true }))
-hl.bind(mainMod .. " + SHIFT + Page_Down", hl.dsp.window.move({ workspace = 30, silent = true }))
-hl.bind(mainMod .. " + SHIFT + grave", hl.dsp.window.move({ workspace = 31, silent = true }))
-hl.bind(mainMod .. " + SHIFT + minus", hl.dsp.window.move({ workspace = 32, silent = true }))
-hl.bind(mainMod .. " + SHIFT + equal", hl.dsp.window.move({ workspace = 33, silent = true }))
+bind(mainMod .. " + SHIFT + F1", "movetoworkspace", "11")
+bind(mainMod .. " + SHIFT + F2", "movetoworkspace", "12")
+bind(mainMod .. " + SHIFT + F3", "movetoworkspace", "13")
+bind(mainMod .. " + SHIFT + F4", "movetoworkspace", "14")
+bind(mainMod .. " + SHIFT + F5", "movetoworkspace", "15")
+bind(mainMod .. " + SHIFT + F6", "movetoworkspace", "16")
+bind(mainMod .. " + SHIFT + F7", "movetoworkspace", "17")
+bind(mainMod .. " + SHIFT + F8", "movetoworkspace", "18")
+bind(mainMod .. " + SHIFT + F9", "movetoworkspace", "19")
+bind(mainMod .. " + SHIFT + F10", "movetoworkspace", "20")
+bind(mainMod .. " + SHIFT + F11", "movetoworkspace", "21")
+bind(mainMod .. " + SHIFT + F12", "movetoworkspace", "22")
+bind(mainMod .. " + SHIFT + Print", "movetoworkspace", "23")
+bind(mainMod .. " + SHIFT + Pause", "movetoworkspace", "24")
+bind(mainMod .. " + SHIFT + Insert", "movetoworkspace", "25")
+bind(mainMod .. " + SHIFT + Home", "movetoworkspace", "26")
+bind(mainMod .. " + SHIFT + Page_Up", "movetoworkspace", "27")
+bind(mainMod .. " + SHIFT + Delete", "movetoworkspace", "28")
+bind(mainMod .. " + SHIFT + End", "movetoworkspace", "29")
+bind(mainMod .. " + SHIFT + Page_Down", "movetoworkspace", "30")
+bind(mainMod .. " + SHIFT + grave", "movetoworkspace", "31")
+bind(mainMod .. " + SHIFT + minus", "movetoworkspace", "32")
+bind(mainMod .. " + SHIFT + equal", "movetoworkspace", "33")
 
 -- Terminal
-hl.bind(mainMod .. " + tab", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + k", hl.dsp.exec_cmd("kitty"))
-hl.bind(mainMod .. " + SHIFT + tab", hl.dsp.exec_cmd("focus-terminal"))
+bind(mainMod .. " + tab", "exec", terminal)
+bind(mainMod .. " + RETURN", "exec", terminal)
+bind(mainMod .. " + k", "exec", "kitty")
+bind(mainMod .. " + SHIFT + tab", "exec", "focus-terminal")
 
 -- System controls
-hl.bind("", "XF86AudioRaiseVolume", hl.dsp.exec_cmd("pactl set-sink-volume @DEFAULT_SINK@ +5%"))
-hl.bind("", "XF86AudioLowerVolume", hl.dsp.exec_cmd("pactl set-sink-volume @DEFAULT_SINK@ -5%"))
-hl.bind("", "XF86AudioMute", hl.dsp.exec_cmd("pactl set-sink-mute @DEFAULT_SINK@ toggle"))
-hl.bind("", "XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"))
-hl.bind("", "XF86AudioNext", hl.dsp.exec_cmd("playerctl next"))
-hl.bind("", "XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"))
+bind("XF86AudioRaiseVolume", "exec", "pactl set-sink-volume @DEFAULT_SINK@ +5%")
+bind("XF86AudioLowerVolume", "exec", "pactl set-sink-volume @DEFAULT_SINK@ -5%")
+bind("XF86AudioMute", "exec", "pactl set-sink-mute @DEFAULT_SINK@ toggle")
+bind("XF86AudioPlay", "exec", "playerctl play-pause")
+bind("XF86AudioNext", "exec", "playerctl next")
+bind("XF86AudioPrev", "exec", "playerctl previous")
 
 ----------------------
 ---- WINDOW RULES ----
 ----------------------
 
-hl.window_rule({ match = { initialClass = "org.kde.ksecretd" }, workspace = 1 })
-hl.window_rule({ match = { initialClass = "SpaceCadetPinball" }, float = true })
-hl.window_rule({ match = { initialClass = "eog" }, float = true, size = "1000 700", center = true })
-hl.window_rule({ match = { initialClass = "org.gnome.eog" }, float = true, size = "1000 700", center = true })
-hl.window_rule({ match = { initialClass = "steam_app_1343400" }, tile = true, suppress_event = "activate activatefocus" })
+hl.window_rule({ match = { initial_class = "org.kde.ksecretd" }, workspace = 1 })
+hl.window_rule({ match = { initial_class = "SpaceCadetPinball" }, float = true })
+hl.window_rule({ match = { initial_class = "eog" }, float = true, size = "1000 700", center = true })
+hl.window_rule({ match = { initial_class = "org.gnome.eog" }, float = true, size = "1000 700", center = true })
+hl.window_rule({ match = { initial_class = "steam_app_1343400" }, tile = true, suppress_event = "activate activatefocus" })
 hl.window_rule({ match = { title = "Gmail" }, float = true })
-hl.window_rule({ match = { initialTitle = "Gmail" }, float = true })
+hl.window_rule({ match = { initial_title = "Gmail" }, float = true })
 hl.window_rule({ match = { title = "Google Chrome" }, float = true })
-hl.window_rule({ match = { initialTitle = "Google Chrome" }, float = true })
+hl.window_rule({ match = { initial_title = "Google Chrome" }, float = true })
 hl.window_rule({ match = { class = "Alacritty" }, opacity = "0.8 0.8" })
 hl.window_rule({ match = { class = "kitty" }, opacity = "0.6 0.6", workspace = 2, float = true, size = "815 400", move = "1104 679" })
-hl.window_rule({ match = { initialClass = ".blueman-manager-wrapped" }, workspace = 3 })
-hl.window_rule({ match = { initialClass = "winboat" }, workspace = 4 })
-hl.window_rule({ match = { initialClass = "Code" }, workspace = 5 })
-hl.window_rule({ match = { initialClass = "antigravity" }, workspace = 5 })
-hl.window_rule({ match = { initialClass = "xfreerdp" }, workspace = 6 })
+hl.window_rule({ match = { initial_class = ".blueman-manager-wrapped" }, workspace = 3 })
+hl.window_rule({ match = { initial_class = "winboat" }, workspace = 4 })
+hl.window_rule({ match = { initial_class = "Code" }, workspace = 5 })
+hl.window_rule({ match = { initial_class = "antigravity" }, workspace = 5 })
+hl.window_rule({ match = { initial_class = "xfreerdp" }, workspace = 6 })
 hl.window_rule({ match = { title = "ved" }, workspace = 7 })
-hl.window_rule({ match = { initialTitle = "ged" }, workspace = 7 })
-hl.window_rule({ match = { initialClass = "ffxivlauncher64.exe" }, workspace = 8 })
-hl.window_rule({ match = { initialClass = "ffxiv_dx11.exe" }, workspace = 8 })
-hl.window_rule({ match = { initialClass = "chrome-hnpfjngllnobngcgfapefoaidbinmjnm-Default" }, workspace = 9 })
-hl.window_rule({ match = { initialClass = "chrome-mdpkiolbdkhdjpekfbkbmhigcaggjagi-Default" }, workspace = 10 })
+hl.window_rule({ match = { initial_title = "ged" }, workspace = 7 })
+hl.window_rule({ match = { initial_class = "ffxivlauncher64.exe" }, workspace = 8 })
+hl.window_rule({ match = { initial_class = "ffxiv_dx11.exe" }, workspace = 8 })
+hl.window_rule({ match = { initial_class = "chrome-hnpfjngllnobngcgfapefoaidbinmjnm-Default" }, workspace = 9 })
+hl.window_rule({ match = { initial_class = "chrome-mdpkiolbdkhdjpekfbkbmhigcaggjagi-Default" }, workspace = 10 })
 hl.window_rule({ match = { title = "Google Chat - Chat" }, workspace = 10 })
-hl.window_rule({ match = { initialClass = "discord" }, workspace = 11 })
+hl.window_rule({ match = { initial_class = "discord" }, workspace = 11 })
 hl.window_rule({ match = { title = "WhatsApp Web" }, workspace = 12 })
-hl.window_rule({ match = { initialClass = "org.kde.dolphin" }, workspace = 13 })
-hl.window_rule({ match = { initialClass = "org.kde.kdeconnect.app" }, workspace = 14 })
-hl.window_rule({ match = { initialClass = "chrome-akpamiohjfcnimfljfndmaldlcfphjmp-Default" }, workspace = 16 })
-hl.window_rule({ match = { initialClass = "net.lutris.Lutris" }, workspace = 17 })
-hl.window_rule({ match = { initialClass = "chrome-jneocipojkkahfcibhjaiilegofacenn-Default" }, workspace = 19 })
-hl.window_rule({ match = { initialClass = "steam" }, workspace = 21 })
-hl.window_rule({ match = { initialClass = "steam_app_218620" }, workspace = 22 })
-hl.window_rule({ match = { initialClass = "texstudio" }, workspace = 24 })
+hl.window_rule({ match = { initial_class = "org.kde.dolphin" }, workspace = 13 })
+hl.window_rule({ match = { initial_class = "org.kde.kdeconnect.app" }, workspace = 14 })
+hl.window_rule({ match = { initial_class = "chrome-akpamiohjfcnimfljfndmaldlcfphjmp-Default" }, workspace = 16 })
+hl.window_rule({ match = { initial_class = "net.lutris.Lutris" }, workspace = 17 })
+hl.window_rule({ match = { initial_class = "chrome-jneocipojkkahfcibhjaiilegofacenn-Default" }, workspace = 19 })
+hl.window_rule({ match = { initial_class = "steam" }, workspace = 21 })
+hl.window_rule({ match = { initial_class = "steam_app_218620" }, workspace = 22 })
+hl.window_rule({ match = { initial_class = "texstudio" }, workspace = 24 })
 hl.window_rule({ match = { title = "Virtual Machine Manager" }, workspace = 28 })
-hl.window_rule({ match = { initialClass = "DiscoveryStudio2025-bin" }, workspace = 32 })
-hl.window_rule({ match = { initialClass = "org.openchemistry.Avogadro2" }, workspace = 32 })
-hl.window_rule({ match = { initialClass = "PyMOL" }, workspace = 32 })
-hl.window_rule({ match = { initialClass = "org-openscience-jmol-app-jmolpanel-JmolPanel" }, workspace = 32 })
-hl.window_rule({ match = { initialClass = "install4j-chemaxon-marvin-Sketch_msketch" }, workspace = 32 })
+hl.window_rule({ match = { initial_class = "DiscoveryStudio2025-bin" }, workspace = 32 })
+hl.window_rule({ match = { initial_class = "org.openchemistry.Avogadro2" }, workspace = 32 })
+hl.window_rule({ match = { initial_class = "PyMOL" }, workspace = 32 })
+hl.window_rule({ match = { initial_class = "org-openscience-jmol-app-jmolpanel-JmolPanel" }, workspace = 32 })
+hl.window_rule({ match = { initial_class = "install4j-chemaxon-marvin-Sketch_msketch" }, workspace = 32 })
 hl.window_rule({ match = { title = "2019 Skype.png - 853x909 - 100% - Gwenview" }, workspace = 33 })
 hl.window_rule({ match = { title = "DP 2018.png - 427x550 - 100% - Gwenview" }, workspace = 33 })
 
@@ -347,42 +420,21 @@ hl.window_rule({ match = { title = "DP 2018.png - 427x550 - 100% - Gwenview" }, 
 ---- PLUGIN SETS ----
 ---------------------
 
-hl.config({
-    plugin = {
-        hy3 = {
-            tabs = {
-                border_width = 0,
-                col = {
-                    active = "rgba(ff55ffff)",
-                    ["active.text"] = "rgba(00000000)",
-                    inactive = "rgba(333333ff)",
-                    ["inactive.text"] = "rgba(ffffffff)",
-                    urgent = "rgba(ff0000ff)",
-                    ["urgent.text"] = "rgba(000000ff)",
-                }
-            },
-            autotile = {
-                enable = true,
-                trigger_width = 800,
-                trigger_height = 500,
-            }
-        }
-    }
-})
 
-hl.bind(mainMod .. " + t", hl.dsp.exec_cmd("hyprctl dispatch hy3:makegroup tab"))
-hl.bind(mainMod .. " + a", hl.dsp.exec_cmd("hyprctl dispatch hy3:expand expand"))
-hl.bind(mainMod .. " + SHIFT + p", hl.dsp.exec_cmd("hyprctl dispatch hy3:focustab l"))
-hl.bind(mainMod .. " + x", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/waybar-toggle-monitor"))
-hl.bind(mainMod .. " + SHIFT + x", hl.dsp.exec_cmd(nixcfg .. "/shell/hyprland/focustab-no"))
+
+bind(mainMod .. " + t", "hy3:makegroup", "tab")
+bind(mainMod .. " + a", "hy3:expand", "expand")
+bind(mainMod .. " + SHIFT + p", "hy3:focustab", "l")
+bind(mainMod .. " + x", "exec", nixcfg .. "/shell/hyprland/waybar-toggle-monitor")
+bind(mainMod .. " + SHIFT + x", "hy3:focustab", "r")
 
 for i = 1, 9 do
-    hl.bind(mainMod .. " + ALT + " .. i, hl.dsp.exec_cmd("hyprctl dispatch hy3:focustab index " .. i))
+    bind(mainMod .. " + ALT + " .. i, "hy3:focustab", "index " .. i)
 end
-hl.bind(mainMod .. " + ALT + 0", hl.dsp.exec_cmd("hyprctl dispatch hy3:focustab index 10"))
+bind(mainMod .. " + ALT + 0", "hy3:focustab", "index 10")
 
 for i = 1, 10 do
-    hl.bind(mainMod .. " + ALT + F" .. i, hl.dsp.exec_cmd("hyprctl dispatch hy3:focustab index " .. (10 + i)))
+    bind(mainMod .. " + ALT + F" .. i, "hy3:focustab", "index " .. (10 + i))
 end
 
 --------------------
@@ -394,4 +446,6 @@ hl.device({
     kb_layout = "us,br",
 })
 
-hl.bind(mainMod, "space", hl.dsp.exec_cmd("hyprctl switchxkblayout current next"))
+bind(mainMod .. " + space", "exec", "hyprctl switchxkblayout current next")
+
+
