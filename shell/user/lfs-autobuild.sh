@@ -571,31 +571,41 @@ fi
 SETUP_COMMANDS=""
 
 if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
-PAGE_URL=""
+# 1. Discover package page
+PAGE_URL=$(find_package_page "$PACKAGE")
 
-# Prioritize KDE/Plasma and Xorg metapackages before searching the index
-log "Searching prominent metapackages for component '$PACKAGE'..."
-for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
-    if [[ "$mp_page" == "kde/frameworks6.html" ]] && [[ "${PACKAGE,,}" == "extra-cmake-modules" || "${PACKAGE,,}" == "breeze-icons" ]]; then
-        continue
-    fi
-    if curl -s "$BLFS_BOOK/$mp_page" | grep -iqE "href=\"${PACKAGE}\.html\"|${PACKAGE}[-_][0-9].*\.tar"; then
-        PAGE_URL="$BLFS_BOOK/$mp_page"
-        METAPACKAGE_TARGET=$(basename "$mp_page" .html)
-        SINGLE_COMPONENT_MODE="$PACKAGE"
-        log "Found component '$PACKAGE' securely nested within metapackage: $METAPACKAGE_TARGET"
-        break
-    fi
-    # Detect if it's a KDE Frameworks metapackage component
-    if [[ -z "$PAGE_URL" && "${PACKAGE,,}" != "extra-cmake-modules" && "${PACKAGE,,}" != "breeze-icons" ]] && curl -sL "$BLFS_BOOK/kde/frameworks6.html" | grep -qiE "tar.*${PACKAGE}[-_]?[0-9]"; then
-        PAGE_URL="$BLFS_BOOK/kde/frameworks6.html"
-        METAPACKAGE_TARGET="frameworks6"
-        log "Found component '$PACKAGE' securely nested within metapackage: frameworks6"
-    fi
-done
+# 2. If it's a known metapackage component or if no individual page was found, search metapackages
+if [[ -z "$PAGE_URL" ]] || [[ "$PACKAGE" =~ ^(xorg|x7|libX|libx|font-|xf86-input-|xf86-video-) ]]; then
+    log "Searching prominent metapackages for component '$PACKAGE'..."
+    for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
+        # Avoid misidentifying core packages that are just dependencies
+        if [[ "$PACKAGE" =~ ^(wayland|mesa|libglvnd|libdrm|vulkan-loader|libxkbcommon|systemd|dbus|glib2?|perl|python|jinja2|markupsafe|ninja|meson|cmake)$ ]]; then
+            continue
+        fi
+
+        # Fetch metapackage content to verify if PACKAGE is actually a component (listed in md5 block)
+        mp_html=$(curl -s "$BLFS_BOOK/$mp_page")
+        if echo "$mp_html" | grep -iqE "cat > \S+\.md5 << \"EOF\"[[:space:]]+.*${PACKAGE}[-_][0-9].*\.tar"; then
+            PAGE_URL="$BLFS_BOOK/$mp_page"
+            METAPACKAGE_TARGET=$(basename "$mp_page" .html)
+            SINGLE_COMPONENT_MODE="$PACKAGE"
+            log "Found component '$PACKAGE' securely nested within metapackage: $METAPACKAGE_TARGET"
+            break
+        fi
+        
+        # Fallback for Xorg where sometimes names are simplified
+        if [[ "$mp_page" =~ "x7" ]] && echo "$mp_html" | grep -iqE "href=\"${PACKAGE}\.html\""; then
+            PAGE_URL="$BLFS_BOOK/$mp_page"
+            METAPACKAGE_TARGET=$(basename "$mp_page" .html)
+            SINGLE_COMPONENT_MODE="$PACKAGE"
+            log "Found component '$PACKAGE' in Xorg metapackage: $METAPACKAGE_TARGET"
+            break
+        fi
+    done
+fi
 
 if [[ -z "$PAGE_URL" ]]; then
-    PAGE_URL=$(find_package_page "$PACKAGE")
+    error "Could not find page for package '$PACKAGE'"
 fi
 
 if [[ -z "$PAGE_URL" ]]; then
@@ -644,8 +654,9 @@ if [[ -n "$FRAG" ]]; then
             print $1;
         } elsif (/(id="\Q$id\E".*)/is) {
             print $1;
-        }
-    ' -- -id="$FRAG_ID")
+        } else {
+            print $_;
+        }' -- -id="$FRAG_ID")
     if [[ -z "$HTML_CONTENT" ]]; then
          log "Fallback: Fragment $FRAG_ID not found in slice, using full content."
          HTML_CONTENT="$FULL_HTML_CONTENT"
@@ -1817,7 +1828,14 @@ if [[ "$UPSTREAM" == "true" ]]; then
             if [[ "$major_v" =~ ^[0-9]+$ ]] && [ "$major_v" -lt 40 ]; then
                 major_v=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
             fi
-            DOWNLOAD_URLS+=("https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.xz")
+            # Clear existing URLs from book to prioritize upstream GNOME
+            DOWNLOAD_URLS=()
+            # Detect extension (prefer .tar.xz, fallback to .tar.gz)
+            if curl -sI "https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.xz" | grep -q "200 OK"; then
+                DOWNLOAD_URLS+=("https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.xz")
+            else
+                DOWNLOAD_URLS+=("https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.gz")
+            fi
         fi
     else
         log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, KDE apps, and GNOME apps)"
@@ -1928,14 +1946,16 @@ else
 fi
 log "Package base name for search: $PKG_BASE"
 
-if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || [[ "$UPSTREAM" == "true" ]]; then
+if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || { [[ "$UPSTREAM" == "true" ]] && [[ -z "$UPSTREAM_VERSION" ]]; }; then
     # 0. Primary Links from Page (Robust Extraction)
     # Extract all "Download (HTTP)" and "Download:" links explicitly labeled on the page
-    mapfile -t PRIMARY_DOWNLOADS < <(printf '%s' "$FULL_HTML_CONTENT" | perl -0777 -ne 'while (/Download(?:\s*\(HTTP\))?:\s*<a[^>]+href=\s*"([^"]+)"/igs) { print "$1\n" }')
+    # Use HTML_CONTENT (sliced) if available to avoid picking up links from other packages
+    local search_content="${HTML_CONTENT:-$FULL_HTML_CONTENT}"
+    mapfile -t PRIMARY_DOWNLOADS < <(printf '%s' "$search_content" | perl -0777 -ne 'while (/Download(?:\s*\(HTTP\))?:\s*<a[^>]+href=\s*"([^"]+)"/igs) { print "$1\n" }')
     DOWNLOAD_URLS+=("${PRIMARY_DOWNLOADS[@]}")
 
     # Extract "Additional Downloads" or "Optional Downloads" links (e.g. UCD.zip for ibus)
-    mapfile -t ADDITIONAL_DOWNLOADS < <(printf '%s' "$FULL_HTML_CONTENT" | perl -0777 -nle 'while (/<h3[^>]*>\s*(?:Additional|Optional)\s*Downloads\s*<\/h3>(.*?)<(?:h[23])/igs) { my $b=$1; while ($b =~ /href=\s*"([^"]+\.(?:tar\.[a-z2]+|zip|patch|tgz|gz|bz2|xz))"/igs) { print "$1\n"; } }')
+    mapfile -t ADDITIONAL_DOWNLOADS < <(printf '%s' "$search_content" | perl -0777 -nle 'while (/<h3[^>]*>\s*(?:Additional|Optional)\s*Downloads\s*<\/h3>(.*?)<(?:h[23])/igs) { my $b=$1; while ($b =~ /href=\s*"([^"]+\.(?:tar\.[a-z2]+|zip|patch|tgz|gz|bz2|xz))"/igs) { print "$1\n"; } }')
     DOWNLOAD_URLS+=("${ADDITIONAL_DOWNLOADS[@]}")
 
     # 1. Main Page Links (for both LFS and BLFS)
@@ -2273,7 +2293,7 @@ fi
 if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|vte|gnome-terminal|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from the identified main download URL (e.g. gnome-shell-47.0.tar.xz)
     # GNOME versions might be major.minor or just major for some meta-packages, but mostly major.minor
-    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nlae -F/ '$_=$F[$#F]; /'"${PACKAGE,,}"'-([0-9.]+)/ and print $1')
+    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -F/ -nlae '$_=$F[$#F]; /'"${PACKAGE,,}"'-([0-9]+(?:\.[0-9]+)+)/ and print $1')
     if [[ -z "$LFS_VERSION" ]]; then
         LFS_VERSION=$(echo "$COMMANDS" | perl -nle 'while (m{'"${PACKAGE,,}"'-\K[0-9]+(?:\.[0-9]+)+}ig) { print $& }' | sort -V | tail -n 1)
     fi
@@ -3300,8 +3320,8 @@ else
                 fi
             fi
             # Flatten archives that extract into a single nested subfolder (common when archives have a leading ./ prefix)
-            # Skip this for NSS as its build system and book commands expect the nested nss/ directory
-            if [[ $(ls -A "$TARGET_DIR" | wc -l) -eq 1 ]] && [[ -d "$TARGET_DIR/$(ls -A "$TARGET_DIR")" ]] && [[ "$PACKAGE" != "nss" ]]; then
+            # Skip this for NSS/NSPR as their build system and book commands expect the nested directory
+            if [[ $(ls -A "$TARGET_DIR" | wc -l) -eq 1 ]] && [[ -d "$TARGET_DIR/$(ls -A "$TARGET_DIR")" ]] && [[ "$PACKAGE" != "nss" ]] && [[ "$PACKAGE" != "nspr" ]]; then
                 SUBDIR=$(ls -A "$TARGET_DIR")
                 echo "Detected nested directory '$SUBDIR' after extraction. Moving contents up."
                 mv "$TARGET_DIR/$SUBDIR"/{.[!.]*,*} "$TARGET_DIR/" 2>/dev/null || true

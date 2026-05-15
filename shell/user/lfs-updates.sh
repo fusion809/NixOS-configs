@@ -106,6 +106,7 @@ done <<< "$LOCAL_PKGS"
 wait
 
 # Collect results
+j=0
 for f in "$tmp_lfs"/*; do
     if [[ -f "$f" ]]; then
         str+="$(cat "$f")"$'\n'
@@ -131,7 +132,6 @@ while IFS= read -r update_line; do
     local_ver=$(echo "$local_ver" | tr -d '[:space:]\r\n')
     remote_ver=$(echo "$remote_ver" | tr -d '[:space:]\r\n')
 
-    [[ "$name" == *"nsis"* ]] && printf "DEBUG: name=%s local=%s remote=%s\n" "$name" "$local_ver" "$remote_ver" >&2
 
     # Skip if local and remote versions match exactly, or if both are MISSING
     if [[ "$local_ver" == "$remote_ver" ]] || [[ "$local_ver" == *"MISSING"* && "$remote_ver" == *"MISSING"* ]]; then
@@ -154,7 +154,7 @@ while IFS= read -r update_line; do
     
     str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
     str+="\n"
-    j+=1;
+    j=$((j + 1))
 done <<< "$CUSTOM_UPDATES"
 
 if [[ $j -gt 0 ]]; then
