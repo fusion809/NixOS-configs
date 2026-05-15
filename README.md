@@ -93,7 +93,7 @@ Applications and programs autostarted include the default browser, virtual machi
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
 
 # Hyprland
-Hyprland and hy3 is built from the master branch of nixpkgs.
+The sources of Hyprland and hy3 differ depending on the time. Sometimes it is built from the NixOS stable branch, other times unstable branch, other times master branch and other times still from the latest upstream release. As of 15 May 2026, it uses the latest upstream releases for both and a Lua config file. 
 
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. I used to compile the latest version of Hyprland from source, but recompiling every time I ran `nixfrb` (i.e., rebuild the system) eventually deterred me. 
 
@@ -307,7 +307,7 @@ An alternative to the algorithm argument is the no argument which specifies the 
 The direction argument, which is only applicable if the first argument is algorithm, can be "previous" or something else. If it is previous and the first argument is "systematic", this will lead to the previous wallpaper being shown. Otherwise the next wallpaper will be shown. This is also the default behaviour if direction is omitted.
 
 # Waybar
-The waybar has the below components. The order below formerly referred to their order left to right, but that's not the case anymore.
+Waybar, as of 15 May 2026, is compiled from the latest git commit as the latest stable release (0.15.0) doesn't have Lua Hyprland config support. The Waybar has the below components. The order below formerly referred to their order left to right, but that's not the case anymore.
 
 ## NixOS menu (): only shown on monitor 1
 which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):
