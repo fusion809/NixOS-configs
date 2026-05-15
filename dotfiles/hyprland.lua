@@ -80,27 +80,27 @@ hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/workspace-router &"')
 
 hl.on("hyprland.start", function()
     hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/wallpaper systematic"')
-    --hl.exec_cmd("virt-manager")
-    --hl.exec_cmd("brave")
-    --hl.exec_cmd("discord")
-    --hl.exec_cmd("blueman-manager")
-    --hl.exec_cmd("google-chrome-stable")
-    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=mdpkiolbdkhdjpekfbkbmhigcaggjagi")
-    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=jneocipojkkahfcibhjaiilegofacenn")
-    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm")
-    --hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=akpamiohjfcnimfljfndmaldlcfphjmp")
-    --hl.exec_cmd("kitty -e --hold " .. nixcfg .. "/shell/hyprland/hyfetch-run")
-    --hl.exec_cmd("winboat")
-    --hl.exec_cmd("kdeconnect-app")
-    --hl.exec_cmd(fileManager .. " " .. os.getenv("HOME") .. "/.files")
+    hl.exec_cmd("virt-manager")
+    hl.exec_cmd("brave")
+    hl.exec_cmd("discord")
+    hl.exec_cmd("blueman-manager")
+    hl.exec_cmd("google-chrome-stable")
+    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=mdpkiolbdkhdjpekfbkbmhigcaggjagi")
+    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=jneocipojkkahfcibhjaiilegofacenn")
+    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm")
+    hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=akpamiohjfcnimfljfndmaldlcfphjmp")
+    hl.exec_cmd("kitty -e --hold " .. nixcfg .. "/shell/hyprland/hyfetch-run")
+    hl.exec_cmd("winboat")
+    hl.exec_cmd("kdeconnect-app")
+    hl.exec_cmd(fileManager .. " " .. os.getenv("HOME") .. "/.files")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/debian13")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/ssh-debian-alacritty")
     hl.exec_cmd("wl-paste --watch cliphist store")
     hl.exec_cmd("wl-clip-persist --clipboard regular")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/killOldSwayBg")
-    --hl.exec_cmd(nixcfg .. "/shell/hyprland/network-daemon")
-    --hl.exec_cmd(nixcfg .. "/shell/hyprland/gpu-daemon")
-    --hl.exec_cmd(nixcfg .. "/shell/hyprland/system-daemon")
+    hl.exec_cmd(nixcfg .. "/shell/hyprland/network-daemon")
+    hl.exec_cmd(nixcfg .. "/shell/hyprland/gpu-daemon")
+    hl.exec_cmd(nixcfg .. "/shell/hyprland/system-daemon")
     hl.exec_cmd("/run/current-system/sw/bin/kdeconnectd")
     hl.exec_cmd("antigravity")
 end)
@@ -125,7 +125,7 @@ hl.config({
             tabs = {
                 border_width = 0,
                 colors = {
-                    active = 0xffff0000,
+                    active = 0xff880000,
                     active_text = 0xffffffff,
                     active_border = 0xffff0000,
                     focused = 0xffff0000,
