@@ -22,7 +22,6 @@ HYPRCTL="$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/tools/hyprctl-fix
 handle() {
   # Clean up input and log everything for debugging
   local line=$(echo "$1" | tr -cd '[:print:]')
-  echo "Event: $line" >> "$LOGFILE"
   
   local w_address=""
   local w_class=""
@@ -31,19 +30,24 @@ handle() {
   if [[ "$line" == openwindow\>\>* ]]; then
     local payload="${line#openwindow>>}"
     IFS=',' read -r w_address w_wsid w_class w_title <<< "$payload"
-    echo "DEBUG: openwindow detected. addr='$w_address' class='$w_class' title='$w_title'" >> "$LOGFILE"
   elif [[ "$line" == openwindowv2\>\>* ]]; then
     local payload="${line#openwindowv2>>}"
-    # openwindowv2 payload: ADDRESS,WS_ID,WS_NAME,CLASS,TITLE
     IFS=',' read -r w_address w_wsid w_wsname w_class w_title <<< "$payload"
-    echo "DEBUG: openwindowv2 detected. addr='$w_address' class='$w_class' title='$w_title'" >> "$LOGFILE"
   fi
 
   # If we have a window event, process it
   if [[ -n "$w_address" ]]; then
+    echo "Event: $line" >> "$LOGFILE"
+    
+    # Helper to check if a window is floating
+    is_floating() {
+        "$HYPRCTL" clients -j | jq -e -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating'
+    }
+
     local target=""
 
     if [[ "$w_class" =~ brave-browser ]]; then
+        if is_floating; then return; fi
         if [[ "$w_title" == "New Private Tab - Brave" ]]; then
             target=27
         else
@@ -52,6 +56,7 @@ handle() {
         "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $target, window = 'address:0x$w_address', silent = true }))"
 
     elif [[ "$w_class" =~ vlc ]]; then
+       if is_floating; then return; fi
        (
            local count_25=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 25)) | .[0].windows // 0')
            local count_26=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 26)) | .[0].windows // 0')
@@ -70,8 +75,8 @@ handle() {
        ) &
 
     elif [[ "$w_class" =~ google-chrome ]] || [[ "$w_class" =~ chrome- ]]; then
+       if is_floating; then return; fi
        (
-           # Chrome initialization wait
            if [[ -z "$w_title" ]] || [[ "$w_title" == "Untitled - Google Chrome" ]] || [[ "$w_title" == "New tab - Google Chrome" ]] || [[ "$w_title" == "Google Chrome" ]]; then
                sleep 1.2
                w_title=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .title')
@@ -84,14 +89,12 @@ handle() {
            elif [[ "$w_title" == *"Boo"* ]]; then
                "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 12, window = 'address:0x$w_address', silent = true }))"
            else
-               # Automatic check for empty workspaces using window count
                local count_1=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
                local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
                
                if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
                    "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 1, window = 'address:0x$w_address', silent = true }))"
                else
-                   # For other Chrome windows, ask the user
                    local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
                    if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
                        local t=$(echo "$choice" | cut -d '(' -f 1)
@@ -103,10 +106,7 @@ handle() {
 
     elif [[ "$w_class" =~ virt-viewer ]] || ( [[ "$w_class" =~ .virt-manager-wrapped ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
        (
-           local is_floating=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .floating')
-           if [[ "$is_floating" == "true" ]]; then
-               exit 0
-           fi
+           if is_floating; then exit 0; fi
 
            local count_28=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
            local count_29=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
@@ -138,6 +138,7 @@ handle() {
        ) &
 
     elif [[ "$w_class" =~ steam_app_1343400 ]]; then
+       if is_floating; then return; fi
        (
            local t=8
            "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
