@@ -23,10 +23,10 @@ end
 local browser     = "google-chrome-stable"
 local editor      = "antigravity"
 local fileManager = "dolphin"
-local menu        = "rofi -show window"
-local terminal    = "alacritty"
-local nixcfg      = os.getenv("HOME") .. "/GitHub/mine/config/NixOS-configs"
 local mainMod     = "SUPER"
+local menu        = "rofi -show window"
+local nixcfg      = os.getenv("HOME") .. "/GitHub/mine/config/NixOS-configs"
+local terminal    = "alacritty"
 
 -- Helper for keybindings
 local function bind(keys, name, arg)
@@ -103,21 +103,9 @@ hl.on("hyprland.start", function()
     --hl.exec_cmd(nixcfg .. "/shell/hyprland/system-daemon")
     hl.exec_cmd("/run/current-system/sw/bin/kdeconnectd")
     hl.exec_cmd("antigravity")
-    
-    -- Configure hy3 after it has loaded
-    hl.config({
-        ["plugin:hy3:tabs:border_width"] = 0,
-        ["plugin:hy3:tabs:col.active"] = "rgba(ff55ffff)",
-        ["plugin:hy3:tabs:col.active.text"] = "rgba(00000000)",
-        ["plugin:hy3:tabs:col.inactive"] = "rgba(333333ff)",
-        ["plugin:hy3:tabs:col.inactive.text"] = "rgba(ffffffff)",
-        ["plugin:hy3:tabs:col.urgent"] = "rgba(ff0000ff)",
-        ["plugin:hy3:tabs:col.urgent.text"] = "rgba(000000ff)",
-        ["plugin:hy3:autotile:enable"] = true,
-        ["plugin:hy3:autotile:trigger_width"] = 800,
-        ["plugin:hy3:autotile:trigger_height"] = 500,
-    })
 end)
+
+
 
 ---------------------------
 ---- ENVIRONMENT VARS ----
@@ -133,6 +121,30 @@ hl.env("HYPRCURSOR_SIZE", "24")
 hl.config({
     plugin = {
         os.getenv("HOME") .. "/.local/share/hyprland/plugins/hy3_patched.so",
+        hy3 = {
+            tabs = {
+                border_width = 0,
+                colors = {
+                    active = 0xffff0000,
+                    active_text = 0xffffffff,
+                    active_border = 0xffff0000,
+                    focused = 0xffff0000,
+                    focused_text = 0xff000000,
+                    focused_border = 0xffff0000,
+                    inactive = 0xff333333,
+                    inactive_text = 0xffffffff,
+                    inactive_border = 0xff333333,
+                    urgent = 0xffff0000,
+                    urgent_text = 0xff000000,
+                    urgent_border = 0xffff0000,
+                }
+            },
+            autotile = {
+                enable = true,
+                trigger_width = 800,
+                trigger_height = 500,
+            }
+        }
     },
     general = {
         gaps_in = 0,
@@ -191,7 +203,7 @@ hl.workspace_rule({ workspace = 12, monitor = monitors.DVI })
 hl.workspace_rule({ workspace = 13, monitor = monitors.DVI })
 hl.workspace_rule({ workspace = 14, monitor = monitors.DVI })
 hl.workspace_rule({ workspace = 15, monitor = monitors.HDMI })
-hl.workspace_rule({ workspace = 16, monitor = monitors.HDMI })
+hl.workspace_rule({ workspace = 16, monitor = monitors.DVI })
 hl.workspace_rule({ workspace = 17, monitor = monitors.DVI })
 hl.workspace_rule({ workspace = 18, monitor = monitors.HDMI })
 hl.workspace_rule({ workspace = 19, monitor = monitors.DVI })
@@ -448,5 +460,4 @@ hl.device({
 })
 
 bind(mainMod .. " + space", "exec", "hyprctl switchxkblayout current next")
-
 
