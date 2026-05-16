@@ -62,20 +62,19 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 9614 | 56.16% | 1618 | 79.16% |
-| Nix | 3141 | 18.35% | 146 | 7.14% |
-| CSS | 1012 | 5.91% | 1 | 0.05% |
-| Python | 818 | 4.78% | 197 | 9.64% |
-| Markdown | 515 | 3.01% | 0 | 0.00% |
-| Lua | 463 | 2.70% | 43 | 2.10% |
-| JSONC | 433 | 2.53% | 0 | 0.00% |
-| Patch | 396 | 2.31% | 0 | 0.00% |
-| JSON | 391 | 2.28% | 0 | 0.00% |
-| AWK | 203 | 1.19% | 35 | 1.71% |
-| XML | 78 | 0.46% | 0 | 0.00% |
-| JavaScript | 41 | 0.24% | 4 | 0.20% |
+| Shell | 9620 | 57.69% | 1619 | 80.79% |
+| Nix | 3156 | 18.93% | 148 | 7.39% |
+| CSS | 1012 | 6.07% | 1 | 0.05% |
+| Python | 818 | 4.91% | 197 | 9.83% |
+| Markdown | 515 | 3.09% | 0 | 0.00% |
+| JSONC | 433 | 2.60% | 0 | 0.00% |
+| Patch | 396 | 2.37% | 0 | 0.00% |
+| JSON | 391 | 2.34% | 0 | 0.00% |
+| AWK | 203 | 1.22% | 35 | 1.75% |
+| XML | 78 | 0.47% | 0 | 0.00% |
+| JavaScript | 41 | 0.25% | 4 | 0.20% |
 | TOML | 13 | 0.08% | 0 | 0.00% |
-| **Total** | **17118** | **100.00%** | **2044** | **100.00%** |
+| **Total** | **16676** | **100.00%** | **2004** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -93,7 +92,7 @@ Applications and programs autostarted include the default browser, virtual machi
 [6e524bcfb7db7653ac4df86b378faab6e25a7bf3](https://github.com/fusion809/NixOS-configs/tree/6e524bcfb7db7653ac4df86b378faab6e25a7bf3) was the final commit with vim-ai with deepseek-coder model. Was removed as it wasn't useful for me. 
 
 # Hyprland
-The sources of Hyprland and hy3 differ depending on the time. Sometimes it is built from the NixOS stable branch, other times unstable branch, other times master branch and other times still from the latest upstream release. As of 15 May 2026, it uses the latest upstream releases for both and a Lua config file. 
+The sources of Hyprland and hy3 differ depending on the time. Sometimes it is built from the NixOS stable branch, other times unstable branch, other times master branch and other times still from the latest upstream release. As of 16 May 2026, it uses the latest upstream releases for both and a standard .conf config file. A Lua config was tried from 15 to 16 May 2026, but hy3 errors were common on loading and while Antigravity's AI assistent could fix these for that Hyprland session, as soon as I restarted Hyprland (through rebooting or restarting SDDM) the errors returned. Many workspace bindings and keybindings were also forgotten during Hyprland restarts.
 
 [shell/hyprland](/shell/hyprland/) contains shell scripts that are part of my Hyprland setup, or used to launch apps under Hyprland. [dotfiles/](/dotfiles/) contains my Hyprland configuration files and desktop config files for the aforementioned apps. I used to compile the latest version of Hyprland from source, but recompiling every time I ran `nixfrb` (i.e., rebuild the system) eventually deterred me. 
 

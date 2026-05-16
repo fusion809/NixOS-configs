@@ -180,22 +180,21 @@ with pkgs; [
   virtiofsd
   #(unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
   (let
-    # Wrap winboat so it finds sdl-freerdp as xfreerdp/xfreerdp3 for Wayland clipboard
-    sdlWrapper = pkgs.runCommand "winboat-freerdp-shims" {} ''
+    # WinBoat's getFreeRDP() checks for "xfreerdp3" first, runs "--version" and checks stdout
+    # for "version 3.". We create an xfreerdp3 shim pointing to the real xfreerdp binary.
+    xfreerdp3Shim = pkgs.runCommand "winboat-xfreerdp3-shim" {} ''
       mkdir -p $out/bin
-      for name in xfreerdp xfreerdp3; do
-        cat > $out/bin/$name <<'EOF'
+      cat > $out/bin/xfreerdp3 <<'EOF'
 #!/bin/sh
-exec ${pkgs.freerdp}/bin/sdl-freerdp "$@"
+exec ${pkgs.freerdp}/bin/xfreerdp "$@"
 EOF
-        chmod +x $out/bin/$name
-      done
+      chmod +x $out/bin/xfreerdp3
     '';
   in (winboat.override { electron = electron_40; }).overrideAttrs (old: {
     nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];
     postInstall = (old.postInstall or "") + ''
       wrapProgram $out/bin/winboat \
-        --prefix PATH : "${sdlWrapper}/bin"
+        --prefix PATH : "${xfreerdp3Shim}/bin"
     '';
   }))
 ]

@@ -1831,10 +1831,16 @@ if [[ "$UPSTREAM" == "true" ]]; then
             # Clear existing URLs from book to prioritize upstream GNOME
             DOWNLOAD_URLS=()
             # Detect extension (prefer .tar.xz, fallback to .tar.gz)
-            if curl -sI "https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.xz" | grep -q "200 OK"; then
-                DOWNLOAD_URLS+=("https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.xz")
+            # Use -L to follow redirects; check for any 2xx status
+            _xz_url="https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.xz"
+            _gz_url="https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.gz"
+            if curl -sIL "$_xz_url" | grep -qE "^HTTP.*2[0-9][0-9]"; then
+                DOWNLOAD_URLS+=("$_xz_url")
+            elif curl -sIL "$_gz_url" | grep -qE "^HTTP.*2[0-9][0-9]"; then
+                DOWNLOAD_URLS+=("$_gz_url")
             else
-                DOWNLOAD_URLS+=("https://download.gnome.org/sources/$GNOME_PKG/$major_v/$GNOME_PKG-$UPSTREAM_VERSION.tar.gz")
+                log "WARNING: Could not find a valid archive for $GNOME_PKG-$UPSTREAM_VERSION on download.gnome.org (tried .tar.xz and .tar.gz)"
+                DOWNLOAD_URLS+=("$_xz_url")  # fallback attempt anyway
             fi
         fi
     else
