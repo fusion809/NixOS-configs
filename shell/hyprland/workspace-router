@@ -19,6 +19,27 @@ echo "Connected to socket: $SOCKET" >> "$LOGFILE"
 
 HYPRCTL="$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/tools/hyprctl-fixed.sh"
 
+# Dispatch helpers — automatically use Lua API when hyprland.lua is active,
+# otherwise fall back to plain hyprctl dispatch commands.
+dispatch_move() {
+    local workspace="$1"
+    local address="$2"
+    if [[ -f "$HOME/.config/hypr/hyprland.lua" ]]; then
+        "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $workspace, window = 'address:0x$address', silent = true }))"
+    else
+        "$HYPRCTL" dispatch movetoworkspacesilent "$workspace,address:0x$address"
+    fi
+}
+
+dispatch_focus() {
+    local workspace="$1"
+    if [[ -f "$HOME/.config/hypr/hyprland.lua" ]]; then
+        "$HYPRCTL" eval "hl.dispatch(hl.dsp.focus({ workspace = $workspace }))"
+    else
+        "$HYPRCTL" dispatch workspace "$workspace"
+    fi
+}
+
 handle() {
   # Clean up input and log everything for debugging
   local line=$(echo "$1" | tr -cd '[:print:]')
@@ -53,7 +74,7 @@ handle() {
         else
             target=15
         fi
-        "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $target, window = 'address:0x$w_address', silent = true }))"
+        dispatch_move "$target" "$w_address"
 
     elif [[ "$w_class" =~ vlc ]]; then
        if is_floating; then return; fi
@@ -71,7 +92,7 @@ handle() {
            else
                t=26
            fi
-           "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
+           dispatch_move "$t" "$w_address"
        ) &
 
     elif [[ "$w_class" =~ google-chrome ]] || [[ "$w_class" =~ chrome- ]]; then
@@ -85,20 +106,20 @@ handle() {
            echo "Chrome Routing Match: addr=0x$w_address class=$w_class title=$w_title" >> "$LOGFILE"
 
            if [[ "$w_title" == *"PBS Job"* ]] || [[ "$w_title" == *"u1126705@umail.usq.edu.au"* ]]; then
-               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 7, window = 'address:0x$w_address', silent = true }))"
+               dispatch_move 7 "$w_address"
            elif [[ "$w_title" == *"Boo"* ]]; then
-               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 12, window = 'address:0x$w_address', silent = true }))"
+               dispatch_move 12 "$w_address"
            else
                local count_1=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
                local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
                
                if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
-                   "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = 1, window = 'address:0x$w_address', silent = true }))"
+                   dispatch_move 1 "$w_address"
                else
                    local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
                    if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
                        local t=$(echo "$choice" | cut -d '(' -f 1)
-                       "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
+                       dispatch_move "$t" "$w_address"
                    fi
                fi
            fi
@@ -132,8 +153,8 @@ handle() {
            fi
 
            if [[ -n "$t" ]]; then
-               "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
-               "$HYPRCTL" eval "hl.dispatch(hl.dsp.focus({ workspace = $t }))"
+               dispatch_move "$t" "$w_address"
+               dispatch_focus "$t"
            fi
        ) &
 
@@ -141,7 +162,7 @@ handle() {
        if is_floating; then return; fi
        (
            local t=8
-           "$HYPRCTL" eval "hl.dispatch(hl.dsp.window.move({ workspace = $t, window = 'address:0x$w_address', silent = true }))"
+           dispatch_move "$t" "$w_address"
        ) &
       fi
   fi
