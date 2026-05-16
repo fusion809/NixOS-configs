@@ -290,7 +290,7 @@ fi
 
 # Record file list for custom package
 if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
-    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
@@ -3376,7 +3376,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     if ! grep -q "^${VERSION_TO_RECORD}$" "/var/lib/book-packages/${PACKAGE}" 2>/dev/null; then
         echo "${VERSION_TO_RECORD}" | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
     fi
-    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
@@ -3407,7 +3407,7 @@ fi
 
 if [[ "$RM_LIBS" == "true" ]]; then
     # Find files installed by this build (newer than timestamp)
-    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt"
+    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     NEW_FILES_LIST=$(mktemp)
     find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} ! -name "$(basename "$NEW_FILES_LIST")" > "$NEW_FILES_LIST" 2>/dev/null || true

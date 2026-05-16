@@ -179,5 +179,23 @@ with pkgs; [
   virt-viewer
   virtiofsd
   #(unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
-  (winboat.override { electron = electron_40; })
+  (let
+    # Wrap winboat so it finds sdl-freerdp as xfreerdp/xfreerdp3 for Wayland clipboard
+    sdlWrapper = pkgs.runCommand "winboat-freerdp-shims" {} ''
+      mkdir -p $out/bin
+      for name in xfreerdp xfreerdp3; do
+        cat > $out/bin/$name <<'EOF'
+#!/bin/sh
+exec ${pkgs.freerdp}/bin/sdl-freerdp "$@"
+EOF
+        chmod +x $out/bin/$name
+      done
+    '';
+  in (winboat.override { electron = electron_40; }).overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];
+    postInstall = (old.postInstall or "") + ''
+      wrapProgram $out/bin/winboat \
+        --prefix PATH : "${sdlWrapper}/bin"
+    '';
+  }))
 ]

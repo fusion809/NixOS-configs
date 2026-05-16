@@ -75,44 +75,11 @@ end
 ---- AUTOSTART ----
 -------------------
 
-local hy3_config = {
-    ["plugin:hy3:tabs:border_width"] = 0,
-    ["plugin:hy3:tabs:colors:active"] = 0xff880000,
-    ["plugin:hy3:tabs:colors:active_text"] = 0xffffffff,
-    ["plugin:hy3:tabs:colors:active_border"] = 0xffff0000,
-    ["plugin:hy3:tabs:colors:focused"] = 0xffff0000,
-    ["plugin:hy3:tabs:colors:focused_text"] = 0xff000000,
-    ["plugin:hy3:tabs:colors:focused_border"] = 0xffff0000,
-    ["plugin:hy3:tabs:colors:inactive"] = 0xff333333,
-    ["plugin:hy3:tabs:colors:inactive_text"] = 0xffffffff,
-    ["plugin:hy3:tabs:colors:inactive_border"] = 0xff333333,
-    ["plugin:hy3:tabs:colors:urgent"] = 0xffff0000,
-    ["plugin:hy3:tabs:colors:urgent_text"] = 0xff000000,
-    ["plugin:hy3:tabs:colors:urgent_border"] = 0xffff0000,
-    
-    ["plugin:hy3:autotile:enable"] = true,
-    ["plugin:hy3:autotile:trigger_width"] = 800,
-    ["plugin:hy3:autotile:trigger_height"] = 500,
-}
-
-local instance_sig = os.getenv("HYPRLAND_INSTANCE_SIGNATURE")
-local hy3_flag_file = "/tmp/hy3-loaded-" .. (instance_sig or "default")
-
-local function file_exists(name)
-   local f = io.open(name, "r")
-   if f ~= nil then io.close(f) return true else return false end
-end
-
-if file_exists(hy3_flag_file) then
-    hl.config(hy3_config)
-end
-
-hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/waybar-multi-start &"')
-hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/workspace-router &"')
+-- Autostart moved to hyprland.start hook to avoid doubling on reload
 
 hl.on("hyprland.start", function()
-    hl.config(hy3_config)
-    os.execute("touch " .. hy3_flag_file)
+    hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/waybar-multi-start &"')
+    hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/workspace-router &"')
     hl.exec_cmd('bash -c "' .. nixcfg .. '/shell/hyprland/wallpaper systematic"')
     hl.exec_cmd("virt-manager")
     hl.exec_cmd("brave")
@@ -124,7 +91,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm")
     hl.exec_cmd("google-chrome-stable --profile-directory=Default --app-id=akpamiohjfcnimfljfndmaldlcfphjmp")
     hl.exec_cmd("kitty -e --hold " .. nixcfg .. "/shell/hyprland/hyfetch-run")
-    hl.exec_cmd("winboat")
+    hl.exec_cmd("env WAYLAND_DISPLAY= winboat")
     hl.exec_cmd("kdeconnect-app")
     hl.exec_cmd(fileManager .. " " .. os.getenv("HOME") .. "/.files")
     hl.exec_cmd(nixcfg .. "/shell/hyprland/debian13")
@@ -147,6 +114,7 @@ end)
 
 hl.env("HYPRCURSOR_THEME", "Future-Cyan-Hyprcursor_Theme")
 hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("PATH", os.getenv("HOME") .. "/.local/bin:" .. os.getenv("PATH"))
 
 -----------------------
 ---- LOOK AND FEEL ----
@@ -155,6 +123,30 @@ hl.env("HYPRCURSOR_SIZE", "24")
 hl.config({
     plugin = {
         os.getenv("HOME") .. "/.local/share/hyprland/plugins/hy3_patched.so",
+        hy3 = {
+            tabs = {
+                border_width = 2,
+                colors = {
+                    active = 0xff880000,
+                    active_text = 0xffffffff,
+                    active_border = 0xffffa500, -- Orange border
+                    focused = 0xffff0000,
+                    focused_text = 0xff000000,
+                    focused_border = 0xffff0000,
+                    inactive = 0xff333333,
+                    inactive_text = 0xffffffff,
+                    inactive_border = 0xff333333,
+                    urgent = 0xffff0000,
+                    urgent_text = 0xff000000,
+                    urgent_border = 0xffff0000,
+                }
+            },
+            autotile = {
+                enable = true,
+                trigger_width = 800,
+                trigger_height = 500,
+            }
+        }
     }
 })
 
