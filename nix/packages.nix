@@ -184,11 +184,22 @@ with pkgs; [
     # for "version 3.". We create an xfreerdp3 shim pointing to the real xfreerdp binary.
     xfreerdp3Shim = pkgs.runCommand "winboat-xfreerdp3-shim" {} ''
       mkdir -p $out/bin
+      
       cat > $out/bin/xfreerdp3 <<'EOF'
 #!/bin/sh
+export SDL_VIDEO_DRIVER=x11
+export SDL_VIDEODRIVER=x11
 exec ${pkgs.freerdp}/bin/xfreerdp "$@"
 EOF
       chmod +x $out/bin/xfreerdp3
+
+      cat > $out/bin/xfreerdp <<'EOF'
+#!/bin/sh
+export SDL_VIDEO_DRIVER=x11
+export SDL_VIDEODRIVER=x11
+exec ${pkgs.freerdp}/bin/xfreerdp "$@"
+EOF
+      chmod +x $out/bin/xfreerdp
     '';
   in (winboat.override { electron = electron_40; }).overrideAttrs (old: {
     nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];

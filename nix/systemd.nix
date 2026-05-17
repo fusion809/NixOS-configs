@@ -11,7 +11,7 @@
   coredump.enable = false;
   user.services.swaync = {
     description = "Sway notification centre";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     partOf = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
     serviceConfig = {
@@ -34,7 +34,7 @@
   };
   user.services.swaync-kdeconnect-bridge = {
     description = "Bridge SwayNC and KDE Connect for notification dismissal";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = [ "default.target" ];
     after = [ "swaync.service" "kdeconnect.service" ];
     path = [ pkgs.kdePackages.kdeconnect-kde pkgs.dbus ];
     serviceConfig = {
