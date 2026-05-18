@@ -187,17 +187,27 @@ with pkgs; [
       
       cat > $out/bin/xfreerdp3 <<'EOF'
 #!/bin/sh
-export SDL_VIDEO_DRIVER=x11
-export SDL_VIDEODRIVER=x11
-exec ${pkgs.freerdp}/bin/xfreerdp "$@"
+if [ -n "$WAYLAND_DISPLAY" ]; then
+  export SDL_VIDEO_DRIVER=wayland
+  export SDL_VIDEODRIVER=wayland
+else
+  export SDL_VIDEO_DRIVER=x11
+  export SDL_VIDEODRIVER=x11
+fi
+exec ${pkgs.freerdp}/bin/sdl-freerdp "$@"
 EOF
       chmod +x $out/bin/xfreerdp3
 
       cat > $out/bin/xfreerdp <<'EOF'
 #!/bin/sh
-export SDL_VIDEO_DRIVER=x11
-export SDL_VIDEODRIVER=x11
-exec ${pkgs.freerdp}/bin/xfreerdp "$@"
+if [ -n "$WAYLAND_DISPLAY" ]; then
+  export SDL_VIDEO_DRIVER=wayland
+  export SDL_VIDEODRIVER=wayland
+else
+  export SDL_VIDEO_DRIVER=x11
+  export SDL_VIDEODRIVER=x11
+fi
+exec ${pkgs.freerdp}/bin/sdl-freerdp "$@"
 EOF
       chmod +x $out/bin/xfreerdp
     '';

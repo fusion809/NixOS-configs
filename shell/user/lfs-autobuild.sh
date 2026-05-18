@@ -1956,7 +1956,7 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || { [[ "$UPSTREAM" == "true" ]] && [[ -z "$
     # 0. Primary Links from Page (Robust Extraction)
     # Extract all "Download (HTTP)" and "Download:" links explicitly labeled on the page
     # Use HTML_CONTENT (sliced) if available to avoid picking up links from other packages
-    local search_content="${HTML_CONTENT:-$FULL_HTML_CONTENT}"
+    search_content="${HTML_CONTENT:-$FULL_HTML_CONTENT}"
     mapfile -t PRIMARY_DOWNLOADS < <(printf '%s' "$search_content" | perl -0777 -ne 'while (/Download(?:\s*\(HTTP\))?:\s*<a[^>]+href=\s*"([^"]+)"/igs) { print "$1\n" }')
     DOWNLOAD_URLS+=("${PRIMARY_DOWNLOADS[@]}")
 
@@ -3355,6 +3355,14 @@ fi
 echo "Marking build start time..."
 touch /tmp/build_start_timestamp_${PACKAGE}
 
+# Record initial file state to handle clock drift/skew during build
+if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
+    SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
+    EXISTING_DIRS=""
+    for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
+    find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | sort > /tmp/build_state_before_${PACKAGE}
+fi
+
 # Initialize inventory file with version before build starts to prevent overwriting DESTDIR captures
 # Skip this for meta-packages, as their subpackages track their own versions internally
 if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
@@ -3385,14 +3393,32 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
+    
+    # 1. Capture via timestamp (susceptible to clock drift/skew on long builds like Linux kernel)
     find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
     
+    # 2. Capture via robust before-and-after diffing (immune to clock skew/drift)
+    if [ -f "/tmp/build_state_before_${PACKAGE}" ]; then
+        echo "Calculating installed files using state diff (before/after)..."
+        find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | sort > /tmp/build_state_after_${PACKAGE}
+        comm -13 "/tmp/build_state_before_${PACKAGE}" "/tmp/build_state_after_${PACKAGE}" | cut -d' ' -f1 | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    fi
+    
     # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
+    # Search in common archive locations for maximum robustness
+    local archive_path=""
     if [ -f "$MAIN_FILENAME" ]; then
-        echo "Enriching inventory from archive manifest for $PACKAGE..."
+        archive_path="$MAIN_FILENAME"
+    elif [ -f "/sources/archives/$MAIN_FILENAME" ]; then
+        archive_path="/sources/archives/$MAIN_FILENAME"
+    elif [ -f "/sources/$MAIN_FILENAME" ]; then
+        archive_path="/sources/$MAIN_FILENAME"
+    fi
+    if [ -n "$archive_path" ]; then
+        echo "Enriching inventory from archive manifest ($archive_path) for $PACKAGE..."
         enrich_tmp="/tmp/enrich_${PACKAGE}"
         rm -f "$enrich_tmp"
-        tar -tf "$MAIN_FILENAME" | sed 's|^[^/]*||; s|^/||' | while read f; do
+        tar -tf "$archive_path" | sed 's|^[^/]*||; s|^/||' | while read f; do
             [ -z "$f" ] && continue
             # Common prefixes in BLFS
             for pref in /usr / /opt /etc; do
@@ -3485,7 +3511,7 @@ if [[ "$RM_LIBS" == "true" ]]; then
             fi
         fi
     done < "$NEW_FILES_LIST"
-    rm -f "$NEW_FILES_LIST" /tmp/build_start_timestamp_${PACKAGE}
+    rm -f "$NEW_FILES_LIST" /tmp/build_start_timestamp_${PACKAGE} /tmp/build_state_before_${PACKAGE} /tmp/build_state_after_${PACKAGE}
 
     for doc_dir in /usr/share/doc/linux-*; do
         [ -d "$doc_dir" ] || continue
@@ -3496,7 +3522,7 @@ if [[ "$RM_LIBS" == "true" ]]; then
     done
 else
     echo "Skipping library cleanup (use --rm-libs flag to remove old library versions)"
-    rm -f /tmp/build_start_timestamp_${PACKAGE}
+    rm -f /tmp/build_start_timestamp_${PACKAGE} /tmp/build_state_before_${PACKAGE} /tmp/build_state_after_${PACKAGE}
 fi
 
 echo "Build and installation complete for $PACKAGE"
