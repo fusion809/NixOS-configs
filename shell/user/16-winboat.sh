@@ -34,5 +34,5 @@ function view_winboat {
 
     WIN_PASS=$(grep --include="*.log" -R '/p:"' ~/.winboat | sed 's|.*/p:"||g' | sed 's|" /v.*||g' | head -n 1)
     
-    sdl-freerdp /v:127.0.0.1:$RDP_PORT /u:$USER /p:"$WIN_PASS" /dynamic-resolution /cert:ignore +clipboard /network:auto /f
+    xfreerdp /v:127.0.0.1:$RDP_PORT /u:$USER /p:"$WIN_PASS" /dynamic-resolution /cert:ignore +clipboard /network:auto
 }

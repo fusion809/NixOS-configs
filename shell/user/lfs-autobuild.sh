@@ -1364,6 +1364,23 @@ if [[ "$PACKAGE" == "svt-av1" ]]; then
     COMMANDS=$(echo "$COMMANDS" | grep -vE "TestVectors|ctest")
 fi
 
+if [[ "$PACKAGE" == "qt6" ]]; then
+    log "Skipping qtopcua submodule in qt6 to bypass OpenSSL ASN1_TIME opaque compatibility compilation error..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's/rm -rf qtwebengine qt3d qtquick3dphysics/rm -rf qtwebengine qt3d qtquick3dphysics qtopcua/g')
+    if [[ ! "$COMMANDS" =~ "qtopcua" ]]; then
+        COMMANDS=$(echo "$COMMANDS" | sed 's|\./configure |rm -rf qtopcua \&\& \./configure |g')
+    fi
+    log "Applying qx509_openssl.cpp OpenSSL 4.0/3.4 opaque structures compatibility patch..."
+    PATCH_CMD='perl -0777 -pi -e '\''s/reinterpret_cast<const char \*>\(auth_key->keyid->data\),\s*auth_key->keyid->length/reinterpret_cast<const char *>(q_ASN1_STRING_get0_data(auth_key->keyid)), q_ASN1_STRING_length(auth_key->keyid)/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
+perl -0777 -pi -e '\''s/\*reinterpret_cast<quint32 \*>\(genName->d.iPAddress->data\)/*reinterpret_cast<const quint32 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress))/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
+perl -0777 -pi -e '\''s/reinterpret_cast<quint8 \*>\(genName->d.iPAddress->data\)/reinterpret_cast<const quint8 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress))/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
+perl -0777 -pi -e '\''s/hexString\.reserve\(serialNumber->length \* 3\);/const int len = q_ASN1_STRING_length(serialNumber); const unsigned char *data = q_ASN1_STRING_get0_data(serialNumber); hexString.reserve(len * 3);/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
+perl -0777 -pi -e '\''s/for \(int a = 0; a < serialNumber->length; \+\+a\)/for (int a = 0; a < len; ++a)/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
+perl -0777 -pi -e '\''s/serialNumber->data\[a\]/data[a]/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp'
+    COMMANDS="${PATCH_CMD}
+${COMMANDS}"
+fi
+
 if [[ "$PACKAGE" == "appstream" ]]; then
     log "Enabling Qt6 support in appstream (required for KDE Discover / AppStreamQt)..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D qt=true /g')

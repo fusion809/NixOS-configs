@@ -194,7 +194,44 @@ else
   export SDL_VIDEO_DRIVER=x11
   export SDL_VIDEODRIVER=x11
 fi
-exec ${pkgs.freerdp}/bin/sdl-freerdp "$@"
+
+W=1920
+H=1080
+if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  focused_mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)' 2>/dev/null)
+  if [ -n "$focused_mon" ]; then
+    mon_w=$(echo "$focused_mon" | jq -r '.width' 2>/dev/null)
+    mon_h=$(echo "$focused_mon" | jq -r '.height' 2>/dev/null)
+    if [ -n "$mon_w" ] && [ "$mon_w" -ge 200 ] && [ -n "$mon_h" ] && [ "$mon_h" -ge 200 ]; then
+      W=$mon_w
+      H=$mon_h
+    fi
+  fi
+fi
+
+# Strip /f, -f, /fullscreen from arguments to prevent Wayland size-detection crash
+args=""
+has_size=0
+for arg in "$@"; do
+  case "$arg" in
+    /f|-f|/fullscreen)
+      # Skip fullscreen flags
+      ;;
+    /size:*|-size:*|/w:*|/h:*)
+      has_size=1
+      args="$args \"$arg\""
+      ;;
+    *)
+      args="$args \"$arg\""
+      ;;
+  esac
+done
+
+if [ $has_size -eq 0 ]; then
+  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:${W}x${H}\"" $args
+else
+  eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
+fi
 EOF
       chmod +x $out/bin/xfreerdp3
 
@@ -207,7 +244,44 @@ else
   export SDL_VIDEO_DRIVER=x11
   export SDL_VIDEODRIVER=x11
 fi
-exec ${pkgs.freerdp}/bin/sdl-freerdp "$@"
+
+W=1920
+H=1080
+if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  focused_mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)' 2>/dev/null)
+  if [ -n "$focused_mon" ]; then
+    mon_w=$(echo "$focused_mon" | jq -r '.width' 2>/dev/null)
+    mon_h=$(echo "$focused_mon" | jq -r '.height' 2>/dev/null)
+    if [ -n "$mon_w" ] && [ "$mon_w" -ge 200 ] && [ -n "$mon_h" ] && [ "$mon_h" -ge 200 ]; then
+      W=$mon_w
+      H=$mon_h
+    fi
+  fi
+fi
+
+# Strip /f, -f, /fullscreen from arguments to prevent Wayland size-detection crash
+args=""
+has_size=0
+for arg in "$@"; do
+  case "$arg" in
+    /f|-f|/fullscreen)
+      # Skip fullscreen flags
+      ;;
+    /size:*|-size:*|/w:*|/h:*)
+      has_size=1
+      args="$args \"$arg\""
+      ;;
+    *)
+      args="$args \"$arg\""
+      ;;
+  esac
+done
+
+if [ $has_size -eq 0 ]; then
+  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:${W}x${H}\"" $args
+else
+  eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
+fi
 EOF
       chmod +x $out/bin/xfreerdp
     '';
