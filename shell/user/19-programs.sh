@@ -50,3 +50,9 @@ function bm3u8 {
 		wget -c "$m3u8URL" -O "$filename.m3u8"
 	done
 }
+
+function rename {
+	if ls | grep mp4 &> /dev/null; then
+		$HOME/.files/rename.sh
+	fi
+}
