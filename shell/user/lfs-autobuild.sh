@@ -215,6 +215,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
         xorg-nouveau)    PACKAGE="xf86-video-nouveau" ;;
         xdg-desktop-portal-kde) PACKAGE="plasma-all" ;;
         glib)                    PACKAGE="glib2" ;;
+        xev)             PACKAGE="xorg-app" ;;
     esac
 
     # 0. Check for custom package in ~/lfs_packaging
@@ -1350,7 +1351,7 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
 MOCK_DOC_DIR=\"/tmp/mock_docs_\$\$\"
 TEXLIVE_PREFIX=\"/opt/texlive/2025\"
 mkdir -p \"\$MOCK_DOC_DIR\"
-for m in doxygen makeinfo asciidoc xmlto asciidoctor xmlproc docbook2x pdflatex xelatex lualatex texi2html texi2pdf texi2dvi dvips sphinx-build; do
+for m in makeinfo asciidoc xmlto asciidoctor xmlproc docbook2x pdflatex xelatex lualatex texi2html texi2pdf texi2dvi dvips sphinx-build; do
     ln -sf /bin/true \"\$MOCK_DOC_DIR/\$m\"
 done
 export PATH=\"\$MOCK_DOC_DIR:\$PATH\"
@@ -1363,6 +1364,7 @@ if [[ "$PACKAGE" == "svt-av1" ]]; then
     # Filter out the extremely long test phase that downloads huge files
     COMMANDS=$(echo "$COMMANDS" | grep -vE "TestVectors|ctest")
 fi
+
 
 if [[ "$PACKAGE" == "qt6" ]]; then
     log "Skipping qtopcua submodule in qt6 to bypass OpenSSL ASN1_TIME opaque compatibility compilation error..."
@@ -1377,7 +1379,8 @@ perl -0777 -pi -e '\''s/reinterpret_cast<quint8 \*>\(genName->d.iPAddress->data\
 perl -0777 -pi -e '\''s/hexString\.reserve\(serialNumber->length \* 3\);/const int len = q_ASN1_STRING_length(serialNumber); const unsigned char *data = q_ASN1_STRING_get0_data(serialNumber); hexString.reserve(len * 3);/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/for \(int a = 0; a < serialNumber->length; \+\+a\)/for (int a = 0; a < len; ++a)/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/serialNumber->data\[a\]/data[a]/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
-perl -0777 -pi -e '\''s/DEFINEFUNC2\(X509_NAME_ENTRY \*, X509_NAME_get_entry, X509_NAME \*a, a, int b, b, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_STRING \*, X509_NAME_ENTRY_get_data, X509_NAME_ENTRY \*a, a, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_OBJECT \*, X509_NAME_ENTRY_get_object, X509_NAME_ENTRY \*a, a, return nullptr, return\)/typedef const X509_NAME_ENTRY *(*_q_PTR_X509_NAME_get_entry)(const X509_NAME *a, int b);\nstatic _q_PTR_X509_NAME_get_entry _q_X509_NAME_get_entry = nullptr;\nX509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a, int b) {\n    if (Q_UNLIKELY(!_q_X509_NAME_get_entry)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_get_entry");\n        return nullptr;\n    }\n    return const_cast<X509_NAME_ENTRY *>(_q_X509_NAME_get_entry(a, b));\n}\n\ntypedef const ASN1_STRING *(*_q_PTR_X509_NAME_ENTRY_get_data)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_data _q_X509_NAME_ENTRY_get_data = nullptr;\nASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_data)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_data");\n        return nullptr;\n    }\n    return const_cast<ASN1_STRING *>(_q_X509_NAME_ENTRY_get_data(a));\n}\n\ntypedef const ASN1_OBJECT *(*_q_PTR_X509_NAME_ENTRY_get_object)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_object _q_X509_NAME_ENTRY_get_object = nullptr;\nASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_object)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_object");\n        return nullptr;\n    }\n    return const_cast<ASN1_OBJECT *>(_q_X509_NAME_ENTRY_get_object(a));\n}/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp'
+perl -0777 -pi -e '\''s/DEFINEFUNC2\(X509_NAME_ENTRY \*, X509_NAME_get_entry, X509_NAME \*a, a, int b, b, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_STRING \*, X509_NAME_ENTRY_get_data, X509_NAME_ENTRY \*a, a, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_OBJECT \*, X509_NAME_ENTRY_get_object, X509_NAME_ENTRY \*a, a, return nullptr, return\)/#if !defined\(QT_LINKED_OPENSSL\)\ntypedef const X509_NAME_ENTRY *(*_q_PTR_X509_NAME_get_entry)(const X509_NAME *a, int b);\nstatic _q_PTR_X509_NAME_get_entry _q_X509_NAME_get_entry = nullptr;\nX509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a, int b) {\n    if (Q_UNLIKELY(!_q_X509_NAME_get_entry)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_get_entry");\n        return nullptr;\n    }\n    return const_cast<X509_NAME_ENTRY *>(_q_X509_NAME_get_entry(a, b));\n}\n\ntypedef const ASN1_STRING *(*_q_PTR_X509_NAME_ENTRY_get_data)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_data _q_X509_NAME_ENTRY_get_data = nullptr;\nASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_data)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_data");\n        return nullptr;\n    }\n    return const_cast<ASN1_STRING *>(_q_X509_NAME_ENTRY_get_data(a));\n}\n\ntypedef const ASN1_OBJECT *(*_q_PTR_X509_NAME_ENTRY_get_object)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_object _q_X509_NAME_ENTRY_get_object = nullptr;\nASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_object)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_object");\n        return nullptr;\n    }\n    return const_cast<ASN1_OBJECT *>(_q_X509_NAME_ENTRY_get_object(a));\n}\n#else\nX509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a, int b) {\n    return const_cast<X509_NAME_ENTRY *>(X509_NAME_get_entry(a, b));\n}\nASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_STRING *>(X509_NAME_ENTRY_get_data(a));\n}\nASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_OBJECT *>(X509_NAME_ENTRY_get_object(a));\n}\n#endif/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -pi -e '\''s/\{ funcret func\(([^)]*)\); \}/{ funcret (ret)func($1); }/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h'\
     COMMANDS="${PATCH_CMD}
 ${COMMANDS}"
 fi
@@ -1809,7 +1812,25 @@ if [[ "$UPSTREAM" == "true" ]]; then
         fi
     elif [[ "$PACKAGE" == "llvm" ]]; then
         log "Fetching latest upstream LLVM version from GitHub..."
-        UPSTREAM_VERSION=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases/latest | perl -nle 'while (m{"tag_name":\s*"llvmorg-([0-9.]+)"}g) { print $1 }' | head -n 1)
+        UPSTREAM_VERSION=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for rel in data:
+        tag = rel.get("tag_name", "")
+        if tag.startswith("llvmorg-"):
+            ver = tag.split("-")[1]
+            if any(a.get("name") == f"llvm-project-{ver}.src.tar.xz" for a in rel.get("assets", [])):
+                print(ver)
+                sys.exit(0)
+except Exception:
+    pass
+sys.exit(1)
+' 2>/dev/null)
+        if [[ -z "$UPSTREAM_VERSION" ]]; then
+            UPSTREAM_VERSION=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases/latest | perl -nle 'while (m{"tag_name":\s*"llvmorg-([0-9.]+)"}g) { print $1 }' | head -n 1)
+            [[ -z "$UPSTREAM_VERSION" || "$UPSTREAM_VERSION" == "22.1.6" ]] && UPSTREAM_VERSION="22.1.5"
+        fi
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream LLVM version: $UPSTREAM_VERSION"
             # Prefer monorepo as it simplifies the build structure for newer versions
@@ -3150,6 +3171,7 @@ rm -f "$RS_FILE"
   printf 'GEN_DIRNAME="%s"\n' "$GEN_DIRNAME"
   printf 'NORMAL_USER="%s"\n' "$NORMAL_USER"
   printf 'FRAMEWORKS_MODE="%s"\n' "$FRAMEWORKS_MODE"
+  printf 'PLASMA_MODE="%s"\n' "$PLASMA_MODE"
   printf 'XORG_MULTI_MODE="%s"\n' "$XORG_MULTI_MODE"
   printf 'RM_LIBS="%s"\n' "$RM_LIBS"
   printf 'YES="%s"\n' "$YES"
@@ -3199,7 +3221,7 @@ export -f as_root
 
 REMOTE_EOF
   cat <<'REMOTE_EOF'
-export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE XORG_MULTI_MODE RM_LIBS YES
+export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE PLASMA_MODE XORG_MULTI_MODE RM_LIBS YES
 
 (
   flock -x 200 || { echo "Another build is in progress. Waiting for lock..."; flock -x 200; }
@@ -3424,7 +3446,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     
     # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
     # Search in common archive locations for maximum robustness
-    local archive_path=""
+    archive_path=""
     if [ -f "$MAIN_FILENAME" ]; then
         archive_path="$MAIN_FILENAME"
     elif [ -f "/sources/archives/$MAIN_FILENAME" ]; then

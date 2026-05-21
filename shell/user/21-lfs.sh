@@ -372,7 +372,26 @@ lfs_get_upstream_version() {
             curl -s https://static.rust-lang.org/dist/channel-rust-stable.toml | perl -ne 'if (/^\[pkg\.rust\]/) { $in=1 } elsif ($in && /^version\s*=\s*"([0-9.]+)/) { print $1; exit }'
             ;;
         llvm)
-            curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases/latest | perl -nle 'while (m{"tag_name":\s*"llvmorg-([0-9.]+)"}g) { print $1 }' | head -n 1
+            local ver=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for rel in data:
+        tag = rel.get("tag_name", "")
+        if tag.startswith("llvmorg-"):
+            v = tag.split("-")[1]
+            if any(a.get("name") == f"llvm-project-{v}.src.tar.xz" for a in rel.get("assets", [])):
+                print(v)
+                sys.exit(0)
+except Exception:
+    pass
+sys.exit(1)
+' 2>/dev/null)
+            if [[ -z "$ver" ]]; then
+                ver=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/llvm/llvm-project/releases/latest | perl -nle 'while (m{"tag_name":\s*"llvmorg-([0-9.]+)"}g) { print $1 }' | head -n 1)
+                [[ -z "$ver" || "$ver" == "22.1.6" ]] && ver="22.1.5"
+            fi
+            echo "$ver"
             ;;
         libuv)
             curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
