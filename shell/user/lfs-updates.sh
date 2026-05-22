@@ -157,6 +157,33 @@ while IFS= read -r update_line; do
     j=$((j + 1))
 done <<< "$CUSTOM_UPDATES"
 
+# Append any broken packages (missing inventories) that are not already in the list
+while read -r bp; do
+    [[ -z "$bp" ]] && continue
+    bp=$(echo "$bp" | tr -d '[:space:]')
+    [[ -z "$bp" ]] && continue
+    
+    # Check if already in the output list (avoid duplicate entries)
+    if ! echo -e "$str" | grep -qE "^${bp}[[:space:]]*\|" 2>/dev/null; then
+        local_ver=$(ssh_lfs "[ -f /var/lib/book-packages/$bp ] && head -n 1 /var/lib/book-packages/$bp; [ -f /var/lib/custom-packages/$bp ] && head -n 1 /var/lib/custom-packages/$bp" 2>/dev/null | tr -d '\r\n[:space:]')
+        [[ -z "$local_ver" ]] && local_ver="none"
+        remote_ver="$local_ver"
+        
+        # Check if there is an official remote version
+        remote_pkg=$(echo "$REMOTE_LIST" | grep -Ei "^${bp}-([0-9]|FAILED)" | head -n 1)
+        if [[ -n "$remote_pkg" ]]; then
+            remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*|FAILED)/\1/' | tr -d '[:space:]')
+        fi
+        
+        label="[FILES MISSING]"
+        [[ "$local_ver" == "VERSION_MISSING" || "$local_ver" == "none" ]] && label="[VERSION MISSING]"
+        
+        str+=$(printf "%-30s | %-15s | %-15s %s" "$bp" "$local_ver" "$remote_ver" "$label")
+        str+="\n"
+        j=$((j + 1))
+    fi
+done <<< "$BROKEN_PKGS"
+
 if [[ $j -gt 0 ]]; then
     startStr="--------------------------------------------------------------------------------\n"
     startStr+=$(printf "%-30s | %-15s | %-15s\n" "Package" "Local" "Remote")

@@ -3434,7 +3434,7 @@ fi
 
 # Initialize inventory file with version before build starts to prevent overwriting DESTDIR captures
 # Skip this for meta-packages, as their subpackages track their own versions internally
-if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
+if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     sudo mkdir -p /var/lib/book-packages
     echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
     sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
