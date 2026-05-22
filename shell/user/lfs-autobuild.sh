@@ -214,6 +214,21 @@ for PACKAGE in "${PACKAGES[@]}"; do
         xorg-amdgpu)     PACKAGE="xf86-video-amdgpu" ;;
         xorg-nouveau)    PACKAGE="xf86-video-nouveau" ;;
         xdg-desktop-portal-kde) PACKAGE="plasma-all" ;;
+        # Plasma sub-packages: build only the named component from the plasma-all loop
+        libksysguard|kwin|kscreenlocker|kwayland|kpipewire|\
+        kinfocenter|ksystemstats|plasma-workspace|plasma-desktop|\
+        plasma-nm|plasma-pa|plasma-sdk|plasma-thunderbolt|\
+        plasma-disks|powerdevil|bluedevil|drkonqi|kscreen|\
+        breeze|breeze-gtk|kdeplasma-addons|sddm-kcm|\
+        plasma-systemmonitor|plasma-firewall|ksshaskpass|\
+        plasma-vault|plasma-pass|oxygen|plasma-browser-integration|\
+        milou|kde-cli-tools|kactivitymanagerd|ktexteditor|\
+        layer-shell-qt|plasma-activities|plasma-activities-stats|\
+        kde-gtk-config)
+            METAPACKAGE_TARGET="$PACKAGE"
+            PACKAGE="plasma-all"
+            log "Redirecting '$METAPACKAGE_TARGET' to plasma-all bundle (single-component build)."
+            ;;
         glib)                    PACKAGE="glib2" ;;
         xev)             PACKAGE="xorg-app" ;;
     esac
@@ -1408,6 +1423,11 @@ if [[ "$PACKAGE" == "pango" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed '/docs_dir =/d')
 fi
 
+if [[ "$PACKAGE" == "mesa" ]]; then
+    log "Filtering out erroneous 'Force probe' kernel config text from Mesa build commands..."
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "Force probe")
+fi
+
 if [[ "$PACKAGE" == "gjs" ]]; then
     log "Applying gjs gi/info.h patch: fixing gi_callable_info_get_closure_native_address return type (void** -> void*)..."
     # In newer gobject-introspection, gi_callable_info_get_closure_native_address() returns void* (not void**).
@@ -1520,7 +1540,7 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
         COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's{^(?!.*?(make install|tools\/))[[:space:]]*(cp|install|chmod|find).*?(doc\/|api\/|doxy\/|HTML\/|/usr/share/doc/).*?(\n|&&)}{}gm')
     fi
     # Also catch and neutralize specific doc building tools and python scripts in doc/
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/(^|[^a-zA-Z0-9_-])(doxygen|texi2html|texi2pdf|texi2dvi|makeinfo|pdflatex|xelatex|lualatex|asciidoc|xmlto|asciidoctor|xmlproc|docbook2x)\b/\1true /g')
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/(^|[^a-zA-Z0-9_-])(doxygen|texi2html|texi2pdf|texi2dvi|makeinfo|pdflatex|xelatex|lualatex|asciidoc|xmlto|asciidoctor|xmlproc|docbook2x)([^a-zA-Z0-9_-]|$)/\1true \3/g')
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpython3?[[:space:]]+doc\/[a-zA-Z0-9_-]+\.py\b/true /g')
     # Optional: neutralize test commands that might fail and kill the build
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\b(make|ninja)[[:space:]]+(check|test)\b/& || true/g')
@@ -1939,19 +1959,22 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" || "$PLASMA_M
         fi
     fi
     
-    # Extract filenames from the MD5 block in COMMANDS
-    FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /\s(\S+\.tar\.[a-z2]+)/g) { print "$1\n" } }')
+    # Extract filenames from the MD5 block in COMMANDS (skip commented-out lines)
+    FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^(?!\s*#).*?\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
     if [[ -z "$FILENAMES" ]]; then
-        FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^.*\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
+        FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^(?!#).*\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
     fi
 
-    if [[ -z "$FILENAMES" ]] && [[ "$PACKAGE" != "frameworks6" && "$PACKAGE" != "plasma-all" && "$PACKAGE" != "xorg-lib" ]]; then
+    if [[ -z "$FILENAMES" ]] && [[ "$PACKAGE" != "frameworks6" && "$PACKAGE" != "plasma-all" && "$PACKAGE" != "xorg-lib" ]] || \
+       [[ -z "$FILENAMES" && -n "$METAPACKAGE_TARGET" && "$PLASMA_MODE" == "true" ]]; then
         # Fallback: construct the filename for the target package if extraction failed
         if [[ "$PLASMA_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
              ver="${UPSTREAM_FULL:-$LFS_VERSION}"
              [[ -z "$ver" && -n "$TARGET_VER" ]] && ver="$TARGET_VER"
+             # Use METAPACKAGE_TARGET for single-component builds, PACKAGE otherwise
+             target_name="${METAPACKAGE_TARGET:-$PACKAGE}"
              if [[ -n "$ver" ]]; then
-                 FILENAMES="${PACKAGE}-${ver}.tar.xz"
+                 FILENAMES="${target_name}-${ver}.tar.xz"
                  log "Constructed fallback KDE filename: $FILENAMES"
              fi
         fi
@@ -1964,7 +1987,10 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" || "$PLASMA_M
         fi
         for f in $FILENAMES; do
             # Only add if it's the target package OR if we are in full metapackage mode
-            if [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" =~ ^${PACKAGE}[-_][0-9] ]]; then
+            # When METAPACKAGE_TARGET is set, only download that specific component
+            if [[ -n "$METAPACKAGE_TARGET" && "$PLASMA_MODE" == "true" ]]; then
+                [[ "$f" =~ ^${METAPACKAGE_TARGET}[-_][0-9] ]] && [[ -n "$f" ]] && DOWNLOAD_URLS+=("${BASE_URL}${f}")
+            elif [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" =~ ^${PACKAGE}[-_][0-9] ]]; then
                 [[ -n "$f" ]] && DOWNLOAD_URLS+=("${BASE_URL}${f}")
             fi
         done
@@ -3065,11 +3091,13 @@ fi
                 loop_content = loop_content "\n    DIRNAME=$(echo \"$line\" | awk \x27{print $2}\x27 | sed -E \"s/\\\\.tar\\\\.[a-z0-9.]+$//\")";
                 loop_content = loop_content "\n    PKGNAME=$(echo \"$DIRNAME\" | sed -E \"s/[-_][0-9].*//\")";
                 loop_content = loop_content "\n    PKGVER=$(echo \"$DIRNAME\" | sed \"s/^${PKGNAME}-//; s/^${PKGNAME}_//; s/[[:space:]]//g\")";
-                loop_content = loop_content "\n    if [ -n \"${PACKAGE}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then";
+                loop_content = loop_content "\n    if [ -n \"${METAPACKAGE_TARGET}\" ]; then";
+                loop_content = loop_content "\n        if [ \"$PKGNAME\" != \"${METAPACKAGE_TARGET}\" ] && [ \"$DIRNAME\" != \"${METAPACKAGE_TARGET}\" ]; then continue; fi";
+                loop_content = loop_content "\n    elif [ -n \"${PACKAGE}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then";
                 loop_content = loop_content "\n        if [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi\n    fi";
                 loop_content = loop_content "\n    echo \"[KDE-LOOP] Building component: $PKGNAME\"";
                 loop_content = loop_content "\n    TARBALL=$(echo \"$line\" | awk \x27{print $2}\x27)";
-                loop_content = loop_content "\n    if [ ! -f \"/sources/archives/${TARBALL}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then continue; fi";
+                loop_content = loop_content "\n    if [ ! -f \"/sources/archives/${TARBALL}\" ] && { [ -z \"${METAPACKAGE_TARGET}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ] || [ -n \"${METAPACKAGE_TARGET}\" ]; }; then continue; fi";
                 loop_content = loop_content "\n    if [ -f \"/sources/archives/${DIRNAME}.installed\" ] && [ \"$FORCE\" != \"true\" ]; then continue; fi";
                 loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 next;
@@ -3175,6 +3203,7 @@ rm -f "$RS_FILE"
   printf 'XORG_MULTI_MODE="%s"\n' "$XORG_MULTI_MODE"
   printf 'RM_LIBS="%s"\n' "$RM_LIBS"
   printf 'YES="%s"\n' "$YES"
+  printf 'METAPACKAGE_TARGET="%s"\n' "$METAPACKAGE_TARGET"
   
   # Inject version information for inventory recording
   RECORDED_VERSION="$LFS_VERSION"
@@ -3221,7 +3250,7 @@ export -f as_root
 
 REMOTE_EOF
   cat <<'REMOTE_EOF'
-export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE PLASMA_MODE XORG_MULTI_MODE RM_LIBS YES
+export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER FRAMEWORKS_MODE PLASMA_MODE XORG_MULTI_MODE RM_LIBS YES METAPACKAGE_TARGET
 
 (
   flock -x 200 || { echo "Another build is in progress. Waiting for lock..."; flock -x 200; }

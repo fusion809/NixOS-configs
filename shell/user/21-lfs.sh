@@ -230,6 +230,10 @@ cleanup_old_libraries_gpt() {
         return
     fi
 
+    # Track packages already rebuilt this session to avoid rebuilding the same
+    # package dozens of times (e.g. once per old boost .so variant)
+    declare -A rebuilt_packages=()
+
     for i in "${old_items[@]}"; do
         [ -e "$i" ] || continue
         echo "------------------------------------------------"
@@ -321,13 +325,19 @@ cleanup_old_libraries_gpt() {
         
         local rebuild_success=true
         for pkg in "${pkgs[@]}"; do
+            if [[ -n "${rebuilt_packages[$pkg]+x}" ]]; then
+                echo "Skipping rebuild of '$pkg' (already rebuilt in this session)."
+                continue
+            fi
             echo "Action: Rebuilding $pkg to switch to newer library..."
-            lfs_autobuild --force "$pkg" || {
+            if lfs_autobuild --force "$pkg"; then
+                rebuilt_packages[$pkg]=1
+            else
                 local item_name=$(basename "$i")
                 echo "Error: Failed to rebuild $pkg. Cannot delete $item_name."
                 rebuild_success=false
                 break
-            }
+            fi
         done
 
         if [ "$rebuild_success" = true ]; then
