@@ -45,6 +45,23 @@ lfs_package_commit() {
         echo "If no message is provided, one will be auto-generated based on changes."
         return 0
     fi
+
+    # Safety check: refuse to commit if any inventory is broken (≤1 line = only version
+    # header, or BUILD_FAILED marker written by the failure trap in lfs-autobuild.sh).
+    local broken_pkgs
+    broken_pkgs=$(find /var/lib/book-packages /var/lib/custom-packages \
+        -maxdepth 1 -type f ! -name ".*" 2>/dev/null \
+        | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" \
+        | while read -r f; do
+            [ "$(wc -l < "$f")" -le 1 ] && basename "$f"
+          done)
+    if [[ -n "$broken_pkgs" ]]; then
+        echo "ERROR: Refusing to commit — the following packages have missing/broken inventories:"
+        echo "$broken_pkgs"
+        echo "Fix them (re-run lfs_autobuild for each), then retry lfs_package_commit."
+        return 1
+    fi
+
     local msg="$1"
     local push_needed=false
     for dir in /var/lib/book-packages /var/lib/custom-packages; do
@@ -96,6 +113,7 @@ lfs_package_commit() {
         fi
     done
 }
+
 if [ -n "$BASH_VERSION" ]; then
     export -f lfs_package_commit
 fi

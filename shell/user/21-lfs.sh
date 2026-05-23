@@ -617,7 +617,7 @@ lfs_rebuild_missing_inventories() {
         while read -r f; do
             pkg_name=$(basename "$f")
             # Only consider it missing if it has <= 1 line AND no build is currently in progress for it
-            if [ $(wc -l < "$f") -le 1 ] && ! [ -f "/tmp/build_start_timestamp_${pkg_name}" ]; then
+            if [ $(wc -l < "$f") -le 1 ]; then
                 echo "$pkg_name"
             fi
         done
@@ -1532,7 +1532,7 @@ DEPEOF
     # Git commit and push if everything is healthy
     if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
         echo "Checking system health before committing updates..."
-        local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && ! [ -f "/tmp/build_start_timestamp_${pkg}" ] && echo "$pkg"; done')
+        local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && echo "$pkg"; done')
         if [[ -z "$broken_pkgs_check" ]]; then
             echo "System healthy. Triggering automated registry commit..."
             ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit'"

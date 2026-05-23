@@ -3256,6 +3256,24 @@ export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER F
   flock -x 200 || { echo "Another build is in progress. Waiting for lock..."; flock -x 200; }
 set -e
 
+# Cleanup trap: always remove timestamp/state files on exit.
+# On failure, also clear the inventory so the commit guard reliably detects the broken build.
+_lfs_build_trap() {
+    local exit_code=$?
+    rm -f "/tmp/build_start_timestamp_${PACKAGE}" \
+          "/tmp/build_state_before_${PACKAGE}" \
+          "/tmp/build_state_after_${PACKAGE}"
+    if [ $exit_code -ne 0 ]; then
+        # Wipe the inventory file so it cannot be mistaken for a healthy build
+        # (it currently only contains the version line written before the build).
+        if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
+            sudo bash -c "echo 'BUILD_FAILED' > '/var/lib/book-packages/${PACKAGE}' 2>/dev/null" || true
+        fi
+    fi
+    exit $exit_code
+}
+trap '_lfs_build_trap' EXIT
+
 # Record start time for file tracking
 touch "/tmp/build_start_timestamp_${PACKAGE}"
 
@@ -3409,6 +3427,13 @@ else
             if [[ "${PACKAGE,,}" == "libportal" ]] && [[ -f "$TARGET_DIR/libportal/meson.build" ]]; then
                 echo "Applying libportal-specific Meson fix for Qt6 dependency..."
                 sed -i "s/requires: \[qt6_dep/requires: ['Qt6Core', 'Qt6Gui', 'Qt6Widgets'/" "$TARGET_DIR/libportal/meson.build"
+            fi
+            if [[ "${PACKAGE,,}" == "ruby" ]] && [[ -f "$TARGET_DIR/ext/openssl/ossl_asn1.c" ]]; then
+                echo "Applying Ruby OpenSSL 3.x ASN1 compatibility patch (opaque struct accessor)..."
+                # OpenSSL 3.x made ASN1_BIT_STRING opaque; direct ->data access fails.
+                # Replace with the public ASN1_STRING_get0_data() accessor.
+                sed -i 's/(const char \*)bstr->data/(const char *)ASN1_STRING_get0_data((const ASN1_STRING *)bstr)/g' \
+                    "$TARGET_DIR/ext/openssl/ossl_asn1.c"
             fi
         else
             echo "[ERROR] Unsafe DIRNAME detected: $DIRNAME. Aborting extraction to prevent data loss."
