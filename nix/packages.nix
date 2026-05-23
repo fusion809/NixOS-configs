@@ -139,8 +139,7 @@ with pkgs; [
   julia
   python313Packages.jupyterlab
   octave
-  R
-  rstudio
+  (pkgs.callPackage ./r-fhs-env.nix { })
   sage
   ###############################################################
   # NixOS utilities
