@@ -43,8 +43,15 @@ echo "PATH=$PATH"
 
 # Capture files with uncommitted changes before script makes any modifications
 files_before=$(git -C $NIXCFG diff --name-only | sort)
-# Cache the HEAD flake.lock before nixfu may update it - used for all old_rev comparisons
-head_flake_lock=$(git -C $NIXCFG show HEAD:nix/flake.lock)
+# Use the flake.lock from the last successful nixfrb build as the baseline.
+# This ensures we detect all pending updates, not just those introduced by
+# nixfu running in this session. Fall back to HEAD's flake.lock if the
+# snapshot doesn't exist yet (e.g. first run after adding this feature).
+if [[ -f "$HOME/.cache/last-built-flake.lock" ]]; then
+	head_flake_lock=$(cat "$HOME/.cache/last-built-flake.lock")
+else
+	head_flake_lock=$(git -C $NIXCFG show HEAD:nix/flake.lock)
+fi
 
 if [[ $(git -C $NIXCFG diff | wc -l) -eq 0 ]]; then
 	export git_clean=true

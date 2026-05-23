@@ -228,7 +228,7 @@ for arg in "$@"; do
 done
 
 if [ $has_size -eq 0 ]; then
-  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:${W}x${H}\"" $args
+  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:''${W}x''${H}\"" $args
 else
   eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
 fi
@@ -278,7 +278,7 @@ for arg in "$@"; do
 done
 
 if [ $has_size -eq 0 ]; then
-  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:${W}x${H}\"" $args
+  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:''${W}x''${H}\"" $args
 else
   eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
 fi

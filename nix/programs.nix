@@ -80,7 +80,11 @@ in {
   waybar = {
     enable = true;
     package = let
-      pkg = inputs.waybar.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      pkg = (inputs.waybar.packages.${pkgs.stdenv.hostPlatform.system}.default).overrideAttrs (old: {
+        # Disable tests to avoid missing catch2 dependency and flaky test timeouts
+        doCheck = false;
+        mesonFlags = (old.mesonFlags or []) ++ [ "-Dtests=disabled" ];
+      });
     in pkg // { override = args: pkg; };
   };
 

@@ -79,6 +79,9 @@ function nixfrb {
     git add --all
   fi
   sudo nixos-rebuild switch -I nixos-config="$NIXCFG/nix/configuration.nix" --flake "$NIXCFG/nix/#nixos" --impure || return
+  # Snapshot the flake.lock used by this build so updates can compare against
+  # what was actually installed, rather than what is currently at HEAD.
+  cp "$NIXCFG/nix/flake.lock" "$HOME/.cache/last-built-flake.lock"
   nixdiff
   sed -i -e "2s|.*||g" $HOME/.cache/update
 }
