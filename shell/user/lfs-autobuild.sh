@@ -3429,11 +3429,76 @@ else
                 sed -i "s/requires: \[qt6_dep/requires: ['Qt6Core', 'Qt6Gui', 'Qt6Widgets'/" "$TARGET_DIR/libportal/meson.build"
             fi
             if [[ "${PACKAGE,,}" == "ruby" ]] && [[ -f "$TARGET_DIR/ext/openssl/ossl_asn1.c" ]]; then
-                echo "Applying Ruby OpenSSL 3.x ASN1 compatibility patch (opaque struct accessor)..."
-                # OpenSSL 3.x made ASN1_BIT_STRING opaque; direct ->data access fails.
-                # Replace with the public ASN1_STRING_get0_data() accessor.
-                sed -i 's/(const char \*)bstr->data/(const char *)ASN1_STRING_get0_data((const ASN1_STRING *)bstr)/g' \
-                    "$TARGET_DIR/ext/openssl/ossl_asn1.c"
+                echo "Applying Ruby OpenSSL 4.0 compatibility patch via python..."
+                python3 -c '
+import os
+file_path = os.path.join("'"$TARGET_DIR"'", "ext/openssl/ossl_asn1.c")
+with open(file_path, "r") as f:
+    code = f.read()
+
+# Fix obj_to_asn1bstr body (may already be done by BLFS patch hunk #1)
+target1 = """    ASN1_BIT_STRING_set(bstr, (unsigned char *)RSTRING_PTR(obj), RSTRING_LENINT(obj));
+    bstr->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07); /* clear */
+    bstr->flags |= ASN1_STRING_FLAG_BITS_LEFT | unused_bits;"""
+
+replacement1 = """    if (!ASN1_BIT_STRING_set1(bstr, (const unsigned char *)RSTRING_PTR(obj), RSTRING_LENINT(obj), (int)unused_bits)) {
+        ASN1_BIT_STRING_free(bstr);
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_set1");
+    }"""
+
+# Fix decode_bstr body (original uses opaque bstr->length, bstr->flags, bstr->data)
+target2 = """    long len;
+    VALUE ret;
+
+    p = der;
+    if(!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
+        ossl_raise(eASN1Error, NULL);
+    len = bstr->length;
+    *unused_bits = 0;
+    if(bstr->flags & ASN1_STRING_FLAG_BITS_LEFT)
+        *unused_bits = bstr->flags & 0x07;
+    ret = rb_str_new((const char *)bstr->data, len);"""
+
+replacement2 = """    size_t len = 0;
+    int unused = 0;
+    VALUE ret;
+
+    p = der;
+    if(!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
+        ossl_raise(eASN1Error, NULL);
+    if (!ASN1_BIT_STRING_get_length(bstr, &len, &unused)) {
+        ASN1_BIT_STRING_free(bstr);
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_get_length");
+    }
+    *unused_bits = unused;
+    ret = rb_str_new((const char *)ASN1_STRING_get0_data((const ASN1_STRING *)bstr), (long)len);"""
+
+if target1 in code:
+    code = code.replace(target1, replacement1)
+    print("Patched obj_to_asn1bstr body")
+else:
+    print("obj_to_asn1bstr body: already patched or not found, skipping")
+
+if target2 in code:
+    code = code.replace(target2, replacement2)
+    print("Patched decode_bstr body")
+else:
+    print("decode_bstr body: already patched or not found, skipping")
+
+# Always fix decode_bstr signature: long *unused_bits -> int *unused_bits
+# (call site passes &flag which is int*, so signature must match)
+sig_old = "decode_bstr(unsigned char* der, long length, long *unused_bits)"
+sig_new = "decode_bstr(unsigned char* der, long length, int *unused_bits)"
+if sig_old in code:
+    code = code.replace(sig_old, sig_new)
+    print("Fixed decode_bstr signature: long* -> int*")
+else:
+    print("decode_bstr signature: already int* or not found")
+
+with open(file_path, "w") as f:
+    f.write(code)
+print("Done writing ossl_asn1.c")
+'
             fi
         else
             echo "[ERROR] Unsafe DIRNAME detected: $DIRNAME. Aborting extraction to prevent data loss."
@@ -3470,6 +3535,9 @@ echo "Running build commands (user blocks as ${NORMAL_USER}, root blocks as root
 # to avoid quoting issues with base64 embedding inside the remote script.
 if [ -n "$BS_B64" ]; then
     echo "$BS_B64" | base64 -d > /tmp/build-cmds-${PACKAGE}.sh
+    if [[ "${PACKAGE,,}" == "ruby" ]]; then
+        sed -i 's/bundle update rake/bundle update rake || true/g' /tmp/build-cmds-${PACKAGE}.sh
+    fi
     chmod +x /tmp/build-cmds-${PACKAGE}.sh
     bash /tmp/build-cmds-${PACKAGE}.sh
 else
