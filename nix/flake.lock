@@ -569,11 +569,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1779499021,
-        "narHash": "sha256-RBAp8Ff0wZQt9Yq1kO55TChX6ATfLidcf4/9F9zI9M4=",
+        "lastModified": 1779501318,
+        "narHash": "sha256-tHQZV5xcqUfhBRnLK6u39SxMq0foBfrI171Orp8T7DQ=",
         "ref": "master",
-        "rev": "dd994a36a618111bd2e87e2e47912a76d960b85d",
-        "revCount": 1003597,
+        "rev": "7d57c2dc3d91fb0cedf0a84d5408ed31d1ef056e",
+        "revCount": 1003599,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
