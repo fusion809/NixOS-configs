@@ -601,7 +601,7 @@ if [[ -z "$PAGE_URL" ]] || [[ "$PACKAGE" =~ ^(xorg|x7|libX|libx|font-|xf86-input
 
         # Fetch metapackage content to verify if PACKAGE is actually a component (listed in md5 block)
         mp_html=$(curl -s "$BLFS_BOOK/$mp_page")
-        if echo "$mp_html" | grep -iqE "cat > \S+\.md5 << \"EOF\"[[:space:]]+.*${PACKAGE}[-_][0-9].*\.tar"; then
+        if echo "$mp_html" | grep -iqE "[a-fA-F0-9]{32}[[:space:]]+${PACKAGE}[-_][0-9].*\.tar"; then
             PAGE_URL="$BLFS_BOOK/$mp_page"
             METAPACKAGE_TARGET=$(basename "$mp_page" .html)
             SINGLE_COMPONENT_MODE="$PACKAGE"
@@ -1382,6 +1382,9 @@ fi
 
 
 if [[ "$PACKAGE" == "qt6" ]]; then
+    log "Fixing Qt6 BLFS book patch path (../ to ../../) due to -d qtbase/"
+    COMMANDS=$(echo "$COMMANDS" | sed 's|-i ../qt-everywhere|-i ../../qt-everywhere|g')
+    
     log "Skipping qtopcua submodule in qt6 to bypass OpenSSL ASN1_TIME opaque compatibility compilation error..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/rm -rf qtwebengine qt3d qtquick3dphysics/rm -rf qtwebengine qt3d qtquick3dphysics qtopcua/g')
     if [[ ! "$COMMANDS" =~ "qtopcua" ]]; then
@@ -3264,10 +3267,14 @@ _lfs_build_trap() {
           "/tmp/build_state_before_${PACKAGE}" \
           "/tmp/build_state_after_${PACKAGE}"
     if [ $exit_code -ne 0 ]; then
-        # Wipe the inventory file so it cannot be mistaken for a healthy build
-        # (it currently only contains the version line written before the build).
+        # Wipe the inventory file and write the error log so the commit guard reliably detects the broken build
+        # but also preserves exactly what failed for the user.
         if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
             sudo bash -c "echo 'BUILD_FAILED' > '/var/lib/book-packages/${PACKAGE}' 2>/dev/null" || true
+            if [ -f "/tmp/build_log_${PACKAGE}.txt" ]; then
+                sudo bash -c "echo '--- ERROR LOG (Last 30 lines) ---' >> '/var/lib/book-packages/${PACKAGE}'" || true
+                sudo tail -n 30 "/tmp/build_log_${PACKAGE}.txt" | sudo tee -a "/var/lib/book-packages/${PACKAGE}" >/dev/null || true
+            fi
         fi
     fi
     exit $exit_code
@@ -3539,7 +3546,13 @@ if [ -n "$BS_B64" ]; then
         sed -i 's/bundle update rake/bundle update rake || true/g' /tmp/build-cmds-${PACKAGE}.sh
     fi
     chmod +x /tmp/build-cmds-${PACKAGE}.sh
-    bash /tmp/build-cmds-${PACKAGE}.sh
+    set +e
+    bash /tmp/build-cmds-${PACKAGE}.sh 2>&1 | tee "/tmp/build_log_${PACKAGE}.txt"
+    build_exit_code=${PIPESTATUS[0]}
+    set -e
+    if [ $build_exit_code -ne 0 ]; then
+        exit $build_exit_code
+    fi
 else
      echo "[ERROR] BUILD_SCRIPT content (BS_B64) not found on guest."
      echo "$COMMANDS" > /tmp/cmds_final.out
