@@ -3,7 +3,7 @@ if ! `ps ax | grep Outlive2025.exe | grep -v grep &> /dev/null`; then
 	steam steam://rungameid/2948680
 else
 
-	# Find the workspace where RuneScape is located
+	# Find the workspace where Outlive is located
 	ws=$(hyprctl clients -j | jq -r '.[] | select(.class=="steam_app_2948680") | .workspace.id' | tail -n 1)
 
 	if [ -n "$ws" ]; then
