@@ -37,3 +37,57 @@ function sortFiles {
 function prunedf {
 	find ~/.files/ -name .git -prune -o -type d -print0 | xargs -0 fdupes -d -N
 }
+
+function compress_bike_rides() {
+	local base_dir="$HOME/Pictures/Phone/Bike rides"
+	if [ ! -d "$base_dir" ]; then
+		base_dir="$HOME/Pictures/Phone/Bike Rides"
+	fi
+
+	local date="$1"
+	if [ -z "$date" ]; then
+		date=$(date +%Y-%m-%d)
+		if [ ! -d "$base_dir/$date" ]; then
+			local latest_dir=$(ls -1d "$base_dir"/*/ 2>/dev/null | sort -Vr | head -n 1)
+			if [ -n "$latest_dir" ]; then
+				date=$(basename "$latest_dir")
+				echo "No folder found for today. Using most recent folder: $date"
+			else
+				echo "Error: No date provided and no folders found in $base_dir."
+				return 1
+			fi
+		else
+			echo "No date provided. Using today's date: $date"
+		fi
+	fi
+
+	local original_dir="$base_dir/$date/Original/Best"
+	local compressed_dir="$base_dir/$date/Compressed"
+
+	if [ ! -d "$original_dir" ]; then
+		echo "Error: Directory not found - $original_dir"
+		return 1
+	fi
+
+	mkdir -p "$compressed_dir"
+
+	nix-shell -p imagemagick --run "
+		cd \"$original_dir\" || exit 1
+		for img in *.[jJ][pP][gG] *.[jJ][pP][eE][gG]; do
+			[ -e \"\$img\" ] || continue
+			
+			# Get file size in bytes
+			size=\$(stat -c%s \"\$img\" 2>/dev/null || stat -f%z \"\$img\" 2>/dev/null)
+			
+			# 10MB = 10485760 bytes
+			if [ \"\$size\" -gt 10485760 ]; then
+				echo \"Compressing \$img (\$size bytes) to under 10MB...\"
+				magick \"\$img\" -quality 90 -define jpeg:extent=10MB \"$compressed_dir/\$img\"
+			else
+				echo \"Skipping \$img (\$size bytes) - already under 10MB. Copying original.\"
+				cp -n \"\$img\" \"$compressed_dir/\$img\"
+			fi
+		done
+		echo 'Compression complete!'
+	"
+}

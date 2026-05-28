@@ -213,6 +213,11 @@ for PACKAGE in "${PACKAGES[@]}"; do
         xorg-intel)      PACKAGE="xf86-video-intel" ;;
         xorg-amdgpu)     PACKAGE="xf86-video-amdgpu" ;;
         xorg-nouveau)    PACKAGE="xf86-video-nouveau" ;;
+        attica|extra-cmake-modules|kapidox|karchive|kcodecs|kconfig|kcoreaddons|kdbusaddons|kdnssd|kguiaddons|ki18n|kidletime|kimageformats|kitemmodels|kitemviews|kplotting|kwidgetsaddons|kwindowsystem|networkmanager-qt|solid|sonnet|threadweaver|kauth|kcompletion|kcrash|kdoctools|kpty|kunitconversion|kcolorscheme|kconfigwidgets|kservice|kglobalaccel|kpackage|kdesu|kiconthemes|knotifications|kjobwidgets|ktextwidgets|kxmlgui|kbookmarks|kwallet|kded|kio|kdeclarative|kirigami|kcmutils|syndication|knewstuff|frameworkintegration|kparts|syntax-highlighting|ktexteditor|modemmanager-qt|kcontacts|kpeople|bluez-qt|kfilemetadata|baloo|breeze-icons|krunner|prison|qqc2-desktop-style|kholidays|purpose|kcalendarcore|kquickcharts|knotifyconfig|kdav|kstatusnotifieritem|ksvg|ktexttemplate|kuserfeedback)
+            METAPACKAGE_TARGET="$PACKAGE"
+            PACKAGE="frameworks6"
+            log "Redirecting '$METAPACKAGE_TARGET' to frameworks6 bundle (single-component build)."
+            ;;
         xdg-desktop-portal-kde) PACKAGE="plasma-all" ;;
         # Plasma sub-packages: build only the named component from the plasma-all loop
         libksysguard|kwin|kscreenlocker|kwayland|kpipewire|\
@@ -230,7 +235,22 @@ for PACKAGE in "${PACKAGES[@]}"; do
             log "Redirecting '$METAPACKAGE_TARGET' to plasma-all bundle (single-component build)."
             ;;
         glib)                    PACKAGE="glib2" ;;
-        xev)             PACKAGE="xorg-app" ;;
+        # Xorg apps, libs, and fonts sub-packages
+        libX11|libXext|libXrender|libXft|libXi|libXau|libXdmcp|libxcb|xcb-util*)
+            METAPACKAGE_TARGET="$PACKAGE"
+            PACKAGE="xorg-lib"
+            log "Redirecting '$METAPACKAGE_TARGET' to xorg-lib bundle (single-component build)."
+            ;;
+        xterm|xclock|xinit|xauth|iceauth|sessreg|setxkbmap|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
+            METAPACKAGE_TARGET="$PACKAGE"
+            PACKAGE="xorg-app"
+            log "Redirecting '$METAPACKAGE_TARGET' to xorg-app bundle (single-component build)."
+            ;;
+        font-*)
+            METAPACKAGE_TARGET="$PACKAGE"
+            PACKAGE="xorg-font"
+            log "Redirecting '$METAPACKAGE_TARGET' to xorg-font bundle (single-component build)."
+            ;;
     esac
 
     # 0. Check for custom package in ~/lfs_packaging
@@ -889,8 +909,7 @@ get_commands() {
         }
     ' | perl -0777 -pe 's/<[^>]+>//gs' | \
         sed "s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/\"/g" | \
-        sed 's/\\ \+/ /g' | \
-        perl -0777 -pe 's/([ \t])\\\n\s*/$1/gs' | \
+        perl -0777 -pe 's/\\\n\s*/ /gs; s/\\\s+/ /gs' | \
         sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
         grep -vE "^[[:space:]]*<[a-zA-Z ]+>[[:space:]]*$" | \
@@ -1390,15 +1409,18 @@ if [[ "$PACKAGE" == "qt6" ]]; then
     if [[ ! "$COMMANDS" =~ "qtopcua" ]]; then
         COMMANDS=$(echo "$COMMANDS" | sed 's|\./configure |rm -rf qtopcua \&\& \./configure |g')
     fi
-    log "Applying qx509_openssl.cpp OpenSSL 4.0/3.4 opaque structures compatibility patch..."
+    log "Applying qsslsocket_openssl_symbols.cpp OpenSSL 4.0 const-return type patches..."
     PATCH_CMD='perl -0777 -pi -e '\''s/reinterpret_cast<const char \*>\(auth_key->keyid->data\),\s*auth_key->keyid->length/reinterpret_cast<const char *>(q_ASN1_STRING_get0_data(auth_key->keyid)), q_ASN1_STRING_length(auth_key->keyid)/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
-perl -0777 -pi -e '\''s/\*reinterpret_cast<quint32 \*>\(genName->d.iPAddress->data\)/*reinterpret_cast<const quint32 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress))/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
-perl -0777 -pi -e '\''s/reinterpret_cast<quint8 \*>\(genName->d.iPAddress->data\)/reinterpret_cast<const quint8 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress))/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
+perl -0777 -pi -e '\''s/\*reinterpret_cast<quint32 \*>\(genName->d\.iPAddress->data\)/*reinterpret_cast<const quint32 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress))/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
+perl -0777 -pi -e '\''s/reinterpret_cast<quint8 \*>\(genName->d\.iPAddress->data\)/reinterpret_cast<const quint8 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress))/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/hexString\.reserve\(serialNumber->length \* 3\);/const int len = q_ASN1_STRING_length(serialNumber); const unsigned char *data = q_ASN1_STRING_get0_data(serialNumber); hexString.reserve(len * 3);/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/for \(int a = 0; a < serialNumber->length; \+\+a\)/for (int a = 0; a < len; ++a)/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/serialNumber->data\[a\]/data[a]/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/DEFINEFUNC2\(X509_NAME_ENTRY \*, X509_NAME_get_entry, X509_NAME \*a, a, int b, b, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_STRING \*, X509_NAME_ENTRY_get_data, X509_NAME_ENTRY \*a, a, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_OBJECT \*, X509_NAME_ENTRY_get_object, X509_NAME_ENTRY \*a, a, return nullptr, return\)/#if !defined\(QT_LINKED_OPENSSL\)\ntypedef const X509_NAME_ENTRY *(*_q_PTR_X509_NAME_get_entry)(const X509_NAME *a, int b);\nstatic _q_PTR_X509_NAME_get_entry _q_X509_NAME_get_entry = nullptr;\nX509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a, int b) {\n    if (Q_UNLIKELY(!_q_X509_NAME_get_entry)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_get_entry");\n        return nullptr;\n    }\n    return const_cast<X509_NAME_ENTRY *>(_q_X509_NAME_get_entry(a, b));\n}\n\ntypedef const ASN1_STRING *(*_q_PTR_X509_NAME_ENTRY_get_data)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_data _q_X509_NAME_ENTRY_get_data = nullptr;\nASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_data)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_data");\n        return nullptr;\n    }\n    return const_cast<ASN1_STRING *>(_q_X509_NAME_ENTRY_get_data(a));\n}\n\ntypedef const ASN1_OBJECT *(*_q_PTR_X509_NAME_ENTRY_get_object)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_object _q_X509_NAME_ENTRY_get_object = nullptr;\nASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_object)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_object");\n        return nullptr;\n    }\n    return const_cast<ASN1_OBJECT *>(_q_X509_NAME_ENTRY_get_object(a));\n}\n#else\nX509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a, int b) {\n    return const_cast<X509_NAME_ENTRY *>(X509_NAME_get_entry(a, b));\n}\nASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_STRING *>(X509_NAME_ENTRY_get_data(a));\n}\nASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_OBJECT *>(X509_NAME_ENTRY_get_object(a));\n}\n#endif/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
-perl -pi -e '\''s/\{ funcret func\(([^)]*)\); \}/{ funcret (ret)func($1); }/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h'\
+perl -pi -e '\''s/\{ funcret func\(([^)]*)\); \}/{ funcret (ret)func($1); }/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h
+perl -0777 -pi -e '\''s/DEFINEFUNC2\(X509_EXTENSION \*, X509_get_ext, X509 \*a, a, int b, b, return nullptr, return\)/DEFINEFUNC2(const X509_EXTENSION *, X509_get_ext, X509 *a, a, int b, b, return nullptr, return)/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(X509_NAME \*, X509_get_issuer_name, X509 \*a, a, return nullptr, return\)/DEFINEFUNC(const X509_NAME *, X509_get_issuer_name, X509 *a, a, return nullptr, return)/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(X509_NAME \*, X509_get_subject_name, X509 \*a, a, return nullptr, return\)/DEFINEFUNC(const X509_NAME *, X509_get_subject_name, X509 *a, a, return nullptr, return)/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp'
     COMMANDS="${PATCH_CMD}
 ${COMMANDS}"
 fi
@@ -1471,7 +1493,57 @@ as_root bash -c "mkdir -p /etc/profile.d && printf '"'"'# Begin /etc/profile.d/r
     # Strip the 'source /etc/profile.d/rustc.sh' line — it updates PATH for the interactive
     # user session but is irrelevant (and breaks) during an automated build script.
     COMMANDS=$(echo "$COMMANDS" | grep -v "source /etc/profile.d/rustc.sh")
+
+    # Patch vendored openssl-sys to accept OpenSSL 4.x.
+    # openssl-sys <=0.9.111 hard-errors if it detects OpenSSL >= 4.0 (version_number >= 0x40000000).
+    # The system has OpenSSL 4.0 installed, so we patch the version check in the vendored crate
+    # to extend the acceptable range.  We inject these commands just before ./x.py build.
+    OPENSSL_SYS_PATCH='
+# Patch vendored openssl-sys to accept OpenSSL 4.x (system has 4.0, openssl-sys 0.9.x caps at 3.x)
+# The relevant check in build/main.rs (openssl-sys 0.9.111) is:
+#   if openssl_version >= 0x4_00_00_00_0 {
+#       version_error()
+#   } else if openssl_version >= 0x3_00_00_00_0 {
+#       Version::Openssl3xx
+# We patch it to treat 4.x the same as 3.x by changing the panic branch to return Openssl3xx.
+OSSL_SYS_MAIN=$(find . -path "*/openssl-sys-*/build/main.rs" 2>/dev/null | head -n 1)
+if [ -n "$OSSL_SYS_MAIN" ]; then
+    echo "[LFS-AUTOBUILD] Patching $OSSL_SYS_MAIN to accept OpenSSL 4.x..."
+    # Replace: if openssl_version >= 0x4_00_00_00_0 { version_error() }
+    # With:    if openssl_version >= 0x5_00_00_00_0 { version_error() }
+    # This effectively makes 4.x fall through to the Openssl3xx branch below.
+    sed -i "s/openssl_version >= 0x4_00_00_00_0/openssl_version >= 0x5_00_00_00_0/g" "$OSSL_SYS_MAIN"
+    # Also add check-cfg declarations for ossl400/ossl410 so rustc does not warn
+    # about unknown cfg values. Insert after the ossl350 check-cfg line.
+    sed -i "/rustc-check-cfg=cfg(ossl350)/a\\    println!(\"cargo:rustc-check-cfg=cfg(ossl400)\");\n    println!(\"cargo:rustc-check-cfg=cfg(ossl410)\");" "$OSSL_SYS_MAIN"
+    echo "[LFS-AUTOBUILD] openssl-sys patch applied successfully."
+else
+    echo "[LFS-AUTOBUILD] WARNING: Could not find vendored openssl-sys/build/main.rs to patch."
 fi
+'
+    if [[ "$COMMANDS" == *"./x.py build"* ]]; then
+        OPENSSL_SYS_PATCH_ESC="${OPENSSL_SYS_PATCH//&/\\&}"
+        COMMANDS="${COMMANDS//.\\/x.py build/$OPENSSL_SYS_PATCH_ESC
+./x.py build}"
+    fi
+fi
+
+if [[ "$PACKAGE" == "qca" ]]; then
+    log "Applying qca OpenSSL 4.x compatibility patch: replacing removed SSLv3_client_method..."
+    # SSLv3_client_method() was removed in OpenSSL 1.1.0. In the qca-ossl plugin it is used
+    # inside supportedCipherSuites() to enumerate SSLv3 suites — functionality that is
+    # meaningless on modern OpenSSL anyway. Replace it with TLS_client_method() (the modern
+    # catch-all) so the file compiles. The surrounding #ifdef OPENSSL_NO_SSL3 guard will
+    # still prevent the code from actually running at runtime when SSLv3 is disabled.
+    SETUP_COMMANDS+="
+find . -name 'qca-ossl.cpp' | xargs -r sed -i \
+    -e 's/SSLv3_client_method()/TLS_client_method()/g' \
+    -e 's/SSLv3_server_method()/TLS_server_method()/g' \
+    -e 's/SSLv3_method()/TLS_method()/g'
+"
+fi
+
+
 
 if [[ "$PACKAGE" == "gpm" ]]; then
     log "Applying GPM-specific build fixes (skipping documentation)..."
@@ -1480,6 +1552,7 @@ if [[ "$PACKAGE" == "gpm" ]]; then
     # Remove lines related to documentation formats we are skipping
     COMMANDS=$(echo "$COMMANDS" | sed -E '/(INPUT|dvipdfm)/d')
 fi
+
 
 if [[ "$PACKAGE" == "krb5" || "$PACKAGE" == "mitkrb" || "$PACKAGE" == "elfutils" ]]; then
     log "Applying GCC 15 compatibility fix for $PACKAGE"
@@ -1766,7 +1839,11 @@ elif [[ "$XORG_MULTI_MODE" == "true" ]]; then
         fi
         
         for f in $FILENAMES; do
-            DOWNLOAD_URLS+=("${BASE_URL}${f}")
+            if [[ -n "$METAPACKAGE_TARGET" ]]; then
+                [[ "$f" =~ ^${METAPACKAGE_TARGET}[-_][0-9] ]] && DOWNLOAD_URLS+=("${BASE_URL}${f}")
+            else
+                DOWNLOAD_URLS+=("${BASE_URL}${f}")
+            fi
         done
         MAIN_DOWNLOAD_URL="${DOWNLOAD_URLS[0]}"
 else
@@ -1968,7 +2045,7 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" || "$PLASMA_M
         FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^(?!#).*\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
     fi
 
-    if [[ -z "$FILENAMES" ]] && [[ "$PACKAGE" != "frameworks6" && "$PACKAGE" != "plasma-all" && "$PACKAGE" != "xorg-lib" ]] || \
+    if [[ -z "$FILENAMES" ]] && [[ "$PACKAGE" != "frameworks6" && "$PACKAGE" != "plasma-all" && "$PACKAGE" != "xorg-lib" && "$PACKAGE" != "xorg-app" && "$PACKAGE" != "xorg-font" && "$PACKAGE" != "xorg-driver" ]] || \
        [[ -z "$FILENAMES" && -n "$METAPACKAGE_TARGET" && "$PLASMA_MODE" == "true" ]]; then
         # Fallback: construct the filename for the target package if extraction failed
         if [[ "$PLASMA_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
@@ -1990,10 +2067,9 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" || "$PLASMA_M
         fi
         for f in $FILENAMES; do
             # Only add if it's the target package OR if we are in full metapackage mode
-            # When METAPACKAGE_TARGET is set, only download that specific component
-            if [[ -n "$METAPACKAGE_TARGET" && "$PLASMA_MODE" == "true" ]]; then
+            if [[ -n "$METAPACKAGE_TARGET" ]]; then
                 [[ "$f" =~ ^${METAPACKAGE_TARGET}[-_][0-9] ]] && [[ -n "$f" ]] && DOWNLOAD_URLS+=("${BASE_URL}${f}")
-            elif [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$f" =~ ^${PACKAGE}[-_][0-9] ]]; then
+            elif [[ -z "$PACKAGE" || "$PACKAGE" == "frameworks6" || "$PACKAGE" == "plasma-all" || "$PACKAGE" == "xorg-lib" || "$PACKAGE" == "xorg-app" || "$PACKAGE" == "xorg-font" || "$PACKAGE" == "xorg-driver" || "$f" =~ ^${PACKAGE}[-_][0-9] ]]; then
                 [[ -n "$f" ]] && DOWNLOAD_URLS+=("${BASE_URL}${f}")
             fi
         done

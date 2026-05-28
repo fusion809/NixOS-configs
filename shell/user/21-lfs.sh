@@ -341,14 +341,26 @@ cleanup_old_libraries_gpt() {
         done
 
         if [ "$rebuild_success" = true ]; then
-             echo "Verification: Re-checking dependencies for ${all_names[@]} after rebuilds..."
+             echo "Verification: Re-checking dependencies for $(IFS=, ; echo "${all_names[*]}") after rebuilds..."
              local remaining=0
+             local remaining_outsiders=()
+             # Re-scan binaries from DISK (not stale cache) to get up-to-date ELF info.
              for d in "${deps[@]}"; do
+                 [ -f "$d" ] || continue
                  for name in "${all_names[@]}"; do
                      if readelf -d "$d" 2>/dev/null | grep -q "\[$name\]"; then
-                          echo "Persistence: $d still depends on $name"
-                          remaining=1
-                          break 2
+                         # Check whether the binary belongs to a package we just rebuilt.
+                         # If it does, the dependency is legitimate (the rebuilt package
+                         # still needs this library, e.g. OpenSSL 4 ships libcrypto.so.3).
+                         local owner=$(grep -rl "^$d$" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null | head -n1 | xargs basename 2>/dev/null)
+                         if [ -n "$owner" ] && [[ -n "${rebuilt_packages[$owner]+x}" ]]; then
+                             echo "Note: $d still depends on $name but '$owner' was just rebuilt — dependency is current."
+                         else
+                             echo "Persistence: $d still depends on $name"
+                             remaining=1
+                             remaining_outsiders+=("$d")
+                         fi
+                         break
                      fi
                  done
              done
@@ -365,7 +377,13 @@ cleanup_old_libraries_gpt() {
                      sudo rm -f -- "$i"
                  fi
              else
-                 echo "Final Action: Keeping $i (binaries in $(echo ${pkgs[@]} | head -n 1) still linked)."
+                 local blocker_pkgs=()
+                 for d in "${remaining_outsiders[@]}"; do
+                     local p=$(grep -rl "^$d$" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null | head -n1 | xargs basename 2>/dev/null)
+                     [ -n "$p" ] && blocker_pkgs+=("$p")
+                 done
+                 blocker_pkgs=($(printf "%s\n" "${blocker_pkgs[@]}" | sort -u))
+                 echo "Final Action: Keeping $i (non-rebuilt binaries still linked: ${blocker_pkgs[*]:-unknown})."
              fi
         else
             echo "Final Action: Keeping $i (rebuilds incomplete or blocked)."

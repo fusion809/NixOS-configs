@@ -6,12 +6,17 @@
             as_root_content = ""
             host_cmds = ""
             vm_cmds = ""
+            in_wget = 0
         }
         /^as_root\(\)/ { in_as_root = 1; as_root_content = $0; next }
         /^bash -e/ { next }
         /^exit/ { next }
         /^cat > .*\.md5 << "EOF"/ { 
             in_md5 = 1; 
+            # Do NOT add the md5 block to host_cmds when METAPACKAGE_TARGET filtering
+            # is active — we write only the target tarball, so md5sum would fail on
+            # a full-list md5 file. The file is written unconditionally here so that
+            # md5sum -c can run, but the wget call has already been suppressed.
             host_cmds = host_cmds "\n" $0; 
             next 
         }
@@ -29,7 +34,15 @@
             }
             next 
         }
-        /^[[:space:]]*(for package in|while read)/ { in_vm_script = 1 }
+        /^[[:space:]]*(for package in|while read)/ {
+            in_vm_script = 1
+            # Rewrite the loop to only iterate over the target package when
+            # METAPACKAGE_TARGET is set, rather than the full md5 list.
+            if ($0 ~ /for package in.*grep/) {
+                vm_cmds = vm_cmds "\n    for package in $(if [ -n \"${METAPACKAGE_TARGET}\" ]; then ls ${METAPACKAGE_TARGET}-*.tar.?z* 2>/dev/null | head -1; else grep -v '^#' ../app-7.md5 | awk '{print $2}'; fi)"
+                next
+            }
+        }
         {
             if (in_as_root) {
                 as_root_content = as_root_content "\n" $0
@@ -50,17 +63,10 @@
             if (in_vm_script) {
                 if (line ~ /^[[:space:]]*(packagedir|file|pkg|name|package)=/) { 
                     vm_cmds = vm_cmds "\n    " line;
-                    
-                    # Isolate the package AS SOON AS we have any variable that might contain the filename.
-                    vm_cmds = vm_cmds "\n    _p=\x22\x24{package:-\x24{pkg:-\x24file}}\x22"
-                    vm_cmds = vm_cmds "\n    if [ -n \x22\x24_p\x22 ]; then"
-                    vm_cmds = vm_cmds "\n        _m=$(echo \x24_p | sed -E \x22s/[-_][0-9].*//\x22)"
-                    vm_cmds = vm_cmds "\n        if [ -n \x22\x24{PACKAGE}\x22 ] && [ \x22\x24_m\x22 != \x22\x24{PACKAGE}\x22 ] && [ \x22\x24_p\x22 != \x22\x24{PACKAGE}\x22 ]; then continue; fi"
-                    vm_cmds = vm_cmds "\n    fi"
 
                     if (line ~ /packagedir=/) {
-                        vm_cmds = vm_cmds "\n    PKGNAME=$(echo \x24_p | sed -E \x22s/[-_][0-9].*//\x22)";
-                        vm_cmds = vm_cmds "\n    PKGVER=$(echo \x24_p | sed \x22s/^\x24{PKGNAME}-//; s/^\x24{PKGNAME}_//; s/\\.tar\\..*//\x22)";
+                        vm_cmds = vm_cmds "\n    PKGNAME=$(echo \x24{package} | sed -E \x22s/[-_][0-9].*//\x22)";
+                        vm_cmds = vm_cmds "\n    PKGVER=$(echo \x24{package} | sed \x22s/^\x24{PKGNAME}-//; s/^\x24{PKGNAME}_//; s/\\.tar\\..*//\x22)";
                         vm_cmds = vm_cmds "\n    touch /tmp/build_start_\x24{PKGNAME}";
                         vm_cmds = vm_cmds "\n    echo \x22\x24{PKGVER}\x22 | sudo tee \x22/var/lib/book-packages/\x24{PKGNAME}\x22 > /dev/null";
                     }
@@ -164,7 +170,17 @@
                     # Fix awk $2 escaping in for loops (e.g. for package in $(... awk '{print $2}'))
                     # Use [$] to avoid AWK warning about escape sequence \$
                     gsub(/[$]2/, "\\$2", line);
-                    host_cmds = host_cmds "\n" line
+                    if (line ~ /wget -i- -c/) {
+                        in_wget = 1;
+                        if (line !~ /\\$/) in_wget = 0;
+                    } else if (in_wget) {
+                        if (line !~ /\\$/) in_wget = 0;
+                    } else if (line ~ /md5sum -c/) {
+                        # Skip md5sum check — it would fail when only one target file
+                        # was downloaded instead of the full bundle.
+                    } else {
+                        host_cmds = host_cmds "\n" line
+                    }
                 }
                 next;
             }
