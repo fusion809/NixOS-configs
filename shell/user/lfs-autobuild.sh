@@ -1416,11 +1416,23 @@ perl -0777 -pi -e '\''s/reinterpret_cast<quint8 \*>\(genName->d\.iPAddress->data
 perl -0777 -pi -e '\''s/hexString\.reserve\(serialNumber->length \* 3\);/const int len = q_ASN1_STRING_length(serialNumber); const unsigned char *data = q_ASN1_STRING_get0_data(serialNumber); hexString.reserve(len * 3);/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/for \(int a = 0; a < serialNumber->length; \+\+a\)/for (int a = 0; a < len; ++a)/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
 perl -0777 -pi -e '\''s/serialNumber->data\[a\]/data[a]/g'\'' qtbase/src/plugins/tls/openssl/qx509_openssl.cpp
-perl -0777 -pi -e '\''s/DEFINEFUNC2\(X509_NAME_ENTRY \*, X509_NAME_get_entry, X509_NAME \*a, a, int b, b, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_STRING \*, X509_NAME_ENTRY_get_data, X509_NAME_ENTRY \*a, a, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_OBJECT \*, X509_NAME_ENTRY_get_object, X509_NAME_ENTRY \*a, a, return nullptr, return\)/#if !defined\(QT_LINKED_OPENSSL\)\ntypedef const X509_NAME_ENTRY *(*_q_PTR_X509_NAME_get_entry)(const X509_NAME *a, int b);\nstatic _q_PTR_X509_NAME_get_entry _q_X509_NAME_get_entry = nullptr;\nX509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a, int b) {\n    if (Q_UNLIKELY(!_q_X509_NAME_get_entry)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_get_entry");\n        return nullptr;\n    }\n    return const_cast<X509_NAME_ENTRY *>(_q_X509_NAME_get_entry(a, b));\n}\n\ntypedef const ASN1_STRING *(*_q_PTR_X509_NAME_ENTRY_get_data)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_data _q_X509_NAME_ENTRY_get_data = nullptr;\nASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_data)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_data");\n        return nullptr;\n    }\n    return const_cast<ASN1_STRING *>(_q_X509_NAME_ENTRY_get_data(a));\n}\n\ntypedef const ASN1_OBJECT *(*_q_PTR_X509_NAME_ENTRY_get_object)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_object _q_X509_NAME_ENTRY_get_object = nullptr;\nASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_object)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_object");\n        return nullptr;\n    }\n    return const_cast<ASN1_OBJECT *>(_q_X509_NAME_ENTRY_get_object(a));\n}\n#else\nX509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a, int b) {\n    return const_cast<X509_NAME_ENTRY *>(X509_NAME_get_entry(a, b));\n}\nASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_STRING *>(X509_NAME_ENTRY_get_data(a));\n}\nASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_OBJECT *>(X509_NAME_ENTRY_get_object(a));\n}\n#endif/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC2\(X509_NAME_ENTRY \*, X509_NAME_get_entry, X509_NAME \*a, a, int b, b, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_STRING \*, X509_NAME_ENTRY_get_data, X509_NAME_ENTRY \*a, a, return nullptr, return\)\s*\n\s*DEFINEFUNC\(ASN1_OBJECT \*, X509_NAME_ENTRY_get_object, X509_NAME_ENTRY \*a, a, return nullptr, return\)/#if !defined\(QT_LINKED_OPENSSL\)\ntypedef const X509_NAME_ENTRY *(*_q_PTR_X509_NAME_get_entry)(const X509_NAME *a, int b);\nstatic _q_PTR_X509_NAME_get_entry _q_X509_NAME_get_entry = nullptr;\nQT_OPENSSL4_CONST X509_NAME_ENTRY *q_X509_NAME_get_entry(const X509_NAME *a, int b) {\n    if (Q_UNLIKELY(!_q_X509_NAME_get_entry)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_get_entry");\n        return nullptr;\n    }\n    return const_cast<X509_NAME_ENTRY *>(_q_X509_NAME_get_entry(a, b));\n}\n\ntypedef const ASN1_STRING *(*_q_PTR_X509_NAME_ENTRY_get_data)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_data _q_X509_NAME_ENTRY_get_data = nullptr;\nQT_OPENSSL4_CONST ASN1_STRING *q_X509_NAME_ENTRY_get_data(const X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_data)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_data");\n        return nullptr;\n    }\n    return const_cast<ASN1_STRING *>(_q_X509_NAME_ENTRY_get_data(a));\n}\n\ntypedef const ASN1_OBJECT *(*_q_PTR_X509_NAME_ENTRY_get_object)(const X509_NAME_ENTRY *a);\nstatic _q_PTR_X509_NAME_ENTRY_get_object _q_X509_NAME_ENTRY_get_object = nullptr;\nQT_OPENSSL4_CONST ASN1_OBJECT *q_X509_NAME_ENTRY_get_object(const X509_NAME_ENTRY *a) {\n    if (Q_UNLIKELY(!_q_X509_NAME_ENTRY_get_object)) {\n        qsslSocketUnresolvedSymbolWarning("X509_NAME_ENTRY_get_object");\n        return nullptr;\n    }\n    return const_cast<ASN1_OBJECT *>(_q_X509_NAME_ENTRY_get_object(a));\n}\n#else\nQT_OPENSSL4_CONST X509_NAME_ENTRY *q_X509_NAME_get_entry(const X509_NAME *a, int b) {\n    return const_cast<X509_NAME_ENTRY *>(X509_NAME_get_entry(a, b));\n}\nQT_OPENSSL4_CONST ASN1_STRING *q_X509_NAME_ENTRY_get_data(const X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_STRING *>(X509_NAME_ENTRY_get_data(a));\n}\nQT_OPENSSL4_CONST ASN1_OBJECT *q_X509_NAME_ENTRY_get_object(const X509_NAME_ENTRY *a) {\n    return const_cast<ASN1_OBJECT *>(X509_NAME_ENTRY_get_object(a));\n}\n#endif/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
 perl -pi -e '\''s/\{ funcret func\(([^)]*)\); \}/{ funcret (ret)func($1); }/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h
 perl -0777 -pi -e '\''s/DEFINEFUNC2\(X509_EXTENSION \*, X509_get_ext, X509 \*a, a, int b, b, return nullptr, return\)/DEFINEFUNC2(const X509_EXTENSION *, X509_get_ext, X509 *a, a, int b, b, return nullptr, return)/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
 perl -0777 -pi -e '\''s/DEFINEFUNC\(X509_NAME \*, X509_get_issuer_name, X509 \*a, a, return nullptr, return\)/DEFINEFUNC(const X509_NAME *, X509_get_issuer_name, X509 *a, a, return nullptr, return)/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
-perl -0777 -pi -e '\''s/DEFINEFUNC\(X509_NAME \*, X509_get_subject_name, X509 \*a, a, return nullptr, return\)/DEFINEFUNC(const X509_NAME *, X509_get_subject_name, X509 *a, a, return nullptr, return)/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp'
+perl -0777 -pi -e '\''s/DEFINEFUNC\(X509_NAME \*, X509_get_subject_name, X509 \*a, a, return nullptr, return\)/DEFINEFUNC(const X509_NAME *, X509_get_subject_name, X509 *a, a, return nullptr, return)/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(int, X509_NAME_entry_count, X509_NAME \*a, a,/DEFINEFUNC(int, X509_NAME_entry_count, const X509_NAME *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(int, X509_NAME_entry_count, X509_NAME \*a, a,/DEFINEFUNC(int, X509_NAME_entry_count, const X509_NAME *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h
+perl -0777 -pi -e '\''s/DEFINEFUNC\(ASN1_OBJECT \*, X509_EXTENSION_get_object, X509_EXTENSION \*a, a,/DEFINEFUNC(const ASN1_OBJECT *, X509_EXTENSION_get_object, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(ASN1_OBJECT \*, X509_EXTENSION_get_object, X509_EXTENSION \*a, a,/DEFINEFUNC(const ASN1_OBJECT *, X509_EXTENSION_get_object, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h
+perl -0777 -pi -e '\''s/DEFINEFUNC\(int, X509_EXTENSION_get_critical, X509_EXTENSION \*a, a,/DEFINEFUNC(int, X509_EXTENSION_get_critical, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(int, X509_EXTENSION_get_critical, X509_EXTENSION \*a, a,/DEFINEFUNC(int, X509_EXTENSION_get_critical, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h
+perl -0777 -pi -e '\''s/DEFINEFUNC\(ASN1_OCTET_STRING \*, X509_EXTENSION_get_data, X509_EXTENSION \*a, a,/DEFINEFUNC(const ASN1_OCTET_STRING *, X509_EXTENSION_get_data, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(ASN1_OCTET_STRING \*, X509_EXTENSION_get_data, X509_EXTENSION \*a, a,/DEFINEFUNC(const ASN1_OCTET_STRING *, X509_EXTENSION_get_data, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h
+perl -0777 -pi -e '\''s/DEFINEFUNC\(const X509V3_EXT_METHOD \*, X509V3_EXT_get, X509_EXTENSION \*a, a,/DEFINEFUNC(const X509V3_EXT_METHOD *, X509V3_EXT_get, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(const X509V3_EXT_METHOD \*, X509V3_EXT_get, X509_EXTENSION \*a, a,/DEFINEFUNC(const X509V3_EXT_METHOD *, X509V3_EXT_get, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h
+perl -0777 -pi -e '\''s/DEFINEFUNC\(void \*, X509V3_EXT_d2i, X509_EXTENSION \*a, a,/DEFINEFUNC(void *, X509V3_EXT_d2i, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp
+perl -0777 -pi -e '\''s/DEFINEFUNC\(void \*, X509V3_EXT_d2i, X509_EXTENSION \*a, a,/DEFINEFUNC(void *, X509V3_EXT_d2i, const X509_EXTENSION *a, a,/g'\'' qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols_p.h'
     COMMANDS="${PATCH_CMD}
 ${COMMANDS}"
 fi
@@ -1506,44 +1518,97 @@ as_root bash -c "mkdir -p /etc/profile.d && printf '"'"'# Begin /etc/profile.d/r
 #   } else if openssl_version >= 0x3_00_00_00_0 {
 #       Version::Openssl3xx
 # We patch it to treat 4.x the same as 3.x by changing the panic branch to return Openssl3xx.
-OSSL_SYS_MAIN=$(find . -path "*/openssl-sys-*/build/main.rs" 2>/dev/null | head -n 1)
-if [ -n "$OSSL_SYS_MAIN" ]; then
+# Patch every copy of openssl-sys/build/main.rs on the system:
+# - vendor/ inside the source tree (used by cargo --frozen)
+# - /rust/deps/ (cargo pre-populated registry used by the bootstrap compiler)
+# - any other cargo registries on the machine
+for _search_root in . /rust/deps /rust/registry /root/.cargo/registry /home/fusion809/.cargo/registry; do
+    find "$_search_root" -path "*/openssl-sys*/build/main.rs" 2>/dev/null
+done | sort -u | while read -r OSSL_SYS_MAIN; do
     echo "[LFS-AUTOBUILD] Patching $OSSL_SYS_MAIN to accept OpenSSL 4.x..."
-    # Replace: if openssl_version >= 0x4_00_00_00_0 { version_error() }
-    # With:    if openssl_version >= 0x5_00_00_00_0 { version_error() }
-    # This effectively makes 4.x fall through to the Openssl3xx branch below.
+    # Patch the OpenSSL 4.x rejection gate — handle any underscore layout the crate may use
     sed -i "s/openssl_version >= 0x4_00_00_00_0/openssl_version >= 0x5_00_00_00_0/g" "$OSSL_SYS_MAIN"
-    # Also add check-cfg declarations for ossl400/ossl410 so rustc does not warn
-    # about unknown cfg values. Insert after the ossl350 check-cfg line.
+    sed -i "s/openssl_version >= 0x4000_0000/openssl_version >= 0x5000_0000/g" "$OSSL_SYS_MAIN"
+    sed -i "s/openssl_version >= 0x4_0000_0000/openssl_version >= 0x5_0000_0000/g" "$OSSL_SYS_MAIN"
+    # Fallback: use sed to catch any remaining hex literal >= 0x4... pattern near version_error
+    sed -i -E "s/openssl_version[[:space:]]*>=[[:space:]]*0x4[0-9a-fA-F_]+/openssl_version >= 0x5_00_00_00_0/g" "$OSSL_SYS_MAIN"
+    # Add ossl400/ossl410 cfg gates so code guarded by those cfgs compiles cleanly
     sed -i "/rustc-check-cfg=cfg(ossl350)/a\\    println!(\"cargo:rustc-check-cfg=cfg(ossl400)\");\n    println!(\"cargo:rustc-check-cfg=cfg(ossl410)\");" "$OSSL_SYS_MAIN"
-    echo "[LFS-AUTOBUILD] openssl-sys patch applied successfully."
-else
-    echo "[LFS-AUTOBUILD] WARNING: Could not find vendored openssl-sys/build/main.rs to patch."
-fi
-'
-    if [[ "$COMMANDS" == *"./x.py build"* ]]; then
-        OPENSSL_SYS_PATCH_ESC="${OPENSSL_SYS_PATCH//&/\\&}"
-        COMMANDS="${COMMANDS//.\\/x.py build/$OPENSSL_SYS_PATCH_ESC
-./x.py build}"
+    # Also handle variant where ossl400 cfg is declared differently in 0.9.112
+    if ! grep -q 'ossl400' "$OSSL_SYS_MAIN"; then
+        sed -i "/rustc-check-cfg=cfg(ossl3[0-9][0-9])/a\\    println!(\"cargo:rustc-check-cfg=cfg(ossl400)\");\n    println!(\"cargo:rustc-check-cfg=cfg(ossl410)\");" "$OSSL_SYS_MAIN" 2>/dev/null || true
     fi
+
+    # Update cargo checksum for patched main.rs so cargo does not fail the build
+    _checksum=$(sha256sum "$OSSL_SYS_MAIN" | cut -d " " -f 1)
+    _checksum_file="$(dirname "$(dirname "$OSSL_SYS_MAIN")")/.cargo-checksum.json"
+    if [ -f "$_checksum_file" ]; then
+        sed -i "s|\"build/main.rs\":\"[0-9a-f]*\"|\"build/main.rs\":\"$_checksum\"|" "$_checksum_file"
+        echo "[LFS-AUTOBUILD] Updated cargo checksum in $_checksum_file"
+    fi
+
+    echo "[LFS-AUTOBUILD] openssl-sys patch applied to $OSSL_SYS_MAIN."
+done
+'
+    SETUP_COMMANDS+="$OPENSSL_SYS_PATCH"
 fi
 
 if [[ "$PACKAGE" == "qca" ]]; then
     log "Applying qca OpenSSL 4.x compatibility patch: replacing removed SSLv3_client_method..."
-    # SSLv3_client_method() was removed in OpenSSL 1.1.0. In the qca-ossl plugin it is used
-    # inside supportedCipherSuites() to enumerate SSLv3 suites — functionality that is
-    # meaningless on modern OpenSSL anyway. Replace it with TLS_client_method() (the modern
-    # catch-all) so the file compiles. The surrounding #ifdef OPENSSL_NO_SSL3 guard will
-    # still prevent the code from actually running at runtime when SSLv3 is disabled.
+    # SETUP_COMMANDS runs from the source root (before mkdir build && cd build),
+    # so find . correctly locates plugins/qca-ossl/qca-ossl.cpp.
+    # The COMMANDS injection ran from inside build/ where the file doesn't exist.
     SETUP_COMMANDS+="
-find . -name 'qca-ossl.cpp' | xargs -r sed -i \
-    -e 's/SSLv3_client_method()/TLS_client_method()/g' \
-    -e 's/SSLv3_server_method()/TLS_server_method()/g' \
-    -e 's/SSLv3_method()/TLS_method()/g'
+export LC_ALL=en_US.utf8
+echo '[LFS-AUTOBUILD] Patching qca-ossl.cpp for OpenSSL 4.x...'
+find . -name 'qca-ossl.cpp' | xargs -r sed -i \\
+    -e 's/SSLv3_client_method()/TLS_client_method()/g' \\
+    -e 's/SSLv3_server_method()/TLS_server_method()/g' \\
+    -e 's/SSLv3_method()/TLS_method()/g' \\
+    -e 's/.*X509_EXTENSION \*ex = X509_CRL_get_ext/            const X509_EXTENSION *ex = X509_CRL_get_ext/g'
+echo '[LFS-AUTOBUILD] qca-ossl.cpp patch done.'
+"
+    # QCA's cmake uses execute_process to query Qt6/qmake for install dirs; those
+    # calls return values with trailing newlines which corrupt the generated flags.make
+    # (cmake warns 'Value of QCA_*_INSTALL_DIR contained a newline; truncating').
+    # Fix: explicitly supply all QCA install path variables so cmake never queries qmake.
+    log "Injecting explicit QCA cmake install-dir overrides to prevent newline corruption in flags.make."
+    COMMANDS=$(echo "$COMMANDS" | sed 's|cmake |cmake -D QCA_FEATURE_INSTALL_DIR=/usr/lib/cmake/Qca-Qt6 -D QCA_INCLUDE_INSTALL_DIR=/usr/include -D QCA_LIBRARY_INSTALL_DIR=/usr/lib -D QCA_PLUGINS_INSTALL_DIR=/usr/lib/qca-qt6 -D QCA_PREFIX_INSTALL_DIR=/usr -D QCA_PRIVATE_INCLUDE_INSTALL_DIR=/usr/include/Qca-Qt6 |g')
+fi
+
+if [[ "$PACKAGE" == "qt6" ]]; then
+    log "Applying Qt6 OpenSSL 4.0 compatibility patch: force QT_OPENSSL4_CONST empty..."
+    # Qt6 defines QT_OPENSSL4_CONST=const when OPENSSL_VERSION_MAJOR>=4 in qopenssl_p.h.
+    # The DEFINEFUNC macro bodies in the .cpp file use non-const signatures, causing
+    # 'ambiguating new declaration' errors. Force QT_OPENSSL4_CONST to empty so all
+    # declarations match the non-const definitions.
+    # Inject before the cmake configure step (Qt6 uses cmake, not ./configure).
+    COMMANDS=$(echo "$COMMANDS" | sed 's|cmake |sed -i "s/#define QT_OPENSSL4_CONST const/#define QT_OPENSSL4_CONST/g" qtbase/src/plugins/tls/openssl/qopenssl_p.h \&\& rm -f qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp.rej \&\& cmake |g')
+fi
+
+if [[ "$PACKAGE" == "gnome-shell" || "$PACKAGE" == "gnome-session" || "$PACKAGE" == "mutter" ]]; then
+    log "Applying GCC 14/15 incompatible-pointer-types fix..."
+    SETUP_COMMANDS+="export CFLAGS=\"\${CFLAGS} -Wno-error=incompatible-pointer-types\"
+export CXXFLAGS=\"\${CXXFLAGS} -Wno-error=incompatible-pointer-types\"
 "
 fi
 
+if [[ "$PACKAGE" == "gnome-session" ]]; then
+    log "Applying gnome-session doc-dir mv guard (docs may not be installed)..."
+    # BLFS book has: mv -v /usr/share/doc/gnome-session{,-VERSION}
+    # When docs are disabled the directory won't exist and mv fails hard.
+    COMMANDS=$(echo "$COMMANDS" | sed 's|mv -v /usr/share/doc/gnome-session{|[ -d /usr/share/doc/gnome-session ] \&\& mv -v /usr/share/doc/gnome-session{|g')
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's|(\[ -d /usr/share/doc/gnome-session \] && mv -v /usr/share/doc/gnome-session\{[^}]+\})|$1 \|\| true|g')
+fi
 
+if [[ "$PACKAGE" == "gdm" ]]; then
+    log "Applying gdm install patches for symlink conflicts and terminal-less su execution..."
+    # 1. ln -s fails if 61-gdm.rules exists, change to ln -sf
+    COMMANDS=$(echo "$COMMANDS" | sed 's|ln -s /dev/null /etc/udev/rules.d/61-gdm.rules|ln -sf /dev/null /etc/udev/rules.d/61-gdm.rules|g')
+    # 2. su gdm fails with 'must be run from a terminal' when inside the su -c "..." user block.
+    # We replace it with 'sudo -u gdm' to bypass the password prompt securely.
+    COMMANDS=$(echo "$COMMANDS" | sed 's|su gdm -s /bin/bash|sudo -u gdm bash|g')
+fi
 
 if [[ "$PACKAGE" == "gpm" ]]; then
     log "Applying GPM-specific build fixes (skipping documentation)..."
@@ -1616,7 +1681,7 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
         COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's{^(?!.*?(make install|tools\/))[[:space:]]*(cp|install|chmod|find).*?(doc\/|api\/|doxy\/|HTML\/|/usr/share/doc/).*?(\n|&&)}{}gm')
     fi
     # Also catch and neutralize specific doc building tools and python scripts in doc/
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/(^|[^a-zA-Z0-9_-])(doxygen|texi2html|texi2pdf|texi2dvi|makeinfo|pdflatex|xelatex|lualatex|asciidoc|xmlto|asciidoctor|xmlproc|docbook2x)([^a-zA-Z0-9_-]|$)/\1true \3/g')
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/(^|[;|&])[[:space:]]*(doxygen|texi2html|texi2pdf|texi2dvi|makeinfo|pdflatex|xelatex|lualatex|asciidoc|xmlto|asciidoctor|xmlproc|docbook2x)([^a-zA-Z0-9_-]|$)/\1true \3/g')
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpython3?[[:space:]]+doc\/[a-zA-Z0-9_-]+\.py\b/true /g')
     # Optional: neutralize test commands that might fail and kill the build
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\b(make|ninja)[[:space:]]+(check|test)\b/& || true/g')

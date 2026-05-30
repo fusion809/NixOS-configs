@@ -4,13 +4,13 @@
   inputs = {
     home-manager = {
       url =
-        "git+https://github.com/nix-community/home-manager.git?ref=release-25.11";
+        "git+https://github.com/nix-community/home-manager.git?ref=release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # nixpkgs
     nixpkgs-oldstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.05";
-    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-25.11";
+    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-26.05";
     nixpkgs-unstable.url =
       "git+https://github.com/NixOS/nixpkgs.git?ref=nixos-unstable";
     nixpkgs-master.url = "git+https://github.com/NixOS/nixpkgs.git?ref=master";
@@ -22,7 +22,7 @@
       flake = false;
     };
     nixvim = {
-      url = "git+https://github.com/nix-community/nixvim.git?ref=nixos-25.11";
+      url = "git+https://github.com/nix-community/nixvim.git?ref=nixos-26.05";
       # If using a stable channel you can use `url = "github:nix-community/nixvim/nixos-<version>"`
     };
     hy3 = {

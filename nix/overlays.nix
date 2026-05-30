@@ -64,10 +64,10 @@
           nvidiaRef =
             lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
         in {
-          nvidia_x11 = nvidiaRef.stable_580;
+          nvidia_x11 = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           nvidiaPackages = lprev.nvidiaPackages // {
-            stable = nvidiaRef.stable_580;
-            production = nvidiaRef.stable_580;
+            stable = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
+            production = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           };
         });
       # Also patch the default linuxPackages
@@ -76,10 +76,10 @@
           nvidiaRef =
             lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
         in {
-          nvidia_x11 = nvidiaRef.stable_580;
+          nvidia_x11 = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           nvidiaPackages = lprev.nvidiaPackages // {
-            stable = nvidiaRef.stable_580;
-            production = nvidiaRef.stable_580;
+            stable = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
+            production = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           };
         });
 

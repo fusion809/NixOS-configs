@@ -11,7 +11,7 @@ with pkgs; [
   gimp
   google-chrome
   inkscape
-  nixfmt-classic # Needed for Nix IDE extension of vscode/antigravity
+  nixfmt-rfc-style # Needed for Nix IDE extension of vscode/antigravity
   pinta
   vscode
   ###############################################################
@@ -70,7 +70,7 @@ with pkgs; [
   unzip
   wget
   winetricks
-  wineWowPackages.stable
+  wineWow64Packages.stable
   unstable.yt-dlp
   zenity
   zstd
@@ -130,8 +130,8 @@ with pkgs; [
   lutris
   openra-git
   space-cadet-pinball
-  superTux
-  superTuxKart
+  supertux
+  supertuxkart
   #zeroad
   ###############################################################
   # Maths software
@@ -284,7 +284,7 @@ fi
 EOF
       chmod +x $out/bin/xfreerdp
     '';
-  in (winboat.override { electron = electron_40; }).overrideAttrs (old: {
+  in winboat.overrideAttrs (old: {
     nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];
     postInstall = (old.postInstall or "") + ''
       wrapProgram $out/bin/winboat \

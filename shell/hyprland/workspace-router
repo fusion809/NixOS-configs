@@ -98,10 +98,10 @@ handle() {
     elif [[ "$w_class" =~ google-chrome ]] || [[ "$w_class" =~ chrome- ]]; then
        if is_floating; then return; fi
        (
-           if [[ -z "$w_title" ]] || [[ "$w_title" == "Untitled - Google Chrome" ]] || [[ "$w_title" == "New tab - Google Chrome" ]] || [[ "$w_title" == "Google Chrome" ]]; then
-               sleep 1.2
-               w_title=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .title')
-           fi
+            if [[ -z "$w_title" ]] || [[ "$w_title" == "Untitled - Google Chrome" ]] || [[ "$w_title" == "New tab - Google Chrome" ]] || [[ "$w_title" == "Google Chrome" ]] || [[ "$w_title" == "Restore pages?" ]]; then
+                sleep 3.0
+                w_title=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .title')
+            fi
            
            echo "Chrome Routing Match: addr=0x$w_address class=$w_class title=$w_title" >> "$LOGFILE"
 
@@ -113,16 +113,18 @@ handle() {
                local count_1=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
                local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
                
-               if [ "$count_1" -eq 0 ] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
-                   dispatch_move 1 "$w_address"
-               else
-                   local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
-                   if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
-                       local t=$(echo "$choice" | cut -d '(' -f 1)
-                       dispatch_move "$t" "$w_address"
-                   fi
-               fi
-           fi
+               if [ "$count_1" -eq 0 ] || [[ -z "$existing_title_1" ]] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
+                    dispatch_move 1 "$w_address"
+                else
+                    local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
+                    if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
+                        local t=$(echo "$choice" | cut -d '(' -f 1)
+                        dispatch_move "$t" "$w_address"
+                    elif [[ -z "$choice" ]]; then
+                        dispatch_move 1 "$w_address"
+                    fi
+                fi
+            fi
        ) &
 
     elif [[ "$w_class" =~ virt-viewer ]] || ( [[ "$w_class" =~ .virt-manager-wrapped ]] && [[ "$w_title" != "Virtual Machine Manager" ]] ); then
