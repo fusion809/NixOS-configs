@@ -1,23 +1,28 @@
 { inputs, username }:
 [
-  (self: super:
+  (
+    self: super:
 
     let
       pkgs = self;
       inherit (pkgs) lib;
       forkNixpkgsPath = ../nixpkgs;
-      callPackage = lib.callPackageWith (pkgs
+      callPackage = lib.callPackageWith (
+        pkgs
         // builtins.removeAttrs pkgs.xorg [
           "callPackage"
           "newScope"
           "overrideScope"
           "packages"
-        ]);
+        ]
+      );
 
       myLib = import ./lib.nix { inherit username; };
       inherit (myLib) homeDir;
 
-    in with pkgs; {
+    in
+    with pkgs;
+    {
       openraPackages = import (forkNixpkgsPath + /openra/default.nix) {
         inherit pkgs homeDir;
       }; # Import as a set
@@ -59,29 +64,34 @@
       #       inherit buildFHSEnv;
       #     });
       # };
-      linuxPackages_latest = super.linuxPackages_latest.extend (lfinal: lprev:
+      linuxPackages_latest = super.linuxPackages_latest.extend (
+        lfinal: lprev:
         let
-          nvidiaRef =
-            lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
-        in {
+          nvidiaRef = lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
+        in
+        {
           nvidia_x11 = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           nvidiaPackages = lprev.nvidiaPackages // {
             stable = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
             production = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           };
-        });
+        }
+      );
       # Also patch the default linuxPackages
-      linuxPackages = super.linuxPackages.extend (lfinal: lprev:
+      linuxPackages = super.linuxPackages.extend (
+        lfinal: lprev:
         let
-          nvidiaRef =
-            lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
-        in {
+          nvidiaRef = lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
+        in
+        {
           nvidia_x11 = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           nvidiaPackages = lprev.nvidiaPackages // {
             stable = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
             production = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580; bin = nvidiaRef.stable_580; };
           };
-        });
+        }
+      );
 
-    })
+    }
+  )
 ]

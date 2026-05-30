@@ -1,9 +1,10 @@
 { pkgs, ... }:
 
-with pkgs; [
+with pkgs;
+[
   ###############################################################
   # Assorted apps
-  ###############################################################   
+  ###############################################################
   unstable.antigravity
   brave
   discord
@@ -11,7 +12,7 @@ with pkgs; [
   gimp
   google-chrome
   inkscape
-  nixfmt-rfc-style # Needed for Nix IDE extension of vscode/antigravity
+  nixfmt # Needed for Nix IDE extension of vscode/antigravity
   pinta
   vscode
   ###############################################################
@@ -178,117 +179,120 @@ with pkgs; [
   virt-viewer
   virtiofsd
   #(unstable.winboat.override { nodejs_24 = pkgs.nodejs_24; })
-  (let
-    # WinBoat's getFreeRDP() checks for "xfreerdp3" first, runs "--version" and checks stdout
-    # for "version 3.". We create an xfreerdp3 shim pointing to the real xfreerdp binary.
-    xfreerdp3Shim = pkgs.runCommand "winboat-xfreerdp3-shim" {} ''
-      mkdir -p $out/bin
-      
-      cat > $out/bin/xfreerdp3 <<'EOF'
-#!/bin/sh
-if [ -n "$WAYLAND_DISPLAY" ]; then
-  export SDL_VIDEO_DRIVER=wayland
-  export SDL_VIDEODRIVER=wayland
-else
-  export SDL_VIDEO_DRIVER=x11
-  export SDL_VIDEODRIVER=x11
-fi
+  (
+    let
+      # WinBoat's getFreeRDP() checks for "xfreerdp3" first, runs "--version" and checks stdout
+      # for "version 3.". We create an xfreerdp3 shim pointing to the real xfreerdp binary.
+      xfreerdp3Shim = pkgs.runCommand "winboat-xfreerdp3-shim" { } ''
+              mkdir -p $out/bin
+              
+              cat > $out/bin/xfreerdp3 <<'EOF'
+        #!/bin/sh
+        if [ -n "$WAYLAND_DISPLAY" ]; then
+          export SDL_VIDEO_DRIVER=wayland
+          export SDL_VIDEODRIVER=wayland
+        else
+          export SDL_VIDEO_DRIVER=x11
+          export SDL_VIDEODRIVER=x11
+        fi
 
-W=1920
-H=1080
-if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-  focused_mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)' 2>/dev/null)
-  if [ -n "$focused_mon" ]; then
-    mon_w=$(echo "$focused_mon" | jq -r '.width' 2>/dev/null)
-    mon_h=$(echo "$focused_mon" | jq -r '.height' 2>/dev/null)
-    if [ -n "$mon_w" ] && [ "$mon_w" -ge 200 ] && [ -n "$mon_h" ] && [ "$mon_h" -ge 200 ]; then
-      W=$mon_w
-      H=$mon_h
-    fi
-  fi
-fi
+        W=1920
+        H=1080
+        if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+          focused_mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)' 2>/dev/null)
+          if [ -n "$focused_mon" ]; then
+            mon_w=$(echo "$focused_mon" | jq -r '.width' 2>/dev/null)
+            mon_h=$(echo "$focused_mon" | jq -r '.height' 2>/dev/null)
+            if [ -n "$mon_w" ] && [ "$mon_w" -ge 200 ] && [ -n "$mon_h" ] && [ "$mon_h" -ge 200 ]; then
+              W=$mon_w
+              H=$mon_h
+            fi
+          fi
+        fi
 
-# Strip /f, -f, /fullscreen from arguments to prevent Wayland size-detection crash
-args=""
-has_size=0
-for arg in "$@"; do
-  case "$arg" in
-    /f|-f|/fullscreen)
-      # Skip fullscreen flags
-      ;;
-    /size:*|-size:*|/w:*|/h:*)
-      has_size=1
-      args="$args \"$arg\""
-      ;;
-    *)
-      args="$args \"$arg\""
-      ;;
-  esac
-done
+        # Strip /f, -f, /fullscreen from arguments to prevent Wayland size-detection crash
+        args=""
+        has_size=0
+        for arg in "$@"; do
+          case "$arg" in
+            /f|-f|/fullscreen)
+              # Skip fullscreen flags
+              ;;
+            /size:*|-size:*|/w:*|/h:*)
+              has_size=1
+              args="$args \"$arg\""
+              ;;
+            *)
+              args="$args \"$arg\""
+              ;;
+          esac
+        done
 
-if [ $has_size -eq 0 ]; then
-  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:''${W}x''${H}\"" $args
-else
-  eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
-fi
-EOF
-      chmod +x $out/bin/xfreerdp3
+        if [ $has_size -eq 0 ]; then
+          eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:''${W}x''${H}\"" $args
+        else
+          eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
+        fi
+        EOF
+              chmod +x $out/bin/xfreerdp3
 
-      cat > $out/bin/xfreerdp <<'EOF'
-#!/bin/sh
-if [ -n "$WAYLAND_DISPLAY" ]; then
-  export SDL_VIDEO_DRIVER=wayland
-  export SDL_VIDEODRIVER=wayland
-else
-  export SDL_VIDEO_DRIVER=x11
-  export SDL_VIDEODRIVER=x11
-fi
+              cat > $out/bin/xfreerdp <<'EOF'
+        #!/bin/sh
+        if [ -n "$WAYLAND_DISPLAY" ]; then
+          export SDL_VIDEO_DRIVER=wayland
+          export SDL_VIDEODRIVER=wayland
+        else
+          export SDL_VIDEO_DRIVER=x11
+          export SDL_VIDEODRIVER=x11
+        fi
 
-W=1920
-H=1080
-if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-  focused_mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)' 2>/dev/null)
-  if [ -n "$focused_mon" ]; then
-    mon_w=$(echo "$focused_mon" | jq -r '.width' 2>/dev/null)
-    mon_h=$(echo "$focused_mon" | jq -r '.height' 2>/dev/null)
-    if [ -n "$mon_w" ] && [ "$mon_w" -ge 200 ] && [ -n "$mon_h" ] && [ "$mon_h" -ge 200 ]; then
-      W=$mon_w
-      H=$mon_h
-    fi
-  fi
-fi
+        W=1920
+        H=1080
+        if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+          focused_mon=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)' 2>/dev/null)
+          if [ -n "$focused_mon" ]; then
+            mon_w=$(echo "$focused_mon" | jq -r '.width' 2>/dev/null)
+            mon_h=$(echo "$focused_mon" | jq -r '.height' 2>/dev/null)
+            if [ -n "$mon_w" ] && [ "$mon_w" -ge 200 ] && [ -n "$mon_h" ] && [ "$mon_h" -ge 200 ]; then
+              W=$mon_w
+              H=$mon_h
+            fi
+          fi
+        fi
 
-# Strip /f, -f, /fullscreen from arguments to prevent Wayland size-detection crash
-args=""
-has_size=0
-for arg in "$@"; do
-  case "$arg" in
-    /f|-f|/fullscreen)
-      # Skip fullscreen flags
-      ;;
-    /size:*|-size:*|/w:*|/h:*)
-      has_size=1
-      args="$args \"$arg\""
-      ;;
-    *)
-      args="$args \"$arg\""
-      ;;
-  esac
-done
+        # Strip /f, -f, /fullscreen from arguments to prevent Wayland size-detection crash
+        args=""
+        has_size=0
+        for arg in "$@"; do
+          case "$arg" in
+            /f|-f|/fullscreen)
+              # Skip fullscreen flags
+              ;;
+            /size:*|-size:*|/w:*|/h:*)
+              has_size=1
+              args="$args \"$arg\""
+              ;;
+            *)
+              args="$args \"$arg\""
+              ;;
+          esac
+        done
 
-if [ $has_size -eq 0 ]; then
-  eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:''${W}x''${H}\"" $args
-else
-  eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
-fi
-EOF
-      chmod +x $out/bin/xfreerdp
-    '';
-  in winboat.overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];
-    postInstall = (old.postInstall or "") + ''
-      wrapProgram $out/bin/winboat \
-        --prefix PATH : "${xfreerdp3Shim}/bin"
-    '';
-  }))
+        if [ $has_size -eq 0 ]; then
+          eval exec ${pkgs.freerdp}/bin/sdl-freerdp "\"/size:''${W}x''${H}\"" $args
+        else
+          eval exec ${pkgs.freerdp}/bin/sdl-freerdp $args
+        fi
+        EOF
+              chmod +x $out/bin/xfreerdp
+      '';
+    in
+    winboat.overrideAttrs (old: {
+      nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
+      postInstall = (old.postInstall or "") + ''
+        wrapProgram $out/bin/winboat \
+          --prefix PATH : "${xfreerdp3Shim}/bin"
+      '';
+    })
+  )
 ]
