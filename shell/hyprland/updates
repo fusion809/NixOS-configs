@@ -338,7 +338,7 @@ echo $pushStr > $HOME/.cache/pushStr
 nixcg_log="$HOME/.cache/nixcg.$current_date"
 # Use manual GC command to avoid clearing the roots we just created (nixcg function does rm -rf)
 {
-	#nixcg
+	nixcg
 } > "$nixcg_log" 2>&1
 
 if [[ ${#pushStr} -gt 0 ]]; then
