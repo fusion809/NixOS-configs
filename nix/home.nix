@@ -50,5 +50,5 @@
   # This part is probably largely redundant, due to GNOME not being used, 
   # but may affect theming in GTK+ apps. 
   dconf = import ./home-dconf.nix { };
-  gtk = import ./home-gtk.nix { };
+  gtk = import ./home-gtk.nix { inherit config; };
 }

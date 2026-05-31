@@ -76,21 +76,21 @@ in rec {
     settingsSha256 = "sha256-sI/ly6gNaUw0QZFWWkMbrkSstzf0hvcdSaogTUoTecI=";
     persistencedSha256 = "sha256-j74m3tAYON/q8WLU9Xioo3CkOSXfo1CwGmDx/ot0uUo=";
 
+    # Apply the GPL-symbols workaround patch (fixes nv_vm_flags_set/clear
+    # calling GPL-only vm_flags_set/vm_flags_clear on Linux >= 6.15).
+    patches = [ gpl_symbols_linux_615_patch ];
+
     postPatch = ''
       echo "Applying Linux 6.19 and 7.0 compatibility hacks..."
-      # Linux 7.0 hack: VMA locking API was drastically changed. Bypass it completely to avoid compilation errors.
+      # Linux 7.0 hack: VMA locking API was drastically changed.
+      # Bypass it completely to avoid compilation errors.
       sed -i -E 's/__is_vma_write_locked\([^)]*\)/1/g' kernel/nvidia/nv-mmap.c || true
       sed -i 's/VMA_LOCK_OFFSET/0/g' kernel/nvidia/nv-mmap.c || true
 
-      # Fix uvm_hmm.c (AUR fix)
+      # Fix uvm_hmm.c for Linux >= 6.19 (AUR fix)
       sed -i 's/#if defined(NV_ZONE_DEVICE_PAGE_INIT_HAS_ORDER_ARG)/#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 19, 0)\n#define ZONE_DEVICE_PAGE_INIT(page)   zone_device_page_init(page, page_pgmap(page), 0)\n#elif defined(NV_ZONE_DEVICE_PAGE_INIT_HAS_ORDER_ARG)/' kernel/nvidia-uvm/uvm_hmm.c || true
 
-      # Re-apply previously needed fixes if version 580.126.09 doesn't have them
-      # Fix nv_vm_flags_set (avoiding GPL-only vm_flags_set)
-      sed -i 's/ACCESS_PRIVATE(vma, __vm_flags) |= flags;/vma->vm_flags |= flags;/' kernel/common/inc/nv-mm.h || true
-      # Fix nv_vm_flags_clear (avoiding GPL-only vm_flags_clear)
-      sed -i 's/ACCESS_PRIVATE(vma, __vm_flags) &= ~flags;/vma->vm_flags \&= ~flags;/' kernel/common/inc/nv-mm.h || true
-      # Fix nv_dma_use_map_resource
+      # Fix nv_dma_use_map_resource (avoids dma_map_ops.map_resource check)
       sed -i 's/return (ops->map_resource != NULL);/return 1;/' kernel/nvidia/nv-dma.c || true
     '';
   };

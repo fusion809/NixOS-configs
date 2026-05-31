@@ -95,7 +95,7 @@ handle() {
            dispatch_move "$t" "$w_address"
        ) &
 
-    elif [[ "$w_class" =~ google-chrome ]] || [[ "$w_class" =~ chrome- ]]; then
+    elif [[ "$w_class" =~ google-chrome ]]; then
        if is_floating; then return; fi
        (
             if [[ -z "$w_title" ]] || [[ "$w_title" == "Untitled - Google Chrome" ]] || [[ "$w_title" == "New tab - Google Chrome" ]] || [[ "$w_title" == "Google Chrome" ]] || [[ "$w_title" == "Restore pages?" ]]; then
