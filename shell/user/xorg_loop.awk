@@ -39,7 +39,7 @@
             # Rewrite the loop to only iterate over the target package when
             # METAPACKAGE_TARGET is set, rather than the full md5 list.
             if ($0 ~ /for package in.*grep/) {
-                vm_cmds = vm_cmds "\n    for package in $(if [ -n \"${METAPACKAGE_TARGET}\" ]; then ls ${METAPACKAGE_TARGET}-*.tar.?z* 2>/dev/null | head -1; else grep -v '^#' ../app-7.md5 | awk '{print $2}'; fi)"
+                vm_cmds = vm_cmds "\n    for package in $(if [ -n \"${METAPACKAGE_TARGET}\" ]; then ls ${METAPACKAGE_TARGET}-*.tar.?z* 2>/dev/null | head -1; else grep -h -v '^#' ../*-7.md5 2>/dev/null | awk '{print $2}'; fi)"
                 next
             }
         }

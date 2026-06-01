@@ -124,8 +124,9 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
-/* Module: custom/keyboard-layout */
-#custom-keyboard-layout {
+/* Module: custom/keyboard-layout & hyprland/language */
+#custom-keyboard-layout,
+#language {
   border-radius: 4px;
   margin: 6px 1px;
   padding: 3px 2px;
@@ -133,11 +134,13 @@ window#waybar.hidden {
   color: #ffffff;
 }
 
-#custom-keyboard-layout.us {
+#custom-keyboard-layout.us,
+#language.us {
   background-color: #018786;
 }
 
-#custom-keyboard-layout.br {
+#custom-keyboard-layout.br,
+#language.br {
   background-color: #AD1457;
 }
 

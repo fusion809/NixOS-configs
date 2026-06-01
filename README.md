@@ -62,12 +62,12 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 10157 | 58.30% | 1714 | 80.55% |
+| Shell | 10155 | 58.29% | 1714 | 80.55% |
 | Nix | 3350 | 19.23% | 161 | 7.57% |
-| CSS | 1012 | 5.81% | 1 | 0.05% |
+| CSS | 1015 | 5.83% | 1 | 0.05% |
 | Python | 818 | 4.69% | 205 | 9.63% |
 | Markdown | 514 | 2.95% | 0 | 0.00% |
-| JSONC | 434 | 2.49% | 0 | 0.00% |
+| JSONC | 433 | 2.49% | 0 | 0.00% |
 | Patch | 396 | 2.27% | 0 | 0.00% |
 | JSON | 391 | 2.24% | 0 | 0.00% |
 | AWK | 219 | 1.26% | 44 | 2.07% |

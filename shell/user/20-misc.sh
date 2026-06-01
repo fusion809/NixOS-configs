@@ -71,23 +71,21 @@ function compress_bike_rides() {
 
 	mkdir -p "$compressed_dir"
 
-	nix-shell -p imagemagick --run "
-		cd \"$original_dir\" || exit 1
-		for img in *.[jJ][pP][gG] *.[jJ][pP][eE][gG]; do
-			[ -e \"\$img\" ] || continue
-			
-			# Get file size in bytes
-			size=\$(stat -c%s \"\$img\" 2>/dev/null || stat -f%z \"\$img\" 2>/dev/null)
-			
-			# 10MB = 10485760 bytes
-			if [ \"\$size\" -gt 10485760 ]; then
-				echo \"Compressing \$img (\$size bytes) to under 10MB...\"
-				magick \"\$img\" -quality 90 -define jpeg:extent=10MB \"$compressed_dir/\$img\"
-			else
-				echo \"Skipping \$img (\$size bytes) - already under 10MB. Copying original.\"
-				cp -n \"\$img\" \"$compressed_dir/\$img\"
-			fi
-		done
-		echo 'Compression complete!'
-	"
+	cd "$original_dir" || exit 1
+	find . -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) -printf "%f\n" 2>/dev/null | while IFS= read -r img; do
+		[ -n "$img" ] && [ -e "$img" ] || continue
+		
+		# Get file size in bytes
+		size=$(stat -c%s "$img" 2>/dev/null || stat -f%z "$img" 2>/dev/null)
+		
+		# 10MB = 10485760 bytes
+		if [ "$size" -gt 10485760 ]; then
+			echo "Compressing $img ($size bytes) to just under 10MB..."
+			magick "$img" -define jpeg:extent=10400KB "$compressed_dir/$img"
+		else
+			echo "Skipping $img ($size bytes) - already under 10MB. Copying original."
+			cp -n "$img" "$compressed_dir/$img"
+		fi
+	done
+	echo 'Compression complete!'
 }
