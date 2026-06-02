@@ -43,14 +43,56 @@ workspace_dirs=(
 # ---------------------------------------------------------------------------
 # Workspaces that need a small prompt with a fixed set of choices.
 # Values are newline-separated strings fed directly to rofi -dmenu.
+# Workspaces 5 and 17 use smart auto-detection (see functions below) and
+# are NOT listed here.
 # ---------------------------------------------------------------------------
 typeset -A workspace_choices
 workspace_choices=(
-    [5]=$'NixOS-configs\nMiscellaneous'
-    [17]=$'DOS2\nFFXIV\nGames\nSuperTux'
     [18]=$'Uni or medicine\nRecipes'
     [20]=$'Command line\nVirtualization'
 )
+
+# ---------------------------------------------------------------------------
+# Smart auto-detect functions for specific workspaces.
+# These inspect the focused window class/title via hyprctl and return the
+# appropriate subdirectory name on stdout.  They fall back to a curated
+# rofi prompt if nothing matches.
+# ---------------------------------------------------------------------------
+
+# Workspace 5: NixOS-configs if the window title contains "NixOS-configs",
+# Miscellaneous otherwise.
+detect_ws5() {
+    local title
+    title=$(hyprctl activewindow -j | jq -r '.title // ""')
+    if [[ "$title" == *NixOS-configs* ]]; then
+        print -r -- "NixOS-configs"
+    else
+        print -r -- "Miscellaneous"
+    fi
+}
+
+# Workspace 17: map initial_class (and initial_title for FFXIV) to folder.
+# Falls back to a curated rofi pick for unknown classes.
+detect_ws17() {
+    local class title
+    class=$(hyprctl activewindow -j | jq -r '.initialClass // ""')
+    title=$(hyprctl activewindow -j | jq -r '.initialTitle // ""')
+    case "$class" in
+        sol)                   print -r -- "Aisleriot" ;;
+        steam_app_435150)      print -r -- "DOS2" ;;
+        steam_app_default)
+            if [[ "$title" == *"Final Fantasy XIV"* ]]; then
+                print -r -- "FFXIV"
+            else
+                print -r -- "Games" \
+                    | rofi -dmenu -i -p "Save screenshot to:"
+            fi ;;
+        supertux2)             print -r -- "SuperTux" ;;
+        .supertuxkart-wrapped) print -r -- "SuperTuxKart" ;;
+        *)  print -r -- 'Games' \
+                | rofi -dmenu -i -p "Save screenshot to:" ;;
+    esac
+}
 
 # ---------------------------------------------------------------------------
 # Directories to exclude from the full fallback rofi list.
@@ -96,6 +138,16 @@ focused_workspace=$(hyprctl activeworkspace -j | jq .id)
 # Workspace 2 gets priority: visible on ANY monitor → Hyprland and hyfetch
 if (( ${visible_workspaces[(Ie)2]} )); then
     subdir="${workspace_dirs[2]}"
+
+# Workspace 5: smart detect from focused window title
+elif (( focused_workspace == 5 )); then
+    subdir=$(detect_ws5)
+    [[ -z "$subdir" ]] && exit 0
+
+# Workspace 17: smart detect from focused window class/title
+elif (( focused_workspace == 17 )); then
+    subdir=$(detect_ws17)
+    [[ -z "$subdir" ]] && exit 0
 
 # Workspaces with a fixed multi-choice prompt
 elif [[ -n "${workspace_choices[$focused_workspace]}" ]]; then
