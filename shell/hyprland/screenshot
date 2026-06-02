@@ -1,4 +1,137 @@
 #!/usr/bin/env zsh
-export file="$HOME/Pictures/Screenshots/Screenshot_$(date +'%Y-%m-%d_%H-%M-%S').png"
-grimblast save area $file
-wl-copy --type image/png < $file
+
+# ---------------------------------------------------------------------------
+# Workspace → directory mappings.
+# Workspace 2 is checked against ALL visible workspaces (any monitor) so it
+# triggers even when another workspace is focused on a different monitor.
+# All other mappings use the focused workspace only.
+# ---------------------------------------------------------------------------
+typeset -A workspace_dirs
+workspace_dirs=(
+    [2]="Hyprland and hyfetch"
+    [3]="Bluetooth"
+    [4]="Virtualization"
+    [6]="Virtualization"
+    [7]="Uni or medicine"
+    [8]="RuneScape"
+    [9]="Chats"
+    [10]="Chats"
+    [11]="Discord"
+    [12]="Boo"
+    [13]="Dolphin"
+    [14]="KDE Connect"
+    [15]="ChatGPT"
+    [16]="Instagram"
+    [19]="Duolingo"
+    [21]="Games"
+    [22]="Payday 2"
+    [23]="Google Earth"
+    [24]="Recipes"
+    [25]="Videos"
+    [26]="Videos"
+    [27]="Videos"
+    [28]="Virtualization"
+    [29]="Virtualization"
+    [30]="Virtualization"
+    [31]="Virtualization"
+    [32]="Chemistry"
+    [33]="Miscellaneous"
+    [34]="Outlive"
+    [35]="OpenRA"
+)
+
+# ---------------------------------------------------------------------------
+# Workspaces that need a small prompt with a fixed set of choices.
+# Values are newline-separated strings fed directly to rofi -dmenu.
+# ---------------------------------------------------------------------------
+typeset -A workspace_choices
+workspace_choices=(
+    [5]=$'NixOS-configs\nMiscellaneous'
+    [17]=$'DOS2\nFFXIV\nGames\nSuperTux'
+    [18]=$'Uni or medicine\nRecipes'
+    [20]=$'Command line\nVirtualization'
+)
+
+# ---------------------------------------------------------------------------
+# Directories to exclude from the full fallback rofi list.
+# Add any folder names (basenames only) you don't want cluttering the list.
+# ---------------------------------------------------------------------------
+excluded_dirs=(
+    "Bluetooth"
+    "Boo"
+    "ChatGPT"
+    "Chats"
+    "Chemistry"
+    "Command line"
+    "Discord"
+    "Dolphin"
+    "DOS2"
+    "Duolingo"
+    "FFXIV"
+    "Games"
+    "Google Earth"
+#    "Hyprland and hyfetch"
+    "Instagram"
+    "KDE Connect"
+    "NixOS-configs"
+    "OpenRA"
+    "Outlive"
+    "Payday 2"
+    "RuneScape"
+    "SuperTux"
+)
+
+SCREENSHOTS_DIR="$HOME/Pictures/Screenshots"
+
+# ---------------------------------------------------------------------------
+# Determine target subdirectory
+# ---------------------------------------------------------------------------
+
+# All workspace IDs currently visible on any monitor
+visible_workspaces=($(hyprctl monitors -j | jq '.[].activeWorkspace.id'))
+
+# Focused workspace
+focused_workspace=$(hyprctl activeworkspace -j | jq .id)
+
+# Workspace 2 gets priority: visible on ANY monitor → Hyprland and hyfetch
+if (( ${visible_workspaces[(Ie)2]} )); then
+    subdir="${workspace_dirs[2]}"
+
+# Workspaces with a fixed multi-choice prompt
+elif [[ -n "${workspace_choices[$focused_workspace]}" ]]; then
+    subdir=$(print -r -- "${workspace_choices[$focused_workspace]}" \
+        | rofi -dmenu -i -p "Save screenshot to:")
+    [[ -z "$subdir" ]] && exit 0
+
+# Workspaces with a single mapped directory
+elif [[ -n "${workspace_dirs[$focused_workspace]}" ]]; then
+    subdir="${workspace_dirs[$focused_workspace]}"
+
+# Unmapped workspace: show all directories minus excluded ones
+else
+    # Build exclusion pattern for grep
+    if (( ${#excluded_dirs[@]} )); then
+        exclude_pattern=$(printf '%s\n' "${excluded_dirs[@]}" \
+            | sed 's/[^^]/[&]/g; s/\^/\\^/g' \
+            | paste -sd'|')
+        dir_list=$(ls -1d "$SCREENSHOTS_DIR"/*/ 2>/dev/null \
+            | xargs -I{} basename {} \
+            | grep -Ev "^(${exclude_pattern})$")
+    else
+        dir_list=$(ls -1d "$SCREENSHOTS_DIR"/*/ 2>/dev/null \
+            | xargs -I{} basename {})
+    fi
+
+    subdir=$(print -r -- "$dir_list" \
+        | rofi -dmenu -i -p "Save screenshot to:")
+    [[ -z "$subdir" ]] && exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# Take the screenshot
+# ---------------------------------------------------------------------------
+dest="$SCREENSHOTS_DIR/$subdir"
+mkdir -p "$dest"
+
+file="$dest/Screenshot_$(date +'%Y-%m-%d_%H-%M-%S').png"
+grimblast save area "$file" && wl-copy --type image/png < "$file"

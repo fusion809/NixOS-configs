@@ -14,7 +14,13 @@
   "timeout-critical": 0,
   "fit-to-screen": true,
   "relative-timestamps": true,
-  "notification-visibility": {},
+  "notification-visibility": {
+    "kdeconnect": {
+      "state": "enabled",
+      "override-urgency": "normal",
+      "app-name": "KDE Connect"
+    }
+  },
   "notification-grouping": false,
   "buttons-grid": {
     "actions": []
