@@ -10,15 +10,20 @@
   "control-center-height": 600,
   "cache-notifications": false,
   "timeout": 10,
-  "timeout-low": 5,
+  "timeout-low": 0,
   "timeout-critical": 0,
   "fit-to-screen": true,
   "relative-timestamps": true,
   "notification-visibility": {
-    "kdeconnect": {
+    "kdeconnect-appname": {
       "state": "enabled",
-      "override-urgency": "normal",
+      "override-urgency": "critical",
       "app-name": "KDE Connect"
+    },
+    "kdeconnect-desktop": {
+      "state": "enabled",
+      "override-urgency": "critical",
+      "desktop-entry": "org.kde.kdeconnect.*"
     }
   },
   "notification-grouping": false,

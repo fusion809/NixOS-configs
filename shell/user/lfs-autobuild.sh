@@ -1131,7 +1131,8 @@ while IFS= read -r line; do
         fi
 
         # 6. Skip post-installation configuration blocks
-        if [[ "$INCLUDE_CONFIG" == "false" ]] && grep -qE "^cat[[:space:]]*>[[:space:]]*/etc/|^cat[[:space:]]*>[[:space:]]*/var/" <<< "$CURRENT_BLOCK"; then
+        # Match: bare `cat`, `as_root cat`, `sudo ... cat`, indented `cat` writing to /etc/ or /var/
+        if [[ "$INCLUDE_CONFIG" == "false" ]] && grep -qE "(^|[[:space:]])(sudo[[:space:]]+(-[^ ]+[[:space:]]+)*)?cat[[:space:]]*>>?[[:space:]]*/etc/|(^|[[:space:]])(sudo[[:space:]]+(-[^ ]+[[:space:]]+)*)?cat[[:space:]]*>>?[[:space:]]*/var/" <<< "$CURRENT_BLOCK"; then
             # Never skip critical PAM/Shadow configurations
             if ! grep -qE "/etc/pam\.d/|/etc/login\.defs|/etc/security/|/etc/shadow|/etc/sddm" <<< "$CURRENT_BLOCK" && \
                [[ "${PACKAGE,,}" != "linux-pam" ]] && [[ "${PACKAGE,,}" != "shadow" ]]; then
@@ -1403,7 +1404,12 @@ fi
 if [[ "$PACKAGE" == "qt6" ]]; then
     log "Fixing Qt6 BLFS book patch path (../ to ../../) due to -d qtbase/"
     COMMANDS=$(echo "$COMMANDS" | sed 's|-i ../qt-everywhere|-i ../../qt-everywhere|g')
-    
+
+    log "Fixing unterminated find -exec in qt6 BLFS commands..."
+    # BLFS qt6 page has: find /opt/qt6 ... -exec ... {} without \; or +
+    # Add \; to any -exec that ends the line without a terminator.
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's/(-exec\s+\S+.*?\{\}\s*)$/\1 \\;/g')
+
     log "Skipping qtopcua submodule in qt6 to bypass OpenSSL ASN1_TIME opaque compatibility compilation error..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/rm -rf qtwebengine qt3d qtquick3dphysics/rm -rf qtwebengine qt3d qtquick3dphysics qtopcua/g')
     if [[ ! "$COMMANDS" =~ "qtopcua" ]]; then
@@ -1684,8 +1690,16 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/(^|[;|&])[[:space:]]*(doxygen|texi2html|texi2pdf|texi2dvi|makeinfo|pdflatex|xelatex|lualatex|asciidoc|xmlto|asciidoctor|xmlproc|docbook2x)([^a-zA-Z0-9_-]|$)/\1true \3/g')
     COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpython3?[[:space:]]+doc\/[a-zA-Z0-9_-]+\.py\b/true /g')
     # Optional: neutralize test commands that might fail and kill the build
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/\b(make|ninja)[[:space:]]+(check|test)\b/& || true/g')
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/python3?[[:space:]]+-m[[:space:]]+pytest/& || true/g')
+    if [[ "${PACKAGE,,}" != "glibc" ]]; then
+        # Remove make check/test, ninja test, meson test, pytest
+        COMMANDS=$(echo "$COMMANDS" | sed -E 's/^(as_root[[:space:]]+)?(make|ninja)[[:space:]]+(check|test).*$//gm')
+        COMMANDS=$(echo "$COMMANDS" | sed -E 's/^(as_root[[:space:]]+)?meson[[:space:]]+test.*$//gm')
+        COMMANDS=$(echo "$COMMANDS" | sed -E 's/^(as_root[[:space:]]+)?python3?[[:space:]]+-m[[:space:]]+pytest.*$//gm')
+    else
+        COMMANDS=$(echo "$COMMANDS" | sed -E 's/\b(make|ninja)[[:space:]]+(check|test)\b/& || true/g')
+        COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bmeson[[:space:]]+test\b/& || true/g')
+        COMMANDS=$(echo "$COMMANDS" | sed -E 's/python3?[[:space:]]+-m[[:space:]]+pytest/& || true/g')
+    fi
 fi
 
 # 2.9.5 Final cleanup of dangling separators before markers or EOF
