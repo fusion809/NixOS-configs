@@ -26,10 +26,14 @@ class NotificationBridge:
         self.desktop_to_phone = {}
         # Mapping: (device_id, phone_notif_id) -> desktop_id
         self.phone_to_desktop = {}
-        # Pending calls: serial -> (device_id, phone_id, title, body)
+        # Pending calls: serial -> (device_id, phone_id, title, body, urgency, app_name, icon)
         self.pending_notifs = {}
         # Set of desktop_ids currently being closed by this script to avoid feedback loops
         self.closing_by_bridge = set()
+        # Desktop IDs that were created by this bridge (re-fires) - don't re-process
+        self.bridge_owned_desktops = set()
+        # Serials of Notify calls made by this bridge - skip in PARSE_RETURN
+        self.upgrade_serials = set()
 
     def get_device_info(self):
         try:
@@ -149,6 +153,49 @@ class NotificationBridge:
             # We keep it in the set for a short time to catch the event
             threading.Timer(1.0, lambda: self.closing_by_bridge.discard(desktop_id)).start()
 
+    def upgrade_to_critical(self, orig_desktop_id, app_name, title, body, icon, dev_id, p_id):
+        """Close a low-urgency KDE Connect notification and re-fire it as Critical."""
+        time.sleep(0.1)
+        try:
+            notif_server = self.bus.get('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
+
+            # Suppress phone-dismissal feedback for the original notification
+            self.closing_by_bridge.add(orig_desktop_id)
+            # Remove stale mapping before closing
+            self.desktop_to_phone.pop(orig_desktop_id, None)
+            if p_id and dev_id:
+                self.phone_to_desktop.pop((dev_id, p_id), None)
+
+            try:
+                notif_server.CloseNotification(orig_desktop_id)
+            except Exception as e:
+                log_msg(f"Warning: could not close original notification {orig_desktop_id}: {e}")
+
+            time.sleep(0.05)
+
+            # Re-fire with Critical urgency. Add a bridge marker so the dbus monitor
+            # skips re-processing this call and doesn't create a duplicate upgrade loop.
+            hints = {
+                'urgency': GLib.Variant('y', 2),                    # 2 = Critical
+                'x-swaync-bridge-upgraded': GLib.Variant('b', True), # loop-guard
+                'desktop-entry': GLib.Variant('s', 'org.kde.kdeconnect.daemon'),
+            }
+
+            new_id = notif_server.Notify(
+                app_name or 'KDE Connect', 0, icon or 'kdeconnect',
+                title or '', body or '', [], hints, 0
+            )
+
+            # Store mapping for the new desktop_id
+            self.bridge_owned_desktops.add(new_id)
+            self.desktop_to_phone[new_id] = (dev_id, p_id, title, body)
+            if p_id and dev_id:
+                self.phone_to_desktop[(dev_id, p_id)] = new_id
+
+            log_msg(f"Upgraded low-urgency -> Critical: Desktop {orig_desktop_id} -> {new_id} ('{title}')")
+        except Exception as e:
+            log_msg(f"Error in upgrade_to_critical for {orig_desktop_id}: {e}")
+
     def on_desktop_notification_closed(self, id, reason):
         if id in self.closing_by_bridge:
             log_msg(f"Desktop notification {id} closed by bridge (reason={reason}), skipping phone sync.")
@@ -184,12 +231,12 @@ class NotificationBridge:
                 self.close_in_swaync(desktop_id)
 
     def dbus_monitor_thread(self):
-        cmd = ["stdbuf", "-o", "L", "dbus-monitor", 
+        cmd = ["stdbuf", "-o", "L", "dbus-monitor",
                "type='method_call',interface='org.freedesktop.Notifications',member='Notify'",
                "type='method_return',sender='org.freedesktop.Notifications'"]
-        
+
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, bufsize=1)
-        
+
         state = "IDLE"
         serial = None
         app_name = None
@@ -197,24 +244,31 @@ class NotificationBridge:
         summary = None
         body = None
         phone_id = None
+        icon_name = None
+        urgency = 1       # 0=low, 1=normal, 2=critical
+        is_bridge_notif = False
         string_idx = 0
         in_hints = False
         next_is_phone_id = False
         next_is_device_id = False
+        next_is_urgency = False
 
         for line in process.stdout:
             line = line.strip()
-            
+
             if "member=Notify" in line:
                 m = re.search(r"serial=(\d+)", line)
                 if m:
                     serial = m.group(1)
                     state = "PARSE_NOTIFY"
-                    app_name = device_id = summary = body = phone_id = None
+                    app_name = device_id = summary = body = phone_id = icon_name = None
+                    urgency = 1
+                    is_bridge_notif = False
                     string_idx = 0
                     in_hints = False
                     next_is_phone_id = False
                     next_is_device_id = False
+                    next_is_urgency = False
                 continue
 
             if "method return" in line:
@@ -226,57 +280,92 @@ class NotificationBridge:
                 continue
 
             if state == "PARSE_NOTIFY":
-                # Check for hints
-                if "array [" in line: in_hints = True
-                if "]" in line: in_hints = False
-                
+                # Detect hints array boundaries
+                if "array [" in line and not in_hints:
+                    in_hints = True
+                if in_hints and line == "]":
+                    in_hints = False
+
                 if in_hints:
+                    # Check for bridge loop-guard marker
+                    if 'string "x-swaync-bridge-upgraded"' in line:
+                        is_bridge_notif = True
+                        continue
                     if 'string "x-kdeconnect-id"' in line:
                         next_is_phone_id = True
-                    elif 'string "x-kde-origin-name"' in line:
+                        continue
+                    if 'string "x-kde-origin-name"' in line:
                         next_is_device_id = True
-                    elif next_is_phone_id:
+                        continue
+                    if 'string "urgency"' in line:
+                        next_is_urgency = True
+                        continue
+                    if next_is_phone_id:
                         m = re.search(r'string "(.*)"', line)
-                        if m: 
+                        if m:
                             phone_id = m.group(1)
                             next_is_phone_id = False
-                    elif next_is_device_id:
+                        continue
+                    if next_is_device_id:
                         m = re.search(r'string "(.*)"', line)
                         if m:
                             device_id = m.group(1)
                             next_is_device_id = False
+                        continue
+                    if next_is_urgency:
+                        m = re.search(r'byte (\d+)', line)
+                        if m:
+                            urgency = int(m.group(1))
+                            next_is_urgency = False
+                        continue
                     continue
 
                 m = re.search(r'string "(.*)"', line)
                 if m:
                     val = m.group(1)
-                    if string_idx == 0: app_name = val
-                    elif string_idx == 1: 
-                        if not device_id: device_id = val
+                    if string_idx == 0:   app_name = val
+                    elif string_idx == 1: icon_name = val
                     elif string_idx == 2: summary = val
                     elif string_idx == 3: body = val
                     string_idx += 1
-                
+
                 if "int32" in line or "uint32" in line:
                     if string_idx >= 3:
-                        log_msg(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}', device_hint='{device_id}'")
-                        # Track ALL notifications now to ensure full coverage
-                        self.pending_notifs[serial] = (device_id, phone_id, summary, body)
-                        state = "IDLE"
+                        if is_bridge_notif:
+                            # This is our own re-fired notification; don't map it again
+                            self.upgrade_serials.add(serial)
+                            state = "IDLE"
+                        else:
+                            log_msg(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}', device_hint='{device_id}'")
+                            self.pending_notifs[serial] = (device_id, phone_id, summary, body, urgency, app_name, icon_name)
+                            state = "IDLE"
 
             elif state == "PARSE_RETURN":
                 m = re.search(r'uint32 (\d+)', line)
                 if m:
                     desktop_id = int(m.group(1))
-                    if serial in self.pending_notifs:
+                    if serial in self.upgrade_serials:
+                        # Re-fired by bridge - desktop_id already stored in upgrade_to_critical
+                        self.upgrade_serials.discard(serial)
+                    elif serial in self.pending_notifs:
                         info = self.pending_notifs.pop(serial)
-                        dev_id, p_id, title, text = info
+                        dev_id, p_id, title, text, notif_urgency, orig_app, icon = info
                         self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
                         if p_id:
                             self.phone_to_desktop[(dev_id, p_id)] = desktop_id
                             log_msg(f"Mapped: Desktop {desktop_id} <-> Phone {p_id} on {dev_id}")
                         else:
                             log_msg(f"Mapped (Local/Fuzzy): Desktop {desktop_id} -> '{title}'")
+
+                        # If KDE Connect sent a low-urgency notification (phone locked),
+                        # upgrade it to Critical so swaync shows a popup banner.
+                        if notif_urgency == 0 and orig_app == 'KDE Connect':
+                            log_msg(f"Low-urgency KDE Connect notification detected (phone likely locked). Upgrading {desktop_id} to Critical.")
+                            threading.Thread(
+                                target=self.upgrade_to_critical,
+                                args=(desktop_id, orig_app, title, text, icon or 'kdeconnect', dev_id, p_id),
+                                daemon=True
+                            ).start()
                     state = "IDLE"
 
     def run(self):
