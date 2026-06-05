@@ -294,10 +294,16 @@ class NotificationBridge:
                     if 'string "x-swaync-bridge-upgraded"' in line:
                         is_bridge_notif = True
                         continue
-                    if 'string "x-kdeconnect-id"' in line:
+                    # KDE Connect notification ID: support both old and new hint names
+                    # Old (<24.x): x-kdeconnect-id
+                    # New (24+/26.04.1): x-kde-kdeconnect-notification-id
+                    if 'string "x-kdeconnect-id"' in line or 'string "x-kde-kdeconnect-notification-id"' in line:
                         next_is_phone_id = True
                         continue
-                    if 'string "x-kde-origin-name"' in line:
+                    # KDE Connect device ID: support both old and new hint names
+                    # Old: x-kde-origin-name
+                    # New (24+/26.04.1): x-kde-kdeconnect-device-id
+                    if 'string "x-kde-origin-name"' in line or 'string "x-kde-kdeconnect-device-id"' in line:
                         next_is_device_id = True
                         continue
                     if 'string "urgency"' in line:
@@ -339,7 +345,9 @@ class NotificationBridge:
                             self.upgrade_serials.add(serial)
                             state = "IDLE"
                         else:
-                            log_msg(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}', device_hint='{device_id}'")
+                            log_msg(f"Incoming Notify: app='{app_name}', summary='{summary}', phone_id='{phone_id}', device_hint='{device_id}', urgency={urgency}")
+                            if app_name == 'KDE Connect' and phone_id is None:
+                                log_msg(f"  WARN: KDE Connect notif has no phone_id - hint name mismatch? Check dbus-monitor hints for this notification.")
                             self.pending_notifs[serial] = (device_id, phone_id, summary, body, urgency, app_name, icon_name)
                             state = "IDLE"
 

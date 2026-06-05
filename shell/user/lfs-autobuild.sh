@@ -1901,10 +1901,10 @@ elif [[ "$XORG_MULTI_MODE" == "true" ]]; then
         BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/ -B\s+(https?:\/\/\S+)/) { print $1; exit }')
         if [[ -z "$BASE_URL" ]]; then
             case "$PACKAGE" in
-                xorg-lib|x7lib)       BASE_URL="https://www.x.org/pub/individual/lib/" ;;
-                xorg-app|x7app)       BASE_URL="https://www.x.org/pub/individual/app/" ;;
-                xorg-font|x7font)     BASE_URL="https://www.x.org/pub/individual/font/" ;;
-                xorg-driver|x7driver) BASE_URL="https://www.x.org/pub/individual/driver/" ;;
+                xorg-lib|x7lib)       BASE_URL="https://xorg.freedesktop.org/archive/individual/lib/" ;;
+                xorg-app|x7app)       BASE_URL="https://xorg.freedesktop.org/archive/individual/app/" ;;
+                xorg-font|x7font)     BASE_URL="https://xorg.freedesktop.org/archive/individual/font/" ;;
+                xorg-driver|x7driver) BASE_URL="https://xorg.freedesktop.org/archive/individual/driver/" ;;
             esac
         fi
         
@@ -2110,10 +2110,10 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" || "$PLASMA_M
         BASE_URL=$(echo "$COMMANDS" | perl -nle 'if (/ -B\s+(https?:\/\/\S+)/) { print $1; exit }')
         if [[ -z "$BASE_URL" ]]; then
             case "$PACKAGE" in
-                xorg-lib|x7lib)       BASE_URL="https://www.x.org/pub/individual/lib/" ;;
-                xorg-app|x7app)       BASE_URL="https://www.x.org/pub/individual/app/" ;;
-                xorg-font|x7font)     BASE_URL="https://www.x.org/pub/individual/font/" ;;
-                xorg-driver|x7driver) BASE_URL="https://www.x.org/pub/individual/driver/" ;;
+                xorg-lib|x7lib)       BASE_URL="https://xorg.freedesktop.org/archive/individual/lib/" ;;
+                xorg-app|x7app)       BASE_URL="https://xorg.freedesktop.org/archive/individual/app/" ;;
+                xorg-font|x7font)     BASE_URL="https://xorg.freedesktop.org/archive/individual/font/" ;;
+                xorg-driver|x7driver) BASE_URL="https://xorg.freedesktop.org/archive/individual/driver/" ;;
             esac
         fi
     fi
@@ -2257,6 +2257,9 @@ for url in "${DOWNLOAD_URLS[@]}"; do
             url=$(echo "$url" | sed "s/$LFS_MM/$UPSTREAM_MM/g")
         fi
     fi
+    # Rewrite X.org pub URLs to xorg.freedesktop.org archive URLs as X.org is throwing 404s
+    url=$(echo "$url" | sed 's|https://www.x.org/pub/|https://xorg.freedesktop.org/archive/|g')
+    url=$(echo "$url" | sed 's|https://www.x.org/archive/|https://xorg.freedesktop.org/archive/|g')
     NEW_URLS+=("$url")
 done
 DOWNLOAD_URLS=("${NEW_URLS[@]}")

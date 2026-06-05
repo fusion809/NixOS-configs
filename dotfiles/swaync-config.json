@@ -10,7 +10,7 @@
   "control-center-height": 600,
   "cache-notifications": false,
   "timeout": 10,
-  "timeout-low": 0,
+  "timeout-low": 10,
   "timeout-critical": 10,
   "fit-to-screen": true,
   "relative-timestamps": true,
