@@ -148,7 +148,10 @@ class NotificationBridge:
         log_msg(f"Closing desktop notification {desktop_id}...")
         self.closing_by_bridge.add(desktop_id)
         try:
-            subprocess.run(["swaync-client", "-close-notification", str(desktop_id)], check=False)
+            notif_server = self.bus.get('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
+            notif_server.CloseNotification(desktop_id)
+        except Exception as e:
+            log_msg(f"Error closing notification: {e}")
         finally:
             # We keep it in the set for a short time to catch the event
             threading.Timer(1.0, lambda: self.closing_by_bridge.discard(desktop_id)).start()
@@ -183,7 +186,7 @@ class NotificationBridge:
 
             new_id = notif_server.Notify(
                 app_name or 'KDE Connect', 0, icon or 'kdeconnect',
-                title or '', body or '', [], hints, 0
+                title or '', body or '', [], hints, 10000
             )
 
             # Store mapping for the new desktop_id
@@ -350,22 +353,22 @@ class NotificationBridge:
                     elif serial in self.pending_notifs:
                         info = self.pending_notifs.pop(serial)
                         dev_id, p_id, title, text, notif_urgency, orig_app, icon = info
-                        self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
-                        if p_id:
-                            self.phone_to_desktop[(dev_id, p_id)] = desktop_id
-                            log_msg(f"Mapped: Desktop {desktop_id} <-> Phone {p_id} on {dev_id}")
-                        else:
-                            log_msg(f"Mapped (Local/Fuzzy): Desktop {desktop_id} -> '{title}'")
 
-                        # If KDE Connect sent a low-urgency notification (phone locked),
-                        # upgrade it to Critical so swaync shows a popup banner.
-                        if notif_urgency == 0 and orig_app == 'KDE Connect':
-                            log_msg(f"Low-urgency KDE Connect notification detected (phone likely locked). Upgrading {desktop_id} to Critical.")
-                            threading.Thread(
-                                target=self.upgrade_to_critical,
-                                args=(desktop_id, orig_app, title, text, icon or 'kdeconnect', dev_id, p_id),
-                                daemon=True
-                            ).start()
+                        # Only track KDE Connect notifications for phone sync.
+                        # Tracking every app (Discord, etc.) causes false fuzzy-dismiss
+                        # of phone notifications when unrelated desktop notifications time out.
+                        if orig_app == 'KDE Connect' or p_id:
+                            self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
+                            if p_id:
+                                self.phone_to_desktop[(dev_id, p_id)] = desktop_id
+                                log_msg(f"Mapped: Desktop {desktop_id} <-> Phone {p_id} on {dev_id}")
+                            else:
+                                log_msg(f"Mapped (Fuzzy): Desktop {desktop_id} -> '{title}'")
+                        else:
+                            log_msg(f"Skipping non-KDE-Connect notification: app='{orig_app}', '{title}'")
+                        # NOTE: upgrade_to_critical removed. swaync handles urgency via
+                        # override-urgency:Critical in notification-visibility rules.
+                        # The old close-then-refire caused a race that prevented popups showing.
                     state = "IDLE"
 
     def run(self):
