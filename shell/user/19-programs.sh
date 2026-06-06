@@ -42,13 +42,17 @@ function pstart {
 }
 
 function bm3u8 {
+	cddf
 	for url in "$@"; do
-		page=$(wget -cqO- "$url")
-		m3u8URL=$(echo "$page" | grep "hlsAuto" | cut -d '"' -f 4 | sed 's/\\//g')
-		filename=$(echo "$page" | grep "<title>" | sed 's/<[/]*title>//g' | head -n 1 | sed 's/\s*- [A-Za-z]*.com//g')
-		cddf
-		wget -c "$m3u8URL" -O "$filename.m3u8"
+		(
+			page=$(wget -cqO- "$url")
+			m3u8URL=$(echo "$page" | grep "hlsAuto" | cut -d '"' -f 4 | sed 's/\\//g')
+			filename=$(echo "$page" | grep "<title>" | sed 's/<[/]*title>//g' | head -n 1 | sed 's/\s*- [A-Za-z]*.com//g')
+			wget -c "$m3u8URL" -O "$filename.m3u8"
+		) &
 	done
+	wait
+	download
 }
 
 function rename {

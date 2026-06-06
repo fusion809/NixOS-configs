@@ -17,12 +17,12 @@
   "notification-visibility": {
     "kdeconnect-appname": {
       "state": "enabled",
-      "override-urgency": "Critical",
+      "override-urgency": "critical",
       "app-name": "KDE Connect"
     },
     "kdeconnect-desktop": {
       "state": "enabled",
-      "override-urgency": "Critical",
+      "override-urgency": "critical",
       "desktop-entry": "org.kde.kdeconnect.daemon"
     }
   },
