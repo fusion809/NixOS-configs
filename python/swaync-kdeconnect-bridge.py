@@ -209,7 +209,7 @@ class NotificationBridge:
         if reason in (2, 3, 4): 
             if id in self.desktop_to_phone:
                 dev_id, p_id, title, body = self.desktop_to_phone.pop(id)
-                self.phone_to_desktop.pop((dev_id, p_id), None)
+                self.phone_to_desktop.pop(p_id, None)
                 if p_id:
                     self.dismiss_on_phone(dev_id, p_id, title, body)
                 else:
@@ -224,14 +224,11 @@ class NotificationBridge:
     def on_phone_notification_removed(self, sender, object, iface, signal, params):
         # Params is (id,)
         phone_notif_id = params[0]
-        match = re.search(r'/devices/([^/]+)/notifications', object)
-        if match:
-            device_id = match.group(1)
-            log_msg(f"Phone notification removed: device={device_id}, id={phone_notif_id}")
-            desktop_id = self.phone_to_desktop.pop((device_id, phone_notif_id), None)
-            if desktop_id:
-                self.desktop_to_phone.pop(desktop_id, None)
-                self.close_in_swaync(desktop_id)
+        log_msg(f"Phone notification removed: id={phone_notif_id}")
+        desktop_id = self.phone_to_desktop.pop(phone_notif_id, None)
+        if desktop_id:
+            self.desktop_to_phone.pop(desktop_id, None)
+            self.close_in_swaync(desktop_id)
 
     def dbus_monitor_thread(self):
         cmd = ["stdbuf", "-o", "L", "dbus-monitor",
@@ -296,8 +293,8 @@ class NotificationBridge:
                         continue
                     # KDE Connect notification ID: support both old and new hint names
                     # Old (<24.x): x-kdeconnect-id
-                    # New (24+/26.04.1): x-kde-kdeconnect-notification-id
-                    if 'string "x-kdeconnect-id"' in line or 'string "x-kde-kdeconnect-notification-id"' in line:
+                    # New (24+/26.04.1): x-kde-kdeconnect-notification-id or x-kde-eventId
+                    if 'string "x-kdeconnect-id"' in line or 'string "x-kde-kdeconnect-notification-id"' in line or 'string "x-kde-eventId"' in line:
                         next_is_phone_id = True
                         continue
                     # KDE Connect device ID: support both old and new hint names
@@ -338,7 +335,7 @@ class NotificationBridge:
                     elif string_idx == 3: body = val
                     string_idx += 1
 
-                if "int32" in line or "uint32" in line:
+                if ("int32" in line or "uint32" in line) and not in_hints:
                     if string_idx >= 3:
                         if is_bridge_notif:
                             # This is our own re-fired notification; don't map it again
@@ -366,12 +363,33 @@ class NotificationBridge:
                         # Tracking every app (Discord, etc.) causes false fuzzy-dismiss
                         # of phone notifications when unrelated desktop notifications time out.
                         if orig_app == 'KDE Connect' or p_id:
-                            self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
-                            if p_id:
-                                self.phone_to_desktop[(dev_id, p_id)] = desktop_id
-                                log_msg(f"Mapped: Desktop {desktop_id} <-> Phone {p_id} on {dev_id}")
+                            # Deduplication check
+                            now = time.time()
+                            is_duplicate = False
+                            is_update = False
+                            if not hasattr(self, 'recent_notifs'):
+                                self.recent_notifs = {}
+                            for (s, b), (t, d_id) in list(self.recent_notifs.items()):
+                                if now - t > 2.0:
+                                    del self.recent_notifs[(s, b)]
+                                elif s == title and b == text:
+                                    is_duplicate = True
+                                    if d_id == desktop_id:
+                                        is_update = True
+                            
+                            self.recent_notifs[(title, text)] = (now, desktop_id)
+                            
+                            if is_duplicate and not is_update:
+                                log_msg(f"Duplicate notification detected: '{title}', scheduling close for desktop_id {desktop_id} to prevent Swaync crash")
+                                import threading
+                                threading.Timer(0.5, self.close_in_swaync, [desktop_id]).start()
                             else:
-                                log_msg(f"Mapped (Fuzzy): Desktop {desktop_id} -> '{title}'")
+                                self.desktop_to_phone[desktop_id] = (dev_id, p_id, title, text)
+                                if p_id:
+                                    self.phone_to_desktop[p_id] = desktop_id
+                                    log_msg(f"Mapped: Desktop {desktop_id} <-> Phone {p_id} on {dev_id}")
+                                else:
+                                    log_msg(f"Mapped (Fuzzy): Desktop {desktop_id} -> '{title}'")
                         else:
                             log_msg(f"Skipping non-KDE-Connect notification: app='{orig_app}', '{title}'")
                         # NOTE: upgrade_to_critical removed. swaync handles urgency via

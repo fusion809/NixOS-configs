@@ -58,8 +58,15 @@
   virtualisation = import ./virtualisation.nix { inherit pkgs; };
   xdg.portal = {
     enable = true;
-    extraPortals = [ pkgs.kdePackages.xdg-desktop-portal-kde ];
-    config.common.default = [ "kde" ];
+    extraPortals = [ pkgs.kdePackages.xdg-desktop-portal-kde pkgs.xdg-desktop-portal-gtk pkgs.xdg-desktop-portal-hyprland ];
+    config = {
+      common = {
+        default = [ "kde" "gtk" ];
+      };
+      hyprland = {
+        default = [ "hyprland" "gtk" ];
+      };
+    };
   };
 
   qt = {
