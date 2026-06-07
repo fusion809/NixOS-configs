@@ -53,7 +53,7 @@
             "hyprland/window"
         ],
         "modules-right": [
-            "hyprland/language",
+            "custom/keyboard-layout",
             "custom/temperature",
             "custom/network-down",
             "custom/network-up",

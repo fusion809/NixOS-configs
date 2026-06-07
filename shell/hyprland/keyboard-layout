@@ -1,9 +1,15 @@
-#!/usr/bin/env zsh
-# This is courtesy of ChatGPT
+#!/usr/bin/env bash
+
 current_layout_name=$(hyprctl devices -j | jq -r '
   .keyboards[]
   | select(.main == true)
   | .active_keymap
-')
-current_layout=$(grep --include="*" -R "name\[Group1\]=\s*\"$current_layout_name\"" /run/current-system/sw/share/X11/xkb/symbols | cut -d ':' -f 1 | cut -d '/' -f 9 | uniq)
+' | head -n1)
+
+case "$current_layout_name" in
+    *"Brazil"*) current_layout="br" ;;
+    *"US"*) current_layout="us" ;;
+    *) current_layout="us" ;;
+esac
+
 echo "{\"text\": \"$current_layout\", \"class\": \"$current_layout\"}"

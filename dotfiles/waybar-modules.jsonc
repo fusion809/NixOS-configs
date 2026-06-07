@@ -77,10 +77,11 @@
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/weather",
         "return-type": "json"
     },
-    "hyprland/language": {
+    "custom/keyboard-layout": {
         "format": " {}",
-        "format-en": "us",
-        "format-pt": "br",
+        "return-type": "json",
+        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/keyboard-layout",
+        "interval": 1,
         "on-click": "hyprctl switchxkblayout current next",
         "tooltip": true,
         "tooltip-format": "Keyboard layout; click or press Win+Space to change it."
