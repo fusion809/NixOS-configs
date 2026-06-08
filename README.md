@@ -62,11 +62,11 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 10367 | 58.33% | 1728 | 79.30% |
-| Nix | 3357 | 18.89% | 161 | 7.39% |
+| Shell | 10367 | 58.29% | 1728 | 79.30% |
+| Nix | 3357 | 18.88% | 161 | 7.39% |
 | CSS | 1015 | 5.71% | 1 | 0.05% |
-| Python | 936 | 5.27% | 242 | 11.11% |
-| Markdown | 514 | 2.89% | 0 | 0.00% |
+| Python | 936 | 5.26% | 242 | 11.11% |
+| Markdown | 525 | 2.95% | 0 | 0.00% |
 | JSONC | 435 | 2.45% | 0 | 0.00% |
 | JSON | 402 | 2.26% | 0 | 0.00% |
 | Patch | 396 | 2.23% | 0 | 0.00% |
@@ -74,7 +74,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | XML | 78 | 0.44% | 0 | 0.00% |
 | JavaScript | 41 | 0.23% | 3 | 0.14% |
 | TOML | 13 | 0.07% | 0 | 0.00% |
-| **Total** | **17773** | **100.00%** | **2179** | **100.00%** |
+| **Total** | **17784** | **100.00%** | **2179** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -140,6 +140,11 @@ The sources of Hyprland and hy3 differ depending on the time. Sometimes it is bu
 | <kbd>Win</kbd>+<kbd>F10</kbd>                                     | Open workspace #30                                |
 | <kbd>Win</kbd>+<kbd>F11</kbd>                                     | Open workspace #31                                |
 | <kbd>Win</kbd>+<kbd>F12</kbd>                                     | Open workspace #32                                |
+| <kbd>Win</kbd>+<kbd>F12</kbd>                                     | Open workspace #32                                |
+| <kbd>Win</kbd>+<kbd>F12</kbd>                                     | Open workspace #32                                |
+| <kbd>Win</kbd>+<kbd>Pause</kbd>                                   | Open workspace #33                                |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>Insert</kbd>                   | Open workspace #34                                |
+| <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>Home</kbd>                     | Open workspace #35                                |
 | <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>1</kbd>                       | Move selected workspace to monitor 1              |
 | <kbd>Win</kbd>+<kbd>Ctrl</kbd>+<kbd>2</kbd>                       | Move selected workspace to monitor 2              |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>                      | Move focused window (silently) to workspace #1    |
@@ -174,6 +179,9 @@ The sources of Hyprland and hy3 differ depending on the time. Sometimes it is bu
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Page Down</kbd>              | Move focused window (silently) to workspace #30   |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>`</kbd> (Grave)              | Move focused window (silently) to workspace #31   |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>-</kbd> (Minus)              | Move focused window (silently) to workspace #32   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>=</kbd> (Equal)              | Move focused window (silently) to workspace #33   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>\</kbd> (backslash)          | Move focused window (silently) to workspace #34   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> (forwardslash)       | Move focused window (silently) to workspace #35   |
 | <kbd>Win</kbd>+<kbd>a</kbd>                                       | Expand out of tabbed mode                         |  
 | <kbd>Win</kbd>+<kbd>b</kbd>                                       | Open Brave.                                       | 
 | <kbd>Win</kbd>+<kbd>c</kbd>                                       | Open Google Chat Chrome app                       | 
@@ -192,7 +200,10 @@ The sources of Hyprland and hy3 differ depending on the time. Sometimes it is bu
 | <kbd>Win</kbd>+<kbd>t</kbd>                                       | Enter tabbed mode.                                |
 | <kbd>Win</kbd>+<kbd>v</kbd>                                       | Open VirtualBox.                                  |
 | <kbd>Win</kbd>+<kbd>w</kbd>                                       | Change wallpaper to next one in list.             |
+| <kbd>Win</kbd>+<kbd>x</kbd>                                       | Close/start Waybar on selected monitor.          |
 | <kbd>Win</kbd>+<kbd>z</kbd>                                       | Change wallpaper to previous one in list.         |
+| <kbd>Win</kbd>+<kbd><</kbd>                                       | Open Swaync notification sidebar.                 |
+| <kbd>Win</kbd>+<kbd>.</kbd>                                       | Clear Swaync notifications.
 | <kbd>Win</kbd>+<kbd>Left</kbd>                                    | Move focus left.                                  |
 | <kbd>Win</kbd>+<kbd>Right</kbd>                                   | Move focus right.                                 |
 | <kbd>Win</kbd>+<kbd>Down</kbd>                                    | Move focus down.                                  |
