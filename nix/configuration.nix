@@ -88,6 +88,7 @@
       "/run/current-system/sw/lib/qt-6/qml"
       "/run/current-system/sw/lib/qml"
     ];
+    GTK_USE_PORTAL = "1";
   };
 
 

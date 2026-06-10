@@ -100,7 +100,6 @@ detect_ws17() {
 # ---------------------------------------------------------------------------
 excluded_dirs=(
     "Bluetooth"
-    "Boo"
     "ChatGPT"
     "Chats"
     "Chemistry"
