@@ -186,25 +186,29 @@ cleanup_old_libraries_gpt() {
 
     # 3. Identify old versions (files only)
     # A version is old if a newer version with the same base name exists.
-    local old_libs=($(find /usr/lib /lib -type f -name "lib*.so.[0-9]*" ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
+    local old_libs=($(find /usr/lib -type f -name "lib*.so.[0-9]*" ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
     | sort -V \
     | awk '
     {
         base=$0
-        sub(/\.so\.[0-9.]+$/, ".so", base)
-        if (prev_base && base != prev_base) {
-            for (i=1; i < prev_count; i++) print prev[i]
-            prev_count = 0
+        # Check if the file is an actual versioned shared library
+        if (base ~ /\.so\.[0-9]+(\.[0-9]+)*$/) {
+            orig = base
+            sub(/\.so\.[0-9.]+$/, ".so", base)
+            if (prev_base && base != prev_base) {
+                for (i=1; i < prev_count; i++) print prev[i]
+                prev_count = 0
+            }
+            prev[++prev_count] = orig
+            prev_base = base
         }
-        prev[++prev_count] = $0
-        prev_base = base
     }
     END {
         for (i=1; i < prev_count; i++) print prev[i]
     }'))
 
     # 3b. Identify old versions (directories only)
-    local old_dirs=($(find /usr/lib /lib -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+    local old_dirs=($(find /usr/lib -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
     | sort -V \
     | awk '
     {
@@ -259,6 +263,17 @@ cleanup_old_libraries_gpt() {
         
         # Ensure unique all_names and avoid empty checks
         all_names=($(printf "%s\n" "${all_names[@]}" | sort -u | grep -v "^$"))
+        
+        # Guard against matching linker scripts or raw symlinks like libc.so and libm.so
+        local safe_names=()
+        for name in "${all_names[@]}"; do
+            if [[ "$name" =~ \.so\.[0-9]+ ]]; then
+                safe_names+=("$name")
+            else
+                echo "Skipping generic/unsafe name '$name' to prevent false positive matches."
+            fi
+        done
+        all_names=("${safe_names[@]}")
 
         # 4. FAST dependency check for ANY of these names in the cache
         local deps=()
@@ -1042,7 +1057,7 @@ lfs_update() {
     
     # Packages with missing file inventories (≤1 line) need a forced rebuild regardless of version
     echo "Checking for packages with missing file inventories..."
-    local broken_pkgs_raw=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done' 2>/dev/null | tr -d '\r')
+    local broken_pkgs_raw=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
     local broken_pkgs=()
     while IFS= read -r bp; do
         [[ -z "$bp" ]] && continue

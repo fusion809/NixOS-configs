@@ -219,7 +219,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
         xorg-intel)      PACKAGE="xf86-video-intel" ;;
         xorg-amdgpu)     PACKAGE="xf86-video-amdgpu" ;;
         xorg-nouveau)    PACKAGE="xf86-video-nouveau" ;;
-        attica|extra-cmake-modules|kapidox|karchive|kcodecs|kconfig|kcoreaddons|kdbusaddons|kdnssd|kguiaddons|ki18n|kidletime|kimageformats|kitemmodels|kitemviews|kplotting|kwidgetsaddons|kwindowsystem|networkmanager-qt|solid|sonnet|threadweaver|kauth|kcompletion|kcrash|kdoctools|kpty|kunitconversion|kcolorscheme|kconfigwidgets|kservice|kglobalaccel|kpackage|kdesu|kiconthemes|knotifications|kjobwidgets|ktextwidgets|kxmlgui|kbookmarks|kwallet|kded|kio|kdeclarative|kirigami|kcmutils|syndication|knewstuff|frameworkintegration|kparts|syntax-highlighting|ktexteditor|modemmanager-qt|kcontacts|kpeople|bluez-qt|kfilemetadata|baloo|breeze-icons|krunner|prison|qqc2-desktop-style|kholidays|purpose|kcalendarcore|kquickcharts|knotifyconfig|kdav|kstatusnotifieritem|ksvg|ktexttemplate|kuserfeedback)
+        attica|kapidox|karchive|kcodecs|kconfig|kcoreaddons|kdbusaddons|kdnssd|kguiaddons|ki18n|kidletime|kimageformats|kitemmodels|kitemviews|kplotting|kwidgetsaddons|kwindowsystem|networkmanager-qt|solid|sonnet|threadweaver|kauth|kcompletion|kcrash|kdoctools|kpty|kunitconversion|kcolorscheme|kconfigwidgets|kservice|kglobalaccel|kpackage|kdesu|kiconthemes|knotifications|kjobwidgets|ktextwidgets|kxmlgui|kbookmarks|kwallet|kded|kio|kdeclarative|kirigami|kcmutils|syndication|knewstuff|frameworkintegration|kparts|syntax-highlighting|ktexteditor|modemmanager-qt|kcontacts|kpeople|bluez-qt|kfilemetadata|baloo|krunner|prison|qqc2-desktop-style|kholidays|purpose|kcalendarcore|kquickcharts|knotifyconfig|kdav|kstatusnotifieritem|ksvg|ktexttemplate|kuserfeedback)
             METAPACKAGE_TARGET="$PACKAGE"
             PACKAGE="frameworks6"
             log "Redirecting '$METAPACKAGE_TARGET' to frameworks6 bundle (single-component build)."
@@ -1322,6 +1322,48 @@ if [[ "$PACKAGE" == "gcc" ]] && [[ "$COMMANDS" == *"--enable-languages=c,c++"* ]
     fi
 fi
 
+if [[ "$PACKAGE" == "gcc" ]]; then
+    log "Applying gcc: strip post-install chown (non-root context)..."
+    # LFS/BLFS book runs 'chown -v root:root ...' after make install.
+    # These fail without CAP_CHOWN. Ownership is already correct from make install via as_root.
+    COMMANDS=$(echo "$COMMANDS" | grep -vE '^[[:space:]]*(as_root[[:space:]]+)?chown[[:space:]]')
+    # Fix the symlink to avoid "File exists" error
+    COMMANDS=$(echo "$COMMANDS" | sed 's/\bln -sv\b/ln -sfv/g; s/\bln -s\b/ln -sf/g')
+fi
+
+if [[ "$PACKAGE" == "tcl" ]]; then
+    log "Applying tcl: ensure build runs from the unix/ subdirectory..."
+    # The LFS tarball extracts to tcl*/ directory, but sometimes we might not be in it.
+    # Replace the configure command with a safe cd
+    COMMANDS=$(echo "$COMMANDS" | sed 's|\./configure|[ -d unix ] \&\& cd unix \|\| cd tcl*/unix 2>/dev/null \|\| true; ./configure|g')
+    # Remove any standalone 'cd unix' that might be failing
+    COMMANDS=$(echo "$COMMANDS" | grep -v "^cd unix$")
+fi
+
+if [[ "$PACKAGE" == "iptables" ]]; then
+    log "Applying iptables: strip post-install firewall example scripts from BLFS page..."
+    # Strip out any iptables commands that manipulate rules (like WAN1, LAN1)
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^[[:space:]]*(sudo |as_root )?(iptables|ip6tables|iptables-restore|ip6tables-restore)[[:space:]]")
+    # The BLFS iptables page embeds rc.iptables example scripts referencing
+    # placeholder interface names like WAN1/LAN1, causing 'Bad argument WAN1' failures.
+    # Strip everything from the first 'cat > /etc/rc.d/rc.iptables' heredoc onwards.
+    COMMANDS=$(echo "$COMMANDS" | awk '
+        /cat > \/etc\/rc\.d\/rc\.iptables/ { found=1 }
+        !found { print }
+    ')
+fi
+
+if [[ "$PACKAGE" == "libtiff" ]]; then
+    log "Applying libtiff: guard doc-dir rename against missing directory..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's|mv -v /usr/share/doc/tiff{|[ -d /usr/share/doc/tiff ] \&\& mv -v /usr/share/doc/tiff{|g')
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's|(\[ -d /usr/share/doc/tiff \] && mv -v /usr/share/doc/tiff\{[^}]+\})|$1 \|\| true|g')
+fi
+
+if [[ "$PACKAGE" == "kdsoap-ws-discovery-client" ]]; then
+    log "Applying kdsoap-ws-discovery-client: guard doc-dir rename against missing directory..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's|^mv \(.*KDSoap.*\)$|[ -d /usr/share/doc/KDSoapWSDiscoveryClient ] \&\& mv \1 || true|g')
+fi
+
 # 2.8 Ensure LLVM is built with WebAssembly support (required by Firefox / wasm32-wasi)
 if [[ "$PACKAGE" == "llvm" ]] && [[ "$COMMANDS" == *"LLVM_TARGETS_TO_BUILD"* ]]; then
     if [[ "$COMMANDS" != *"WebAssembly"* ]]; then
@@ -1596,6 +1638,12 @@ if [[ "$PACKAGE" == "qt6" ]]; then
     # declarations match the non-const definitions.
     # Inject before the cmake configure step (Qt6 uses cmake, not ./configure).
     COMMANDS=$(echo "$COMMANDS" | sed 's|cmake |sed -i "s/#define QT_OPENSSL4_CONST const/#define QT_OPENSSL4_CONST/g" qtbase/src/plugins/tls/openssl/qopenssl_p.h \&\& rm -f qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp.rej \&\& cmake |g')
+
+    log "Applying Qt6: fix broken 'find -exec' syntax from BLFS page scraping..."
+    # The BLFS page has a find command to strip build dirs from .prl files:
+    #   find /opt/qt6/ -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+    # The scraper sometimes mangles the escaped semicolon. Just replace it with a robust version.
+    COMMANDS=$(echo "$COMMANDS" | sed "s|find /opt/qt6/ -name \\\*.prl -exec .*|find /opt/qt6/ -name '*.prl' -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \\\\; || true|g")
 fi
 
 if [[ "$PACKAGE" == "gnome-shell" || "$PACKAGE" == "gnome-session" || "$PACKAGE" == "mutter" ]]; then
@@ -1605,12 +1653,32 @@ export CXXFLAGS=\"\${CXXFLAGS} -Wno-error=incompatible-pointer-types\"
 "
 fi
 
+if [[ "$PACKAGE" == "mutter" ]]; then
+    log "Stripping dummy session launch commands from Mutter..."
+    # Remove all mutter session launch lines (both variants from the BLFS page):
+    #   mutter --wayland -- vte-2.91
+    #   MUTTER_DEBUG_DUMMY_MODE_SPECS=... dbus-run-session mutter --wayland --devkit -- vte-2.91
+    COMMANDS=$(echo "$COMMANDS" | grep -vE '(mutter --wayland|dbus-run-session mutter|MUTTER_DEBUG_DUMMY_MODE_SPECS)')
+fi
+
 if [[ "$PACKAGE" == "gnome-session" ]]; then
     log "Applying gnome-session doc-dir mv guard (docs may not be installed)..."
     # BLFS book has: mv -v /usr/share/doc/gnome-session{,-VERSION}
     # When docs are disabled the directory won't exist and mv fails hard.
     COMMANDS=$(echo "$COMMANDS" | sed 's|mv -v /usr/share/doc/gnome-session{|[ -d /usr/share/doc/gnome-session ] \&\& mv -v /usr/share/doc/gnome-session{|g')
     COMMANDS=$(echo "$COMMANDS" | perl -pe 's|(\[ -d /usr/share/doc/gnome-session \] && mv -v /usr/share/doc/gnome-session\{[^}]+\})|$1 \|\| true|g')
+
+    COMMANDS+="
+    # Create wrapper to prevent 'A graphical session is already running' crash on Wayland
+    as_root bash -c \"cat > /usr/bin/gnome-session-sddm-wrapper << 'EOF'
+#!/bin/bash
+systemctl --user stop graphical-session.target graphical-session-pre.target 2>/dev/null || true
+systemctl --user reset-failed 2>/dev/null || true
+exec /usr/bin/gnome-session \\\"\\\$@\\\"
+EOF\"
+    as_root chmod +x /usr/bin/gnome-session-sddm-wrapper
+    as_root sed -i 's|^Exec=/usr/bin/gnome-session|Exec=/usr/bin/gnome-session-sddm-wrapper|g' /usr/share/wayland-sessions/gnome.desktop /usr/share/wayland-sessions/gnome-wayland.desktop 2>/dev/null || true
+    "
 fi
 
 if [[ "$PACKAGE" == "gdm" ]]; then
@@ -1955,7 +2023,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
             fi
             DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${DOWNLOAD_VER}.tar.xz")
         fi
-    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks6" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks" ]]; then
+    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" || "${PACKAGE,,}" == "oxygen-icons" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks6" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then

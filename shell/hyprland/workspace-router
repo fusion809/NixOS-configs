@@ -107,6 +107,8 @@ handle() {
 
            if [[ "$w_title" == *"PBS Job"* ]] || [[ "$w_title" == *"u1126705@umail.usq.edu.au"* ]]; then
                dispatch_move 7 "$w_address"
+           elif [[ "$w_title" == *"Google Earth"* ]]; then
+               dispatch_move 23 "$w_address"
            elif [[ "$w_title" == *"Boo"* ]]; then
                dispatch_move 12 "$w_address"
            else
