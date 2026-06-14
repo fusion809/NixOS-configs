@@ -1245,6 +1245,17 @@ COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpushd[[:space:]]+(\.\.|doc)\b/cd \1/g;
 # Protect against other pushd calls if they are part of a library build (like libsass in sassc)
 COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpushd[[:space:]]+([^[:space:];&|]+)\b/cd \1/g')
 
+# 2.4.6 Add autoreconf fallback: if ./configure or ../configure is called but the
+# configure script may not exist in the unpacked source tree (package uses autotools
+# but doesn't pre-generate configure), prepend an autoreconf guard so the build
+# doesn't fail with './configure: No such file or directory'.
+if echo "$COMMANDS" | grep -qE '^[[:space:]]*(\.\/|\.\.\/)configure'; then
+    COMMANDS=$(echo "$COMMANDS" | sed -E \
+        's|^([[:space:]]*)(\./configure)|\1[ -f configure ] || autoreconf -fiv\n\1\2|g')
+    COMMANDS=$(echo "$COMMANDS" | sed -E \
+        's|^([[:space:]]*)(\.\./configure)|\1[ -f ../configure ] || (cd .. \&\& autoreconf -fiv)\n\1\2|g')
+fi
+
 # Package-specific source fixes after command processing
 if [[ "${PACKAGE,,}" == "sassc" ]]; then
     # libsass and sassc archives contain manual Makefiles that interfere with Autotools
@@ -1329,6 +1340,10 @@ if [[ "$PACKAGE" == "gcc" ]]; then
     COMMANDS=$(echo "$COMMANDS" | grep -vE '^[[:space:]]*(as_root[[:space:]]+)?chown[[:space:]]')
     # Fix the symlink to avoid "File exists" error
     COMMANDS=$(echo "$COMMANDS" | sed 's/\bln -sv\b/ln -sfv/g; s/\bln -s\b/ln -sf/g')
+    # GCC's own Makefile creates /usr/lib/cpp with plain 'ln' (not ln -f), so it fails if
+    # a prior GCC install already created the symlink.  Remove it before make install.
+    log "Applying gcc: pre-remove /usr/lib/cpp before make install to avoid 'File exists'..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's|^make install$|rm -f /usr/lib/cpp \&\& make install|g; s|^make install |rm -f /usr/lib/cpp \&\& make install |g')
 fi
 
 if [[ "$PACKAGE" == "tcl" ]]; then
@@ -1351,6 +1366,10 @@ if [[ "$PACKAGE" == "iptables" ]]; then
         /cat > \/etc\/rc\.d\/rc\.iptables/ { found=1 }
         !found { print }
     ')
+    # The BLFS page also includes a 'make install-iptables' blfs-bootscripts command
+    # (for the /etc/rc.d/init.d/iptables init script) which has no target in the
+    # iptables source Makefile.  Strip it to prevent a fatal build failure.
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^[[:space:]]*(as_root[[:space:]]+|sudo[[:space:]]+)?make[[:space:]]+(install-iptables|install-ip6tables)([[:space:]]|$)")
 fi
 
 if [[ "$PACKAGE" == "libtiff" ]]; then
@@ -2426,7 +2445,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
                 break
             fi
             # Priority 1: matches package-version.tar.* (handles sqlite-autoconf-3510300, etc)
-            if [[ "$fname" =~ ^${PKG_BASE}[^-]*-?[0-9].*\.tar\. ]]; then
+            if [[ "$fname" =~ ^${PKG_BASE}[^-]*-?[0-9].*\.tar\. ]] && [[ ! "$fname" =~ (-html\.|\.html\.|-doc(s)?(-|\.)|-documentation) ]]; then
                 MAIN_DOWNLOAD_URL="$url"
                 break
             fi
@@ -2437,8 +2456,8 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     if [[ -z "$MAIN_DOWNLOAD_URL" ]]; then
         for url in "${DOWNLOAD_URLS[@]}"; do
             fname=$(basename "$url")
-            # Exclude patches and documentation files (doc, docs, documentation, etc)
-            if [[ ! "$fname" =~ \.patch$ ]] && [[ ! "$fname" =~ (-doc(s)?(-|\.)|-documentation) ]]; then
+            # Exclude patches and documentation files (doc, docs, documentation, html, etc)
+            if [[ ! "$fname" =~ \.patch$ ]] && [[ ! "$fname" =~ (-html\.|\.html\.|-doc(s)?(-|\.)|-documentation) ]]; then
                 MAIN_DOWNLOAD_URL="$url"
                 break
             fi
