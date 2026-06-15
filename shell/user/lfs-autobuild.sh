@@ -1339,7 +1339,7 @@ if [[ "$PACKAGE" == "gcc" ]]; then
     # These fail without CAP_CHOWN. Ownership is already correct from make install via as_root.
     COMMANDS=$(echo "$COMMANDS" | grep -vE '^[[:space:]]*(as_root[[:space:]]+)?chown[[:space:]]')
     # Fix the symlink to avoid "File exists" error
-    COMMANDS=$(echo "$COMMANDS" | sed 's/\bln -sv\b/ln -sfv/g; s/\bln -s\b/ln -sf/g')
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bln -sv\b/ln -sfv/g; s/\bln -s\b/ln -sf/g')
     # GCC's own Makefile creates /usr/lib/cpp with plain 'ln' (not ln -f), so it fails if
     # a prior GCC install already created the symlink.  Remove it before make install.
     log "Applying gcc: pre-remove /usr/lib/cpp before make install to avoid 'File exists'..."
@@ -1380,7 +1380,7 @@ fi
 
 if [[ "$PACKAGE" == "kdsoap-ws-discovery-client" ]]; then
     log "Applying kdsoap-ws-discovery-client: guard doc-dir rename against missing directory..."
-    COMMANDS=$(echo "$COMMANDS" | sed 's|^mv \(.*KDSoap.*\)$|[ -d /usr/share/doc/KDSoapWSDiscoveryClient ] \&\& mv \1 || true|g')
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's|^mv (.*KDSoap.*)$|[ -d /usr/share/doc/KDSoapWSDiscoveryClient ] \&\& mv $1 \|\| true|g')
 fi
 
 # 2.8 Ensure LLVM is built with WebAssembly support (required by Firefox / wasm32-wasi)
