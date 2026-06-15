@@ -17,7 +17,6 @@ workspace_dirs=(
     [9]="Chats"
     [10]="Chats"
     [11]="Discord"
-    [12]="Boo"
     [13]="Dolphin"
     [14]="KDE Connect"
     [15]="ChatGPT"
@@ -66,6 +65,41 @@ detect_ws5() {
     title=$(hyprctl activewindow -j | jq -r '.title // ""')
     if [[ "$title" == *NixOS-configs* ]]; then
         print -r -- "NixOS-configs"
+    else
+        print -r -- "Miscellaneous"
+    fi
+}
+
+detect_chrome() {
+    local title
+    title=$(hyprctl activewindow -j | jq -r '.title // ""')
+    title=$(echo $title | sed 's/Google Chrome//g')
+    if [[ "$title" == *Boo* ]]; then
+        print -r -- "Boo"
+    elif [[ "$title" == *"Google Earth"* ]]; then
+        print -r -- "Google Earth"
+    elif [[ "$title" == *"Marketplace"* ]]; then
+        print -r -- "Facebook Marketplace"
+    elif [[ "$title" == *"Facebook"* ]]; then
+        print -r -- "Facebook"
+    elif [[ "$title" == *"YouTube"* ]]; then
+        print -r -- "Videos"
+    elif [[ "$title" == *"ABC"* ]]; then
+        print -r -- "ABC"
+    elif [[ "$title" == *"Australian Medicines Handbook"* ]]; then
+        print -r -- "AMH"
+    elif [[ "$title" == *"DistroWatch"* ]]; then
+        print -r -- "DistroWatch"
+    elif [[ "$title" == *"Reddit"* ]]; then
+        print -r -- "Reddit"
+    elif [[ "$title" == *"Weatherzone"* ]]; then
+        print -r -- "Weatherzone"
+    elif [[ "$title" == *"Google"* ]]; then
+        print -r -- "Google"
+    elif [[ "$title" == *"Tutor"* ]]; then
+        print -r -- "Tutoring"
+    elif [[ "$title" == *"Wikipedia"* ]]; then
+        print -r -- "Wikipedia"
     else
         print -r -- "Miscellaneous"
     fi
@@ -141,6 +175,11 @@ if (( ${visible_workspaces[(Ie)2]} )); then
 # Workspace 5: smart detect from focused window title
 elif (( focused_workspace == 5 )); then
     subdir=$(detect_ws5)
+    [[ -z "$subdir" ]] && exit 0
+
+# Workspace 12: smart detect from focused window title
+elif ( (( focused_workspace == 12 )) || (( focused_workspace == 1 )) ); then
+    subdir=$(detect_chrome)
     [[ -z "$subdir" ]] && exit 0
 
 # Workspace 17: smart detect from focused window class/title
