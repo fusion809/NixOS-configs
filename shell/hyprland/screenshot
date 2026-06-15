@@ -82,7 +82,7 @@ detect_chrome() {
         print -r -- "Facebook Marketplace"
     elif [[ "$title" == *"Facebook"* ]]; then
         print -r -- "Facebook"
-    elif [[ "$title" == *"YouTube"* ]] || [[ "$title" == *"Netflix"* ]] || [[ "$title" == *"SBS On Demand"* ]] || [[ "$title" == *"7plus"* ]]; then
+    elif [[ "$title" == *"YouTube"* ]] || [[ "$title" == *"Netflix"* ]] || [[ "$title" == *"SBS On Demand"* ]] || [[ "$title" == *"7plus"* ]] || [[ "$title" == *"ABC iview"* ]] || [[ "$title" == *"Network Ten"* ]] || [[ "$title" == *"9Now"* ]]; then
         print -r -- "Videos"
     elif [[ "$title" == *"ABC"* ]]; then
         print -r -- "ABC"
