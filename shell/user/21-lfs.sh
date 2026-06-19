@@ -445,6 +445,9 @@ sys.exit(1)
         frameworks|frameworks6|extra-cmake-modules|breeze-icons)
             curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=/")}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1
             ;;
+        oxygen-icons)
+            curl -sL https://download.kde.org/stable/oxygen-icons/ | perl -nle 'while (m{href="oxygen-icons-([0-9]+\.[0-9]+(\.[0-9]+)?)\.tar}g) { print $1 }' | sort -V | tail -n 1
+            ;;
         plasma|plasma-all)
             curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
             ;;

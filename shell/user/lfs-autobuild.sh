@@ -1249,11 +1249,11 @@ COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bpushd[[:space:]]+([^[:space:];&|]+)\b/
 # configure script may not exist in the unpacked source tree (package uses autotools
 # but doesn't pre-generate configure), prepend an autoreconf guard so the build
 # doesn't fail with './configure: No such file or directory'.
-if echo "$COMMANDS" | grep -qE '^[[:space:]]*(\.\/|\.\.\/)configure'; then
+if echo "$COMMANDS" | grep -qE '^[[:space:]]*(\./|\.\./)configure'; then
     COMMANDS=$(echo "$COMMANDS" | sed -E \
-        's|^([[:space:]]*)(\./configure)|\1[ -f configure ] || autoreconf -fiv\n\1\2|g')
+        's@^([[:space:]]*)(\./configure)@\1[ -f configure ] || autoreconf -fiv\n\1\2@g')
     COMMANDS=$(echo "$COMMANDS" | sed -E \
-        's|^([[:space:]]*)(\.\./configure)|\1[ -f ../configure ] || (cd .. \&\& autoreconf -fiv)\n\1\2|g')
+        's@^([[:space:]]*)(\.\./configure)@\1[ -f ../configure ] || (cd .. \&\& autoreconf -fiv)\n\1\2@g')
 fi
 
 # Package-specific source fixes after command processing
@@ -1383,12 +1383,39 @@ if [[ "$PACKAGE" == "kdsoap-ws-discovery-client" ]]; then
     COMMANDS=$(echo "$COMMANDS" | perl -pe 's|^mv (.*KDSoap.*)$|[ -d /usr/share/doc/KDSoapWSDiscoveryClient ] \&\& mv $1 \|\| true|g')
 fi
 
+if [[ "${PACKAGE,,}" == "webkitgtk" ]]; then
+    log "Applying webkitgtk: disabling GStreamer GL support due to missing OpenGL in gst-plugins-base..."
+    # The BLFS book specifies adding -DUSE_GSTREAMER_GL=OFF if gst-plugins-base was built without OpenGL
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-DCMAKE_BUILD_TYPE=Release/-DCMAKE_BUILD_TYPE=Release -DUSE_GSTREAMER_GL=OFF/g')
+fi
+
 # 2.8 Ensure LLVM is built with WebAssembly support (required by Firefox / wasm32-wasi)
 if [[ "$PACKAGE" == "llvm" ]] && [[ "$COMMANDS" == *"LLVM_TARGETS_TO_BUILD"* ]]; then
     if [[ "$COMMANDS" != *"WebAssembly"* ]]; then
         log "Adding WebAssembly to LLVM_TARGETS_TO_BUILD."
         COMMANDS=$(echo "$COMMANDS" | sed 's/-D LLVM_TARGETS_TO_BUILD="\([^"]*\)"/-D LLVM_TARGETS_TO_BUILD="\1;WebAssembly"/')
     fi
+fi
+
+if [[ "${PACKAGE,,}" == "firefox" ]]; then
+    log "Applying firefox: patch cbindgen 0.29.4 COUNT issue..."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@sed -i "s/pub const COUNT/pub const COUNT_DUMMY/g" gfx/webrender_bindings/src/bindings.rs 2>/dev/null || true\n\1@g')
+fi
+
+if [[ "${PACKAGE,,}" == "kdeplasma-addons" || "${METAPACKAGE_TARGET,,}" == "kdeplasma-addons" ]]; then
+    log "Applying kdeplasma-addons: disabling Corrosion/Rust components to avoid missing FindCorrosion.cmake..."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-DCMAKE_BUILD_TYPE=Release/-DCMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_FIND_PACKAGE_Corrosion=ON/g')
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D[[:space:]]+CMAKE_BUILD_TYPE=Release/-D CMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_FIND_PACKAGE_Corrosion=ON/g')
+fi
+
+if [[ "${PACKAGE,,}" == "webkitgtk" ]]; then
+    log "Applying webkitgtk: disabling GStreamer GL support due to missing OpenGL in gst-plugins-base..."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D[[:space:]]*CMAKE_BUILD_TYPE=Release/-D CMAKE_BUILD_TYPE=Release -D USE_GSTREAMER_GL=OFF/g')
+fi
+
+if [[ "${PACKAGE,,}" == "qt6" ]]; then
+    log "Applying qt6: patch qsslsocket_openssl_symbols.cpp for duplicate const error with OpenSSL 3+"
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./configure)@sed -i "s/const const X509_EXTENSION/const X509_EXTENSION/g" qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp 2>/dev/null || true\n\1@g')
 fi
 
 # 2.9 Check for documentation tools and disable if missing (Always disable doxygen)
@@ -1958,6 +1985,10 @@ if [[ "$FRAMEWORKS_MODE" == "true" || "$PLASMA_MODE" == "true" ]]; then
     COMMANDS=$(echo "$COMMANDS" | grep -v '\[ -e kde\.portal \] ||')
     COMMANDS=$(echo "$COMMANDS" | grep -v 'ln -sfv \$KF6_PREFIX/share/xdg-desktop-portal/portals/kde\.portal')
     COMMANDS=$(echo "$COMMANDS" | grep -v "^dbus-launch")
+    
+    # Strip the xinit/startx instructions that get extracted from the bottom of the plasma-all BLFS page
+    COMMANDS=$(echo "$COMMANDS" | sed '/cat > ~\/.xinitrc << "EOF"/,/EOF/d')
+    COMMANDS=$(echo "$COMMANDS" | grep -v "^startx$")
 
     # Clean up any trailing && left on lines directly preceding the stripped lines
     if [[ "$COMMANDS" == *"&&"* ]]; then
@@ -2042,7 +2073,13 @@ if [[ "$UPSTREAM" == "true" ]]; then
             fi
             DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${DOWNLOAD_VER}.tar.xz")
         fi
-    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" || "${PACKAGE,,}" == "oxygen-icons" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks6" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks" ]]; then
+    elif [[ "${PACKAGE,,}" == "oxygen-icons" ]]; then
+        log "Fetching latest upstream oxygen-icons version from KDE mirrors..."
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/oxygen-icons/ | perl -nle 'while (m{href="oxygen-icons-([0-9]+\.[0-9]+(\.[0-9]+)?)\.tar}g) { print $1 }' | sort -V | tail -n 1)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream oxygen-icons version: $UPSTREAM_VERSION"
+        fi
+    elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks6" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
