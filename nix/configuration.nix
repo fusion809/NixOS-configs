@@ -91,6 +91,7 @@
       "/run/current-system/sw/lib/qml"
     ];
     GTK_USE_PORTAL = "1";
+    NIXOS_OZONE_WL = "1";
   };
 
 
