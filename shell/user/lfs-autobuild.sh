@@ -873,10 +873,11 @@ get_commands() {
 
     # Extract blocks and clean them individually, preserving root vs userinput class
     printf '%s' "$html" | awk '
-        BEGIN { IGNORECASE=1; next_is_root=0; in_block=0; current_block="" }
+        BEGIN { IGNORECASE=1; next_is_root=0; in_block=0; current_block=""; in_screen=0 }
         
         /<pre[^>]*>/ {
             tag=$0;
+            if (tag ~ /class="screen"/) { in_screen=1; next }
             if (tag ~ /class="root"/) { mode="root" }
             else if (next_is_root) { mode="root"; next_is_root=0 }
             else { mode="user" }
@@ -884,6 +885,11 @@ get_commands() {
             if (mode == "root") { print "___BLOCK_START_ROOT___" }
             else { print "___BLOCK_START_USER___" }
             in_block=1;
+        }
+        
+        in_screen {
+            if ($0 ~ /<\/pre>/) { in_screen=0 }
+            next;
         }
         
         in_block {
@@ -1348,11 +1354,12 @@ fi
 
 if [[ "$PACKAGE" == "tcl" ]]; then
     log "Applying tcl: ensure build runs from the unix/ subdirectory..."
-    # The LFS tarball extracts to tcl*/ directory, but sometimes we might not be in it.
-    # Replace the configure command with a safe cd
-    COMMANDS=$(echo "$COMMANDS" | sed 's|\./configure|[ -d unix ] \&\& cd unix \|\| cd tcl*/unix 2>/dev/null \|\| true; ./configure|g')
-    # Remove any standalone 'cd unix' that might be failing
-    COMMANDS=$(echo "$COMMANDS" | grep -v "^cd unix$")
+    COMMANDS=$(echo "$COMMANDS" | sed "s/\[ -f configure \] || autoreconf -fiv//g")
+    # The LFS book already includes 'cd unix', but in case our directory tracking gets confused,
+    # we explicitly strip other 'cd' commands to the tcl dir and ensure we enter unix/ before configure.
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^cd tcl")
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^cd unix")
+    COMMANDS=$(echo "$COMMANDS" | sed 's|\./configure|cd unix; ./configure|g')
 fi
 
 if [[ "$PACKAGE" == "iptables" ]]; then
@@ -1398,9 +1405,29 @@ if [[ "$PACKAGE" == "llvm" ]] && [[ "$COMMANDS" == *"LLVM_TARGETS_TO_BUILD"* ]];
 fi
 
 if [[ "${PACKAGE,,}" == "firefox" ]]; then
-    log "Applying firefox: patch cbindgen 0.29.4 COUNT issue..."
+    log "Applying firefox: patch cbindgen COUNT issue and webrender_bindings lifetime elision (Rust 1.80+)..."
     COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@sed -i "s/pub const COUNT/pub const COUNT_DUMMY/g" gfx/webrender_bindings/src/bindings.rs 2>/dev/null || true\n\1@g')
+    # Build the python patch script and base64-encode it so it can be safely injected into COMMANDS
+    # and decoded/written on the VM at build time — avoids all quoting/escaping issues.
+    _FF_PY_SCRIPT=$(cat << 'PYEOF'
+import re
+path = "gfx/webrender_bindings/src/lib.rs"
+try:
+    with open(path) as f:
+        c = f.read()
+    c = re.sub(r'#!\[deny\(warnings\)\]\n?', '', c)
+    with open(path, 'w') as f:
+        f.write(c)
+    print("Patched " + path)
+except Exception as e:
+    print("Warning: could not patch " + path + ": " + str(e))
+PYEOF
+)
+    _FF_PY_B64=$(printf '%s' "$_FF_PY_SCRIPT" | base64 -w 0)
+    COMMANDS=$(echo "$COMMANDS" | sed -E "s@(\./mach build)@echo '${_FF_PY_B64}' | base64 -d > /tmp/ff_patch_webrender.py \&\& python3 /tmp/ff_patch_webrender.py\n\1@g")
+    unset _FF_PY_SCRIPT _FF_PY_B64
 fi
+
 
 if [[ "${PACKAGE,,}" == "kdeplasma-addons" || "${METAPACKAGE_TARGET,,}" == "kdeplasma-addons" ]]; then
     log "Applying kdeplasma-addons: disabling Corrosion/Rust components to avoid missing FindCorrosion.cmake..."
@@ -1416,6 +1443,12 @@ fi
 if [[ "${PACKAGE,,}" == "qt6" ]]; then
     log "Applying qt6: patch qsslsocket_openssl_symbols.cpp for duplicate const error with OpenSSL 3+"
     COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./configure)@sed -i "s/const const X509_EXTENSION/const X509_EXTENSION/g" qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp 2>/dev/null || true\n\1@g')
+    
+    log "Applying qt6: workaround for missing GStreamer GlEgl include path..."
+    # gst-plugins-base was likely built without OpenGL support, so the include directory is missing.
+    # Creating an empty directory satisfies CMake's INTERFACE_INCLUDE_DIRECTORIES check for GStreamer::GlEgl.
+    # We must use sudo as the build step runs as an unprivileged user.
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./configure)@sudo mkdir -p /usr/lib/gstreamer-1.0/include 2>/dev/null || true\n\1@g')
 fi
 
 # 2.9 Check for documentation tools and disable if missing (Always disable doxygen)
@@ -1686,10 +1719,10 @@ if [[ "$PACKAGE" == "qt6" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed 's|cmake |sed -i "s/#define QT_OPENSSL4_CONST const/#define QT_OPENSSL4_CONST/g" qtbase/src/plugins/tls/openssl/qopenssl_p.h \&\& rm -f qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp.rej \&\& cmake |g')
 
     log "Applying Qt6: fix broken 'find -exec' syntax from BLFS page scraping..."
-    # The BLFS page has a find command to strip build dirs from .prl files:
-    #   find /opt/qt6/ -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
-    # The scraper sometimes mangles the escaped semicolon. Just replace it with a robust version.
-    COMMANDS=$(echo "$COMMANDS" | sed "s|find /opt/qt6/ -name \\\*.prl -exec .*|find /opt/qt6/ -name '*.prl' -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \\\\; || true|g")
+    # The BLFS page has a find command to strip build dirs from .prl files.
+    # The scraper sometimes mangles the escaped semicolon — use perl for robust replacement
+    # to avoid \* triggering sed's 'unknown option to s' error.
+    COMMANDS=$(echo "$COMMANDS" | perl -pe 's|find /opt/qt6/ -name \Q\*.prl\E -exec .*|find /opt/qt6/ -name '"'"'*.prl'"'"' -exec sed -i -e '"'"'/^QMAKE_PRL_BUILD_DIR/d'"'"' {} \\; \|\| true|g')
 fi
 
 if [[ "$PACKAGE" == "gnome-shell" || "$PACKAGE" == "gnome-session" || "$PACKAGE" == "mutter" ]]; then
@@ -1988,7 +2021,8 @@ if [[ "$FRAMEWORKS_MODE" == "true" || "$PLASMA_MODE" == "true" ]]; then
     
     # Strip the xinit/startx instructions that get extracted from the bottom of the plasma-all BLFS page
     COMMANDS=$(echo "$COMMANDS" | sed '/cat > ~\/.xinitrc << "EOF"/,/EOF/d')
-    COMMANDS=$(echo "$COMMANDS" | grep -v "^startx$")
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^[[:space:]]*startx")
+    COMMANDS=$(echo "$COMMANDS" | grep -vE "^[[:space:]]*exit[[:space:]]*$")
 
     # Clean up any trailing && left on lines directly preceding the stripped lines
     if [[ "$COMMANDS" == *"&&"* ]]; then
@@ -3353,7 +3387,7 @@ fi
         # Preserve block markers for root identification
         # We use a temporary variable for the awk script to avoid replacing COMMANDS
         # until the very end, ensuring extractions (filenames, versions) use the full text.
-        KDE_GENERATED_SCRIPT=$(echo "$COMMANDS" | awk -v pkg="$PACKAGE" -v force="$FORCE" '
+        KDE_GENERATED_SCRIPT=$(echo "$COMMANDS" | awk -v pkg="$PACKAGE" -v force="$FORCE" -v ver="${UPSTREAM_FULL:-$LFS_VERSION}" -v mm="${UPSTREAM_MM:-$LFS_MM}" '
             BEGIN {
                 in_loop = 0; in_as_root = 0; in_md5 = 0; in_root_block = 0;
                 as_root_content = ""; other_cmds = "PACKAGE=\"" pkg "\"\nFORCE=\"" force "\""; loop_content = "";
@@ -3441,7 +3475,17 @@ fi
                 } else if (in_loop) {
                     if ($0 ~ /^[[:space:]]*(grep|cat|tail|ls)[[:space:]].*\.log/) { loop_content = loop_content "\n    " $0 " 2>/dev/null || true"; next; }
                     if ($0 ~ /(make[[:space:]].*(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|spawn.*make|<expect>|tester|su.*tester|(^|[[:space:]])testdir([[:space:]]|$)|test_summary|cd[[:space:]]+t$|tests\/run\.sh)/) { next; }
-                    if ($0 ~ /done[[:space:]]+<.*\.md5/) { sub(/done < /, "done < /sources/archives/", $0); loop_content = loop_content "\n    " $0; in_loop = 0; next; }
+                    if ($0 ~ /done[[:space:]]+<.*\.md5/) { 
+                        md5_file = $0; sub(/^[[:space:]]*done[[:space:]]+<[[:space:]]*/, "", md5_file);
+                        sub(/done < /, "done < /sources/archives/", $0); 
+                        if (md5_file ~ /plasma/) {
+                            loop_content = "    if [ ! -f /sources/archives/" md5_file " ]; then as_root wget -qO /sources/archives/" md5_file " https://download.kde.org/stable/plasma/" ver "/" md5_file " || true; fi\n" loop_content;
+                        } else if (md5_file ~ /frameworks/) {
+                            loop_content = "    if [ ! -f /sources/archives/" md5_file " ]; then as_root wget -qO /sources/archives/" md5_file " https://download.kde.org/stable/frameworks/" mm "/" md5_file " || true; fi\n" loop_content;
+                        }
+                        loop_content = loop_content "\n    " $0; 
+                        in_loop = 0; next; 
+                    }
                     loop_content = loop_content "\n    " (in_root_block ? "as_root " : "") $0;
                 } else if (in_md5) {
                     other_cmds = other_cmds "\n" $0;
@@ -3821,7 +3865,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-    find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | sort > /tmp/build_state_before_${PACKAGE}
+    find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | LC_ALL=C sort > /tmp/build_state_before_${PACKAGE}
 fi
 
 # Initialize inventory file with version before build starts to prevent overwriting DESTDIR captures
@@ -3870,8 +3914,18 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     # 2. Capture via robust before-and-after diffing (immune to clock skew/drift)
     if [ -f "/tmp/build_state_before_${PACKAGE}" ]; then
         echo "Calculating installed files using state diff (before/after)..."
-        find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | sort > /tmp/build_state_after_${PACKAGE}
-        comm -13 "/tmp/build_state_before_${PACKAGE}" "/tmp/build_state_after_${PACKAGE}" | cut -d' ' -f1 | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+        find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | LC_ALL=C sort > /tmp/build_state_after_${PACKAGE}
+        LC_ALL=C comm -13 "/tmp/build_state_before_${PACKAGE}" "/tmp/build_state_after_${PACKAGE}" | cut -d' ' -f1 | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    fi
+
+    # 3. For cmake-built packages, also read the cmake install manifest (immune to timestamp issues)
+    # cmake writes cmake_install_manifest.txt listing every file it installed
+    if [ -d "/sources/${GEN_DIRNAME}" ]; then
+        find "/sources/${GEN_DIRNAME}" -maxdepth 3 -name 'cmake_install_manifest.txt' 2>/dev/null | while read mf; do
+            grep '^/' "$mf" 2>/dev/null | while read installed_file; do
+                [ -e "$installed_file" ] && echo "$installed_file"
+            done
+        done | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
     fi
     
     # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
@@ -3999,12 +4053,26 @@ echo "Build and installation complete for $PACKAGE"
 cd /sources
 # Remove extracted source tree
 rm -rf "$GEN_DIRNAME"
-# Remove downloaded archives and symlinks from /sources to conserve space
-echo "Cleaning up archives for $PACKAGE..."
-for f in "${ALL_FILENAMES[@]}"; do
-    rm -f "/sources/archives/$f"
-    rm -f "/sources/$f"
-done
+
+# Only remove downloaded archives if the build succeeded AND inventory has actual file entries.
+# Guards:
+#   1. Line 1 must NOT be BUILD_FAILED (error log entries make wc -l > 1 even on failure)
+#   2. Inventory must have more than 1 line (i.e. actual installed files, not just the version)
+_inv_line1=""
+_inv_lines=0
+if [ -f "/var/lib/book-packages/${PACKAGE}" ]; then
+    _inv_line1=$(head -n 1 "/var/lib/book-packages/${PACKAGE}")
+    _inv_lines=$(wc -l < "/var/lib/book-packages/${PACKAGE}")
+fi
+if [ "$_inv_line1" != "BUILD_FAILED" ] && [ "$_inv_lines" -gt 1 ]; then
+    echo "Cleaning up archives for $PACKAGE..."
+    for f in "${ALL_FILENAMES[@]}"; do
+        rm -f "/sources/archives/$f"
+        rm -f "/sources/$f"
+    done
+else
+    echo "Skipping archive cleanup for $PACKAGE (build failed or inventory empty — archives preserved for retry)."
+fi
 # Remove generated helper scripts
 # rm -f "/sources/archives/build-xorg.sh" "/sources/archives/build-frameworks.sh"
 rm -f "/tmp/build-cmds-${PACKAGE}.sh"
