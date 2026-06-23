@@ -1406,7 +1406,10 @@ fi
 
 if [[ "${PACKAGE,,}" == "firefox" ]]; then
     log "Applying firefox: patch cbindgen COUNT issue and webrender_bindings lifetime elision (Rust 1.80+)..."
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@sed -i "s/pub const COUNT/pub const COUNT_DUMMY/g" gfx/webrender_bindings/src/bindings.rs 2>/dev/null || true\n\1@g')
+    # Rename BudgetType::COUNT -> BudgetType::BUDGET_COUNT in texture_cache.rs so cbindgen
+    # emits the fully-namespaced BudgetType_BUDGET_COUNT in webrender_ffi_generated.h instead
+    # of the bare COUNT identifier which is undefined at the C++ use-site.
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@sed -i "s/pub const COUNT: usize = 7/pub const BUDGET_COUNT: usize = 7/g; s/BudgetType::COUNT/BudgetType::BUDGET_COUNT/g" gfx/wr/webrender/src/texture_cache.rs 2>/dev/null || true\n\1@g')
     # Build the python patch script and base64-encode it so it can be safely injected into COMMANDS
     # and decoded/written on the VM at build time — avoids all quoting/escaping issues.
     _FF_PY_SCRIPT=$(cat << 'PYEOF'
@@ -1430,10 +1433,9 @@ fi
 
 
 if [[ "${PACKAGE,,}" == "kdeplasma-addons" || "${METAPACKAGE_TARGET,,}" == "kdeplasma-addons" ]]; then
-    log "Applying kdeplasma-addons: disabling Corrosion/Rust components to avoid missing FindCorrosion.cmake..."
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-DCMAKE_BUILD_TYPE=Release/-DCMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_FIND_PACKAGE_Corrosion=ON/g')
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D[[:space:]]+CMAKE_BUILD_TYPE=Release/-D CMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_FIND_PACKAGE_Corrosion=ON/g')
+    log "Corrosion/Rust fix for kdeplasma-addons is handled in the KDE build loop awk template."
 fi
+
 
 if [[ "${PACKAGE,,}" == "webkitgtk" ]]; then
     log "Applying webkitgtk: disabling GStreamer GL support due to missing OpenGL in gst-plugins-base..."
@@ -1444,11 +1446,8 @@ if [[ "${PACKAGE,,}" == "qt6" ]]; then
     log "Applying qt6: patch qsslsocket_openssl_symbols.cpp for duplicate const error with OpenSSL 3+"
     COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./configure)@sed -i "s/const const X509_EXTENSION/const X509_EXTENSION/g" qtbase/src/plugins/tls/openssl/qsslsocket_openssl_symbols.cpp 2>/dev/null || true\n\1@g')
     
-    log "Applying qt6: workaround for missing GStreamer GlEgl include path..."
-    # gst-plugins-base was likely built without OpenGL support, so the include directory is missing.
-    # Creating an empty directory satisfies CMake's INTERFACE_INCLUDE_DIRECTORIES check for GStreamer::GlEgl.
-    # We must use sudo as the build step runs as an unprivileged user.
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./configure)@sudo mkdir -p /usr/lib/gstreamer-1.0/include 2>/dev/null || true\n\1@g')
+    log "Applying qt6: disabling GStreamer to fix missing gstglconfig.h (gst-plugins-base built without OpenGL)..."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./configure)@\1 -no-gstreamer@g')
 fi
 
 # 2.9 Check for documentation tools and disable if missing (Always disable doxygen)
@@ -1722,7 +1721,7 @@ if [[ "$PACKAGE" == "qt6" ]]; then
     # The BLFS page has a find command to strip build dirs from .prl files.
     # The scraper sometimes mangles the escaped semicolon — use perl for robust replacement
     # to avoid \* triggering sed's 'unknown option to s' error.
-    COMMANDS=$(echo "$COMMANDS" | perl -pe 's|find /opt/qt6/ -name \Q\*.prl\E -exec .*|find /opt/qt6/ -name '"'"'*.prl'"'"' -exec sed -i -e '"'"'/^QMAKE_PRL_BUILD_DIR/d'"'"' {} \\; \|\| true|g')
+    COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's@find (\$QT6PREFIX|/opt/qt6)/ -name \Q\*.prl\E(?:\s*\\\n)?\s*-exec .*?\{\}(?: \\;| \\)?@find \$QT6PREFIX/ -name '"'"'*.prl'"'"' -exec sed -i -e '"'"'/^QMAKE_PRL_BUILD_DIR/d'"'"' {} \\; \|\| true@gs')
 fi
 
 if [[ "$PACKAGE" == "gnome-shell" || "$PACKAGE" == "gnome-session" || "$PACKAGE" == "mutter" ]]; then
@@ -1819,9 +1818,9 @@ if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
         # Use --disable-doc and --disable-docs to cover more packages.
         # ffmpeg is the exception that fails on unknown flags; it only supports --disable-doc.
         if [[ "$PACKAGE" == "ffmpeg" ]]; then
-            COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "s/configure/configure --disable-doc/g")
+            COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's/(\.\/?\.\/configure\b)/$1 --disable-doc/g')
         else
-            COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe "s/configure/configure --disable-doc --disable-docs/g")
+            COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's/(\.\/?\.\/configure\b)/$1 --disable-doc --disable-docs/g')
         fi
     fi
     
@@ -3434,7 +3433,7 @@ fi
                 loop_content = loop_content "\n    touch /tmp/build_start_${PKGNAME}";
                 next;
             }
-            /mkdir build/ { if (in_loop) { loop_content = loop_content "\n    rm -rf build\n    " $0; next } }
+            /mkdir build/ { if (in_loop) { loop_content = loop_content "\n    if [ \"$name\" = \"kdeplasma-addons\" ]; then\n        sed -i \"/find_package(Corrosion/d\" CMakeLists.txt\n        sed -i \"/add_subdirectory(kdeds)/d\" CMakeLists.txt\n    fi\n    rm -rf build\n    " $0; next } }
             /-D CMAKE_INSTALL_PREFIX=/ { if (in_loop && !($0 ~ /CMAKE_INSTALL_LIBDIR/)) { sub(/-D CMAKE_INSTALL_PREFIX=/, "-D CMAKE_INSTALL_LIBDIR=lib -D CMAKE_INSTALL_PREFIX=", $0) } }
             /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/ { if (in_loop) { loop_content = loop_content "\n    " $0; next } }
             /make.*install|ninja.*install|pip3.*install/ {

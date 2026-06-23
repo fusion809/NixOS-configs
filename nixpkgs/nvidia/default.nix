@@ -92,6 +92,9 @@ in rec {
 
       # Fix nv_dma_use_map_resource (avoids dma_map_ops.map_resource check)
       sed -i 's/return (ops->map_resource != NULL);/return 1;/' kernel/nvidia/nv-dma.c || true
+
+      # Fix Linux 7.1 missing of_gpio.h
+      sed -i '/#include <linux\/of_gpio.h>/d' kernel/common/inc/nv-linux.h || true
     '';
   };
 
