@@ -3,7 +3,6 @@
 let
   commonPkgs = pkgs: with pkgs; [
     R
-    rstudio
     
     # R package compilation tools
     gcc
