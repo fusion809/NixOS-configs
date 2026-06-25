@@ -59,14 +59,8 @@ let
     runScript = "R";
   };
 
-  rstudio-fhs = pkgs.buildFHSEnv {
-    name = "rstudio";
-    targetPkgs = commonPkgs;
-    runScript = "rstudio";
-  };
-
 in
 pkgs.symlinkJoin {
   name = "r-fhs-envs";
-  paths = [ r-fhs rstudio-fhs ];
+  paths = [ r-fhs ];
 }
