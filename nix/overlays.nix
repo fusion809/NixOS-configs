@@ -51,6 +51,7 @@
           };
         };
       };
+      rstudio-binary = callPackage ../nixpkgs/rstudio-binary { };
 
       # antigravity = callPackage (forkNixpkgsPath + /antigravity/package.nix) {
       #   buildVscode = { customizeFHSEnv ? null, ... }@args:
@@ -71,10 +72,16 @@
           nvidiaRef = lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
         in
         {
-          nvidia_x11 = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580.bin; };
+          nvidia_x11 = nvidiaRef.stable_580 // {
+            mod = nvidiaRef.stable_580.bin;
+          };
           nvidiaPackages = lprev.nvidiaPackages // {
-            stable = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580.bin; };
-            production = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580.bin; };
+            stable = nvidiaRef.stable_580 // {
+              mod = nvidiaRef.stable_580.bin;
+            };
+            production = nvidiaRef.stable_580 // {
+              mod = nvidiaRef.stable_580.bin;
+            };
           };
         }
       );
@@ -85,10 +92,16 @@
           nvidiaRef = lfinal.callPackage (forkNixpkgsPath + /nvidia/default.nix) { };
         in
         {
-          nvidia_x11 = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580.bin; };
+          nvidia_x11 = nvidiaRef.stable_580 // {
+            mod = nvidiaRef.stable_580.bin;
+          };
           nvidiaPackages = lprev.nvidiaPackages // {
-            stable = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580.bin; };
-            production = nvidiaRef.stable_580 // { mod = nvidiaRef.stable_580.bin; };
+            stable = nvidiaRef.stable_580 // {
+              mod = nvidiaRef.stable_580.bin;
+            };
+            production = nvidiaRef.stable_580 // {
+              mod = nvidiaRef.stable_580.bin;
+            };
           };
         }
       );
