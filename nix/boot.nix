@@ -23,4 +23,8 @@
   };
   kernelParams = [ "usbcore.autosuspend=-1" ];
   extraModprobeConfig = "options usbhid mousepoll=8";
+
+  kernel.sysctl = {
+    "kernel.yama.ptrace_scope" = 0;
+  };
 }
