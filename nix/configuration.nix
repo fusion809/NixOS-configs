@@ -73,14 +73,14 @@
     config = {
       common = {
         default = [ "gtk" ];
-        "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+        "org.freedesktop.impl.portal.FileChooser" = [ "kde" "gtk" ];
       };
       hyprland = {
         default = [
           "hyprland"
           "gtk"
         ];
-        "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+        "org.freedesktop.impl.portal.FileChooser" = [ "kde" "gtk" ];
       };
     };
   };
@@ -104,7 +104,6 @@
       "/run/current-system/sw/lib/qt-6/qml"
       "/run/current-system/sw/lib/qml"
     ];
-    GTK_USE_PORTAL = "1";
     NIXOS_OZONE_WL = "1";
   };
 
