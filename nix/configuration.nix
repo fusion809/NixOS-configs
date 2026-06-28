@@ -38,7 +38,7 @@
   # Install firefox.
   programs = import ./programs.nix { inherit pkgs inputs username; };
   # Enable sound with pipewire.
-  security = import ./security.nix { };
+  security = import ./security.nix { inherit pkgs; };
   services = import ./services.nix { inherit pkgs username; };
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
