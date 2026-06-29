@@ -1406,10 +1406,10 @@ fi
 
 if [[ "${PACKAGE,,}" == "firefox" ]]; then
     log "Applying firefox: patch cbindgen COUNT issue and webrender_bindings lifetime elision (Rust 1.80+)..."
-    # Rename BudgetType::COUNT -> BudgetType::BUDGET_COUNT in texture_cache.rs so cbindgen
-    # emits the fully-namespaced BudgetType_BUDGET_COUNT in webrender_ffi_generated.h instead
-    # of the bare COUNT identifier which is undefined at the C++ use-site.
-    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@sed -i "s/pub const COUNT: usize = 7/pub const BUDGET_COUNT: usize = 7/g; s/BudgetType::COUNT/BudgetType::BUDGET_COUNT/g" gfx/wr/webrender/src/texture_cache.rs 2>/dev/null || true\n\1@g')
+    # Fix cbindgen issue with COUNT in texture_cache.rs by removing pub visibility from
+    # constants starting with C, V, or P (like COUNT). This prevents cbindgen from emitting
+    # bare C++ identifiers that cause compilation errors.
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@sed -i "/const [CVP]/s/pub //" gfx/wr/webrender/src/texture_cache.rs 2>/dev/null || true\n\1@g')
     # Build the python patch script and base64-encode it so it can be safely injected into COMMANDS
     # and decoded/written on the VM at build time — avoids all quoting/escaping issues.
     _FF_PY_SCRIPT=$(cat << 'PYEOF'
@@ -1429,6 +1429,14 @@ PYEOF
     _FF_PY_B64=$(printf '%s' "$_FF_PY_SCRIPT" | base64 -w 0)
     COMMANDS=$(echo "$COMMANDS" | sed -E "s@(\./mach build)@echo '${_FF_PY_B64}' | base64 -d > /tmp/ff_patch_webrender.py \&\& python3 /tmp/ff_patch_webrender.py\n\1@g")
     unset _FF_PY_SCRIPT _FF_PY_B64
+fi
+
+if [[ "${PACKAGE,,}" == "glib2" ]]; then
+    log "Applying glib2: updating gobject-introspection tarball path..."
+    # The BLFS glib2 page instructs building gobject-introspection from a tarball placed two
+    # directories above the build dir (../../gobject-introspection-*.tar.xz).
+    # Since we download it to /sources/archives/, we must update the tar command.
+    COMMANDS=$(echo "$COMMANDS" | sed -E "s|tar xf \.\./\.\./(gobject-introspection-[0-9.]+\.tar\.xz)|tar xf /sources/archives/\1|g")
 fi
 
 
@@ -1569,9 +1577,21 @@ perl -0777 -pi -e '\''s/DEFINEFUNC\(void \*, X509V3_EXT_d2i, X509_EXTENSION \*a,
 ${COMMANDS}"
 fi
 
+# Force any xmlcatalog commands that write to /etc/xml/ into a root block.
+# The docbook-xsl-nons BLFS page puts the final xmlcatalog registration commands in
+# a <userinput> (user) block, but /etc/xml/catalog is root-owned.  Re-annotate those
+# lines as root so the build script wraps them in 'as_root bash << ROOTEOF'.
+if [[ "${PACKAGE,,}" == "docbook-xsl-nons" || "${PACKAGE,,}" == "docbook-xsl" || "${PACKAGE,,}" == "docbook-xml" ]]; then
+    log "Applying docbook: forcing xmlcatalog /etc/xml writes to run as root..."
+    # Replace any user-block xmlcatalog call touching /etc/xml with a root-wrapped equivalent.
+    COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's{(# __BEGIN_USER__\n)((?:(?!# __END_USER__|# __BEGIN_USER__).)*)(# __END_USER__\n)}{my ($open,$body,$close) = ($1,$2,$3); my @lines = split /\n/, $body; my @root_lines; my @user_lines; for my $l (@lines) { if ($l =~ /xmlcatalog/ && $l =~ m{/etc/xml}) { push @root_lines, $l; } else { push @user_lines, $l; } } my $result = ""; if (@user_lines) { $result .= "# __BEGIN_USER__\n" . join("\n", @user_lines) . "\n# __END_USER__\n"; } if (@root_lines) { $result .= "# __BEGIN_ROOT__\n" . join("\n", @root_lines) . "\n# __END_ROOT__\n"; } $result}gse')
+fi
+
 if [[ "$PACKAGE" == "appstream" ]]; then
     log "Enabling Qt6 support in appstream (required for KDE Discover / AppStreamQt)..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D qt=true /g')
+    log "Patching appstream docs to use docbook-xsl-nons instead of docbook-xsl-ns..."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(meson setup)@sed -i "s|xsl-ns/current|xsl/current|g" docs/meson.build 2>/dev/null || true\n\1@g')
 fi
 
 if [[ "$PACKAGE" == "glycin" ]]; then
@@ -1935,8 +1955,9 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
     { print }
 ')
 
-# 2.10 ensure XORG_PREFIX and XORG_CONFIG are set if referenced in commands
-if [[ "$COMMANDS" =~ "XORG_PREFIX" || "$COMMANDS" =~ "XORG_CONFIG" ]]; then
+# 2.10 ensure XORG_PREFIX and XORG_CONFIG are set if referenced in commands (case-insensitive to catch patch names)
+shopt -s nocasematch
+if [[ "$COMMANDS" =~ "xorg_prefix" || "$COMMANDS" =~ "xorg_config" || "$COMMANDS" =~ "XORG_PREFIX" || "$COMMANDS" =~ "XORG_CONFIG" ]]; then
     if [[ ! "$COMMANDS" =~ "export XORG_PREFIX=/usr" ]]; then
         SETUP_COMMANDS+="export XORG_PREFIX=/usr
 export XORG_CONFIG=\"--prefix=\$XORG_PREFIX --sysconfdir=/etc --localstatedir=/var --disable-static\"
@@ -1946,6 +1967,7 @@ export XORG_CONFIG=\"--prefix=\$XORG_PREFIX --sysconfdir=/etc --localstatedir=/v
     # Strips commands like: ln -sv $XORG_PREFIX/lib/X11 /usr/lib/X11
     COMMANDS=$(echo "$COMMANDS" | perl -pe 's/^[[:space:]]*ln -sv? \$XORG_PREFIX\/(lib|include)\/X11 \/usr\/\1\/X11.*$//g')
 fi
+shopt -u nocasematch
 
 # Special handling for Xorg multi-package targets (libs, apps, fonts, drivers)
 if [[ "$XORG_MULTI_MODE" == "true" ]]; then
@@ -2107,10 +2129,12 @@ if [[ "$UPSTREAM" == "true" ]]; then
             DOWNLOAD_URLS+=("https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${DOWNLOAD_VER}.tar.xz")
         fi
     elif [[ "${PACKAGE,,}" == "oxygen-icons" ]]; then
-        log "Fetching latest upstream oxygen-icons version from KDE mirrors..."
-        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/oxygen-icons/ | perl -nle 'while (m{href="oxygen-icons-([0-9]+\.[0-9]+(\.[0-9]+)?)\.tar}g) { print $1 }' | sort -V | tail -n 1)
+        log "Fetching latest upstream oxygen-icons version from KDE Frameworks..."
+        UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream oxygen-icons version: $UPSTREAM_VERSION"
+            UPSTREAM_MM=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
+            DOWNLOAD_URLS=("https://download.kde.org/stable/frameworks/${UPSTREAM_MM}/oxygen-icons-${UPSTREAM_VERSION}.tar.xz")
         fi
     elif [[ "${PACKAGE,,}" == "frameworks6" || "${PACKAGE,,}" == "frameworks" || "${PACKAGE,,}" == "breeze-icons" || "${PACKAGE,,}" == "extra-cmake-modules" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks6" || "$(basename "${METAPACKAGE_TARGET,,}")" == "frameworks" ]]; then
         log "Fetching latest upstream KDE Frameworks version from KDE mirrors..."
@@ -2118,7 +2142,7 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream KDE Frameworks version: $UPSTREAM_VERSION"
         fi
-    elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "$(basename "${METAPACKAGE_TARGET,,}")" == "plasma-all" || "$(basename "${METAPACKAGE_TARGET,,}")" == "plasma" ]]; then
+    elif [[ "${PACKAGE,,}" == "plasma-all" || "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "libkscreen" || "$(basename "${METAPACKAGE_TARGET,,}")" == "plasma-all" || "$(basename "${METAPACKAGE_TARGET,,}")" == "plasma" ]]; then
         log "Fetching latest upstream KDE Plasma version from KDE mirrors..."
         UPSTREAM_VERSION=$(curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="([0-9]+\.[0-9]+\.[0-9]+)/?"}g) { print $1 }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
@@ -2192,12 +2216,17 @@ sys.exit(1)
             log "Found upstream libuv version: $UPSTREAM_VERSION"
             DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
         fi
-    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|lglycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib2?|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ ]]; then
+    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|dconf-editor|polkit-gnome|geocode-glib|libshumate)$ ]]; then
         GNOME_PKG="$PACKAGE"
         [[ "$GNOME_PKG" == "glib2" ]] && GNOME_PKG="glib"
         log "Fetching latest upstream GNOME version for $GNOME_PKG from download.gnome.org..."
-        # Use helper from 21-lfs.sh if available (it is sourced on the host, but we can source the VM copy)
-        [ -f ~/.lfs_scripts/21-lfs.sh ] && source ~/.lfs_scripts/21-lfs.sh 2>/dev/null
+        # Use helper from 21-lfs.sh if available
+        if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
+            source "$NIXCFG/shell/user/21-lfs.sh" 2>/dev/null
+        elif [ -f ~/.lfs_scripts/21-lfs.sh ]; then
+            source ~/.lfs_scripts/21-lfs.sh 2>/dev/null
+        fi
+        
         if declare -f lfs_get_upstream_version >/dev/null; then
             UPSTREAM_VERSION=$(lfs_get_upstream_version "$GNOME_PKG")
         else
@@ -2205,8 +2234,24 @@ sys.exit(1)
                 UPSTREAM_VERSION=$(curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1)
             else
                 base_url="https://download.gnome.org/sources/$GNOME_PKG"
-                major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
-                [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$GNOME_PKG"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+                local gn_ver=$(curl -sL "$base_url/cache.json" | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    versions = data[1].get("'"$GNOME_PKG"'", [])
+    stable_versions = [v for v in versions if all(p.isdigit() for p in v.split("."))]
+    if stable_versions:
+        stable_versions.sort(key=lambda x: [int(p) for p in x.split(".")])
+        print(stable_versions[-1])
+except Exception:
+    pass
+' 2>/dev/null)
+                if [[ -n "$gn_ver" ]]; then
+                    UPSTREAM_VERSION="$gn_ver"
+                else
+                    major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+                    [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$GNOME_PKG"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+                fi
             fi
         fi
 
@@ -2294,13 +2339,22 @@ if [[ "$XORG_MULTI_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" || "$PLASMA_M
         FILENAMES=$(echo "$COMMANDS" | perl -0777 -ne 'if (/cat > \S+\.md5 << "EOF"\s*\n(.*?)\nEOF/s) { my $block = $1; while ($block =~ /^(?!#).*\s(\S+\.tar\.[a-z2]+)/gm) { print "$1\n" } }')
     fi
 
-    if [[ -z "$FILENAMES" ]] && [[ "$PACKAGE" != "frameworks6" && "$PACKAGE" != "plasma-all" && "$PACKAGE" != "xorg-lib" && "$PACKAGE" != "xorg-app" && "$PACKAGE" != "xorg-font" && "$PACKAGE" != "xorg-driver" ]] || \
-       [[ -z "$FILENAMES" && -n "$METAPACKAGE_TARGET" && "$PLASMA_MODE" == "true" ]]; then
+    if [[ -n "$METAPACKAGE_TARGET" && ("$PLASMA_MODE" == "true" || "$FRAMEWORKS_MODE" == "true") ]]; then
+        # When building a specific component, explicitly set the tarball. 
+        # This bypasses the md5 extraction, resolving issues where components like plasma-sdk 
+        # are commented out in the upstream md5 block and would otherwise be skipped.
+        ver="${UPSTREAM_FULL:-$LFS_VERSION}"
+        [[ -z "$ver" && -n "$TARGET_VER" ]] && ver="$TARGET_VER"
+        target_name="${METAPACKAGE_TARGET:-$PACKAGE}"
+        if [[ -n "$ver" ]]; then
+            FILENAMES="${target_name}-${ver}.tar.xz"
+            log "Metapackage target mode: forcing download of ${target_name} component: $FILENAMES"
+        fi
+    elif [[ -z "$FILENAMES" ]] && [[ "$PACKAGE" != "frameworks6" && "$PACKAGE" != "plasma-all" && "$PACKAGE" != "xorg-lib" && "$PACKAGE" != "xorg-app" && "$PACKAGE" != "xorg-font" && "$PACKAGE" != "xorg-driver" ]]; then
         # Fallback: construct the filename for the target package if extraction failed
         if [[ "$PLASMA_MODE" == "true" || "$FRAMEWORKS_MODE" == "true" ]]; then
              ver="${UPSTREAM_FULL:-$LFS_VERSION}"
              [[ -z "$ver" && -n "$TARGET_VER" ]] && ver="$TARGET_VER"
-             # Use METAPACKAGE_TARGET for single-component builds, PACKAGE otherwise
              target_name="${METAPACKAGE_TARGET:-$PACKAGE}"
              if [[ -n "$ver" ]]; then
                  FILENAMES="${target_name}-${ver}.tar.xz"
@@ -2345,18 +2399,22 @@ else
 fi
 log "Package base name for search: $PKG_BASE"
 
+search_content="${HTML_CONTENT:-$FULL_HTML_CONTENT}"
+
 if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || { [[ "$UPSTREAM" == "true" ]] && [[ -z "$UPSTREAM_VERSION" ]]; }; then
     # 0. Primary Links from Page (Robust Extraction)
     # Extract all "Download (HTTP)" and "Download:" links explicitly labeled on the page
     # Use HTML_CONTENT (sliced) if available to avoid picking up links from other packages
-    search_content="${HTML_CONTENT:-$FULL_HTML_CONTENT}"
     mapfile -t PRIMARY_DOWNLOADS < <(printf '%s' "$search_content" | perl -0777 -ne 'while (/Download(?:\s*\(HTTP\))?:\s*<a[^>]+href=\s*"([^"]+)"/igs) { print "$1\n" }')
     DOWNLOAD_URLS+=("${PRIMARY_DOWNLOADS[@]}")
+fi
 
-    # Extract "Additional Downloads" or "Optional Downloads" links (e.g. UCD.zip for ibus)
-    mapfile -t ADDITIONAL_DOWNLOADS < <(printf '%s' "$search_content" | perl -0777 -nle 'while (/<h3[^>]*>\s*(?:Additional|Optional)\s*Downloads\s*<\/h3>(.*?)<(?:h[23])/igs) { my $b=$1; while ($b =~ /href=\s*"([^"]+\.(?:tar\.[a-z2]+|zip|patch|tgz|gz|bz2|xz))"/igs) { print "$1\n"; } }')
-    DOWNLOAD_URLS+=("${ADDITIONAL_DOWNLOADS[@]}")
+# ALWAYS extract "Additional Downloads" or "Optional Downloads" links (e.g. UCD.zip for ibus, gobject-introspection for glib2)
+# We must do this even if the primary URL was fetched upstream, because the build may still require these BLFS-specific files.
+mapfile -t ADDITIONAL_DOWNLOADS < <(printf '%s' "$search_content" | perl -0777 -nle 'while (/<h3[^>]*>\s*(?:Additional|Optional)\s*Downloads\s*<\/h3>(.*?)<(?:h[23])/igs) { my $b=$1; while ($b =~ /href=\s*"([^"]+\.(?:tar\.[a-z2]+|zip|patch|tgz|gz|bz2|xz))"/igs) { print "$1\n"; } }')
+DOWNLOAD_URLS+=("${ADDITIONAL_DOWNLOADS[@]}")
 
+if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || { [[ "$UPSTREAM" == "true" ]] && [[ -z "$UPSTREAM_VERSION" ]]; }; then
     # 1. Main Page Links (for both LFS and BLFS)
     # Extract all archive and patch links
     mapfile -t PAGE_LINKS < <(printf '%s' "$FULL_HTML_CONTENT" | perl -nle 'while (m{(?i)https?://[^\s"]*(\.tar\.[a-z2]+|\.zip|\.patch|\.tgz)}g) { print $& }' | sort -u)
@@ -2837,6 +2895,12 @@ fi"
         COMMANDS="$CACHE_CMDS
 $COMMANDS"
     fi
+fi
+
+# Fix missing LINGUAS file in glycin upstream tarball
+if [[ "$PACKAGE" == "glycin" ]]; then
+    log "Injecting LINGUAS file workaround for glycin..."
+    COMMANDS="${COMMANDS//mkdir build &&/mkdir -p po \&\& touch po\/LINGUAS \&\& mkdir build \&\&}"
 fi
 
 # Replace hardcoded LLVM versions when using --upstream
@@ -3383,9 +3447,22 @@ fi
     # Fix the bash subshell and execution
     if [[ "$FRAMEWORKS_MODE" == "true" || "$PLASMA_MODE" == "true" ]]; then
         log "Converting build loop into a standalone script..."
+        # Substitute old LFS versions with upstream version inside the build script (fixes MD5 matching)
+        if [[ -n "$UPSTREAM_FULL" && -n "$LFS_VERSION" && "$UPSTREAM_FULL" != "$LFS_VERSION" ]]; then
+            COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_FULL}"
+            COMMANDS="${COMMANDS//$LFS_MM/$UPSTREAM_MM}"
+        fi
+        
         # Preserve block markers for root identification
         # We use a temporary variable for the awk script to avoid replacing COMMANDS
         # until the very end, ensuring extractions (filenames, versions) use the full text.
+        
+        # If we are building a specific metapackage component, uncomment it in the md5 list
+        # so the while-loop in the generated script does not skip it.
+        if [[ -n "$METAPACKAGE_TARGET" ]]; then
+            COMMANDS=$(echo "$COMMANDS" | perl -pe "s/^[ \t]*#[ \t]*([0-9a-fA-F]+[ \t]+${METAPACKAGE_TARGET}[-_])/\1/g")
+        fi
+
         KDE_GENERATED_SCRIPT=$(echo "$COMMANDS" | awk -v pkg="$PACKAGE" -v force="$FORCE" -v ver="${UPSTREAM_FULL:-$LFS_VERSION}" -v mm="${UPSTREAM_MM:-$LFS_MM}" '
             BEGIN {
                 in_loop = 0; in_as_root = 0; in_md5 = 0; in_root_block = 0;

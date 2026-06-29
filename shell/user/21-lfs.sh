@@ -442,11 +442,8 @@ sys.exit(1)
         appstream)
             curl -s -H "User-Agent: bash" https://api.github.com/repos/ximion/appstream/tags | perl -nle 'while (m{"name":"v([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
             ;;
-        frameworks|frameworks6|extra-cmake-modules|breeze-icons)
+        frameworks|frameworks6|extra-cmake-modules|breeze-icons|oxygen-icons)
             curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=/")}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1
-            ;;
-        oxygen-icons)
-            curl -sL https://download.kde.org/stable/oxygen-icons/ | perl -nle 'while (m{href="oxygen-icons-([0-9]+\.[0-9]+(\.[0-9]+)?)\.tar}g) { print $1 }' | sort -V | tail -n 1
             ;;
         plasma|plasma-all)
             curl -sL https://download.kde.org/stable/plasma/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
@@ -469,9 +466,25 @@ sys.exit(1)
             [[ "$gnome_pkg" == "libxml2" ]] && base_url="https://download.gnome.org/sources/libxml2"
             [[ "$gnome_pkg" == "libxslt" ]] && base_url="https://download.gnome.org/sources/libxslt"
             
-            local major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
-            if [[ -n "$major" ]]; then
-                curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$gnome_pkg"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1
+            local gn_ver=$(curl -sL "$base_url/cache.json" | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    versions = data[1].get("'"$gnome_pkg"'", [])
+    stable_versions = [v for v in versions if all(p.isdigit() for p in v.split("."))]
+    if stable_versions:
+        stable_versions.sort(key=lambda x: [int(p) for p in x.split(".")])
+        print(stable_versions[-1])
+except Exception:
+    pass
+' 2>/dev/null)
+            if [[ -n "$gn_ver" ]]; then
+                echo "$gn_ver"
+            else
+                local major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
+                if [[ -n "$major" ]]; then
+                    curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$gnome_pkg"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1
+                fi
             fi
             ;;
         libgweather)
@@ -904,27 +917,33 @@ lfs_check_custom_updates() {
             version_line_num=$(grep -niE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
             var_name=$(grep -iE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
             if [ -n "$version_line_num" ]; then
-                eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
-                # Add PATH and other common environment variables to eval script
-                # Use a safe default path plus existing path
-                echo 'set +e' > "$eval_script"
-                echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
-                head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
-                echo "echo \"\$$var_name\"" >> "$eval_script"
-                for attempt in 1 2 3; do
-                    remote_ver=$(cd "$pkg_dir" && bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
-                    [ -n "$remote_ver" ] && break
-                    [ "$attempt" -lt 3 ] && sleep 2
-                done
-                rm -f "$eval_script"
-                if [ -z "$remote_ver" ]; then status="FAILED"; fi
+                # Extract the raw RHS of version= without executing anything
+                raw_ver_line=$(sed -n "${version_line_num}p" "$build_script" | tr -d '\r')
+                # Get just the value part after '='
+                raw_ver=$(echo "$raw_ver_line" | cut -d= -f2- | tr -d '"' | tr -d "'" | tr -d '[:space:]')
+                
+                # If the value is a static string (no command substitution), use it directly
+                if ! echo "$raw_ver" | grep -qE '[$`]'; then
+                    [ -n "$raw_ver" ] && remote_ver="$raw_ver" || status="FAILED"
+                else
+                    # Dynamic version line - execute only that single line in isolation with a timeout
+                    # This avoids running any blocking preamble code
+                    eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
+                    echo 'set +e' > "$eval_script"
+                    echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
+                    echo "$raw_ver_line" | tr -d '\r' >> "$eval_script"
+                    echo "echo \"\$$var_name\"" >> "$eval_script"
+                    remote_ver=$(cd "$pkg_dir" && timeout 20 bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
+                    rm -f "$eval_script"
+                    if [ -z "$remote_ver" ]; then status="FAILED"; fi
+                fi
             fi
             
             if [ -z "$remote_ver" ] && [ "$status" == "OK" ] && grep -q "git clone" "$build_script"; then
                 repo_url=$(perl -nle 'while (m{git clone ([^ ]+)}g) { print $1 }' "$build_script" | head -n 1)
                 if [ -n "$repo_url" ]; then
                     for attempt in 1 2 3; do
-                        remote_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+                        remote_ver=$(timeout 15 git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
                         [ -n "$remote_ver" ] && break
                         [ "$attempt" -lt 3 ] && sleep 2
                     done
@@ -1191,6 +1210,10 @@ import urllib.request
 import re
 import sys
 import os
+import socket
+
+# Set a global timeout for all network requests to prevent hangs
+socket.setdefaulttimeout(10)
 
 lfs_book = os.environ.get("LFS_BOOK_PYTHON", "https://www.linuxfromscratch.org/lfs/view/development")
 blfs_book = os.environ.get("BLFS_BOOK_PYTHON", "https://linuxfromscratch.org/blfs/view/systemd")
@@ -1203,7 +1226,7 @@ if not updates:
 def fetch_longindex():
     try:
         req = urllib.request.Request(f"{blfs_book}/longindex.html", headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             return response.read().decode("utf-8")
     except Exception as e:
         print(f"Error fetching BLFS longindex: {e}", file=sys.stderr)
@@ -1216,7 +1239,7 @@ def extract_deps(url):
     deps = []
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             html = response.read().decode("utf-8")
             
             # Find required/recommended blocks
@@ -1278,10 +1301,15 @@ for pkg in updates:
                 else:
                     graph[pkg].add(matched_dep)
 
+KDE_PKGS = {"extra-cmake-modules", "breeze-icons", "frameworks6", "frameworks", "plasma-all", "plasma"}
+have_kde = any(p in KDE_PKGS or "frameworks" in p or "plasma" in p for p in updates)
+
 def fetch_frameworks_order():
+    if not have_kde:
+        return []
     try:
         req = urllib.request.Request(f"{blfs_book}/kde/frameworks6.html", headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             html = response.read().decode("utf-8")
             # Extract names from the md5 block: e.g. "karchive-6.23.0.tar.xz"
             tars = re.findall(r"([a-z0-9-]+)-6\.[0-9]+\.[0-9]+\.tar\.xz", html)
@@ -1294,9 +1322,11 @@ def fetch_frameworks_order():
         return []
 
 def fetch_plasma_order():
+    if not have_kde:
+        return []
     try:
         req = urllib.request.Request(f"{blfs_book}/kde/plasma-all.html", headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             html = response.read().decode("utf-8")
             # Extract names from the md5 block or links
             tars = re.findall(r"([a-z0-9-]+)-6\.[0-9]+\.[0-9]+\.tar\.xz", html)
@@ -1592,5 +1622,5 @@ DEPEOF
             echo "Skipping commit."
         fi
     fi
-    ssh_lfs "zsh -ic upos"
+    ssh_lfs "upver=$(wget -cqO- https://www.linuxfromscratch.org/lfs/view/systemd/index.html | grep \"Version\" | sed 's/^\s*//g' | cut -d ' ' -f 2 | sed 's/-systemd//g'); sudo sed -i -E \"s|r[0-9]{2,}\.[0-9]-[0-9]+|$upver|g\" /etc/os-release /etc/lfs-release /etc/lsb-release"
 }
