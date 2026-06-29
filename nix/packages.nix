@@ -158,6 +158,7 @@ with pkgs;
   kdePackages.okular
   languagetool
   texliveFull
+  onlyoffice-desktopeditors
   texstudio
   zotero
   hunspell
