@@ -13,6 +13,7 @@ with pkgs;
   google-chrome
   inkscape
   nixfmt # Needed for Nix IDE extension of vscode/antigravity
+  opencode
   pinta
   vscode
   ###############################################################
