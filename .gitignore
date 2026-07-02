@@ -13,3 +13,5 @@ global_dump.txt
 plugin_dump.txt
 python/__pycache__
 plugins_debug.txt
+.RData
+.Rhistory
