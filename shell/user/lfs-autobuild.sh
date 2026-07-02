@@ -276,7 +276,7 @@ if [[ -n "$CUSTOM_BUILD_SH" ]]; then
     log "Starting remote custom build for $PACKAGE..."
     
     REMOTE_SCRIPT=$(cat <<'EOF'
-set -e
+set -eo pipefail
 cd "$CUSTOM_DIR"
 # Create timestamp BEFORE build
 touch "/tmp/build_start_timestamp_${TARGET_PKG}"
@@ -287,13 +287,13 @@ bash build.sh 2>&1 | tee "$BUILD_LOG"
 sudo mkdir -p /var/lib/custom-packages
 # Determine the new version we just installed
 new_ver=""
-version_line_num=$(grep -niE '^[a-z_]*version=' build.sh | head -n 1 | cut -d: -f1)
+version_line_num=$(grep -niE '^[a-z_]*version=' build.sh | head -n 1 | cut -d: -f1 || true)
 if [ -n "$version_line_num" ]; then
     eval_script="/tmp/eval_ver_${TARGET_PKG}.sh"
     echo 'set +e' > "$eval_script"
     echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
     head -n "$version_line_num" build.sh | tr -d '\r' >> "$eval_script"
-    var_name=$(grep -iE '^[a-z_]*version=' build.sh | head -n 1 | cut -d= -f1)
+    var_name=$(grep -iE '^[a-z_]*version=' build.sh | head -n 1 | cut -d= -f1 || true)
     echo "echo \"\$$var_name\"" >> "$eval_script"
     new_ver=$(bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
     rm -f "$eval_script"
@@ -315,7 +315,7 @@ fi
 if [ -z "$new_ver" ] && grep -q "git clone" build.sh; then
     repo_url=$(perl -nle 'while (m{git clone \K[^ ]+}g) { print $& }' build.sh | head -n 1)
     if [ -n "$repo_url" ]; then
-        new_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
+        new_ver=$(git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}' || true)
     fi
 fi
 
@@ -335,15 +335,15 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-    find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+    find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
     
     # 2. Capture via build log (CMake/Meson files that are already up-to-date)
     if [ -f "$BUILD_LOG" ]; then
         echo "Parsing build log for additional files (Up-to-date/Installing)..."
         # Parse CMake: -- Installing: /path OR -- Up-to-date: /path
-        grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's@^-- (Installing|Up-to-date): @@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's@^-- (Installing|Up-to-date): @@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
         # Parse Meson: Installing <src> to <dst>
-        grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's@^Installing .* to (.*)$@\1@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null
+        grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's@^Installing .* to (.*)$@\1@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
         rm -f "$BUILD_LOG"
     fi
 
@@ -390,6 +390,11 @@ EOF
     ssh_lfs "TARGET_PKG=\"$PACKAGE\" CUSTOM_DIR=\"$CUSTOM_DIR\" bash -s" <<EOF
 $(echo "$REMOTE_SCRIPT")
 EOF
+    build_exit_code=$?
+    if [ $build_exit_code -ne 0 ]; then
+        echo "[ERROR] Custom build failed for $PACKAGE"
+        exit $build_exit_code
+    fi
 
 
     
@@ -1463,6 +1468,18 @@ DOC_TOOLS="gi-docgen db2html xmlto xsltproc sphinx-build texlive asciidoc xmlto"
 DOC_PATTERNS="-D (docs?|documentation)=(enabled|true)|--enable-(gtk-doc|doxygen-docs|docs)|make.*[[:space:]](html|man|ps|pdf|info|doxygen|docs)(\b|[[:space:]])"
 ENABLE_DOC_BUILD=true
 MISSING_DOC_TOOL=""
+# Also check that docbook-xsl is registered in the XML catalog (xsltproc alone is not enough)
+# This is informational only — systemd man-page generation is always disabled below.
+DOCBOOK_XSL_IN_CATALOG=false
+if target_run "command -v xsltproc" &>/dev/null; then
+    # Check: can xmlcatalog resolve the docbook-xsl stylesheet to a local file, AND does that file exist?
+    _docbook_resolved=$(target_run "xmlcatalog /etc/xml/catalog 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl' 2>/dev/null | grep -v '^No entry' | head -n1" 2>/dev/null | tr -d '\r\n[:space:]')
+    if [[ -n "$_docbook_resolved" ]] && target_run "[ -f '${_docbook_resolved#file://}' ]" 2>/dev/null; then
+        DOCBOOK_XSL_IN_CATALOG=true
+    else
+        log "[WARNING] xsltproc is present but docbook-xsl is NOT installed/registered in /etc/xml/catalog — xsltproc-based man-page generation will fail."
+    fi
+fi
 
 # ALWAYS suppress doxygen, texlive, asciidoc, xmlto as requested
 if [[ "$COMMANDS" =~ "doxygen" || "$COMMANDS" =~ "texlive" || "$COMMANDS" =~ "asciidoc" || "$COMMANDS" =~ "xmlto" ]] || \
@@ -1643,6 +1660,20 @@ fi
 
 if [[ "$PACKAGE" == "colord" ]] || [[ "$PACKAGE" == "colord-gtk" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed 's/man=true/man=false/g')
+fi
+
+# systemd uses xsltproc + docbook-xsl to generate man pages via ninja.
+# This is unreliable without a perfectly configured XML catalog, so we
+# unconditionally disable man-page generation to ensure build stability.
+if [[ "${PACKAGE,,}" == "systemd" ]]; then
+    log "[INFO] Unconditionally disabling systemd man-page generation (-Dman=false) to prevent xsltproc/docbook-xsl failures."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/-D[[:space:]]*man=(auto|true|enabled)/-Dman=false/g')
+    # If there was no man= flag at all, inject it after 'meson setup'
+    if ! echo "$COMMANDS" | grep -q -- "-Dman=false"; then
+        COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -Dman=false /g')
+    fi
+    # Also strip any standalone 'ninja man' or 'make man' targets just in case
+    COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's{^(as_root[[:space:]]+)?(ninja|make)[[:space:]]+man\b.*?(\n|&&)}{}gm')
 fi
 
 if [[ "$PACKAGE" == "rustc" ]]; then
@@ -1884,6 +1915,9 @@ fi
 # 2.9.5 Final cleanup of dangling separators before markers or EOF
 # This ensures that stripping docs doesn't leave trailing && at the end of a heredoc block
 COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe '
+    # Remove trailing && (and optional line continuations) from all lines to enforce sequential execution
+    # This prevents failures in left-side commands of an AND-list from being ignored by set -e.
+    s/[ \t]*&&[ \t]*\\?[ \t]*$//mg;
     s/\s*(&&|\|\||;)\s*(\n\s*?#?\s*?(__END_(ROOT|USER)__|___BLOCK_END___))/\n$2/gs;
     s/\s*(&&|\|\||;)\s*(\n\s*?#?\s*?(__BEGIN_(ROOT|USER)__|___BLOCK_START_))/\n$2/gs;
     s/\s*(&&|\|\||;)\s*$//gs;
@@ -3836,7 +3870,7 @@ else
             fi
             # Flatten archives that extract into a single nested subfolder (common when archives have a leading ./ prefix)
             # Skip this for NSS/NSPR as their build system and book commands expect the nested directory
-            if [[ $(ls -A "$TARGET_DIR" | wc -l) -eq 1 ]] && [[ -d "$TARGET_DIR/$(ls -A "$TARGET_DIR")" ]] && [[ "$PACKAGE" != "nss" ]] && [[ "$PACKAGE" != "nspr" ]]; then
+            if [[ $(ls -A "$TARGET_DIR" | wc -l) -eq 1 ]] && [[ -d "$TARGET_DIR/$(ls -A "$TARGET_DIR")" ]] && [[ "$PACKAGE" != "nss" ]] && [[ "$PACKAGE" != "nspr" ]] && [[ "${PACKAGE,,}" != "lmdb" ]]; then
                 SUBDIR=$(ls -A "$TARGET_DIR")
                 echo "Detected nested directory '$SUBDIR' after extraction. Moving contents up."
                 mv "$TARGET_DIR/$SUBDIR"/{.[!.]*,*} "$TARGET_DIR/" 2>/dev/null || true

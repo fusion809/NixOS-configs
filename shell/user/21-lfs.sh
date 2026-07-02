@@ -926,12 +926,13 @@ lfs_check_custom_updates() {
                 if ! echo "$raw_ver" | grep -qE '[$`]'; then
                     [ -n "$raw_ver" ] && remote_ver="$raw_ver" || status="FAILED"
                 else
-                    # Dynamic version line - execute only that single line in isolation with a timeout
-                    # This avoids running any blocking preamble code
+                    # Dynamic version line - evaluate all lines UP TO AND INCLUDING version=
+                    # so that prerequisite variables (REPO_URL, name, etc.) are available.
+                    # This mirrors what lfs_autobuild does in its skip-logic eval.
                     eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
                     echo 'set +e' > "$eval_script"
                     echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
-                    echo "$raw_ver_line" | tr -d '\r' >> "$eval_script"
+                    head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
                     echo "echo \"\$$var_name\"" >> "$eval_script"
                     remote_ver=$(cd "$pkg_dir" && timeout 20 bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
                     rm -f "$eval_script"
@@ -939,9 +940,14 @@ lfs_check_custom_updates() {
                 fi
             fi
             
-            if [ -z "$remote_ver" ] && [ "$status" == "OK" ] && grep -q "git clone" "$build_script"; then
-                repo_url=$(perl -nle 'while (m{git clone ([^ ]+)}g) { print $1 }' "$build_script" | head -n 1)
+            # Fallback: if we still have no version AND the build script clones a git repo,
+            # ask the remote for its current HEAD.
+            # Use the LAST matching git clone URL in the file — the package's own repo is
+            # typically cloned last, after any build-dependency repos.
+            if [ -z "$remote_ver" ] && grep -q "git clone" "$build_script"; then
+                repo_url=$(perl -nle 'while (m{git clone\s+(?:--\S+\s+)*(https?://\S+|git\@\S+)}g) { print $1 }' "$build_script" | tail -n 1)
                 if [ -n "$repo_url" ]; then
+                    status="OK"
                     for attempt in 1 2 3; do
                         remote_ver=$(timeout 15 git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
                         [ -n "$remote_ver" ] && break
@@ -954,7 +960,10 @@ lfs_check_custom_updates() {
             if [ -z "$remote_ver" ] && [ "$status" == "OK" ]; then status="MISSING"; fi
             
             if [ "$status" != "OK" ]; then
-                echo "RESULT:$pkg_name $status $status"
+                # Use the real local_ver we already read (or "none" if not installed),
+                # only substitute FAILED for the remote side.
+                _display_local="${local_ver:-none}"
+                echo "RESULT:$pkg_name $_display_local FAILED"
             elif [ -n "$remote_ver" ]; then
                 if [ "$local_ver" == "none" ]; then
                     if [ -f "/var/lib/custom-packages/$pkg_basename" ]; then
@@ -962,9 +971,18 @@ lfs_check_custom_updates() {
                     fi
                 fi
                 if [ "$local_ver" != "$remote_ver" ]; then
-                    if [[ "${#local_ver}" -ge 7 && "${#local_ver}" -le 12 && "${remote_ver#$local_ver}" != "$remote_ver" ]]; then
-                        : # same
-                    else
+                    # Treat as equal if one is a short-hash prefix of the other:
+                    #   local=24b5e7a (7 chars), remote=24b5e7a6734b... (40 chars) -> same
+                    #   local=24b5e7a6734b... (40 chars), remote=24b5e7a (7 chars) -> same
+                    _llen="${#local_ver}"
+                    _rlen="${#remote_ver}"
+                    _same=false
+                    if [[ "$_llen" -ge 7 && "$_llen" -le 12 && "${remote_ver#$local_ver}" != "$remote_ver" ]]; then
+                        _same=true  # local short, remote full or same prefix
+                    elif [[ "$_rlen" -ge 7 && "$_rlen" -le 12 && "${local_ver#$remote_ver}" != "$local_ver" ]]; then
+                        _same=true  # remote short, local full or same prefix
+                    fi
+                    if [[ "$_same" == "false" ]]; then
                         echo "RESULT:$pkg_name $local_ver $remote_ver"
                     fi
                 fi
