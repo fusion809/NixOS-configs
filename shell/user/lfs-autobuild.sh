@@ -1281,6 +1281,10 @@ export SASS_LIBSASS_PATH=\$(pwd)/libsass-3.6.6
     COMMANDS=$(echo "$COMMANDS" | sed 's/cd \.\. /rm -f Makefile \&\& cd .. /')
 fi
 
+if [[ "${PACKAGE}" == "shared-mime-info" ]]; then
+    COMMANDS=$(echo "$COMMANDS" | sed '/mv shared-mime-info/d' | sed '/cd shared-mime-info/d' | sed '0,/cd ../{/cd ../d'})
+fi
+
 # Rewrite relative ../pkg.tar.* references in tar commands to absolute /sources/archives/ paths
 # Generalized to handle various flags like -xf, -xvf, -xfv and deeper paths like ../..
 COMMANDS=$(echo "$COMMANDS" | sed -E 's|tar ([^|&;]*)-x?v?f[[:space:]]+\.\./(\.\./)?(([a-zA-Z0-9_+.-]+)\.tar\.[a-z0-9.]+)|tar \1-xf /sources/archives/\3|g')
@@ -1494,7 +1498,7 @@ if [[ "$COMMANDS" =~ "doxygen" || "$COMMANDS" =~ "texlive" || "$COMMANDS" =~ "as
     fi
     # Force common tools to true in the environment to avoid build failures when they are called
     SETUP_COMMANDS+="export DOXYGEN=true TEXI2HTML=true TEXI2PDF=true MAKEINFO=true
-export ac_cv_path_DOXYGEN=true ac_cv_path_MAKEINFO=true ac_cv_path_TEXI2HTML=true ac_cv_path_TEXI2PDF=true
+export ac_cv_path_DOXYGEN=true ac_cv_path_MAKEINFO=true ac_cv_path_TEXI2HTML=true ac_cv_path_TEXI2PDF=true PATH=/home/fusion809/.juliaup/bin:/usr/bin:/opt/rustc/bin:/opt/jdk/bin:/opt/qt6/bin:/opt/texlive/2025/bin/x86_64-linux:/sbin:/usr/sbin
 "
 fi
 
