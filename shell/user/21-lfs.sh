@@ -934,7 +934,7 @@ lfs_check_custom_updates() {
                     echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
                     head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
                     echo "echo \"\$$var_name\"" >> "$eval_script"
-                    remote_ver=$(cd "$pkg_dir" && timeout 20 bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
+                    remote_ver=$(cd "$pkg_dir" && timeout 60 bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
                     rm -f "$eval_script"
                     if [ -z "$remote_ver" ]; then status="FAILED"; fi
                 fi
