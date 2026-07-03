@@ -2311,8 +2311,24 @@ except Exception:
             fi
         fi
     else
-        log "Upstream flag ignored for package '$PACKAGE' (only supported for linux, firefox, frameworks, plasma, libuv, KDE apps, and GNOME apps)"
-        UPSTREAM="false"
+        log "Checking for generic upstream resolution via lfs_get_upstream_version..."
+        if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
+            source "$NIXCFG/shell/user/21-lfs.sh" 2>/dev/null
+        elif [ -f ~/.lfs_scripts/21-lfs.sh ]; then
+            source ~/.lfs_scripts/21-lfs.sh 2>/dev/null
+        fi
+        
+        if declare -f lfs_get_upstream_version >/dev/null; then
+            UPSTREAM_VERSION=$(lfs_get_upstream_version "$PACKAGE")
+        fi
+        
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream version for $PACKAGE: $UPSTREAM_VERSION via generic fallback"
+            UPSTREAM_FULL="$UPSTREAM_VERSION"
+        else
+            log "Upstream flag ignored for package '$PACKAGE' (no upstream fetching logic defined)"
+            UPSTREAM="false"
+        fi
     fi
 fi
 
@@ -2884,6 +2900,30 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n
     DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rustc-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
     DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/rust-std-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
     DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/${PREV_DATE}/cargo-${PREV_VERSION}-x86_64-unknown-linux-gnu.tar.xz")
+fi
+
+# Generic version replacement for any package that successfully resolved UPSTREAM_VERSION via fallback
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL" && ! "${PACKAGE,,}" =~ ^(linux|firefox|rustc|libuv)$ && ! "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && ! "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|vte|gnome-terminal|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome)$ ]]; then
+    # Extract LFS version from the identified main download URL
+    LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle "while (m{${PACKAGE}-\K[0-9]+(?:\.[0-9]+)+[a-zA-Z0-9_-]*}g) { print \$& }" | head -n 1)
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{/v?\K[0-9]+(?:\.[0-9]+)+[a-zA-Z0-9_-]*(?=/)}g) { print $& }' | head -n 1)
+    fi
+    if [[ -z "$LFS_VERSION" ]]; then
+        LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle 'while (m{[0-9]+(?:\.[0-9]+)+[a-zA-Z0-9_-]*}g) { print $& }' | head -n 1)
+    fi
+
+    if [[ -n "$LFS_VERSION" && "$LFS_VERSION" != "$UPSTREAM_VERSION" ]]; then
+        log "Replacing LFS version $LFS_VERSION with $UPSTREAM_VERSION generically in commands and URLs..."
+        COMMANDS="${COMMANDS//$LFS_VERSION/$UPSTREAM_VERSION}"
+        for i in "${!DOWNLOAD_URLS[@]}"; do
+            DOWNLOAD_URLS[$i]="${DOWNLOAD_URLS[$i]//$LFS_VERSION/$UPSTREAM_VERSION}"
+        done
+        MAIN_FILENAME="${MAIN_FILENAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//$LFS_VERSION/$UPSTREAM_VERSION}"
+        DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+        GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+    fi
 fi
 
 # Pre-download Rust bootstrap binaries caching logic (Dynamic Detection on Guest)

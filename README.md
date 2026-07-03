@@ -62,11 +62,11 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 10802 | 58.65% | 1672 | 78.76% |
-| Nix | 3557 | 19.31% | 161 | 7.58% |
-| CSS | 1015 | 5.51% | 1 | 0.05% |
-| Python | 936 | 5.08% | 242 | 11.40% |
-| Markdown | 525 | 2.85% | 0 | 0.00% |
+| Shell | 10842 | 58.74% | 1672 | 78.76% |
+| Nix | 3557 | 19.27% | 161 | 7.58% |
+| CSS | 1015 | 5.50% | 1 | 0.05% |
+| Python | 936 | 5.07% | 242 | 11.40% |
+| Markdown | 525 | 2.84% | 0 | 0.00% |
 | JSONC | 435 | 2.36% | 0 | 0.00% |
 | JSON | 402 | 2.18% | 0 | 0.00% |
 | Patch | 396 | 2.15% | 0 | 0.00% |
@@ -74,7 +74,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | XML | 78 | 0.42% | 0 | 0.00% |
 | JavaScript | 41 | 0.22% | 3 | 0.14% |
 | TOML | 13 | 0.07% | 0 | 0.00% |
-| **Total** | **18419** | **100.00%** | **2123** | **100.00%** |
+| **Total** | **18459** | **100.00%** | **2123** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
