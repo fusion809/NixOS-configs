@@ -1640,5 +1640,5 @@ DEPEOF
             echo "Skipping commit."
         fi
     fi
-    ssh_lfs "upver=$(wget -cqO- https://www.linuxfromscratch.org/lfs/view/systemd/index.html | grep \"Version\" | sed 's/^\s*//g' | cut -d ' ' -f 2 | sed 's/-systemd//g'); sudo sed -i -E \"s|r[0-9]{2,}\.[0-9]-[0-9]+|$upver|g\" /etc/os-release /etc/lfs-release /etc/lsb-release"
+    ssh_lfs "upver=$(wget -cqO- https://www.linuxfromscratch.org/lfs/view/systemd/index.html | grep \"Version\" | sed 's/^\s*//g' | cut -d ' ' -f 2 | sed 's/-systemd//g'); if echo $upver | grep \"^r\" ; then sudo sed -i -E \"s|r[0-9]{2,}\.[0-9]-[0-9]+|$upver|g\" /etc/os-release /etc/lfs-release /etc/lsb-release ; fi"
 }
