@@ -120,11 +120,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782704057,
-        "narHash": "sha256-G1I1gd32F7mp9LAe1DaZ4ZL7NX5gyiKwdCMwro1Vrck=",
+        "lastModified": 1783221248,
+        "narHash": "sha256-ESQnuNHEDChsB4IxoLRhscVahqkDWkTb+qdIz8euYt4=",
         "ref": "release-26.05",
-        "rev": "868d0a692de703c2de98fab61968e4e310b7c28e",
-        "revCount": 6818,
+        "rev": "af2beae5f0fae0a4310cc0e6aef2572f56090353",
+        "revCount": 6819,
         "type": "git",
         "url": "https://github.com/nix-community/home-manager.git"
       },
@@ -523,11 +523,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1783175717,
-        "narHash": "sha256-mLYVdz+OVU2T7wEEacdbyCzIIYZG9Tk6Nq2eGcEpHxQ=",
+        "lastModified": 1783224372,
+        "narHash": "sha256-8i/87eeoqiGE4yOTjwSA3Eh/ziJRQEmd/unYU+K27sk=",
         "ref": "master",
-        "rev": "f2d343d88f1c0591bad39266fb67e2a9cc4df459",
-        "revCount": 1027630,
+        "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+        "revCount": 1027867,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -587,11 +587,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1782999065,
-        "narHash": "sha256-5Dgj5+pIQYZKrXUGaLCk7CKfN3MmpwIhO94++WVxvng=",
+        "lastModified": 1783148766,
+        "narHash": "sha256-uslt2pqShTIXDdAHRHv2QkYLsVdY8Oqwz0EA48/RSM8=",
         "ref": "nixos-26.05",
-        "rev": "80d591ed473cfc46329932c2aadac9b435342c7c",
-        "revCount": 1008319,
+        "rev": "a50de1b7d8a586adc18d2395c19de7d6058e6030",
+        "revCount": 1008484,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -732,11 +732,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783166008,
-        "narHash": "sha256-7mQEyyENEH1TNxoB+7oo5ZzDR6n3gKG3QfPU5JO0kvM=",
+        "lastModified": 1783183683,
+        "narHash": "sha256-+qrrIGP86yY6Cnk1qZGq71V3mm7Lu/Gq3Crp91862HY=",
         "owner": "Alexays",
         "repo": "Waybar",
-        "rev": "1471cb26b80b0e61c8081e9145fbcdb2ad22e0d9",
+        "rev": "2d9b95e9de2a811df4db4f05676f7fbc800efd1f",
         "type": "github"
       },
       "original": {
