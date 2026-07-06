@@ -47,12 +47,25 @@ function bm3u8 {
 		(
 			page=$(wget -cqO- "$url")
 			m3u8URL=$(echo "$page" | grep "hlsAuto" | cut -d '"' -f 4 | sed 's/\\//g')
-			filename=$(echo "$page" | grep "<title>" | sed 's/<[/]*title>//g' | head -n 1 | sed 's/\s*- [A-Za-z]*.com//g')
+			filename=$(echo "$page" | grep "<title>" | sed 's/<[/]*title>//g' | head -n 1 | python3 -c "import html,sys;print(html.unescape(sys.stdin.read().strip()))" | sed 's/\s*[-|]\s*[A-Za-z0-9]*\(.com\)\?\s*$//g')
 			wget -c "$m3u8URL" -O "$filename.m3u8"
 		) &
 	done
 	wait
 	download
+	# Stamp duration onto any mp4 files that don't already have one
+	for mp4 in *.mp4; do
+		[[ -f "$mp4" ]] || continue
+		stem="${mp4%.*}"
+		if [[ ! "$stem" =~ \([0-9]{1,2}[:\-][0-9]{1,2}([:\-][0-9]{1,2})?\) ]]; then
+			duration=$(ffprobe -v error -show_entries format=duration \
+				-of default=noprint_wrappers=1:nokey=1 -sexagesimal "$mp4" \
+				| sed 's/\..*//' \
+				| awk -F: '{ if ($1 == 0) print $2"-"$3; else print $0 }' \
+				| sed 's/:/-/g')
+			[[ -n "$duration" ]] && mv "$mp4" "$stem ($duration).mp4"
+		fi
+	done
 }
 
 function rename {
