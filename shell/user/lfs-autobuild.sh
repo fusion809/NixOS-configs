@@ -3788,14 +3788,14 @@ for url in "${DOWNLOAD_URLS[@]}"; do
         if [ ! -s "$fname" ]; then 
             rm -f "$fname"
             echo "Downloading $fname..."
-            wget -T 30 -t 3 "$url" || echo "[WARNING] Failed to download $fname"
+            wget -T 30 -t 3 --no-check-certificate --max-redirect=5 "$url" || echo "[WARNING] Failed to download $fname"
         fi
     else
         if [ ! -s "$fname" ]; then
             rm -f "$fname"
             echo "Downloading $fname..."
             # Try primary URL first
-            if ! wget -T 30 -t 3 "$url"; then
+            if ! wget -T 30 -t 3 --no-check-certificate --max-redirect=5 "$url"; then
                 echo "[WARNING] Failed to download $url"
                 # If it's the main archive, try fallback extensions
                 if [[ "$url" == "$MAIN_DOWNLOAD_URL" ]]; then
@@ -3807,7 +3807,7 @@ for url in "${DOWNLOAD_URLS[@]}"; do
                         [[ "$alt_url" == "$url" ]] && continue
                         
                         echo "Trying fallback extension: $alt_url"
-                        if wget -T 30 -t 2 "$alt_url"; then
+                        if wget -T 30 -t 2 --no-check-certificate --max-redirect=5 "$alt_url"; then
                             MAIN_FILENAME=$(basename "$alt_url")
                             ALL_FILENAMES+=("$MAIN_FILENAME")
                             echo "Successfully downloaded fallback: $MAIN_FILENAME"
@@ -3823,7 +3823,7 @@ for url in "${DOWNLOAD_URLS[@]}"; do
                         for ext in .tar.xz .tar.gz .tar.bz2 .tar.lz .zip; do
                             alt_url="${alt_ver_base}${ext}"
                             echo "Trying: $alt_url"
-                            if wget -T 30 -t 2 "$alt_url"; then
+                            if wget -T 30 -t 2 --no-check-certificate --max-redirect=5 "$alt_url"; then
                                 MAIN_FILENAME=$(basename "$alt_url")
                                 ALL_FILENAMES+=("$MAIN_FILENAME")
                                 echo "Successfully downloaded version fallback: $MAIN_FILENAME"
