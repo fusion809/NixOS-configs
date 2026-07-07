@@ -11,7 +11,8 @@ import * as path from "node:path";
  * @property {number} timestamp Unix timestamp in seconds, example: 1763468493
  * @property {string} productVersion VSCode OSS version, example: "1.104.0"
  * @property {string} sha256hash SHA256 hash of the download file, example: "8eb01462dc4f26aba45be4992bda0b145d1ec210c63a6272578af27e59f23bef"
- * @property {string} url Download URL, example: "https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/1.11.2-6251250307170304/linux-arm/Antigravity.tar.gz", "https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/1.11.2-6251250307170304/darwin-x64/Antigravity.zip"
+ * @property {string} url Download URL, example: "https://storage.googleapis.com/antigravity-public/antigravity-hub/2.0.6-5413878570549248/linux-x64/Antigravity.tar.gz"
+ * @property {string} name Version string, example: "2.0.6"
  */
 /** @typedef {"x86_64-linux"} Platform */
 /** @typedef {{ version: string; vscodeVersion: string; sources: Record<Platform, { url: string; sha256: string; }> }} Information */
@@ -21,7 +22,7 @@ let vscodeVersion = "";
 async function getLatestInformation(/** @type {"linux-x64"} */ targetSystem) {
   /** @type {UpdateInfo} */
   const latestInfo = await (await fetch(`https://antigravity-auto-updater-974169037036.us-central1.run.app/api/update/${targetSystem}/stable/latest`)).json();
-  const newVersion = /\/antigravity\/stable\/([\d.]+)-[\d]+/.exec(latestInfo.url)?.[1] ?? ""; // Current API lack version field now, we need to parse it from the URL temporarily.
+  const newVersion = latestInfo.name ?? /\/antigravity-hub\/([\d.]+)-[\d]+/.exec(latestInfo.url)?.[1] ?? ""; // Use name field; fall back to parsing URL if absent.
   assert(version === '' || version === newVersion, `Version mismatch: ${version}(linux-x64) != ${newVersion}(${targetSystem})`);
   version = newVersion;
   assert(vscodeVersion === '' || vscodeVersion === latestInfo.productVersion, `VSCode version mismatch: ${vscodeVersion}(linux-x64) != ${latestInfo.productVersion}(${targetSystem})`);
