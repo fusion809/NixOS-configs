@@ -317,7 +317,7 @@ An alternative to the algorithm argument is the no argument which specifies the 
 The direction argument, which is only applicable if the first argument is algorithm, can be "previous" or something else. If it is previous and the first argument is "systematic", this will lead to the previous wallpaper being shown. Otherwise the next wallpaper will be shown. This is also the default behaviour if direction is omitted.
 
 # Waybar
-Waybar, as of 15 May 2026, is compiled from the latest git commit as the latest stable release (0.15.0) doesn't have Lua Hyprland config support. The Waybar has the below components. The order below formerly referred to their order left to right, but that's not the case anymore.
+Waybar, as of 8 July 2026, is pinned to the stable **0.15.0** release (reverted from HEAD git due to a workspace-click regression in later git commits). The Waybar has the below components. The order below formerly referred to their order left to right, but that's not the case anymore.
 
 ## NixOS menu (): only shown on monitor 1
 which gives you options for (all websites opened in Chrome and all directories opened in Antigravity):

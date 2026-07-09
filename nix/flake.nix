@@ -29,7 +29,7 @@
       url = "github:outfoxxed/hy3?rev=a7282db2d7ca336d3c9faa5d10d75fc43eed37aa";
     };
     waybar = {
-      url = "github:Alexays/Waybar";
+      url = "github:Alexays/Waybar?rev=90b209add8937514d0a987aa842e701bd8f1232e"; # 0.15.0 stable
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
   };
