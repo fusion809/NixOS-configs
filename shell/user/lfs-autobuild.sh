@@ -207,8 +207,31 @@ for PACKAGE in "${PACKAGES[@]}"; do
     
     export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
-    # Translate friendly aliases to canonical upstream names used in archives/loops
-    case "$PACKAGE" in
+    if [[ "$PACKAGE" == "xorg-libs" || "$PACKAGE" == "xorg-lib" ]]; then
+        if ls "$HOME/lfs_packaging"/libX* 1> /dev/null 2>&1; then
+            log "xorg-libs requested. Found custom packages in ~/lfs_packaging. Building them sequentially..."
+            for local_pkg_dir in "$HOME/lfs_packaging"/*; do
+                [ -d "$local_pkg_dir" ] || continue
+                local_pkg=$(basename "$local_pkg_dir")
+                if [[ "$local_pkg" =~ ^(libX|xcb-|xtrans|libpciaccess|libxshm|libfontenc|libFS|libICE|libSM) ]]; then
+                    log "Delegating to local custom package: $local_pkg"
+                    pass_args=()
+                    [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
+                    [[ "$FORCE" == "true" ]] && pass_args+=("-f")
+                    [[ "$SKIP_TESTS" == "true" ]] && pass_args+=("--skip-tests")
+                    "$0" "${pass_args[@]}" "$local_pkg" || error "Failed to build $local_pkg"
+                fi
+            done
+            continue
+        fi
+    fi
+
+    # Check if a custom package exists BEFORE translating aliases to avoid redirecting local packages to BLFS metapackages
+    if [ -d "$HOME/lfs_packaging/$PACKAGE" ]; then
+        log "Found custom package for $PACKAGE, bypassing BLFS aliases."
+    else
+        # Translate friendly aliases to canonical upstream names used in archives/loops
+        case "$PACKAGE" in
         xorg-libinput)   PACKAGE="xf86-input-libinput" ;;
         xorg-evdev)      PACKAGE="xf86-input-evdev" ;;
         xorg-synaptics)  PACKAGE="xf86-input-synaptics" ;;
@@ -258,6 +281,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
             log "Redirecting '$METAPACKAGE_TARGET' to xorg-font bundle (single-component build)."
             ;;
     esac
+    fi
 
     # 0. Check for custom package in ~/lfs_packaging
 CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -il -E \"^[a-zA-Z_]*name=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
@@ -621,8 +645,8 @@ if [[ "$SKIP_HTML_EXTRACTION" == "false" ]]; then
 # 1. Discover package page
 PAGE_URL=$(find_package_page "$PACKAGE")
 
-# 2. If it's a known metapackage component or if no individual page was found, search metapackages
-if [[ -z "$PAGE_URL" ]] || [[ "$PACKAGE" =~ ^(xorg|x7|libX|libx|font-|xf86-input-|xf86-video-) ]]; then
+# 2. If no individual page was found, search prominent metapackages to find the component
+if [[ -z "$PAGE_URL" ]]; then
     log "Searching prominent metapackages for component '$PACKAGE'..."
     for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
         # Avoid misidentifying core packages that are just dependencies
@@ -662,10 +686,15 @@ fi
 log "Found package page: $PAGE_URL"
 
 if [[ "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font)$ ]] || \
-   [[ "$PAGE_URL" =~ x7(lib|app|font)\.html$ ]] || \
-   [[ "$METAPACKAGE_TARGET" =~ ^x7(lib|app|font)$ ]]; then
+   [[ "$METAPACKAGE_TARGET" =~ ^x7(lib|app|font)$ ]] || \
+   [[ "$PAGE_URL" =~ x7(lib|app|font)\.html$ ]]; then
     XORG_MULTI_MODE=true
-    log "Enabling Xorg multi-package mode."
+    if [[ ! "$PACKAGE" =~ ^(xorg|x7)-(lib|app|font)$ ]] && [[ -z "$METAPACKAGE_TARGET" ]]; then
+        METAPACKAGE_TARGET="$PACKAGE"
+        log "Enabling Xorg multi-package mode (isolated for $PACKAGE)."
+    else
+        log "Enabling Xorg multi-package mode."
+    fi
 elif [[ "$PACKAGE" =~ ^(xorg|x7)-driver$ ]]; then
     # Drivers are NOT in a loop, they have individual sections. 
     # Only enable multi-mode for the bulk alias if the logic supports it, 

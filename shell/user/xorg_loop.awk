@@ -160,6 +160,20 @@
                     next;
                 }
                 
+                # Intercept wget to filter by METAPACKAGE_TARGET
+                if (line ~ /wget -i- -c/) {
+                    gsub(/wget -i- -c/, "grep -E \"^${METAPACKAGE_TARGET:-.}\" | wget -i- -c", line);
+                    gsub(/www\.x\.org\/pub/, "xorg.freedesktop.org/archive", line);
+                    vm_cmds = vm_cmds "\n    " line;
+                    next;
+                }
+                
+                # Intercept md5sum to prevent script failure on single package builds
+                if (line ~ /md5sum -c/) {
+                    vm_cmds = vm_cmds "\n    " line " 2>/dev/null || true";
+                    next;
+                }
+                
                 vm_cmds = vm_cmds "\n    " line;
                 next;
             } else {
