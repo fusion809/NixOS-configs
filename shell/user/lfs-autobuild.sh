@@ -3031,6 +3031,20 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL"
         MAIN_DOWNLOAD_URL="${MAIN_DOWNLOAD_URL//$LFS_VERSION/$UPSTREAM_VERSION}"
         DIRNAME="${DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
         GEN_DIRNAME="${GEN_DIRNAME//$LFS_VERSION/$UPSTREAM_VERSION}"
+
+        # For KDE frameworks/plasma URLs: also update the major.minor directory component
+        # e.g. /stable/frameworks/6.26/ -> /stable/frameworks/6.28/ when upgrading 6.26.0 -> 6.28.0
+        if [[ "${DOWNLOAD_URLS[*]}" == *"download.kde.org/stable/"* ]]; then
+            LFS_MM=$(echo "$LFS_VERSION" | cut -d. -f1,2)
+            UP_MM=$(echo "$UPSTREAM_VERSION" | cut -d. -f1,2)
+            if [[ -n "$LFS_MM" && -n "$UP_MM" && "$LFS_MM" != "$UP_MM" ]]; then
+                log "Also updating KDE URL major.minor path component: /$LFS_MM/ -> /$UP_MM/"
+                for i in "${!DOWNLOAD_URLS[@]}"; do
+                    DOWNLOAD_URLS[$i]=$(echo "${DOWNLOAD_URLS[$i]}" | sed "s|/stable/frameworks/$LFS_MM/|/stable/frameworks/$UP_MM/|g; s|/stable/plasma/$LFS_MM/|/stable/plasma/$UP_MM/|g")
+                done
+                MAIN_DOWNLOAD_URL=$(echo "$MAIN_DOWNLOAD_URL" | sed "s|/stable/frameworks/$LFS_MM/|/stable/frameworks/$UP_MM/|g; s|/stable/plasma/$LFS_MM/|/stable/plasma/$UP_MM/|g")
+            fi
+        fi
     fi
 fi
 
