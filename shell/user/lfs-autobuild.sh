@@ -1722,6 +1722,40 @@ as_root bash -c "mkdir -p /etc/profile.d && printf '"'"'# Begin /etc/profile.d/r
     # user session but is irrelevant (and breaks) during an automated build script.
     COMMANDS=$(echo "$COMMANDS" | grep -v "source /etc/profile.d/rustc.sh")
 
+    # Ensure the rust-openssl supplemental tarball is downloaded.
+    # Parse directly from the raw BLFS HTML since the COMMANDS may have the heredoc line stripped.
+    _RUST_OPENSSL_VER=""
+    # 1st: try raw HTML (most reliable — the version appears in the download link)
+    if [[ -n "$FULL_HTML_CONTENT" ]]; then
+        _RUST_OPENSSL_VER=$(printf '%s' "$FULL_HTML_CONTENT" | grep -oP 'rust-openssl-\K[\d.]+(?=\.tar\.gz)' | head -n 1)
+    fi
+    # 2nd: try the already-fetched page content (HTML_CONTENT)
+    if [[ -z "$_RUST_OPENSSL_VER" ]] && [[ -n "$HTML_CONTENT" ]]; then
+        _RUST_OPENSSL_VER=$(printf '%s' "$HTML_CONTENT" | grep -oP 'rust-openssl-\K[\d.]+(?=\.tar\.gz)' | head -n 1)
+    fi
+    # 3rd: try COMMANDS (may have been rewritten from ../ to /sources/archives/)
+    if [[ -z "$_RUST_OPENSSL_VER" ]]; then
+        _RUST_OPENSSL_VER=$(printf '%s' "$COMMANDS" | grep -oP 'rust-openssl-\K[\d.]+(?=\.tar)' | head -n 1)
+    fi
+    # 4th: fetch the BLFS page directly and parse it
+    if [[ -z "$_RUST_OPENSSL_VER" ]]; then
+        _RUST_OPENSSL_VER=$(curl -s "https://www.linuxfromscratch.org/blfs/view/systemd/general/rust.html" | grep -oP 'rust-openssl-\K[\d.]+(?=\.tar\.gz)' | head -n 1)
+    fi
+    if [[ -n "$_RUST_OPENSSL_VER" ]]; then
+        _RUST_OPENSSL_URL="https://github.com/lfs-book/rust-openssl/archive/v${_RUST_OPENSSL_VER}/rust-openssl-${_RUST_OPENSSL_VER}.tar.gz"
+        log "Adding rust-openssl-${_RUST_OPENSSL_VER} to download list: $_RUST_OPENSSL_URL"
+        _already=false
+        for _u in "${DOWNLOAD_URLS[@]}"; do [[ "$_u" == *"rust-openssl"* ]] && _already=true && break; done
+        [[ "$_already" == "false" ]] && DOWNLOAD_URLS+=("$_RUST_OPENSSL_URL")
+        # Ensure filename is tracked (for symlink creation and cleanup)
+        _ro_fname="rust-openssl-${_RUST_OPENSSL_VER}.tar.gz"
+        _fn_already=false
+        for _fn in "${ALL_FILENAMES[@]}"; do [[ "$_fn" == "$_ro_fname" ]] && _fn_already=true && break; done
+        [[ "$_fn_already" == "false" ]] && ALL_FILENAMES+=("$_ro_fname")
+    else
+        log "[WARNING] Could not determine rust-openssl version for rustc — supplemental tarball will NOT be downloaded."
+    fi
+
     # Patch vendored openssl-sys to accept OpenSSL 4.x.
     # openssl-sys <=0.9.111 hard-errors if it detects OpenSSL >= 4.0 (version_number >= 0x40000000).
     # The system has OpenSSL 4.0 installed, so we patch the version check in the vendored crate
@@ -1767,6 +1801,24 @@ done | sort -u | while read -r OSSL_SYS_MAIN; do
 done
 '
     SETUP_COMMANDS+="$OPENSSL_SYS_PATCH"
+
+    # The BLFS commands do: tar xf ../rust-openssl-0.10.78.tar.gz
+    # But GitHub archives extract to <repo>-<tag>/ (e.g. lfs-book-rust-openssl-v0.10.78/)
+    # rather than rust-openssl-0.10.78/ as the Cargo.toml patch paths expect.
+    # Inject a fix into COMMANDS: after each 'tar xf ...rust-openssl*.tar.*' line,
+    # rename the resulting directory to the version-only name.
+    COMMANDS=$(printf '%s\n' "$COMMANDS" | perl -pe '
+        if (/tar xf \.\.\/rust-openssl-([\d.]+)\.tar\./) {
+            my $ver = $1;
+            $_ .= "for _d in rust-openssl-* lfs-book-rust-openssl-*; do\n";
+            $_ .= "  [ -d \"\$_d\" ] || continue\n";
+            $_ .= "  [ \"\$_d\" = \"rust-openssl-$ver\" ] && break\n";
+            $_ .= "  echo \"[LFS-AUTOBUILD] Renaming \$_d -> rust-openssl-$ver\"\n";
+            $_ .= "  mv \"\$_d\" \"rust-openssl-$ver\"\n";
+            $_ .= "  break\n";
+            $_ .= "done\n";
+        }
+    ')
 fi
 
 if [[ "$PACKAGE" == "qca" ]]; then
@@ -2230,6 +2282,21 @@ if [[ "$UPSTREAM" == "true" ]]; then
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream Rust version: $UPSTREAM_VERSION (date: $UPSTREAM_DATE)"
             DOWNLOAD_URLS+=("https://static.rust-lang.org/dist/rustc-${UPSTREAM_VERSION}-src.tar.xz")
+            # Also fetch the rust-openssl supplemental tarball listed in BLFS "Additional Downloads".
+            # The HTML has already been fetched into HTML_CONTENT at this point.
+            RUST_OPENSSL_URL=$(printf '%s' "$HTML_CONTENT" | grep -oP 'https://github\.com/lfs-book/rust-openssl/archive/[^"<\s]+\.tar\.gz' | head -n 1)
+            if [[ -n "$RUST_OPENSSL_URL" ]]; then
+                log "Found rust-openssl URL from BLFS page: $RUST_OPENSSL_URL"
+                DOWNLOAD_URLS+=("$RUST_OPENSSL_URL")
+                RUST_OPENSSL_VER=$(basename "$RUST_OPENSSL_URL" .tar.gz | sed 's/^rust-openssl-//')
+            else
+                # Fallback: derive from what the BLFS commands reference
+                RUST_OPENSSL_VER=$(printf '%s' "$COMMANDS" | grep -oP 'rust-openssl-\K[\d.]+(?=\.tar)' | head -n 1)
+                if [[ -n "$RUST_OPENSSL_VER" ]]; then
+                    log "Derived rust-openssl version $RUST_OPENSSL_VER from COMMANDS. Adding download URL."
+                    DOWNLOAD_URLS+=("https://github.com/lfs-book/rust-openssl/archive/v${RUST_OPENSSL_VER}/rust-openssl-${RUST_OPENSSL_VER}.tar.gz")
+                fi
+            fi
             # Rust releases occur every 6 weeks (42 days).
             PREV_MINOR_VERSION="${UPSTREAM_VERSION%%.*}.$(($(echo "$UPSTREAM_VERSION" | cut -d. -f2) - 1))"
             FALLBACK_VERSION="${PREV_MINOR_VERSION}.0"
