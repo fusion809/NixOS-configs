@@ -300,12 +300,20 @@ if [[ -n "$CUSTOM_BUILD_SH" ]]; then
     log "Starting remote custom build for $PACKAGE..."
     
     REMOTE_SCRIPT=$(cat <<'EOF'
-set -eo pipefail
+set -e
 cd "$CUSTOM_DIR"
 # Create timestamp BEFORE build
 touch "/tmp/build_start_timestamp_${TARGET_PKG}"
 BUILD_LOG="/tmp/build_log_${TARGET_PKG}.txt"
+# Run build; capture exit code independently so post-install steps don't mask it
+set +e
 bash build.sh 2>&1 | tee "$BUILD_LOG"
+_build_exit=${PIPESTATUS[0]}
+set -e
+if [ $_build_exit -ne 0 ]; then
+    echo "[ERROR] build.sh exited with code $_build_exit for $TARGET_PKG"
+    exit $_build_exit
+fi
 
 # Update registry (needs sudo)
 sudo mkdir -p /var/lib/custom-packages
