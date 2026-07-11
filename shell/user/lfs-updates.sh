@@ -125,6 +125,12 @@ while IFS= read -r update_line; do
     read -r name local_ver remote_ver <<< "$update_line" || continue
     [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
 
+    # Skip if this package was already reported by the book-package loop above
+    # (avoids duplicates for packages that exist in both ~/lfs_packaging and BLFS book)
+    if echo -e "$str" | grep -qE "^${name}[[:space:]]*\|" 2>/dev/null; then
+        continue
+    fi
+
     local_ver=$(printf '%s\n' "$local_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
     remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
     
