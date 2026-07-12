@@ -100,7 +100,6 @@ while [[ "$#" -gt 0 ]]; do
         --dry-run) DRY_RUN=true ;;
         --strip) STRIP=true ;;
         --no-upstream) UPSTREAM=false ;;
-        --upstream) UPSTREAM=true ;; # Hidden compatibility flag
         --include-config) INCLUDE_CONFIG=true ;;
         --rm-libs) RM_LIBS=true ;;
         --lfs)
