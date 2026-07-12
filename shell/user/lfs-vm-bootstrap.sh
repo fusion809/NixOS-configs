@@ -141,3 +141,11 @@ autobuild() {
 if [ -n "$BASH_VERSION" ]; then
     export -f autobuild
 fi
+
+# `autoremove` = lfs_autoremove
+autoremove() {
+    lfs_autoremove "$@"
+}
+if [ -n "$BASH_VERSION" ]; then
+    export -f autoremove
+fi

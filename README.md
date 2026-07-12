@@ -19,6 +19,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
   - [Marvin package](#marvin-package)
   - [OpenRA package](#openra-package)
 - [Shell profile](#shell-profile)
+  - [Linux From Scratch (LFS) commands](#linux-from-scratch-lfs-commands)
   - [Package management commands](#package-management-commands)
 - [Wallpaper script](#wallpaper-script)
   - [Syntax](#syntax)
@@ -62,19 +63,19 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 <!-- STATS START -->
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
-| Shell | 10983 | 59.00% | 1706 | 78.98% |
-| Nix | 3557 | 19.11% | 161 | 7.45% |
-| CSS | 1015 | 5.45% | 1 | 0.05% |
-| Python | 936 | 5.03% | 242 | 11.20% |
-| Markdown | 525 | 2.82% | 0 | 0.00% |
-| JSONC | 435 | 2.34% | 0 | 0.00% |
-| JSON | 402 | 2.16% | 0 | 0.00% |
-| Patch | 396 | 2.13% | 0 | 0.00% |
-| AWK | 233 | 1.25% | 46 | 2.13% |
-| XML | 78 | 0.42% | 0 | 0.00% |
-| JavaScript | 42 | 0.23% | 4 | 0.19% |
+| Shell | 11190 | 59.41% | 1768 | 79.57% |
+| Nix | 3557 | 18.89% | 161 | 7.25% |
+| CSS | 1015 | 5.39% | 1 | 0.05% |
+| Python | 936 | 4.97% | 242 | 10.89% |
+| Markdown | 537 | 2.85% | 0 | 0.00% |
+| JSONC | 435 | 2.31% | 0 | 0.00% |
+| JSON | 402 | 2.13% | 0 | 0.00% |
+| Patch | 396 | 2.10% | 0 | 0.00% |
+| AWK | 233 | 1.24% | 46 | 2.07% |
+| XML | 78 | 0.41% | 0 | 0.00% |
+| JavaScript | 42 | 0.22% | 4 | 0.18% |
 | TOML | 13 | 0.07% | 0 | 0.00% |
-| **Total** | **18615** | **100.00%** | **2160** | **100.00%** |
+| **Total** | **18834** | **100.00%** | **2222** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -281,6 +282,17 @@ in [nixpkgs/openra](/nixpkgs/openra/). Or simply run `openraup`. The package ass
 
 # Shell profile
 Within shell/root is my root shell profile files, and within shell/user is my user shell profile files. I have many functions designed to make my time in the terminal more pleasant.
+
+## Linux From Scratch (LFS) commands
+These commands all run within my LFS virtual machine (VM).
+* `cleanup_old_libraries_gpt` (not defined on NixOS host) is used to remove old libraries and rebuild packages that depend on those old libraries. 
+* `cleanup_old_doc_dirs_gpt` (not defined on NixOS host) is used to remove old and unused documentation directories. 
+* `lfs_autobuild` (called `autobuild` in VM) is used to build and install packages. Syntax is `lfs_autobuild <package name> argument(s)`. By default, it won't reinstall a package if it's already installed and up to date, unless you provide the `-f` (for force) flag. `--dry-run` is an argument that will list the commands that would be run if the command was issued without this argument. LFS and BFLS instructions are used for most package installs, but if a custom package whose name matches that specified exist in `~/lfs_packaging`, it will be built instead. 
+* `lfs_autoremove` (called `autoremove` in VM) is used to remove a package from the LFS system. Syntax is `lfs_autoremove <package name> argument(s)`.It automatically checks for libraries provided by other packages that depend on the package being removed; if such library(s) exist, the removal is cancelled. `-f` removes this library-checking behaviour. `--dry-run` lists what actions would be taken if the command was issued without this argument.
+* `lfs_commit` (not defined on the NixOS host) but is defined within the LFS VM. It commits changes to inventory files. 
+* `lfs_sync_to_vm` (not defined on VM) is used to sync the LFS scripts to the LFS VM. 
+* `lfs_update` (called `update` in VM) is used to update the LFS system. It updates Python packages with `pip`, Julia with `juliaup` and uses `lfs_autobuild` to install updates to other packages. 
+* `lfs_updates` (called `updates` in VM) is used to check for updates in the LFS system.
 
 ## Package management commands
 * `nixcg` is used to remove old generations and sources with `sudo nix-collect-garbage -d`.

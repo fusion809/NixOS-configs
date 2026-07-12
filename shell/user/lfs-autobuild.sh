@@ -376,7 +376,7 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
         grep -E "^-- (Installing|Up-to-date): " "$BUILD_LOG" | sed -E 's@^-- (Installing|Up-to-date): @@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
         # Parse Meson: Installing <src> to <dst>
         grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's@^Installing .* to (.*)$@\1@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
-        rm -f "$BUILD_LOG"
+        sudo rm -f "$BUILD_LOG"
     fi
 
     sudo awk '!seen[$0]++' "/var/lib/custom-packages/${TARGET_PKG}" > "/tmp/dedup_${TARGET_PKG}"
