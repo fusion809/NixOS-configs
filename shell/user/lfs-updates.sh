@@ -17,7 +17,6 @@ done
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --no-upstream) upstream=false ;;
-        --upstream) upstream=true ;; # Hidden compatibility flag
     esac
     shift
 done

@@ -913,7 +913,7 @@ lfs_rebuild_missing_inventories() {
                 ;;
         esac
 
-        lfs_autobuild -f "$actual_pkg" --upstream
+        lfs_autobuild -f "$actual_pkg"
     done 9<<< "$missing_pkgs"
 }
 
@@ -1627,7 +1627,7 @@ for pkg in sorted_pkgs:
         local build_args=()
         if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
         if [[ "$upstream" == "true" ]]; then
-            build_args+=("--upstream")
+            # default is upstream, no flag needed
         else
             build_args+=("--no-upstream")
         fi
@@ -1797,7 +1797,7 @@ DEPEOF
             local build_args=()
             if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
             if [[ "$upstream" == "true" ]]; then
-                build_args+=("--upstream")
+                # default is upstream, no flag needed
             else
                 build_args+=("--no-upstream")
             fi

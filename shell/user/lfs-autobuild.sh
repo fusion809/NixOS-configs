@@ -1715,6 +1715,10 @@ if [[ "${PACKAGE,,}" == "systemd" ]]; then
     # Also strip any standalone 'ninja man' or 'make man' targets just in case
     COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's{^(as_root[[:space:]]+)?(ninja|make)[[:space:]]+man\b.*?(\n|&&)}{}gm')
 fi
+if [[ "${PACKAGE,,}" == "pkgconf" ]]; then
+    log "Applying pkgconf fix: replacing hardcoded meson version with wildcard."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/meson-[0-9]+\.[0-9]+\.[0-9]+/meson-*/g')
+fi
 
 if [[ "$PACKAGE" == "rustc" ]]; then
     log "Applying rustc post-install fix: creating /etc/profile.d/rustc.sh and removing 'source' call."
@@ -2621,6 +2625,26 @@ if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] || { [[ "$UPSTREAM" == "true" ]] && [[ -z "$
     done
 fi
 
+if [[ "${PACKAGE,,}" == "pkgconf" ]]; then
+    log "Applying pkgconf fix: fetching meson dependency..."
+    MESON_URL=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/mesonbuild/meson/releases/latest | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for asset in data.get("assets", []):
+        url = asset.get("browser_download_url", "")
+        if url.endswith(".tar.gz"):
+            print(url)
+            sys.exit(0)
+except Exception:
+    pass
+' 2>/dev/null)
+    if [[ -n "$MESON_URL" ]]; then
+        DOWNLOAD_URLS+=("$MESON_URL")
+        log "Added meson URL: $MESON_URL"
+    fi
+fi
+
 # Final deduplication and prioritization
 if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] && [[ "$FRAMEWORKS_MODE" == "false" ]] && [[ "$XORG_MULTI_MODE" == "false" ]]; then
     error "Could not find any download URLs for '$PACKAGE'"
@@ -3010,7 +3034,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n
 fi
 
 # Generic version replacement for any package that successfully resolved UPSTREAM_VERSION via fallback
-if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL" && ! "${PACKAGE,,}" =~ ^(linux|firefox|rustc|libuv)$ && ! "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && ! "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|vte|gnome-terminal|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome)$ ]]; then
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL" && ! "${PACKAGE,,}" =~ ^(linux|firefox|rustc|libuv)$ && ! "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && ! "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pango|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|dconf-editor|polkit-gnome|geocode-glib|libshumate)$ ]]; then
     # Extract LFS version from the identified main download URL
     LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle "while (m{${PACKAGE}-\K[0-9]+(?:\.[0-9]+)+[a-zA-Z0-9_-]*}g) { print \$& }" | head -n 1)
     if [[ -z "$LFS_VERSION" ]]; then
