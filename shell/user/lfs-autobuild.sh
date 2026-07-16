@@ -1059,6 +1059,9 @@ ${RAW_CONTENT}"
     if [[ "$PACKAGE" == "wireplumber" ]]; then
         log "Disabling documentation for wireplumber to fix Doxygen/XML generation issues..."
         RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/meson setup/meson setup -Ddoc=disabled -Dintrospection=disabled/g')
+        # Also remove the doc directory rename since we disabled documentation
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | grep -v "mv -v /usr/share/doc/wireplumber")
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
     fi
 
     if [[ "$PACKAGE" == "fltk" ]]; then
