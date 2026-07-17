@@ -225,5 +225,6 @@ fi
 dest="$SCREENSHOTS_DIR/$subdir"
 mkdir -p "$dest"
 
+mode=${1:-area}
 file="$dest/Screenshot_$(date +'%Y-%m-%d_%H-%M-%S').png"
-grimblast save area "$file" && wl-copy --type image/png < "$file"
+grimblast save "$mode" "$file" && wl-copy --type image/png < "$file"
