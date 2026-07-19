@@ -136,13 +136,13 @@
   },
   {
     "pname": "OpenRA-Eluant",
-    "version": "1.0.22",
-    "hash": "sha256-V5AelmuyrPzLVWx0PguFUvKljBMy0X7WJ7HMs0/Jiow="
+    "version": "1.0.23",
+    "hash": "sha256-Wi4Aasvu1AN1ju0S5oGYCcsXIqoLbCWaeUVv9AJruas="
   },
   {
     "pname": "OpenRA-Freetype6",
-    "version": "1.0.11",
-    "hash": "sha256-IUfupIBlP0gp3O+zQqXzTR26aGjMKOYdMVEKOdmtYb0="
+    "version": "1.0.12",
+    "hash": "sha256-tjAcBfJEQgzex3YX2Y8A1RV0EY0jlk3b6eJnjRmtIfw="
   },
   {
     "pname": "OpenRA-FuzzyLogicLibrary",
@@ -151,13 +151,13 @@
   },
   {
     "pname": "OpenRA-OpenAL-CS",
-    "version": "1.0.22",
-    "hash": "sha256-LeBJX8ImpZCgJMAXz14qjgcl65dRU+yKokQHXVXDfRU="
+    "version": "1.0.23",
+    "hash": "sha256-wRh5VIXeniDwTSURRtb2/URCAyDqow4I/NA5obULoYw="
   },
   {
     "pname": "OpenRA-SDL2-CS",
-    "version": "1.0.43",
-    "hash": "sha256-+zLDNF9g0t/ya5XGGZhtju5AYHfFqX38HB7+DRC3BUk="
+    "version": "1.0.44",
+    "hash": "sha256-3/5sd7Mjkhum4BlhcDb+/D9yc4pG0w5BfXkJHSuI7Iw="
   },
   {
     "pname": "Pfim",
