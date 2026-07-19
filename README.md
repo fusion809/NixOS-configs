@@ -64,10 +64,10 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | Language | Lines | Lines % | Complexity | Complexity % |
 | :--- | :--- | :--- | :--- | :--- |
 | Shell | 11241 | 59.52% | 1761 | 79.50% |
-| Nix | 3557 | 18.84% | 161 | 7.27% |
+| Nix | 3557 | 18.83% | 161 | 7.27% |
 | CSS | 1015 | 5.37% | 1 | 0.05% |
 | Python | 936 | 4.96% | 242 | 10.93% |
-| Markdown | 537 | 2.84% | 0 | 0.00% |
+| Markdown | 539 | 2.85% | 0 | 0.00% |
 | JSONC | 435 | 2.30% | 0 | 0.00% |
 | JSON | 402 | 2.13% | 0 | 0.00% |
 | Patch | 396 | 2.10% | 0 | 0.00% |
@@ -75,7 +75,7 @@ These are my [NixOS 25.11](https://nixos.org) configuration files for my [MS-7B9
 | XML | 78 | 0.41% | 0 | 0.00% |
 | JavaScript | 42 | 0.22% | 4 | 0.18% |
 | TOML | 13 | 0.07% | 0 | 0.00% |
-| **Total** | **18885** | **100.00%** | **2215** | **100.00%** |
+| **Total** | **18887** | **100.00%** | **2215** | **100.00%** |
 <!-- STATS END -->
 
 # Autostart
@@ -120,7 +120,7 @@ The sources of Hyprland and hy3 differ depending on the time. Sometimes it is bu
 | <kbd>F10</kbd>                                                    | Open workspace #10                                |
 | <kbd>F11</kbd>                                                    | Open workspace #11                                |
 | <kbd>F12</kbd>                                                    | Open workspace #12                                |
-| <kbd>Win</kbd>+<kbd>Print</kbd>                                   | Open workspace #13                                |
+| <kbd>Win</kbd>+<kbd>Scroll Lock</kbd>                                   | Open workspace #13                                |
 | <kbd>Pause</kbd>                                                  | Open workspace #14                                |
 | <kbd>Insert</kbd>                                                 | Open worksapce #15                                |
 | <kbd>Home</kbd>                                                   | Open workspace #16                                |
@@ -128,7 +128,9 @@ The sources of Hyprland and hy3 differ depending on the time. Sometimes it is bu
 | <kbd>Win</kbd>+<kbd>Delete</kbd>                                  | Open workspace #18                                |
 | <kbd>End</kbd>                                                    | Open worksapce #19                                |
 | <kbd>Page Down</kbd>                                              | Open workspace #20                                |
-| <kbd>Print</kbd>                                                  | Take a screenshot and copy it to clipboard.       |
+| <kbd>Print</kbd>                                                  | Take a screenshot of user-selected area and copy it to clipboard.       |
+| <kbd>Win</kbd>+<kbd>Print</kbd>                                   | Take a screenshot of selected monitor and copy it to clipboard.       |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Print</kbd>                  | Take a screenshot of entire screen and copy it to clipboard.       |
 | <kbd>Win</kbd>+<kbd>F1</kbd>                                      | Open workspace #21                                |
 | <kbd>Win</kbd>+<kbd>F2</kbd>                                      | Open workspace #22                                |
 | <kbd>Win</kbd>+<kbd>F3</kbd>                                      | Open workspace #23                                |
@@ -170,7 +172,7 @@ The sources of Hyprland and hy3 differ depending on the time. Sometimes it is bu
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F10</kbd>                    | Move focused window (silently) to workspace #20   |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F11</kbd>                    | Move focused window (silently) to workspace #21   |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>F12</kbd>                    | Move focused window (silently) to workspace #22   |
-| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Print</kbd>                  | Move focused window (silently) to workspace #23   |
+| <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Scroll Lock</kbd>            | Move focused window (silently) to workspace #23   |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Pause</kbd>                  | Move focused window (silently) to workspace #24   |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Insert</kbd>                 | Move focused window (silently) to workspace #25   |
 | <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>Home</kbd>                   | Move focused window (silently) to workspace #26   |
@@ -493,7 +495,7 @@ Workspace 9: WhatsApp Web (<kbd>F9</kbd>).<br/>
 Workspace 10: Google Chat (<kbd>F10</kbd>).<br/>
 Workspace 11: Discord (<kbd>F11</kbd>).<br/>
 Workspace 12: Boo (<kbd>F12</kbd>).<br/>
-Workspace 13: Nautilus file manager (<kbd>Win</kbd>+<kbd>Print</kbd>).<br/>
+Workspace 13: Nautilus file manager (<kbd>Win</kbd>+<kbd>Scroll Lock</kbd>).<br/>
 Workspace 14: KDE Connect (<kbd>Pause</kbd>).<br/>
 Workspace 17: Lutris (<kbd>Page Up</kbd>).<br/>
 Workspace 19: Duolingo (<kbd>End</kbd>).<br/>
