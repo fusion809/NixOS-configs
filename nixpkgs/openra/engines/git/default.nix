@@ -20,5 +20,5 @@ in buildOpenRAEngine {
   hash = "sha256-iHBZ8siH2e2lXrocOAmGs6FPhghoVw7+xU3ITyHSGnQ=";
   src = openraSrc;
   deps = ./deps.json;
-  dotnet-sdk = dotnetCorePackages.sdk_8_0-bin;
+  dotnet-sdk = dotnetCorePackages.sdk_10_0-bin;
 }

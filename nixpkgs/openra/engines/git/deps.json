@@ -26,8 +26,8 @@
   },
   {
     "pname": "Microsoft.Extensions.DependencyModel",
-    "version": "9.0.0",
-    "hash": "sha256-xirwlMWM0hBqgTneQOGkZ8l45mHT08XuSSRIbprgq94="
+    "version": "10.0.0",
+    "hash": "sha256-oCcIjmwH8H0n9bT3wQBWdotMvYuoiazfiKrXAs2bLiI="
   },
   {
     "pname": "Microsoft.NET.Test.Sdk",
