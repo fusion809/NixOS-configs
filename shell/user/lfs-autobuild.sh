@@ -990,6 +990,7 @@ get_commands() {
         perl -0777 -pe 's/\\\n\s*/ /gs; s/\\\s+/ /gs' | \
         sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
         grep -vE "^$|^exec |vim -c |mountpoint -q /dev/shm|mount -t tmpfs devshm" | \
+        grep -vE '^(kill $DBUS_SESSION_BUS_PID|eval .dbus-launch.|export DBUS_SESSION_BUS_ADDRESS)' | \
         grep -vE "^[[:space:]]*<[a-zA-Z ]+>[[:space:]]*$" | \
         grep -vEi '^(\.desktop|/usr/share/.*|/etc/.*)$' | \
         grep -vEi '(---[>]|Options ---[>]|^\s*\[[ *]*\] )' | \
