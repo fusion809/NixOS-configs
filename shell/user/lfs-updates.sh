@@ -33,7 +33,7 @@ fi
 REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
 # Identify packages with missing file inventories (line count <= 1)
-BROKEN_PKGS=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do [ $(wc -l < "$f") -le 1 ] && basename "$f"; done' | tr -d '\r')
+BROKEN_PKGS=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do if [ $(wc -l < "$f") -le 1 ] || grep -q "BUILD_FAILED" "$f"; then basename "$f"; fi; done' | tr -d '\r')
 total_local=$(echo "$LOCAL_PKGS" | grep -v "^$" | wc -l)
 count=0
 tmp_lfs=$(mktemp -d)

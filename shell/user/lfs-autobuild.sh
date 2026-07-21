@@ -273,11 +273,10 @@ DEPCHECK
         dep_status=$(target_run "bash -s" < "$_dep_check_script" 2>/dev/null | grep -vE '^(Warning:|Connection|IP|SSH|grep:)' | tr -d '\r' | tail -n1)
         rm -f "$_dep_check_script"
 
-        if [[ "$dep_status" != "installed" || "$FORCE" == "true" ]]; then
-            log "Required dep '$dep' not found (or forced) — building it first..."
+        if [[ "$dep_status" != "installed" ]]; then
+            log "Required dep '$dep' not found — building it first..."
             pass_args=()
             [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
-            [[ "$FORCE" == "true" ]] && pass_args+=("-f")
             [[ "$SKIP_TESTS" == "true" ]] && pass_args+=("--skip-tests")
             RESOLVE_DEPS=true BUILDING_STACK="$BUILDING_STACK" \
                 "$0" "${pass_args[@]}" "$dep" \
@@ -331,7 +330,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
             for local_pkg_dir in "$HOME/lfs_packaging"/*; do
                 [ -d "$local_pkg_dir" ] || continue
                 local_pkg=$(basename "$local_pkg_dir")
-                if [[ "$local_pkg" =~ ^(libX|xcb-|xtrans|libpciaccess|libxshm|libfontenc|libFS|libICE|libSM) ]]; then
+                if [[ "$local_pkg" =~ ^(libX|xcb-|xtrans|libpciaccess|libxshm|libfontenc|libFS|libICE|libSM|libdmx|libxkbfile) ]]; then
                     log "Delegating to local custom package: $local_pkg"
                     pass_args=()
                     [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
@@ -893,6 +892,12 @@ if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
         REQUIRED_DEPS=$(printf "libdmtx\n%s" "$REQUIRED_DEPS" | sort -u)
     fi
 
+    if [[ "${PACKAGE,,}" == "mako" ]]; then
+        log "Injecting custom dependency 'markupsafe' for $PACKAGE..."
+        REQUIRED_DEPS=$(printf "markupsafe\n%s" "$REQUIRED_DEPS" | sort -u)
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/pip3 install --no-index/pip3 install --no-deps --no-index/')
+    fi
+
     if [[ -n "$REQUIRED_DEPS" ]]; then
         check_and_build_deps "$REQUIRED_DEPS"
     else
@@ -1097,6 +1102,24 @@ ${RAW_CONTENT}"
         # 2. Strip out documentation installation lines
         RAW_CONTENT=$(echo "$RAW_CONTENT" | grep -vEi "documentation/html|/usr/share/doc/fltk|ninja documentation")
         # 3. Clean up any empty blocks that might have been created
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
+    fi
+
+    if [[ "$PACKAGE" == "gnome-keyring" ]]; then
+        log "Disabling man page generation for gnome-keyring (xsltproc cannot fetch remote DocBook XSL)..."
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/meson setup/meson setup -Dmanpage=false/g')
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
+    fi
+
+    if [[ "$PACKAGE" == "libsecret" ]]; then
+        log "Disabling man page generation for libsecret (xsltproc cannot fetch remote DocBook XSL)..."
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/meson setup/meson setup -Dmanpage=false/g')
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
+    fi
+
+    if [[ "$PACKAGE" == "make-ca" ]]; then
+        log "Removing optional CAcert download and trust modification commands..."
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | grep -vE "(wget http://www.cacert.org|openssl x509|/usr/sbin/make-ca -r|/etc/profile.d/pythoncerts.sh)")
         RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
     fi
 
