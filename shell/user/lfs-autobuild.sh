@@ -343,6 +343,29 @@ for PACKAGE in "${PACKAGES[@]}"; do
         fi
     fi
 
+    if [[ "$PACKAGE" == "xorg-apps" || "$PACKAGE" == "xorg-app" ]]; then
+        if ls "$HOME/lfs_packaging"/* 1> /dev/null 2>&1; then
+            log "xorg-apps requested. Checking for custom packages in ~/lfs_packaging..."
+            built_any=false
+            for local_pkg_dir in "$HOME/lfs_packaging"/*; do
+                [ -d "$local_pkg_dir" ] || continue
+                local_pkg=$(basename "$local_pkg_dir")
+                if [[ "$local_pkg" =~ ^(xterm|xclock|xinit|xauth|iceauth|sessreg|setxkbmap|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud|smproxy)$ ]]; then
+                    log "Delegating to local custom package: $local_pkg"
+                    built_any=true
+                    pass_args=()
+                    [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
+                    [[ "$FORCE" == "true" ]] && pass_args+=("-f")
+                    [[ "$SKIP_TESTS" == "true" ]] && pass_args+=("--skip-tests")
+                    "$0" "${pass_args[@]}" "$local_pkg" || error "Failed to build $local_pkg"
+                fi
+            done
+            if [[ "$built_any" == "true" ]]; then
+                continue
+            fi
+        fi
+    fi
+
     # Check if a custom package exists BEFORE translating aliases to avoid redirecting local packages to BLFS metapackages
     if [ -d "$HOME/lfs_packaging/$PACKAGE" ]; then
         log "Found custom package for $PACKAGE, bypassing BLFS aliases."
@@ -387,7 +410,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
             PACKAGE="xorg-lib"
             log "Redirecting '$METAPACKAGE_TARGET' to xorg-lib bundle (single-component build)."
             ;;
-        xterm|xclock|xinit|xauth|iceauth|sessreg|setxkbmap|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
+        xterm|xclock|xinit|xauth|sessreg|setxkbmap|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
             METAPACKAGE_TARGET="$PACKAGE"
             PACKAGE="xorg-app"
             log "Redirecting '$METAPACKAGE_TARGET' to xorg-app bundle (single-component build)."
@@ -598,11 +621,19 @@ find_package_page() {
     fi
 
     if [[ "$SEARCH_BLFS" == "true" ]]; then
+        # Before any hardcoded BLFS alias fires, check if the package has a custom
+        # ~/lfs_packaging/ directory on the target. If so, return empty so the
+        # caller's CUSTOM_BUILD_SH detection handles it instead of BLFS.
+        if target_run "[ -d ~/lfs_packaging/$pkg ]" 2>/dev/null; then
+            log "find_package_page: '$pkg' has a custom ~/lfs_packaging dir — skipping BLFS alias."
+            return 1
+        fi
+
         case "$pkg" in
-            xorg-lib|x7lib|xtrans|libICE|libSM|libX11|libXext|libXrender|libXft|libXi|libXinerama|libXrandr|libXcursor|libXcomposite|libXdamage|libXfixes|libXfont2|libXmu|libXpm|libXt|libXtst|libXv|libXvMC|libXxf86vm|libxkbfile|libFS|libXScrnSaver|libXaw|libXres|libXxf86dga|libpciaccess|libxshmfence|libXpresent|libfontenc)
+            xorg-lib|x7lib|libICE|libSM|libX11|libXext|libXrender|libXft|libXi|libXinerama|libXrandr|libXcursor|libXcomposite|libXdamage|libXfixes|libXfont2|libXmu|libXpm|libXt|libXtst|libXv|libXvMC|libXxf86vm|libxkbfile|libFS|libXScrnSaver|libXaw|libXres|libXxf86dga|libpciaccess|libxshmfence|libXpresent|libfontenc)
                                   echo "$BLFS_BOOK/x/x7lib.html"; return 0 ;;
             xorg-app|x7app) echo "$BLFS_BOOK/x/x7app.html"; return 0 ;;
-            iceauth|sessreg|setxkbmap|smproxy|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
+            sessreg|setxkbmap|smproxy|xauth|xbacklight|xcmsdb|xcursorgen|xdpyinfo|xdriinfo|xev|xgamma|xhost|xinput|xkbcomp|xkbevd|xkbutils|xkill|xlsatoms|xlsclients|xmodmap|xpr|xprop|xrandr|xrdb|xrefresh|xset|xsetroot|xvinfo|xwd|xwininfo|xwud)
                                   echo "$BLFS_BOOK/x/x7app.html#xorg-app"; return 0 ;;
             xorg-font|x7font)     echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;
             font-*)               echo "$BLFS_BOOK/x/x7font.html"; return 0 ;;

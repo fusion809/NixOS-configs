@@ -165,7 +165,170 @@ cleanup_old_doc_dirs() {
     ssh_lfs "$(declare -f cleanup_old_doc_dirs_gpt); cleanup_old_doc_dirs_gpt $*"
 }
 
+ls_old_libs_gpt() {
+    local show_deps=false
+    if [[ "$1" == "-d" ]]; then
+        show_deps=true
+    fi
 
+    echo "Scanning for old libraries in /usr/lib..."
+
+    local old_libs=($(find /usr/lib -type f -name "lib*.so.[0-9]*" ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
+    | sort -V \
+    | awk '
+    {
+        base=$0
+        if (base ~ /\.so\.[0-9]+(\.[0-9]+)*$/) {
+            orig = base
+            sub(/\.so\.[0-9.]+$/, ".so", base)
+            if (prev_base && base != prev_base) {
+                for (i=1; i < prev_count; i++) print prev[i]
+                prev_count = 0
+            }
+            prev[++prev_count] = orig
+            prev_base = base
+        }
+    }
+    END {
+        for (i=1; i < prev_count; i++) print prev[i]
+    }'))
+
+    local old_dirs=($(find /usr/lib -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+    | sort -V \
+    | awk '
+    {
+        base=$0
+        sub(/-[0-9]+(\.[0-9]+)*$/, "", base)
+        if (base != $0) {
+            if (prev_base && base == prev_base) {
+                for (i=1; i <= prev_count; i++) print prev[i]
+                prev_count = 0
+            } else {
+                prev_count = 0
+            }
+            prev[++prev_count] = $0
+            prev_base = base
+        }
+    }'))
+
+    local old_items=("${old_libs[@]}" "${old_dirs[@]}")
+
+    if [ ${#old_items[@]} -eq 0 ]; then
+        echo "No old library versions found."
+        return 0
+    fi
+
+    local dep_cache="/tmp/lfs_dep_cache_ls.txt"
+    if [[ "$show_deps" == "true" ]]; then
+        echo "Generating dependency cache. This may take a moment..."
+        find /usr/bin /usr/lib /lib /opt -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
+        xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && printf '%s: ' '{}' && readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ' && echo" > "$dep_cache"
+    fi
+
+    echo "--- Old Libraries ---"
+    for i in "${old_items[@]}"; do
+        [ -e "$i" ] || continue
+        echo "- $i"
+        
+        if [[ "$show_deps" == "true" ]]; then
+            local all_names=()
+            if [ -d "$i" ]; then
+                local dir_basename=$(basename "$i")
+                all_names=($(find "$i" -name "*.so*" -printf "%f\n" 2>/dev/null | sort -u))
+                local outside_libs=($(find /usr/lib /lib -maxdepth 1 -name "lib${dir_basename}*.so*" -printf "%f\n" 2>/dev/null))
+                all_names+=("${outside_libs[@]}")
+            else
+                local lib_basename=$(basename "$i")
+                local link_names=($(find /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
+                all_names=("$lib_basename")
+                for link in "${link_names[@]}"; do
+                    all_names+=($(basename "$link"))
+                done
+            fi
+            
+            all_names=($(printf "%s\n" "${all_names[@]}" | sort -u | grep -v "^$"))
+            
+            local safe_names=()
+            for name in "${all_names[@]}"; do
+                if [[ "$name" =~ \.so\.[0-9]+ ]]; then
+                    safe_names+=("$name")
+                fi
+            done
+            all_names=("${safe_names[@]}")
+
+            local deps=()
+            if [ ${#all_names[@]} -gt 0 ]; then
+                for name in "${all_names[@]}"; do
+                    local matches=($(grep " $name " "$dep_cache" | cut -d: -f1))
+                    [ ${#matches[@]} -gt 0 ] && deps+=("${matches[@]}")
+                done
+            fi
+            deps=($(printf "%s\n" "${deps[@]}" | sort -u))
+
+            if [ -d "$i" ] && [ ${#deps[@]} -gt 0 ]; then
+                local outside_deps=()
+                for d in "${deps[@]}"; do
+                    if [[ "$d" != "$i/"* ]]; then
+                        outside_deps+=("$d")
+                    fi
+                done
+                deps=("${outside_deps[@]}")
+            fi
+
+            if [ ${#deps[@]} -gt 0 ]; then
+                echo "  ↳ Dependents:"
+                for d in "${deps[@]}"; do
+                    echo "    - $d"
+                done
+            else
+                echo "  ↳ No dependents found."
+            fi
+        fi
+    done
+
+    if [[ "$show_deps" == "true" ]]; then
+        rm -f "$dep_cache"
+    fi
+}
+
+ls_old_libs() {
+    ssh_lfs "$(declare -f ls_old_libs_gpt); ls_old_libs_gpt $*"
+}
+
+ls_orphaned_files_gpt() {
+    echo "Gathering list of all system files..."
+    local sys_files="/tmp/sys_files.txt"
+    find /bin /sbin /lib /lib64 /usr /etc /opt -type f -o -type l 2>/dev/null | sort -u > "$sys_files"
+
+    echo "Gathering list of all tracked files..."
+    local tracked_files="/tmp/tracked_files.txt"
+    cat /var/lib/book-packages/* /var/lib/custom-packages/* 2>/dev/null | awk 'FNR>1 {print $0}' | sort -u > "$tracked_files"
+
+    echo "Calculating orphaned files..."
+    local orphaned_files="/tmp/orphaned_files.txt"
+    comm -23 "$sys_files" "$tracked_files" | \
+        grep -v "/site-packages/" | \
+        grep -v "/__pycache__/" | \
+        grep -v "/usr/share/info/dir" | \
+        grep -v "/etc/ld.so.cache" | \
+        grep -vE '^/etc/(passwd|group|shadow|gshadow|fstab|resolv\.conf|-|localtime|hostname|hosts)' | \
+        grep -vE '^/usr/share/fonts/.*/fonts\.(dir|scale)' | \
+        grep -vE '^/usr/lib/modules/' | \
+        grep -vE '^/usr/share/mime/.*\.cache' | \
+        grep -vE '^/usr/share/glib-2\.0/schemas/gschemas\.compiled' | \
+        grep -vE '^/usr/share/icons/.*/icon-theme\.cache' > "$orphaned_files"
+
+    echo "--- Orphaned Files ---"
+    cat "$orphaned_files"
+    
+    echo ""
+    echo "Total orphaned files: $(wc -l < "$orphaned_files")"
+    rm -f "$sys_files" "$tracked_files" "$orphaned_files"
+}
+
+ls_orphaned_files() {
+    ssh_lfs "$(declare -f ls_orphaned_files_gpt); ls_orphaned_files_gpt $*"
+}
 cleanup_old_libraries_gpt() {
     local dep_cache="/tmp/lfs_dep_cache.txt"
     local pkg_cache="/tmp/lfs_pkg_cache.txt"
@@ -332,7 +495,13 @@ cleanup_old_libraries_gpt() {
         
         if [ ${#pkgs[@]} -eq 0 ]; then
             echo "Warning: No parent package found for ANY of the ${#deps[@]} dependents."
-            echo "Checking if we should keep $i for safety."
+            echo "These dependents are likely orphaned files from a previous version (e.g., protobuf binaries)."
+            echo "Orphaned files preventing deletion of $i:"
+            for d in "${deps[@]}"; do
+                echo "  - $d"
+            done
+            echo "Please manually delete these orphaned files if they are no longer needed."
+            echo "Safety Hold: Keeping $i."
             continue
         fi
 
@@ -385,6 +554,29 @@ cleanup_old_libraries_gpt() {
                      echo "Final Action: All dependencies cleared. Deleting directory $i."
                      sudo rm -rf -- "$i"
                  else
+                     # Safety check: before deleting the old versioned .so, confirm
+                     # that at least one other real file (not a broken symlink) matching
+                     # the same base soname exists — i.e. the owner actually installed a
+                     # replacement. Without this, a failed owning-package rebuild would
+                     # leave the system with NO copy of the library at all.
+                     local i_dir i_base i_sobase replacement_found
+                     i_dir=$(dirname "$i")
+                     i_base=$(basename "$i")
+                     # Strip everything from .so onwards to get base (e.g. libMagickCore-7.Q16HDRI)
+                     i_sobase="${i_base%%.so*}.so"
+                     replacement_found=false
+                     for candidate in "$i_dir"/${i_sobase}*; do
+                         if [[ "$candidate" != "$i" ]] && [ -e "$candidate" ]; then
+                             replacement_found=true
+                             break
+                         fi
+                     done
+                     if [ "$replacement_found" = false ]; then
+                         echo "Safety Hold: No replacement for $i_base found in $i_dir."
+                         echo "             Skipping deletion — the owning package may not have reinstalled cleanly."
+                         echo "             Run: autobuild -f <owning-package> to fix this manually."
+                         continue
+                     fi
                      echo "Final Action: All dependencies cleared. Deleting $i and its symlinks."
                      for name in "${all_names[@]:1}"; do
                         sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
@@ -1626,9 +1818,7 @@ for pkg in sorted_pkgs:
     for pkg in "${updates[@]}"; do
         local build_args=()
         if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
-        if [[ "$upstream" == "true" ]]; then
-            # default is upstream, no flag needed
-        else
+        if [[ "$upstream" != "true" ]]; then
             build_args+=("--no-upstream")
         fi
         
@@ -1796,9 +1986,7 @@ DEPEOF
         for pkg in "${custom_updates_list[@]}"; do
             local build_args=()
             if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
-            if [[ "$upstream" == "true" ]]; then
-                # default is upstream, no flag needed
-            else
+            if [[ "$upstream" != "true" ]]; then
                 build_args+=("--no-upstream")
             fi
 
