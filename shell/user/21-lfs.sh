@@ -173,7 +173,7 @@ ls_old_libs_gpt() {
 
     echo "Scanning for old libraries in /usr/lib..."
 
-    local old_libs=($(find /usr/lib -type f -name "lib*.so.[0-9]*" ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
+    local old_libs=($(find /usr/lib -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
     | sort -V \
     | awk '
     {
@@ -181,6 +181,15 @@ ls_old_libs_gpt() {
         if (base ~ /\.so\.[0-9]+(\.[0-9]+)*$/) {
             orig = base
             sub(/\.so\.[0-9.]+$/, ".so", base)
+            if (prev_base && base != prev_base) {
+                for (i=1; i < prev_count; i++) print prev[i]
+                prev_count = 0
+            }
+            prev[++prev_count] = orig
+            prev_base = base
+        } else if (base ~ /-[0-9]+(\.[0-9]+)*\.so$/) {
+            orig = base
+            sub(/-[0-9.]+/, "", base)
             if (prev_base && base != prev_base) {
                 for (i=1; i < prev_count; i++) print prev[i]
                 prev_count = 0
@@ -222,7 +231,7 @@ ls_old_libs_gpt() {
     if [[ "$show_deps" == "true" ]]; then
         echo "Generating dependency cache. This may take a moment..."
         find /usr/bin /usr/lib /lib /opt -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
-        xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && printf '%s: ' '{}' && readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ' && echo" > "$dep_cache"
+        xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && deps=\$(readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ') && echo \"{}: \$deps\"" > "$dep_cache"
     fi
 
     echo "--- Old Libraries ---"
@@ -239,7 +248,8 @@ ls_old_libs_gpt() {
                 all_names+=("${outside_libs[@]}")
             else
                 local lib_basename=$(basename "$i")
-                local link_names=($(find /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
+                local i_dir=$(dirname "$i")
+                local link_names=($(find "$i_dir" /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
                 all_names=("$lib_basename")
                 for link in "${link_names[@]}"; do
                     all_names+=($(basename "$link"))
@@ -250,7 +260,7 @@ ls_old_libs_gpt() {
             
             local safe_names=()
             for name in "${all_names[@]}"; do
-                if [[ "$name" =~ \.so\.[0-9]+ ]]; then
+                if [[ "$name" =~ \.so\.[0-9]+ ]] || [[ "$name" =~ -[0-9]+\.so$ ]]; then
                     safe_names+=("$name")
                 fi
             done
@@ -329,6 +339,125 @@ ls_orphaned_files_gpt() {
 ls_orphaned_files() {
     ssh_lfs "$(declare -f ls_orphaned_files_gpt); ls_orphaned_files_gpt $*"
 }
+
+which_pkg_owns_gpt() {
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: which_pkg_owns <file> [file2 ...]"
+        return 1
+    fi
+
+    for target in "$@"; do
+        # Normalize: strip trailing slash for directories
+        target="${target%/}"
+        local found=false
+
+        # Search book-packages first, then custom-packages
+        for dir in /var/lib/book-packages /var/lib/custom-packages; do
+            [[ -d "$dir" ]] || continue
+            local pkg_type
+            if [[ "$dir" == *book* ]]; then pkg_type="book"; else pkg_type="custom"; fi
+
+            # Each file in $dir is a package; the first line is the version,
+            # subsequent lines are installed file paths.
+            for pkg_file in "$dir"/*; do
+                [[ -f "$pkg_file" ]] || continue
+                local pkg_name=$(basename "$pkg_file")
+                # awk: skip line 1 (version), check if any line matches target
+                if awk 'NR>1 && $0 == target { found=1; exit } END { exit !found }' \
+                        target="$target" "$pkg_file" 2>/dev/null; then
+                    local version=$(head -n1 "$pkg_file" 2>/dev/null)
+                    echo "$target → $pkg_name ($pkg_type, v$version)"
+                    found=true
+                    break 2
+                fi
+            done
+        done
+
+        if [[ "$found" != "true" ]]; then
+            echo "$target → (not owned by any tracked package)"
+        fi
+    done
+}
+
+which_pkg_owns() {
+    ssh_lfs "$(declare -f which_pkg_owns_gpt); which_pkg_owns_gpt $*"
+}
+
+prune_pkg_inventory_gpt() {
+    # Usage: prune_pkg_inventory_gpt <inventory_to_prune> <authoritative_inventory> [...]
+    # Removes entries from <inventory_to_prune> that are listed in any <authoritative_inventory>.
+    # The first line (version) of the pruned inventory is preserved.
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: prune_pkg_inventory <inventory_to_prune> <authoritative_inventory> [more_inventories...]"
+        echo "Example: prune_pkg_inventory /var/lib/book-packages/qt6 /var/lib/custom-packages/imagemagick"
+        return 1
+    fi
+
+    local target="$1"
+    shift
+    local authority_files=("$@")
+
+    if [[ ! -f "$target" ]]; then
+        echo "Error: target inventory not found: $target"
+        return 1
+    fi
+
+    # Build a set of all file paths from all authoritative inventories (skip line 1 = version)
+    local auth_files_tmp=$(mktemp)
+    for auth in "${authority_files[@]}"; do
+        if [[ ! -f "$auth" ]]; then
+            echo "Warning: authoritative inventory not found: $auth"
+            continue
+        fi
+        tail -n +2 "$auth" >> "$auth_files_tmp"
+    done
+    sort -u -o "$auth_files_tmp" "$auth_files_tmp"
+
+    local total_auth=$(wc -l < "$auth_files_tmp")
+    echo "Loaded $total_auth file entries from ${#authority_files[@]} authoritative inventories."
+
+    # Count how many lines in target would be removed
+    local version_line=$(head -n1 "$target")
+    local before=$(tail -n +2 "$target" | wc -l)
+
+    # Write new inventory: keep version line, then only paths NOT in auth set
+    local tmp_out=$(mktemp)
+    echo "$version_line" > "$tmp_out"
+    tail -n +2 "$target" | grep -vxFf "$auth_files_tmp" >> "$tmp_out"
+
+    local after=$(tail -n +1 "$tmp_out" | wc -l)
+    local after_entries=$(( after - 1 ))
+    local removed=$(( before - after_entries ))
+
+    if [[ $removed -eq 0 ]]; then
+        echo "No overlapping entries found. Inventory unchanged."
+        rm -f "$auth_files_tmp" "$tmp_out"
+        return 0
+    fi
+
+    echo "Removing $removed entries from $(basename "$target") (was $before, now $after_entries files)."
+    sudo cp "$tmp_out" "$target"
+    echo "Done. Inventory pruned successfully."
+    rm -f "$auth_files_tmp" "$tmp_out"
+}
+
+prune_pkg_inventory() {
+    # Resolve inventory paths: if bare name given, search both dirs
+    local args=()
+    for arg in "$@"; do
+        if [[ "$arg" == /* ]]; then
+            args+=("$arg")
+        elif [[ -f "/var/lib/book-packages/$arg" ]]; then
+            args+=("/var/lib/book-packages/$arg")
+        elif [[ -f "/var/lib/custom-packages/$arg" ]]; then
+            args+=("/var/lib/custom-packages/$arg")
+        else
+            args+=("$arg")  # pass through, let the remote function error
+        fi
+    done
+    ssh_lfs "$(declare -f prune_pkg_inventory_gpt); prune_pkg_inventory_gpt ${args[*]}"
+}
+
 cleanup_old_libraries_gpt() {
     local dep_cache="/tmp/lfs_dep_cache.txt"
     local pkg_cache="/tmp/lfs_pkg_cache.txt"
@@ -339,7 +468,7 @@ cleanup_old_libraries_gpt() {
     # We use -executable OR -name "*.so*" to catch both binaries and libs.
     # readelf -d extracts the (NEEDED) entries.
     find /usr/bin /usr/lib /lib /opt -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
-    xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && printf '%s: ' '{}' && readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ' && echo" > "$dep_cache"
+    xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && deps=\$(readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ') && echo \"{}: \$deps\"" > "$dep_cache"
     
     # 2. Generate package inventory mapping (File -> Package)
     # This maps every installed file back to the package that registered it in /var/lib/*-packages/
@@ -349,7 +478,7 @@ cleanup_old_libraries_gpt() {
 
     # 3. Identify old versions (files only)
     # A version is old if a newer version with the same base name exists.
-    local old_libs=($(find /usr/lib -type f -name "lib*.so.[0-9]*" ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
+    local old_libs=($(find /usr/lib -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
     | sort -V \
     | awk '
     {
@@ -358,6 +487,15 @@ cleanup_old_libraries_gpt() {
         if (base ~ /\.so\.[0-9]+(\.[0-9]+)*$/) {
             orig = base
             sub(/\.so\.[0-9.]+$/, ".so", base)
+            if (prev_base && base != prev_base) {
+                for (i=1; i < prev_count; i++) print prev[i]
+                prev_count = 0
+            }
+            prev[++prev_count] = orig
+            prev_base = base
+        } else if (base ~ /-[0-9]+(\.[0-9]+)*\.so$/) {
+            orig = base
+            sub(/-[0-9.]+/, "", base)
             if (prev_base && base != prev_base) {
                 for (i=1; i < prev_count; i++) print prev[i]
                 prev_count = 0
@@ -417,7 +555,8 @@ cleanup_old_libraries_gpt() {
             echo "Checking obsolete version (file): $(basename "$i")"
             echo "Path: $i"
             local lib_basename=$(basename "$i")
-            local link_names=($(find /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
+            local i_dir=$(dirname "$i")
+            local link_names=($(find "$i_dir" /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
             all_names=("$lib_basename")
             for link in "${link_names[@]}"; do
                 all_names+=($(basename "$link"))
@@ -430,7 +569,7 @@ cleanup_old_libraries_gpt() {
         # Guard against matching linker scripts or raw symlinks like libc.so and libm.so
         local safe_names=()
         for name in "${all_names[@]}"; do
-            if [[ "$name" =~ \.so\.[0-9]+ ]]; then
+            if [[ "$name" =~ \.so\.[0-9]+ ]] || [[ "$name" =~ -[0-9]+\.so$ ]]; then
                 safe_names+=("$name")
             else
                 echo "Skipping generic/unsafe name '$name' to prevent false positive matches."
@@ -562,10 +701,12 @@ cleanup_old_libraries_gpt() {
                      local i_dir i_base i_sobase replacement_found
                      i_dir=$(dirname "$i")
                      i_base=$(basename "$i")
-                     # Strip everything from .so onwards to get base (e.g. libMagickCore-7.Q16HDRI)
-                     i_sobase="${i_base%%.so*}.so"
+                     # Strip everything from .so onwards or after '-' to get base (e.g. libMagickCore-7.Q16HDRI or libsystemd-core)
+                     i_sobase=$(echo "$i_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
                      replacement_found=false
-                     for candidate in "$i_dir"/${i_sobase}*; do
+                     # Search for candidates matching the base name (without .so suffix for broader matching)
+                     local search_base="${i_sobase%%.so}"
+                     for candidate in "$i_dir"/${search_base}*; do
                          if [[ "$candidate" != "$i" ]] && [ -e "$candidate" ]; then
                              replacement_found=true
                              break
