@@ -2444,7 +2444,7 @@ sys.exit(1)
         fi
     elif [[ "$PACKAGE" == "libuv" ]]; then
         log "Fetching latest upstream libuv version from GitHub..."
-        UPSTREAM_VERSION=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1)
+        UPSTREAM_VERSION=$(git ls-remote --tags https://github.com/libuv/libuv.git | perl -nle 'if (m{refs/tags/v([0-9]+\.[0-9]+\.[0-9]+)$}) { print $1 }' | sort -V | tail -n 1)
         if [[ -n "$UPSTREAM_VERSION" ]]; then
             log "Found upstream libuv version: $UPSTREAM_VERSION"
             DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
