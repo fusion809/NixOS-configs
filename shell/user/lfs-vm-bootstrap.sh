@@ -149,3 +149,48 @@ autoremove() {
 if [ -n "$BASH_VERSION" ]; then
     export -f autoremove
 fi
+
+# `cleanup_share_dirs` = cleanup old versioned dirs in /usr/share
+cleanup_share_dirs() {
+    local dry_run=false
+    if [[ "$1" == "--dry-run" ]]; then
+        dry_run=true
+    fi
+
+    echo "Scanning /usr/share for old versioned directories..."
+
+    # Check top-level versioned directories in /usr/share
+    find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sed -nE 's/^(.*)-[0-9]+(\.[0-9]+)*$/\1/p' | sort -u | while IFS= read -r base; do
+        local count=$(find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${base}-[0-9]+(\.[0-9]+)*$" | wc -l)
+        if [ "$count" -gt 1 ]; then
+            find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${base}-[0-9]+(\.[0-9]+)*$" | sort -V | sed '$d' | while IFS= read -r old_dir; do
+                if [[ "$dry_run" == "true" ]]; then
+                    echo "Would delete old top-level dir: $old_dir"
+                else
+                    echo "Deleting old top-level dir: $old_dir"
+                    sudo rm -rf "$old_dir"
+                fi
+            done
+        fi
+    done
+
+    # Check subdirectories named exactly as versions in /usr/share/*
+    find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r pdir; do
+        local count=$(find "$pdir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${pdir}/[0-9]+(\.[0-9]+)*$" | wc -l)
+        if [ "$count" -gt 1 ]; then
+            find "$pdir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${pdir}/[0-9]+(\.[0-9]+)*$" | sort -V | sed '$d' | while IFS= read -r old_dir; do
+                if [[ "$dry_run" == "true" ]]; then
+                    echo "Would delete old subdirectory: $old_dir"
+                else
+                    echo "Deleting old subdirectory: $old_dir"
+                    sudo rm -rf "$old_dir"
+                fi
+            done
+        fi
+    done
+
+    echo "Cleanup of /usr/share complete."
+}
+if [ -n "$BASH_VERSION" ]; then
+    export -f cleanup_share_dirs
+fi
