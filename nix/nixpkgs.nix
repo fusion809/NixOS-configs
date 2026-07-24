@@ -12,6 +12,7 @@
     permittedInsecurePackages = [
       "openssl-1.1.1w"
       "qtwebengine-5.15.19"
+      "electron-40.10.5"
       #"electron-37.10.3" "electron-38.8.4"
     ];
     packageOverrides = pkgs: {

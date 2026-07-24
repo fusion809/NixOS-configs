@@ -969,7 +969,14 @@ sys.exit(1)
             echo "$ver"
             ;;
         libuv)
-            curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1
+            local _libuv_ver
+            # Primary: /releases/latest (fast but may be rate-limited)
+            _libuv_ver=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/libuv/libuv/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9.]+)"}g) { print $1 }' | head -n 1)
+            # Fallback: /tags endpoint (returns full list, more reliable)
+            if [[ -z "$_libuv_ver" ]]; then
+                _libuv_ver=$(curl -s -H "User-Agent: bash" "https://api.github.com/repos/libuv/libuv/tags?per_page=10" | perl -nle 'while (m{"name":\s*"v([0-9]+\.[0-9]+\.[0-9]+)"}g) { print $1 }' | sort -V | tail -n 1)
+            fi
+            echo "$_libuv_ver"
             ;;
         appstream)
             curl -s -H "User-Agent: bash" https://api.github.com/repos/ximion/appstream/tags | perl -nle 'while (m{"name":"v([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
@@ -1035,7 +1042,14 @@ except Exception:
             curl -sL "https://gitlab.freedesktop.org/api/v4/projects/emersion%2Flibdisplay-info/repository/tags" | perl -nle 'while (m{"name":"([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
             ;;
         libjxl)
-            curl -s -H "User-Agent: bash" https://api.github.com/repos/libjxl/libjxl/releases/latest | perl -nle 'while (m{"tag_name":"v([0-9.]+)"}g) { print $1 }' | head -n 1
+            local _libjxl_ver
+            # Primary: /releases/latest (fast but may be rate-limited)
+            _libjxl_ver=$(curl -s -H "User-Agent: bash" https://api.github.com/repos/libjxl/libjxl/releases/latest | perl -nle 'while (m{"tag_name":\s*"v([0-9]+\.[0-9]+\.[0-9]+)"}g) { print $1 }' | head -n 1)
+            # Fallback: /tags endpoint — filter to strict X.Y.Z semver only (exclude snapshots/rc tags)
+            if [[ -z "$_libjxl_ver" ]]; then
+                _libjxl_ver=$(curl -s -H "User-Agent: bash" "https://api.github.com/repos/libjxl/libjxl/tags?per_page=20" | perl -nle 'while (m{"name":\s*"v([0-9]+\.[0-9]+\.[0-9]+)"}g) { print $1 }' | sort -V | tail -n 1)
+            fi
+            echo "$_libjxl_ver"
             ;;
     esac | grep -E '^[0-9]+(\.[0-9]+)+$' | head -n 1
 }

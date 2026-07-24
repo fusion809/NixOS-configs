@@ -1998,6 +1998,11 @@ if [[ "$PACKAGE" == "gdm" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed 's|su gdm -s /bin/bash|sudo -u gdm bash|g')
 fi
 
+if [[ "${PACKAGE,,}" == "networkmanager" ]]; then
+    log "Applying NetworkManager fix: disabling clat (-Dclat=false) due to missing libbpf >= 1.3.0..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -Dclat=false /g')
+fi
+
 if [[ "$PACKAGE" == "gpm" ]]; then
     log "Applying GPM-specific build fixes (skipping documentation)..."
     # Ensure make only runs in src to avoid documentation failures
