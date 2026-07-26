@@ -104,31 +104,17 @@ while read -r local_pkg; do
 done <<< "$LOCAL_PKGS"
 wait
 
-# Collect results
-j=0
-for f in "$tmp_lfs"/*; do
-    if [[ -f "$f" ]]; then
-        str+="$(cat "$f")"$'\n'
-        j=$((j + 1))
-    fi
-done
-rm -rf "$tmp_lfs"
-lfs_progress_bar "$total_local" "$total_local" "LFS/BLFS checks complete" >&2
-echo "" >&2
+# Fetch custom updates first so they take precedence over BLFS
 CUSTOM_UPDATES_RAW=$(lfs_check_custom_updates)
 # Filter to only get lines that look like package updates (3 fields)
 CUSTOM_UPDATES=$(echo "$CUSTOM_UPDATES_RAW" | grep -E '^[a-zA-Z0-9._+-]+ [^ ]+ [^ ]+$')
+custom_str=""
+
 while IFS= read -r update_line; do
     [[ -z "$update_line" ]] && continue
     # Parse three fields
     read -r name local_ver remote_ver <<< "$update_line" || continue
     [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
-
-    # Skip if this package was already reported by the book-package loop above
-    # (avoids duplicates for packages that exist in both ~/lfs_packaging and BLFS book)
-    if echo -e "$str" | grep -qE "^${name}[[:space:]]*\|" 2>/dev/null; then
-        continue
-    fi
 
     local_ver=$(printf '%s\n' "$local_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
     remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
@@ -137,17 +123,23 @@ while IFS= read -r update_line; do
     local_ver=$(echo "$local_ver" | tr -d '[:space:]\r\n')
     remote_ver=$(echo "$remote_ver" | tr -d '[:space:]\r\n')
 
+    # Add to our tracking string so BLFS loop can skip it
+    custom_str+="${name} | ${local_ver} | ${remote_ver}"$'\n'
+    # Add to our tracking string so BLFS loop can skip it
+    custom_str+="${name} | ${local_ver} | ${remote_ver}"$'\n'
 
     # Skip if local and remote versions match exactly, or if both are MISSING
     if [[ "$local_ver" == "$remote_ver" ]] || [[ "$local_ver" == *"MISSING"* && "$remote_ver" == *"MISSING"* ]]; then
         # If it failed, we might want to know. Otherwise, skip all matches.
-        [[ "$remote_ver" != *"FAILED"* ]] && continue
+        if [[ "$remote_ver" != *"FAILED"* ]] && ! echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
+            continue
+        fi
     fi
-    
+
     # Format git hashes differently if they are 40 chars long
     if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
     if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
-    
+
     label="[UPDATE]"
     if echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
         label="[FILES MISSING]"
@@ -156,11 +148,28 @@ while IFS= read -r update_line; do
     elif [[ "$remote_ver" == *"MISSING"* ]]; then
         label="[MISSING]"
     fi
-    
+
     str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
     str+="\n"
     j=$((j + 1))
 done <<< "$CUSTOM_UPDATES"
+
+# Collect results from BLFS parallel tasks
+for f in "$tmp_lfs"/*; do
+    if [[ -f "$f" ]]; then
+        # Read the file to check if it's already in custom_str
+        line=$(cat "$f")
+        name=$(echo "$line" | cut -d'|' -f1 | tr -d '[:space:]')
+        # Skip if this package was already handled by custom packages
+        if ! echo -e "$custom_str" | grep -qE "^${name}[[:space:]]*\|" 2>/dev/null; then
+            str+="$line"$'\n'
+        fi
+        j=$((j + 1))
+    fi
+done
+rm -rf "$tmp_lfs"
+lfs_progress_bar "$total_local" "$total_local" "LFS/BLFS checks complete" >&2
+echo "" >&2
 
 # Append any broken packages (missing inventories) that are not already in the list
 while read -r bp; do

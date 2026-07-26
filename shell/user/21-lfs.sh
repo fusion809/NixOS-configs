@@ -1502,22 +1502,7 @@ lfs_check_custom_updates() {
                         local_ver=$(head -n 1 "/var/lib/custom-packages/$pkg_basename" 2>/dev/null | tr -d '\r\n[:space:]' || echo "none")
                     fi
                 fi
-                if [ "$local_ver" != "$remote_ver" ]; then
-                    # Treat as equal if one is a short-hash prefix of the other:
-                    #   local=24b5e7a (7 chars), remote=24b5e7a6734b... (40 chars) -> same
-                    #   local=24b5e7a6734b... (40 chars), remote=24b5e7a (7 chars) -> same
-                    _llen="${#local_ver}"
-                    _rlen="${#remote_ver}"
-                    _same=false
-                    if [[ "$_llen" -ge 7 && "$_llen" -le 12 && "${remote_ver#$local_ver}" != "$remote_ver" ]]; then
-                        _same=true  # local short, remote full or same prefix
-                    elif [[ "$_rlen" -ge 7 && "$_rlen" -le 12 && "${local_ver#$remote_ver}" != "$local_ver" ]]; then
-                        _same=true  # remote short, local full or same prefix
-                    fi
-                    if [[ "$_same" == "false" ]]; then
-                        echo "RESULT:$pkg_name $local_ver $remote_ver"
-                    fi
-                fi
+                echo "RESULT:$pkg_name $local_ver $remote_ver"
             fi
         ) &
         

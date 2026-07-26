@@ -157,38 +157,38 @@ cleanup_share_dirs() {
         dry_run=true
     fi
 
-    echo "Scanning /usr/share for old versioned directories..."
+    echo "Scanning /usr/share for orphaned directories..."
 
-    # Check top-level versioned directories in /usr/share
-    find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sed -nE 's/^(.*)-[0-9]+(\.[0-9]+)*$/\1/p' | sort -u | while IFS= read -r base; do
-        local count=$(find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${base}-[0-9]+(\.[0-9]+)*$" | wc -l)
-        if [ "$count" -gt 1 ]; then
-            find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${base}-[0-9]+(\.[0-9]+)*$" | sort -V | sed '$d' | while IFS= read -r old_dir; do
+    # Create a fast lookup of all currently owned files and directories
+    local all_files_db=$(mktemp)
+    # Combine all package databases (ignoring first line versions/errors)
+    cat /var/lib/book-packages/* /var/lib/custom-packages/* 2>/dev/null | grep "^/" > "$all_files_db" || true
+
+    if [[ ! -s "$all_files_db" ]]; then
+        echo "Error: Package database is empty or could not be read. Aborting cleanup for safety."
+        rm -f "$all_files_db"
+        return 1
+    fi
+
+    # Check top-level directories in /usr/share
+    find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | while IFS= read -r dir; do
+        # We only want to clean up directories that look like they have a version suffix
+        # to avoid wiping out things like /usr/share/man if it accidentally got untracked,
+        # but the user specifically wanted to clean up versioned leftovers.
+        if [[ "$dir" =~ -[0-9]+(\.[0-9]+)*$ ]]; then
+            # Check if this directory or anything inside it is claimed by ANY active package
+            if ! grep -q "^${dir}\$\|^${dir}/" "$all_files_db"; then
                 if [[ "$dry_run" == "true" ]]; then
-                    echo "Would delete old top-level dir: $old_dir"
+                    echo "Would delete orphaned versioned dir: $dir"
                 else
-                    echo "Deleting old top-level dir: $old_dir"
-                    sudo rm -rf "$old_dir"
+                    echo "Deleting orphaned versioned dir: $dir"
+                    sudo rm -rf "$dir"
                 fi
-            done
+            fi
         fi
     done
 
-    # Check subdirectories named exactly as versions in /usr/share/*
-    find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r pdir; do
-        local count=$(find "$pdir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${pdir}/[0-9]+(\.[0-9]+)*$" | wc -l)
-        if [ "$count" -gt 1 ]; then
-            find "$pdir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -E "^${pdir}/[0-9]+(\.[0-9]+)*$" | sort -V | sed '$d' | while IFS= read -r old_dir; do
-                if [[ "$dry_run" == "true" ]]; then
-                    echo "Would delete old subdirectory: $old_dir"
-                else
-                    echo "Deleting old subdirectory: $old_dir"
-                    sudo rm -rf "$old_dir"
-                fi
-            done
-        fi
-    done
-
+    rm -f "$all_files_db"
     echo "Cleanup of /usr/share complete."
 }
 if [ -n "$BASH_VERSION" ]; then
