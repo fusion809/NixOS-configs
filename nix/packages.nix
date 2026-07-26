@@ -5,7 +5,7 @@ with pkgs;
   ###############################################################
   # Assorted apps
   ###############################################################
-  unstable.antigravity
+  unstable.antigravity-ide
   brave
   discord
   firefox
