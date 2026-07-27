@@ -30,6 +30,8 @@ lfs_sync_to_vm() {
         < "$NIXCFG/shell/user/lfs-autobuild.sh"
     ssh_lfs "cat > ~/.lfs_scripts/xorg_loop.awk" \
         < "$NIXCFG/shell/user/xorg_loop.awk"
+    ssh_lfs "cat > ~/.lfs_scripts/upos.sh" \
+        < "$NIXCFG/shell/user/upos.sh"
 
     # Hook into ~/.bashrc if not already present
     ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo '# LFS update helpers' >> ~/.bashrc && echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
@@ -2153,5 +2155,5 @@ DEPEOF
             echo "Skipping commit."
         fi
     fi
-    ssh_lfs "upver=$(wget -cqO- https://www.linuxfromscratch.org/lfs/view/systemd/index.html | grep 'Version' | sed 's/^\s*//g' | cut -d ' ' -f 2 | sed 's/-systemd//g'); if echo $upver | grep '^r' ; then sudo sed -i -E \"s|r[0-9]{2,}\.[0-9]-[0-9]+|$upver|g\" /etc/os-release /etc/lfs-release /etc/lsb-release ; fi"
+    ssh_lfs "~/.lfs_scripts/upos.sh"
 }
