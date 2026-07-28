@@ -141,3 +141,38 @@ function compress_walks() {
 	done
 	echo 'Compression complete!'
 }
+
+function compress_trike() {
+	local base_dir="$HOME/Pictures/Phone/Trike"
+	if [ ! -d "$base_dir" ]; then
+		base_dir="$HOME/Pictures/Phone/Trike"
+	fi
+
+	local original_dir="$base_dir/Original"
+	local compressed_dir="$base_dir/Compressed"
+
+	if [ ! -d "$original_dir" ]; then
+		echo "Error: Directory not found - $original_dir"
+		return 1
+	fi
+
+	mkdir -p "$compressed_dir"
+
+	cd "$original_dir" || exit 1
+	find . -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) -printf "%f\n" 2>/dev/null | while IFS= read -r img; do
+		[ -n "$img" ] && [ -e "$img" ] || continue
+		
+		# Get file size in bytes
+		size=$(stat -c%s "$img" 2>/dev/null || stat -f%z "$img" 2>/dev/null)
+		
+		# 10MB = 10485760 bytes
+		if [ "$size" -gt 10485760 ]; then
+			echo "Compressing $img ($size bytes) to just under 10MB..."
+			magick "$img" -define jpeg:extent=10400KB "$compressed_dir/$img"
+		else
+			echo "Skipping $img ($size bytes) - already under 10MB. Copying original."
+			cp -n "$img" "$compressed_dir/$img"
+		fi
+	done
+	echo 'Compression complete!'
+}
