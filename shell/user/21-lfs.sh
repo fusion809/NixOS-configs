@@ -222,6 +222,18 @@ ls_old_libs_gpt() {
         }
     }'))
 
+    # Filter out directories that are listed in the package registry:
+    # a directory like /usr/lib/gtk-3.0 belongs to gtk3, not an obsolete version.
+    local filtered_dirs=()
+    for _dir in "${old_dirs[@]}"; do
+        if grep -qrl "^${_dir}" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null; then
+            : # registered — belongs to an installed package, skip
+        else
+            filtered_dirs+=("$_dir")
+        fi
+    done
+    old_dirs=("${filtered_dirs[@]}")
+
     local old_items=("${old_libs[@]}" "${old_dirs[@]}")
 
     if [ ${#old_items[@]} -eq 0 ]; then
@@ -528,6 +540,18 @@ cleanup_old_libraries_gpt() {
             prev_base = base
         }
     }'))
+
+    # Filter out directories that are listed in the package registry:
+    # e.g. /usr/lib/gtk-3.0 belongs to gtk3, not an obsolete version of gtk-4.0.
+    local filtered_dirs=()
+    for _dir in "${old_dirs[@]}"; do
+        if grep -qrl "^${_dir}" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null; then
+            echo "Skipping registered directory: $_dir (belongs to an installed package)"
+        else
+            filtered_dirs+=("$_dir")
+        fi
+    done
+    old_dirs=("${filtered_dirs[@]}")
 
     local old_items=("${old_libs[@]}" "${old_dirs[@]}")
 
@@ -973,9 +997,6 @@ sys.exit(1)
         libuv)
             git ls-remote --tags https://github.com/libuv/libuv.git | perl -nle 'if (m{refs/tags/v([0-9]+\.[0-9]+\.[0-9]+)$}) { print $1 }' | sort -V | tail -n 1
             ;;
-        appstream)
-            curl -s -H "User-Agent: bash" https://api.github.com/repos/ximion/appstream/tags | perl -nle 'while (m{"name":"v([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
-            ;;
         frameworks|frameworks6|extra-cmake-modules|breeze-icons|oxygen-icons)
             curl -sL https://download.kde.org/stable/frameworks/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=/")}g) { my $v=$&; $v.=".0" if $v =~ /^\d+\.\d+$/; print $v }' | sort -V | tail -n 1
             ;;
@@ -985,14 +1006,11 @@ sys.exit(1)
         konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)
             curl -sL https://download.kde.org/stable/release-service/ | perl -nle 'while (m{href="\K[0-9]+\.[0-9]+\.[0-9]+}g) { print $& }' | sort -V | tail -n 1
             ;;
-        linux)
-            curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | perl -nle 'while (m{[0-9.]+}g) { print $& }' | sort -Vr | head -n 1
-            ;;
         libpeas)
             # Use GitLab API to fetch the latest guaranteed 1.x stable tag by strictly filtering for 'libpeas-' prefix
             curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
             ;;
-        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|libpeas|gjs|glycin|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib2|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|dconf-editor|polkit-gnome|geocode-glib|libshumate|libsecret)
+        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|libpeas|gjs|glycin|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib2|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate|libsecret)
             local gnome_pkg="$pkg"
             [[ "$gnome_pkg" == "glib2" ]] && gnome_pkg="glib"
             local base_url="https://download.gnome.org/sources/$gnome_pkg"
@@ -1091,7 +1109,7 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("linux" "rustc" "llvm" "libuv" "frameworks" "frameworks6" "extra-cmake-modules" "breeze-icons" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "dconf" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "pango" "glib2" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "dconf-editor" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners" "libshumate" "libjxl" "libdisplay-info" "appstream")
+        local upstream_list=("rustc" "llvm" "libuv" "frameworks" "frameworks6" "extra-cmake-modules" "breeze-icons" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gedit" "gnome-terminal" "glib2" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners" "libshumate" "libjxl" "libdisplay-info")
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -1709,6 +1727,18 @@ lfs_update() {
         # Strip file extensions
         local_ver=$(printf '%s\n' "$local_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
         remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//')
+
+        # Skip if versions already match (handles both plain versions and git hashes)
+        if [[ "$local_ver" == "$remote_ver" ]]; then
+            continue
+        fi
+        # For git hashes, also compare 7-char short forms
+        if [[ ${#local_ver} -eq 40 && ${#remote_ver} -eq 40 && "$local_ver" == "$remote_ver" ]]; then
+            continue
+        fi
+        if [[ ${#local_ver} -ge 7 && ${#remote_ver} -ge 40 && "${local_ver}" == "${remote_ver:0:7}" ]]; then
+            continue
+        fi
         
         printf "Found custom update: %s: %s->%s\n" "$name" "$local_ver" "$remote_ver"
         custom_updates_list+=("$name")

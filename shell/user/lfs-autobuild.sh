@@ -293,6 +293,74 @@ BUILDING_STACK="${BUILDING_STACK:-}"
 # Save initial state of variables that might be modified per-package
 INITIAL_UPSTREAM="$UPSTREAM"
 
+# Sort PACKAGES in dependency order when multiple packages are requested.
+# This ensures that if pkg1 depends on pkg2, pkg2 is built first even if
+# the user typed "autobuild pkg1 pkg2".
+# We only do this at the top level (not when called recursively for deps).
+if [[ ${#PACKAGES[@]} -gt 1 && "${RESOLVE_DEPS:-}" != "true" ]]; then
+    _sorted_pkgs=$(bash -c '
+set -e
+declare -A pkg_set=()
+for p in "$@"; do pkg_set["$p"]=1; done
+
+# Build a map: pkg_name -> build.sh path (for custom packages)
+declare -A name_to_build=()
+while IFS= read -r bs; do
+    dir=$(dirname "$bs")
+    dir_name=$(basename "$dir")
+    pkg_name=$(grep -iE "^[a-zA-Z_]*name=" "$bs" 2>/dev/null | head -n1 | cut -d= -f2 | tr -d "\"'"'"'" | tr -d "[:space:]")
+    [[ -z "$pkg_name" ]] && pkg_name="$dir_name"
+    name_to_build["$pkg_name"]="$bs"
+    name_to_build["$dir_name"]="$bs"
+done < <(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null)
+
+# Emit tsort edges: "dependency package" (dep must come first)
+printed_self=()
+for p in "$@"; do
+    bs="${name_to_build[$p]:-}"
+    deps=()
+    if [[ -n "$bs" ]]; then
+        deps_line=$(grep -E "^depends=" "$bs" 2>/dev/null | head -n1)
+        if [[ -n "$deps_line" ]]; then
+            deps_val=$(echo "$deps_line" | sed -E "s/^[a-zA-Z_]+=\\(?//; s/\\)$//")
+            eval "deps=($deps_val)"
+        fi
+    fi
+    found_edge=false
+    for dep in "${deps[@]}"; do
+        if [[ -n "${pkg_set[$dep]+x}" && "$dep" != "$p" ]]; then
+            echo "$dep $p"
+            found_edge=true
+        fi
+    done
+    if [[ "$found_edge" == "false" ]]; then
+        echo "$p $p"
+    fi
+done
+' -- "${PACKAGES[@]}" 2>/dev/null | tsort 2>/dev/null)
+
+    if [[ -n "$_sorted_pkgs" ]]; then
+        _new_packages=()
+        while IFS= read -r _pkg; do
+            [[ -n "$_pkg" ]] && _new_packages+=("$_pkg")
+        done <<< "$_sorted_pkgs"
+        # Replace PACKAGES only if every original package is present in sorted output
+        _all_present=true
+        for _p in "${PACKAGES[@]}"; do
+            _found=false
+            for _q in "${_new_packages[@]}"; do
+                [[ "$_p" == "$_q" ]] && _found=true && break
+            done
+            [[ "$_found" == "false" ]] && _all_present=false && break
+        done
+        if [[ "$_all_present" == "true" ]]; then
+            PACKAGES=("${_new_packages[@]}")
+            log "Build order resolved: ${PACKAGES[*]}"
+        fi
+    fi
+    unset _sorted_pkgs _new_packages _all_present _found _p _q _pkg
+fi
+
 # Loop over all requested packages
 for PACKAGE in "${PACKAGES[@]}"; do
     if [[ ":${BUILDING_STACK}:" == *":${PACKAGE}:"* ]]; then
@@ -2459,7 +2527,7 @@ sys.exit(1)
             log "Found upstream libuv version: $UPSTREAM_VERSION"
             DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
         fi
-    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|dconf-editor|polkit-gnome|geocode-glib|libshumate)$ ]]; then
+    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)$ ]]; then
         GNOME_PKG="$PACKAGE"
         [[ "$GNOME_PKG" == "glib2" ]] && GNOME_PKG="glib"
         log "Fetching latest upstream GNOME version for $GNOME_PKG from download.gnome.org..."
@@ -3029,7 +3097,7 @@ if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugi
     fi
 fi
 
-if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|vte|gnome-terminal|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ && -n "$UPSTREAM_VERSION" ]]; then
+if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|vte|gnome-terminal|tecla|gvfs|gexiv2|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from the identified main download URL (e.g. gnome-shell-47.0.tar.xz)
     # GNOME versions might be major.minor or just major for some meta-packages, but mostly major.minor
     LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -F/ -nlae '$_=$F[$#F]; /'"${PACKAGE,,}"'-([0-9]+(?:\.[0-9]+)+)/ and print $1')
@@ -3132,7 +3200,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n
 fi
 
 # Generic version replacement for any package that successfully resolved UPSTREAM_VERSION via fallback
-if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL" && ! "${PACKAGE,,}" =~ ^(linux|firefox|rustc|libuv)$ && ! "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && ! "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|dconf|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-online-accounts|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|dconf-editor|polkit-gnome|geocode-glib|libshumate)$ ]]; then
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL" && ! "${PACKAGE,,}" =~ ^(linux|firefox|rustc|libuv)$ && ! "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && ! "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|baobab|evince|gedit|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)$ ]]; then
     # Extract LFS version from the identified main download URL
     LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle "while (m{${PACKAGE}-\K[0-9]+(?:\.[0-9]+)+[a-zA-Z0-9_-]*}g) { print \$& }" | head -n 1)
     if [[ -z "$LFS_VERSION" ]]; then
