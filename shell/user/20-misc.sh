@@ -176,3 +176,46 @@ function compress_trike() {
 	done
 	echo 'Compression complete!'
 }
+
+function send_walk {
+	source "$NIXCFG/shell/user/08-ssh.sh"
+	source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+
+	local base_dir="$HOME/Pictures/Phone/Walks"
+	local date="$1"
+
+	if [ -z "$date" ]; then
+		date=$(date +%Y-%m-%d)
+		if [ ! -d "$base_dir/$date/Original/Best" ]; then
+			local latest_dir=$(ls -1d "$base_dir"/*/ 2>/dev/null | sort -Vr | head -n 1)
+			if [ -n "$latest_dir" ]; then
+				date=$(basename "$latest_dir")
+				echo "No Best folder found for today. Using most recent folder: $date"
+			else
+				echo "Error: No date provided and no walk folders found in $base_dir."
+				return 1
+			fi
+		else
+			echo "No date provided. Using today's date: $date"
+		fi
+	fi
+
+	local src_dir="$base_dir/$date/Original/Best"
+
+	if [ ! -d "$src_dir" ]; then
+		echo "Error: Directory not found - $src_dir"
+		return 1
+	fi
+
+	echo "Sending contents of $src_dir to LFS VM ~/wallpapers..."
+	local vm_name="Linux From Scratch"
+	start_qemu_vm "$vm_name" || return 1
+	local ip
+	ip=$(get_vm_ip "$vm_name")
+	local scp_opts=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -O)
+	if [ -f "$HOME/.config/vm_pass" ]; then
+		sshpass -f "$HOME/.config/vm_pass" scp "${scp_opts[@]}" "$src_dir"/* "${USER}@${ip}:wallpapers/"
+	else
+		scp "${scp_opts[@]}" "$src_dir"/* "${USER}@${ip}:wallpapers/"
+	fi
+}

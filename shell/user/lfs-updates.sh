@@ -30,12 +30,39 @@ else
     sudo hwclock -s >/dev/null 2>&1
 fi
 
-REMOTE_LIST=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
+# Compute the three phase sizes for a true global percentage upfront:
+#   Phase 1: upstream checks (fixed list in lfs_get_remote_packages)
+#   Phase 2: LFS/BLFS installed package checks
+#   Phase 3: custom ~/lfs_packaging checks (count via SSH)
 LOCAL_PKGS=$(lfs_get_local_packages | tr -d '\r')
 # Identify packages with missing file inventories (line count <= 1)
 BROKEN_PKGS=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do if [ $(wc -l < "$f") -le 1 ] || grep -q "BUILD_FAILED" "$f"; then basename "$f"; fi; done' | tr -d '\r')
+total_upstream=0
+if [[ "$upstream" == "true" ]]; then
+    # Count items in the upstream_list array defined in lfs_get_remote_packages
+    total_upstream=$(grep -o '"[a-zA-Z0-9_+-]*"' "$(dirname "${BASH_SOURCE[0]}")/21-lfs.sh" \
+        | grep -A200 'upstream_list=(' | head -n1 | grep -o '"' | wc -l)
+    [[ "$total_upstream" -lt 10 ]] && total_upstream=57  # fallback if grep fails
+fi
 total_local=$(echo "$LOCAL_PKGS" | grep -v "^$" | wc -l)
+total_custom_pkgs=$(ssh_lfs "find ~/lfs_packaging -mindepth 2 -maxdepth 2 -name 'build.sh' 2>/dev/null | wc -l" 2>/dev/null | tr -d '[:space:]\r')
+total_custom_pkgs=${total_custom_pkgs:-0}
+
+# Weights to approximate elapsed time
+w_up=1
+w_loc=1
+w_cus=10
+
+total_global=$((total_upstream * w_up + total_local * w_loc + total_custom_pkgs * w_cus))
+[[ $total_global -lt 1 ]] && total_global=1
+
+# Now run the upstream fetch, passing the global denominator so its bar shows global %
+REMOTE_LIST=$(lfs_get_remote_packages \
+    $([[ "$upstream" == "false" ]] && echo "--no-upstream") \
+    --global-offset 0 --global-total "$total_global" --global-weight "$w_up" | tr -d '\r')
+
 count=0
+global_done=0
 tmp_lfs=$(mktemp -d)
 
 while read -r local_pkg; do
@@ -99,13 +126,17 @@ while read -r local_pkg; do
     
     count=$((count + 1))
     if (( count % 5 == 0 || count == total_local )); then
-        lfs_progress_bar "$count" "$total_local" "Checking LFS/BLFS packages" >&2
+        global_pct=$(( 100 * (total_upstream * w_up + count * w_loc) / total_global ))
+        lfs_progress_bar "$count" "$total_local" "Checking LFS/BLFS packages  [Global ${global_pct}%]" >&2
     fi
 done <<< "$LOCAL_PKGS"
 wait
 
-# Fetch custom updates first so they take precedence over BLFS
-CUSTOM_UPDATES_RAW=$(lfs_check_custom_updates)
+# Fetch custom updates (runs on VM via SSH, has its own internal progress bar)
+CUSTOM_UPDATES_RAW=$(lfs_check_custom_updates \
+    --global-offset $((total_upstream * w_up + total_local * w_loc)) \
+    --global-total "$total_global" \
+    --global-weight "$w_cus")
 # Filter to only get lines that look like package updates (3 fields)
 CUSTOM_UPDATES=$(echo "$CUSTOM_UPDATES_RAW" | grep -E '^[a-zA-Z0-9._+-]+ [^ ]+ [^ ]+$')
 custom_str=""

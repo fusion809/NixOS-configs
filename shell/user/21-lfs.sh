@@ -300,6 +300,23 @@ ls_old_libs_gpt() {
             fi
 
             if [ ${#deps[@]} -gt 0 ]; then
+                local valid_deps=()
+                for d in "${deps[@]}"; do
+                    local is_old=false
+                    for old_item in "${old_items[@]}"; do
+                        if [ "$d" = "$old_item" ] || [[ "$d" == "$old_item/"* ]]; then
+                            is_old=true
+                            break
+                        fi
+                    done
+                    if [ "$is_old" = "false" ]; then
+                        valid_deps+=("$d")
+                    fi
+                done
+                deps=("${valid_deps[@]}")
+            fi
+
+            if [ ${#deps[@]} -gt 0 ]; then
                 echo "  ↳ Dependents:"
                 for d in "${deps[@]}"; do
                     echo "    - $d"
@@ -624,6 +641,24 @@ cleanup_old_libraries_gpt() {
                 fi
             done
             deps=("${outside_deps[@]}")
+        fi
+
+        # Filter out deps that are also old libraries slated for deletion
+        if [ ${#deps[@]} -gt 0 ]; then
+            local valid_deps=()
+            for d in "${deps[@]}"; do
+                local is_old=false
+                for old_item in "${old_items[@]}"; do
+                    if [ "$d" = "$old_item" ] || [[ "$d" == "$old_item/"* ]]; then
+                        is_old=true
+                        break
+                    fi
+                done
+                if [ "$is_old" = "false" ]; then
+                    valid_deps+=("$d")
+                fi
+            done
+            deps=("${valid_deps[@]}")
         fi
 
         if [ ${#deps[@]} -eq 0 ]; then
@@ -1062,9 +1097,18 @@ except Exception:
 
 lfs_get_remote_packages() {
     local upstream=true
-    if [[ "$1" == "--no-upstream" ]]; then
-        upstream=false
-    fi
+    local global_offset=0
+    local global_total=0
+    local global_weight=1
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --no-upstream) upstream=false ;;
+            --global-offset) global_offset="$2"; shift ;;
+            --global-total)  global_total="$2";  shift ;;
+            --global-weight) global_weight="$2"; shift ;;
+        esac
+        shift
+    done
 
     KERNEL_VER=$(curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -Vr | head -n 1)
     JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href="\./([0-9]+)}g) { print $1 }' | sort -rn | head -n 1)
@@ -1126,12 +1170,22 @@ lfs_get_remote_packages() {
             
             # Show progress based on jobs started
             count=$((count + 1))
-            lfs_progress_bar "$count" "$total" "Starting upstream check: $p" >&2
+            if (( global_total > 0 )); then
+                local gpct=$(( 100 * (global_offset + count * global_weight) / global_total ))
+                lfs_progress_bar "$count" "$total" "Starting upstream checks [Global ${gpct}%]" >&2
+            else
+                lfs_progress_bar "$count" "$total" "Starting upstream check: $p" >&2
+            fi
         done
         wait
         
         # Update progress to 100% on the SAME line
-        lfs_progress_bar "$total" "$total" "Upstream checks complete" >&2
+        if (( global_total > 0 )); then
+            local gpct=$(( 100 * (global_offset + total * global_weight) / global_total ))
+            lfs_progress_bar "$total" "$total" "Upstream checks complete   [Global ${gpct}%]" >&2
+        else
+            lfs_progress_bar "$total" "$total" "Upstream checks complete" >&2
+        fi
         echo "" >&2
         
         # Expand metapackage versions (plasma, frameworks) to all their constituent packages
@@ -1430,6 +1484,18 @@ lfs_check_custom_updates() {
     [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
     [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
 
+    local global_offset=0
+    local global_total=0
+    local global_weight=1
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --global-offset) global_offset="$2"; shift ;;
+            --global-total)  global_total="$2";  shift ;;
+            --global-weight) global_weight="$2"; shift ;;
+        esac
+        shift
+    done
+
     local script=$(cat <<'EOF'
     sudo mkdir -p /var/lib/custom-packages 2>/dev/null || true
     
@@ -1546,7 +1612,12 @@ EOF
         elif [[ $line == PROGRESS:* ]]; then
             count=$((count + 1))
             local n="${line#PROGRESS:}"
-            lfs_progress_bar "$count" "$total" "Checking ~/lfs_packaging $n" >&2
+            if (( global_total > 0 )); then
+                local gpct=$(( 100 * (global_offset + count * global_weight) / global_total ))
+                lfs_progress_bar "$count" "$total" "Checking ~/lfs_packaging     [Global ${gpct}%]" >&2
+            else
+                lfs_progress_bar "$count" "$total" "Checking ~/lfs_packaging $n" >&2
+            fi
         elif [[ $line == RESULT:* ]]; then
             local result_data="${line#RESULT:}"
             # Format: pkg_name local_ver remote_ver -> strip extensions
@@ -1578,7 +1649,11 @@ EOF
     done < <(printf '%s\n' "$script" | ssh_lfs "bash -s")
     
     if [ "$total" -gt 0 ]; then
-        lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete" >&2
+        if (( global_total > 0 )); then
+            lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete [Global 100%]" >&2
+        else
+            lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete" >&2
+        fi
         echo "" >&2
     fi
     # Build output line by line to avoid any formatting issues
