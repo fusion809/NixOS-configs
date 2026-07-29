@@ -49,6 +49,7 @@ with pkgs;
   glib # provides gdbus, needed by Waybar kdeconnect script
   gnuplot
   gtop
+  jpegoptim
   jq
   keychain
   hyfetch
