@@ -223,8 +223,8 @@ function send_walk {
 function walloptim {
 	find ~/Pictures/Wallpapers -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
 		-exec jpegoptim --strip-all --all-progressive {} +
-	sudo find /usr/share/wallpapers -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
+	sudo find /arch/usr/share/wallpapers -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
 		-exec sudo jpegoptim --strip-all --all-progressive {} +
-	sudo find /usr/share/backgrounds -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
+	sudo find /arch/usr/share/backgrounds -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
 		-exec sudo jpegoptim --strip-all --all-progressive {} +
 }
