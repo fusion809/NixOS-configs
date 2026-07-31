@@ -1058,7 +1058,14 @@ import sys, json
 try:
     data = json.load(sys.stdin)
     versions = data[1].get("'"$gnome_pkg"'", [])
-    stable_versions = [v for v in versions if all(p.isdigit() for p in v.split("."))]
+    stable_versions = []
+    for v in versions:
+        parts = v.split(".")
+        if not all(p.isdigit() for p in parts): continue
+        ints = [int(p) for p in parts]
+        if ints[0] < 40 and len(ints) >= 2 and ints[1] % 2 != 0: continue
+        if any(p >= 90 for p in ints[1:]): continue
+        stable_versions.append(v)
     if stable_versions:
         stable_versions.sort(key=lambda x: [int(p) for p in x.split(".")])
         print(stable_versions[-1])
