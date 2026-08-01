@@ -4057,12 +4057,14 @@ export PACKAGE VERSION_TO_RECORD MAIN_FILENAME DIRNAME GEN_DIRNAME NORMAL_USER F
 
 (
   flock -x 200 || { echo "Another build is in progress. Waiting for lock..."; flock -x 200; }
+  exec > >(tee -a "/tmp/build_log_${PACKAGE}.txt") 2>&1
 set -e
 
 # Cleanup trap: always remove timestamp/state files on exit.
 # On failure, also clear the inventory so the commit guard reliably detects the broken build.
 _lfs_build_trap() {
     local exit_code=$?
+    sleep 0.2
     rm -f "/tmp/build_start_timestamp_${PACKAGE}" \
           "/tmp/build_state_before_${PACKAGE}" \
           "/tmp/build_state_after_${PACKAGE}"
@@ -4095,59 +4097,72 @@ for url in "${DOWNLOAD_URLS[@]}"; do
         if [ ! -s "$fname" ]; then 
             rm -f "$fname"
             echo "Downloading $fname..."
-            wget -T 30 -t 3 --no-check-certificate --max-redirect=5 "$url" || echo "[WARNING] Failed to download $fname"
+            wget -nv -T 30 -t 3 --no-check-certificate --max-redirect=5 "$url" || echo "[WARNING] Failed to download $fname"
         fi
     else
         if [ ! -s "$fname" ]; then
             rm -f "$fname"
             echo "Downloading $fname..."
             # Try primary URL first
-            if ! wget -T 30 -t 3 --no-check-certificate --max-redirect=5 "$url"; then
+            if ! wget -nv -T 30 -t 3 --no-check-certificate --max-redirect=5 "$url"; then
                 echo "[WARNING] Failed to download $url"
-                # If it's the main archive, try fallback extensions
-                if [[ "$url" == "$MAIN_DOWNLOAD_URL" ]]; then
-                    echo "Main archive download failed. Attempting fallbacks..."
-                    base_url_no_ext=$(echo "$url" | sed -E 's/\.(tar\.(xz|gz|bz2|lz|lzma|zst)|zip|tgz|tbz2)$//')
-                    success=false
-                    for ext in .tar.xz .tar.gz .tar.bz2 .tar.lz .zip; do
-                        alt_url="${base_url_no_ext}${ext}"
-                        [[ "$alt_url" == "$url" ]] && continue
-                        
-                        echo "Trying fallback extension: $alt_url"
-                        if wget -T 30 -t 2 --no-check-certificate --max-redirect=5 "$alt_url"; then
-                            MAIN_FILENAME=$(basename "$alt_url")
-                            ALL_FILENAMES+=("$MAIN_FILENAME")
-                            echo "Successfully downloaded fallback: $MAIN_FILENAME"
-                            success=true
-                            break
-                        fi
-                    done
-                    
-                    # Second Fallback: Strip redundant .0 from point-zero releases (x.y.0 -> x.y)
-                    if [ "$success" = "false" ] && [[ "$base_url_no_ext" == *".0" ]]; then
-                        alt_ver_base=$(echo "$base_url_no_ext" | sed 's/\.0$//')
-                        echo "Attempting version fallback (stripping .0): $alt_ver_base"
+                dl_success=false
+                
+                if [[ "$url" == *"ftpmirror.gnu.org"* ]]; then
+                    alt_url="${url/ftpmirror.gnu.org/ftp.gnu.org\/gnu}"
+                    echo "Trying domain fallback: $alt_url"
+                    if wget -nv -T 30 -t 3 --no-check-certificate --max-redirect=5 "$alt_url"; then
+                        echo "Successfully downloaded domain fallback: $fname"
+                        dl_success=true
+                    fi
+                fi
+                
+                if [ "$dl_success" = "false" ]; then
+                    # If it's the main archive, try fallback extensions
+                    if [[ "$url" == "$MAIN_DOWNLOAD_URL" ]]; then
+                        echo "Main archive download failed. Attempting fallbacks..."
+                        base_url_no_ext=$(echo "$url" | sed -E 's/\.(tar\.(xz|gz|bz2|lz|lzma|zst)|zip|tgz|tbz2)$//')
+                        success=false
                         for ext in .tar.xz .tar.gz .tar.bz2 .tar.lz .zip; do
-                            alt_url="${alt_ver_base}${ext}"
-                            echo "Trying: $alt_url"
-                            if wget -T 30 -t 2 --no-check-certificate --max-redirect=5 "$alt_url"; then
+                            alt_url="${base_url_no_ext}${ext}"
+                            [[ "$alt_url" == "$url" ]] && continue
+                            
+                            echo "Trying fallback extension: $alt_url"
+                            if wget -nv -T 30 -t 2 --no-check-certificate --max-redirect=5 "$alt_url"; then
                                 MAIN_FILENAME=$(basename "$alt_url")
                                 ALL_FILENAMES+=("$MAIN_FILENAME")
-                                echo "Successfully downloaded version fallback: $MAIN_FILENAME"
+                                echo "Successfully downloaded fallback: $MAIN_FILENAME"
                                 success=true
                                 break
                             fi
                         done
+                        
+                        # Second Fallback: Strip redundant .0 from point-zero releases (x.y.0 -> x.y)
+                        if [ "$success" = "false" ] && [[ "$base_url_no_ext" == *".0" ]]; then
+                            alt_ver_base=$(echo "$base_url_no_ext" | sed 's/\.0$//')
+                            echo "Attempting version fallback (stripping .0): $alt_ver_base"
+                            for ext in .tar.xz .tar.gz .tar.bz2 .tar.lz .zip; do
+                                alt_url="${alt_ver_base}${ext}"
+                                echo "Trying: $alt_url"
+                                if wget -nv -T 30 -t 2 --no-check-certificate --max-redirect=5 "$alt_url"; then
+                                    MAIN_FILENAME=$(basename "$alt_url")
+                                    ALL_FILENAMES+=("$MAIN_FILENAME")
+                                    echo "Successfully downloaded version fallback: $MAIN_FILENAME"
+                                    success=true
+                                    break
+                                fi
+                            done
+                        fi
+                        
+                        if [ "$success" = "false" ]; then
+                            echo "[ERROR] Could not download primary archive or any common fallbacks."
+                            exit 1
+                        fi
+                    else
+                        # Not the main archive, but still a failure
+                         echo "[ERROR] Failed to download required file: $url"
+                         exit 1
                     fi
-                    
-                    if [ "$success" = "false" ]; then
-                        echo "[ERROR] Could not download primary archive or any common fallbacks."
-                        exit 1
-                    fi
-                else
-                    # Not the main archive, but still a failure
-                     echo "[ERROR] Failed to download required file: $url"
-                     exit 1
                 fi
             fi
         fi
@@ -4347,8 +4362,8 @@ if [ -n "$BS_B64" ]; then
     fi
     chmod +x /tmp/build-cmds-${PACKAGE}.sh
     set +e
-    bash /tmp/build-cmds-${PACKAGE}.sh 2>&1 | tee "/tmp/build_log_${PACKAGE}.txt"
-    build_exit_code=${PIPESTATUS[0]}
+    bash /tmp/build-cmds-${PACKAGE}.sh 2>&1
+    build_exit_code=$?
     set -e
     if [ $build_exit_code -ne 0 ]; then
         exit $build_exit_code
