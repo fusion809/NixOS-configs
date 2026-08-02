@@ -233,7 +233,8 @@ if [[ $j -gt 0 ]]; then
     startStr="--------------------------------------------------------------------------------\n"
     startStr+=$(printf "%-30s | %-15s | %-15s\n" "Package" "Local" "Remote")
     startStr+="\n--------------------------------------------------------------------------------\n"
-    str="${startStr}$str"
+    sorted_str=$(echo -e "$str" | grep -v "^$" | sort -f)
+    str="${startStr}${sorted_str}\n"
 fi
 if [[ -z "$str" ]]; then
     echo "No updates available"
