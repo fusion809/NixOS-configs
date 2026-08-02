@@ -26,5 +26,6 @@
 
   kernel.sysctl = {
     "kernel.yama.ptrace_scope" = 0;
+    "kernel.core_pattern" = "/dev/null";
   };
 }
