@@ -2222,8 +2222,8 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
 
             # 3. Record from our staging
             print "if [ -d \"$DDIR\" ] && [ \"$(ls -A \"$DDIR\" 2>/dev/null)\" ]; then"
-            print "  sudo mkdir -p \"/var/lib/book-packages\" \"/var/lib/custom-packages\""
-            print "  find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
+            print "  sudo mkdir -p \"/tmp/pkg_inventory\""
+            print "  find \"$DDIR\" -mindepth 1 -printf \"/%P\\n\" | sudo tee -a \"/tmp/pkg_inventory/" PKG "\" > /dev/null"
             print "  sudo rm -rf \"$DDIR\""
             print "fi"
             
@@ -2240,7 +2240,7 @@ COMMANDS=$(echo "$COMMANDS" | awk -v PKG="$PACKAGE" '
                     if (destdir != "") {
                         print "echo \"[LFS-AUTOBUILD] Detected existing DESTDIR/root: " destdir ". Capturing files...\""
                         print "if [ -d \"" destdir "\" ]; then"
-                        print "  find \"" destdir "\" -type f -o -type l | sed \"s|^" destdir "||\" | sudo tee -a \"/var/lib/book-packages/" PKG "\" > /dev/null"
+                        print "  find \"" destdir "\" -type f -o -type l | sed \"s|^" destdir "||\" | sudo tee -a \"/tmp/pkg_inventory/" PKG "\" > /dev/null"
                         print "fi"
                     }
                 }
@@ -4347,9 +4347,9 @@ fi
 # Initialize inventory file with version before build starts to prevent overwriting DESTDIR captures
 # Skip this for meta-packages, as their subpackages track their own versions internally
 if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
-    sudo mkdir -p /var/lib/book-packages
-    echo "${VERSION_TO_RECORD}" | sudo tee "/var/lib/book-packages/${PACKAGE}" > /dev/null
-    sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
+    sudo mkdir -p /tmp/pkg_inventory
+    echo "${VERSION_TO_RECORD}" | sudo tee "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
+    sudo chmod 755 "/tmp/pkg_inventory/${PACKAGE}"
 fi
 
 echo "Running build commands (user blocks as ${NORMAL_USER}, root blocks as root)..."
@@ -4374,24 +4374,22 @@ else
 fi
 
 if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
-    # Save file list to /var/lib/book-packages/
-    sudo mkdir -p /var/lib/book-packages
     # Append version if not already there (though we initialized it above, safety first)
-    if ! grep -q "^${VERSION_TO_RECORD}$" "/var/lib/book-packages/${PACKAGE}" 2>/dev/null; then
-        echo "${VERSION_TO_RECORD}" | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    if ! grep -q "^${VERSION_TO_RECORD}$" "/tmp/pkg_inventory/${PACKAGE}" 2>/dev/null; then
+        echo "${VERSION_TO_RECORD}" | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
     fi
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     
     # 1. Capture via timestamp (susceptible to clock drift/skew on long builds like Linux kernel)
-    find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+    find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
     
     # 2. Capture via robust before-and-after diffing (immune to clock skew/drift)
     if [ -f "/tmp/build_state_before_${PACKAGE}" ]; then
         echo "Calculating installed files using state diff (before/after)..."
         find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | LC_ALL=C sort > /tmp/build_state_after_${PACKAGE}
-        LC_ALL=C comm -13 "/tmp/build_state_before_${PACKAGE}" "/tmp/build_state_after_${PACKAGE}" | cut -d' ' -f1 | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+        LC_ALL=C comm -13 "/tmp/build_state_before_${PACKAGE}" "/tmp/build_state_after_${PACKAGE}" | cut -d' ' -f1 | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
     fi
 
     # 3. For cmake-built packages, also read the cmake install manifest (immune to timestamp issues)
@@ -4401,7 +4399,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
             grep '^/' "$mf" 2>/dev/null | while read installed_file; do
                 [ -e "$installed_file" ] && echo "$installed_file"
             done
-        done | sudo tee -a "/var/lib/book-packages/${PACKAGE}" > /dev/null
+        done | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
     fi
     
     # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
@@ -4429,11 +4427,13 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
                 fi
             done
         done
-        [ -f "$enrich_tmp" ] && { sudo bash -c "cat '$enrich_tmp' >> '/var/lib/book-packages/${PACKAGE}'"; rm -f "$enrich_tmp"; }
+        [ -f "$enrich_tmp" ] && { sudo bash -c "cat '$enrich_tmp' >> '/tmp/pkg_inventory/${PACKAGE}'"; rm -f "$enrich_tmp"; }
     fi
-    # Deduplicate but preserve version on line 1
-    sudo bash -c "head -n 1 '/var/lib/book-packages/${PACKAGE}' > '/tmp/pkg_${PACKAGE}'; tail -n +2 '/var/lib/book-packages/${PACKAGE}' | sort -u >> '/tmp/pkg_${PACKAGE}'; mv '/tmp/pkg_${PACKAGE}' '/var/lib/book-packages/${PACKAGE}'"
+    # Deduplicate but preserve version on line 1, then move to final destination
+    sudo mkdir -p /var/lib/book-packages
+    sudo bash -c "head -n 1 '/tmp/pkg_inventory/${PACKAGE}' > '/tmp/pkg_${PACKAGE}'; tail -n +2 '/tmp/pkg_inventory/${PACKAGE}' | sort -u >> '/tmp/pkg_${PACKAGE}'; mv '/tmp/pkg_${PACKAGE}' '/var/lib/book-packages/${PACKAGE}'"
     sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
+    sudo rm -f "/tmp/pkg_inventory/${PACKAGE}"
     echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/$PACKAGE"
 fi
 

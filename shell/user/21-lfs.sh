@@ -1846,15 +1846,55 @@ lfs_update() {
         fi
     done
 
-    if [[ ${#updates[@]} -gt 0 ]]; then
+    local all_updates=("${updates[@]}" "${custom_updates_list[@]}")
+    if [[ ${#all_updates[@]} -gt 0 ]]; then
         echo "Resolving dependencies and determining build order..."
-    
-    # Export LFS_BOOK and BLFS_BOOK to be used by python script
-    export LFS_BOOK_PYTHON="$LFS_DEV_BOOK"
-    export BLFS_BOOK_PYTHON="$BLFS_DEV_BOOK"
+        
+        # 1. Gather custom dependencies from VM
+        local custom_dep_edges=""
+        if [[ ${#custom_updates_list[@]} -gt 0 ]]; then
+            local pkg_list_escaped=$(printf '%s\n' "${all_updates[@]}" | paste -sd',')
+            local dep_script=$(cat <<'DEPEOF'
+pkg_list="__PKG_LIST__"
+IFS=',' read -ra updates_array <<< "$pkg_list"
 
-    # Use a Python script to perform topological sorting
-    local sorted_updates=$(python3 -c '
+declare -A name_to_dir
+for build_script in $(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null); do
+    pkg_dir=$(dirname "$build_script")
+    dir_name=$(basename "$pkg_dir")
+    name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
+    if [ -n "$name_line" ]; then
+        pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
+    else
+        pkg_name="$dir_name"
+    fi
+    name_to_dir["$pkg_name"]="$dir_name"
+    name_to_dir["$dir_name"]="$dir_name"
+done
+
+for u in "${updates_array[@]}"; do
+    dir_name="${name_to_dir[$u]:-$u}"
+    build_script=$(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null | grep -E "/${dir_name}/build.sh$" | head -n 1)
+    if [ -n "$build_script" ]; then
+        deps_line=$(grep -E '^depends=' "$build_script" | head -n 1)
+        if [ -n "$deps_line" ]; then
+            deps_val=$(echo "$deps_line" | sed -E 's/^[a-zA-Z_]+=\(?//' | sed -E 's/\)$//')
+            eval "deps=($deps_val)"
+            echo "CUSTOM_DEP:$u ${deps[*]}"
+        fi
+    fi
+done
+DEPEOF
+)
+            dep_script="${dep_script/__PKG_LIST__/$pkg_list_escaped}"
+            custom_dep_edges=$(ssh_lfs "bash -c '$(echo "$dep_script" | sed "s/'/'\''/g")'" 2>/dev/null | grep "^CUSTOM_DEP:")
+        fi
+
+        export CUSTOM_DEPS_ENV="$custom_dep_edges"
+        export LFS_BOOK_PYTHON="$LFS_DEV_BOOK"
+        export BLFS_BOOK_PYTHON="$BLFS_DEV_BOOK"
+
+        local sorted_updates=$(python3 -c '
 import urllib.request
 import re
 import sys
@@ -1931,8 +1971,28 @@ for pkg in updates:
 
 graph = {pkg: set() for pkg in updates}
 
+custom_deps_raw = os.environ.get("CUSTOM_DEPS_ENV", "")
+custom_deps = {}
+for line in custom_deps_raw.split("\n"):
+    if line.startswith("CUSTOM_DEP:"):
+        parts = line[11:].strip().split()
+        if not parts: continue
+        pkg = parts[0]
+        deps = parts[1:]
+        custom_deps[pkg] = deps
+
 for pkg in updates:
-    if pkg in pkg_urls:
+    if pkg in custom_deps:
+        for dep in custom_deps[pkg]:
+            matched_dep = None
+            for p in updates:
+                if p == dep or p.startswith(dep + "-") or dep.startswith(p + "-"):
+                    matched_dep = p
+                    break
+            
+            if matched_dep and matched_dep != pkg:
+                graph[pkg].add(matched_dep)
+    elif pkg in pkg_urls:
         deps = extract_deps(pkg_urls[pkg])
         for dep in deps:
             matched_dep = None
@@ -2040,93 +2100,106 @@ def toposort(graph):
 sorted_pkgs = toposort(graph)
 for pkg in sorted_pkgs:
     print(pkg)
-' "${updates[@]}")
+' "${all_updates[@]}")
 
-    if [[ -n "$sorted_updates" ]]; then
-        updates=()
-        while IFS= read -r pkg; do
-            [[ -n "$pkg" ]] && updates+=("$pkg")
-        done <<< "$sorted_updates"
-    fi
-
-    echo "Applying updates in dependency order:"
-    for pkg in "${updates[@]}"; do
-        echo "  - $pkg"
-    done
-    echo ""
-
-    for pkg in "${updates[@]}"; do
-        local build_args=()
-        if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
-        if [[ "$upstream" != "true" ]]; then
-            build_args+=("--no-upstream")
+        if [[ -n "$sorted_updates" ]]; then
+            all_updates=()
+            while IFS= read -r pkg; do
+                [[ -n "$pkg" ]] && all_updates+=("$pkg")
+            done <<< "$sorted_updates"
         fi
-        
-        # Force rebuild if this package only has a missing inventory (not a version update)
-        local is_force=false
-        for fp in "${force_rebuild_pkgs[@]}"; do
-            [[ "$fp" == "$pkg" ]] && is_force=true && break
+
+        echo "Applying updates in dependency order:"
+        for pkg in "${all_updates[@]}"; do
+            echo "  - $pkg"
         done
-        [[ "$is_force" == "true" ]] && build_args+=("-f")
+        echo ""
 
-        if [[ "$dry_run" == "true" ]]; then
-            echo "DRY RUN: lfs_autobuild ${build_args[*]} $pkg"
-            lfs_autobuild "${build_args[@]}" "$pkg"
-        else
-            echo "Building $pkg..."
-            if ! lfs_autobuild "${build_args[@]}" "$pkg"; then
-                echo "Error: Build failed for $pkg. Aborting update loop."
-                return 1
+        for pkg in "${all_updates[@]}"; do
+            local build_args=()
+            if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
+            if [[ "$upstream" != "true" ]]; then
+                build_args+=("--no-upstream")
             fi
-        fi
+            
+            # Force rebuild if this package only has a missing inventory (not a version update)
+            local is_force=false
+            for fp in "${force_rebuild_pkgs[@]}"; do
+                [[ "$fp" == "$pkg" ]] && is_force=true && break
+            done
+            [[ "$is_force" == "true" ]] && build_args+=("-f")
 
-        # Check for preserved libraries that might require dependent rebuilds
-        local preserved_file="/tmp/preserved_libs_${pkg}.txt"
-        if ssh_lfs "[ -f $preserved_file ]"; then
-            echo "Preserved libraries detected after updating $pkg. Searching for dependents..."
-            local libs=$(ssh_lfs "cat $preserved_file && sudo rm -f $preserved_file")
-            while read -r lib; do
-                [[ -z "$lib" ]] && continue
-                echo "  Checking dependents for $(basename "$lib")..."
-                local dependents=$(ssh_lfs "missing_search $(basename "$lib")" 2>/dev/null)
-                while read -r dep_bin; do
-                    [[ -z "$dep_bin" ]] && continue
-                    local dep_pkg=$(lfs_map_bin_to_pkg "$dep_bin")
-                    if [[ -n "$dep_pkg" ]]; then
-                        # Add to updates if not already there and not the current package
-                        local already_in=false
-                        for p in "${updates[@]}"; do
-                            if [[ "$p" == "$dep_pkg" ]]; then already_in=true; break; fi
-                        done
-                        if [[ "$already_in" == "false" && "$dep_pkg" != "$pkg" ]]; then
-                            echo "    -> Found dependent: $dep_pkg (needs rebuild)"
-                            updates+=("$dep_pkg")
-                        fi
-                    fi
-                done <<< "$dependents"
-                
-                # Register for final cleanup
-                echo "$lib" | sudo tee -a /tmp/lfs_preserved_rm_list.txt > /dev/null
-            done <<< "$libs"
-        fi
-    done
+            # Check if it is a custom package
+            local is_custom=false
+            for cp in "${custom_updates_list[@]}"; do
+                [[ "$cp" == "$pkg" ]] && is_custom=true && break
+            done
 
-    # Final cleanup of preserved libraries that are no longer needed
-    if ssh_lfs "[ -f /tmp/lfs_preserved_rm_list.txt ]"; then
-        echo "Performing final cleanup of preserved libraries..."
-        ssh_lfs 'while read -r lib; do
-            if [ -f "$lib" ]; then
-                dependents=$(missing_search "$(basename "$lib")" 2>/dev/null)
-                if [ -z "$dependents" ]; then
-                    echo "  Removing no longer needed preserved library: $lib"
-                    sudo rm -f "$lib"
+            if [[ "$dry_run" == "true" ]]; then
+                if [[ "$is_custom" == "true" ]]; then
+                    echo "DRY RUN: lfs_autobuild (custom) ${build_args[*]} $pkg"
                 else
-                    echo "  Preserving $lib: still has dependents"
+                    echo "DRY RUN: lfs_autobuild (book) ${build_args[*]} $pkg"
+                fi
+                lfs_autobuild "${build_args[@]}" "$pkg"
+            else
+                if [[ "$is_custom" == "true" ]]; then
+                    echo "Building custom package $pkg..."
+                else
+                    echo "Building book package $pkg..."
+                fi
+                if ! lfs_autobuild "${build_args[@]}" "$pkg"; then
+                    echo "Error: Build failed for $pkg. Aborting update loop."
+                    return 1
                 fi
             fi
-        done < /tmp/lfs_preserved_rm_list.txt && sudo rm -f /tmp/lfs_preserved_rm_list.txt'
-    fi
 
+            # Check for preserved libraries that might require dependent rebuilds
+            local preserved_file="/tmp/preserved_libs_${pkg}.txt"
+            if ssh_lfs "[ -f $preserved_file ]"; then
+                echo "Preserved libraries detected after updating $pkg. Searching for dependents..."
+                local libs=$(ssh_lfs "cat $preserved_file && sudo rm -f $preserved_file")
+                while read -r lib; do
+                    [[ -z "$lib" ]] && continue
+                    echo "  Checking dependents for $(basename "$lib")..."
+                    local dependents=$(ssh_lfs "missing_search $(basename "$lib")" 2>/dev/null)
+                    while read -r dep_bin; do
+                        [[ -z "$dep_bin" ]] && continue
+                        local dep_pkg=$(lfs_map_bin_to_pkg "$dep_bin")
+                        if [[ -n "$dep_pkg" ]]; then
+                            # Add to updates if not already there and not the current package
+                            local already_in=false
+                            for p in "${all_updates[@]}"; do
+                                if [[ "$p" == "$dep_pkg" ]]; then already_in=true; break; fi
+                            done
+                            if [[ "$already_in" == "false" && "$dep_pkg" != "$pkg" ]]; then
+                                echo "    -> Found dependent: $dep_pkg (needs rebuild)"
+                                all_updates+=("$dep_pkg")
+                            fi
+                        fi
+                    done <<< "$dependents"
+                    
+                    # Register for final cleanup
+                    echo "$lib" | sudo tee -a /tmp/lfs_preserved_rm_list.txt > /dev/null
+                done <<< "$libs"
+            fi
+        done
+
+        # Final cleanup of preserved libraries that are no longer needed
+        if ssh_lfs "[ -f /tmp/lfs_preserved_rm_list.txt ]"; then
+            echo "Performing final cleanup of preserved libraries..."
+            ssh_lfs 'while read -r lib; do
+                if [ -f "$lib" ]; then
+                    dependents=$(missing_search "$(basename "$lib")" 2>/dev/null)
+                    if [ -z "$dependents" ]; then
+                        echo "  Removing no longer needed preserved library: $lib"
+                        sudo rm -f "$lib"
+                    else
+                        echo "  Preserving $lib: still has dependents"
+                    fi
+                fi
+            done < /tmp/lfs_preserved_rm_list.txt && sudo rm -f /tmp/lfs_preserved_rm_list.txt'
+        fi
     fi
 
     echo "Updating Python packages via pip..."
@@ -2143,104 +2216,6 @@ for pkg in sorted_pkgs:
         ssh_lfs 'export PATH=$PATH:$HOME/.juliaup/bin && juliaup update'
     fi
 
-    if [[ ${#custom_updates_list[@]} -gt 0 ]]; then
-        echo "Resolving dependencies for custom packages..."
-
-        # Build a dependency-ordered list using the depends=() in each build.sh
-        # We run a remote script that outputs edges "pkg dep" for deps in the update list,
-        # then topologically sort with tsort.
-        local pkg_list_escaped=$(printf '%s\n' "${custom_updates_list[@]}" | paste -sd',')
-        local dep_script=$(cat <<'DEPEOF'
-pkg_list="__PKG_LIST__"
-IFS=',' read -ra updates <<< "$pkg_list"
-
-# Build association: pkg_name -> dir_name for fallback resolution
-declare -A name_to_dir
-
-for build_script in $(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null); do
-    pkg_dir=$(dirname "$build_script")
-    dir_name=$(basename "$pkg_dir")
-    name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
-    if [ -n "$name_line" ]; then
-        pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
-    else
-        pkg_name="$dir_name"
-    fi
-    name_to_dir["$pkg_name"]="$dir_name"
-    name_to_dir["$dir_name"]="$dir_name"
-done
-
-# For each pkg in updates, find its build.sh and read depends=()
-# Output edges: dep pkg (tsort wants "dependency before dependent")
-printed_self=()
-for u in "${updates[@]}"; do
-    # resolve to dir name
-    dir_name="${name_to_dir[$u]:-$u}"
-    build_script=$(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null | grep -E "/${dir_name}/build.sh$" | head -n 1)
-    [ -z "$build_script" ] && echo "$u $u" && continue
-
-    deps_line=$(grep -E '^depends=' "$build_script" | head -n 1)
-    if [ -z "$deps_line" ]; then
-        echo "$u $u"
-        continue
-    fi
-
-    # Parse the array: depends=(a b c) - strip leading key
-    deps_val=$(echo "$deps_line" | sed -E 's/^[a-zA-Z_]+=\(?//' | sed -E 's/\)$//')
-    eval "deps=($deps_val)"
-
-    has_dep_in_list=false
-    for dep in "${deps[@]}"; do
-        # Check if this dep is in the updates list (by name or dir name)
-        for candidate in "${updates[@]}"; do
-            cdir="${name_to_dir[$candidate]:-$candidate}"
-            if [ "$dep" = "$candidate" ] || [ "$dep" = "$cdir" ]; then
-                echo "$dep $u"
-                has_dep_in_list=true
-            fi
-        done
-    done
-    if ! $has_dep_in_list; then
-        echo "$u $u"
-    fi
-done
-DEPEOF
-)
-        dep_script="${dep_script/__PKG_LIST__/$pkg_list_escaped}"
-
-        local sorted_custom
-        sorted_custom=$(ssh_lfs "bash -c '$(echo "$dep_script" | sed "s/'/'\\''/g")'" 2>/dev/null \
-            | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" \
-            | tsort 2>/dev/null)
-
-        if [[ -n "$sorted_custom" ]]; then
-            mapfile -t custom_updates_list <<< "$sorted_custom"
-        fi
-
-        echo "Applying custom updates in dependency order:"
-        for pkg in "${custom_updates_list[@]}"; do
-            echo "  - $pkg"
-        done
-        echo ""
-
-        for pkg in "${custom_updates_list[@]}"; do
-            local build_args=()
-            if [[ "$dry_run" == "true" ]]; then build_args+=("--dry-run"); fi
-            if [[ "$upstream" != "true" ]]; then
-                build_args+=("--no-upstream")
-            fi
-
-            if [[ "$dry_run" == "true" ]]; then
-                echo "DRY RUN: lfs_autobuild ${build_args[*]} $pkg"
-                lfs_autobuild "${build_args[@]}" "$pkg"
-            else
-                echo "Building custom package $pkg..."
-                lfs_autobuild "${build_args[@]}" "$pkg"
-            fi
-        done
-    fi
-
-    # Git commit and push if everything is healthy
     if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
         echo "Checking system health before committing updates..."
         local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && echo "$pkg"; done')
@@ -2270,48 +2245,51 @@ DEPEOF
     ssh_lfs "~/.lfs_scripts/upos.sh"
 }
 
-function lfs_com {
-    ssh_lfs "source ~/.zshrc ; $@"
-}
+if [[ -n "$NIXCFG" && -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
+    function lfs_com {
+        ssh_lfs "source ~/.zshrc ; $@"
+    }
 
-function rm_old_share {
-    lfs_com "rm_old_share"
-}
+    function rm_old_share {
+        lfs_com "rm_old_share"
+    }
 
-function rm_old_kerns {
-    lfs_com "rm_old_kerns"
-}
+    function rm_old_kerns {
+        lfs_com "rm_old_kerns"
+    }
 
-function rm_book_src {
-    lfs_com "rm_book_src"
-}
+    function rm_book_src {
+        lfs_com "rm_book_src"
+    }
 
-function rm_lfp_src {
-    lfs_com "rm_lfp_src"
-}
+    function rm_lfp_src {
+        lfs_com "rm_lfp_src"
+    }
 
-function rm_src {
-    rm_book_src
-    rm_lfp_src
-}
-
-lfs_updc() {
-    lfs_update "$@"
-    
-    local broken_pkgs=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
-    
-    if [ -z "$broken_pkgs" ]; then
-        rm_old_libs
-        rm_old_docs
-        rm_old_kerns
-        rm_old_share
+    function rm_src {
         rm_book_src
         rm_lfp_src
-    else
-        echo "Build failures or missing inventories detected for the following packages:"
-        echo "$broken_pkgs"
-        echo "Skipping cleanup."
-    fi
-}
+    }
 
-alias lfs_updatec='lfs_updc'
+    lfs_updc() {
+        lfs_update "$@"
+        
+        local broken_pkgs=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
+        
+        if [ -z "$broken_pkgs" ]; then
+            rm_old_libs
+            rm_old_docs
+            rm_old_kerns
+            rm_old_share
+            rm_book_src
+            rm_lfp_src
+        else
+            echo "Build failures or missing inventories detected for the following packages:"
+            echo "$broken_pkgs"
+            echo "Skipping cleanup."
+        fi
+    }
+
+    alias lfs_updatec='lfs_updc'
+fi
+
