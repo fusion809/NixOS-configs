@@ -92,8 +92,8 @@ lfs_progress_bar() {
 }
 
 # Function to clean up duplicate library versions in the LFS VM
-cleanup_old_libraries() {
-    ssh_lfs "source ~/.zshrc ; cleanup_old_libraries_gpt"
+rm_old_libs() {
+    ssh_lfs "source ~/.zshrc ; rm_old_libs_gpt"
 }
 
 # Remove /usr/share/doc directories belonging to superseded package versions.
@@ -108,8 +108,8 @@ cleanup_old_libraries() {
 #   cmake-3.28.1 alongside cmake-3.29.0, not in registry → deleted
 #   cmake-3.28.1 alongside cmake-3.29.0, listed in registry → kept
 #
-# Run directly inside the LFS VM, or use cleanup_old_doc_dirs from the host.
-cleanup_old_doc_dirs_gpt() {
+# Run directly inside the LFS VM, or use rm_old_docs from the host.
+rm_old_docs_gpt() {
     local doc_root="/usr/share/doc"
     local dry_run=false
     for arg in "$@"; do
@@ -163,8 +163,8 @@ cleanup_old_doc_dirs_gpt() {
 }
 
 # Host-side wrapper: ships the function to the LFS VM and runs it there.
-cleanup_old_doc_dirs() {
-    ssh_lfs "$(declare -f cleanup_old_doc_dirs_gpt); cleanup_old_doc_dirs_gpt $*"
+rm_old_docs() {
+    ssh_lfs "$(declare -f rm_old_docs_gpt); rm_old_docs_gpt $*"
 }
 
 ls_old_libs_gpt() {
@@ -489,7 +489,7 @@ prune_pkg_inventory() {
     ssh_lfs "$(declare -f prune_pkg_inventory_gpt); prune_pkg_inventory_gpt ${args[*]}"
 }
 
-cleanup_old_libraries_gpt() {
+rm_old_libs_gpt() {
     local dep_cache="/tmp/lfs_dep_cache.txt"
     local pkg_cache="/tmp/lfs_pkg_cache.txt"
     
@@ -2106,13 +2106,13 @@ for pkg in sorted_pkgs:
                 done <<< "$dependents"
                 
                 # Register for final cleanup
-                echo "$lib" | sudo tee -a /tmp/lfs_preserved_cleanup_list.txt > /dev/null
+                echo "$lib" | sudo tee -a /tmp/lfs_preserved_rm_list.txt > /dev/null
             done <<< "$libs"
         fi
     done
 
     # Final cleanup of preserved libraries that are no longer needed
-    if ssh_lfs "[ -f /tmp/lfs_preserved_cleanup_list.txt ]"; then
+    if ssh_lfs "[ -f /tmp/lfs_preserved_rm_list.txt ]"; then
         echo "Performing final cleanup of preserved libraries..."
         ssh_lfs 'while read -r lib; do
             if [ -f "$lib" ]; then
@@ -2124,7 +2124,7 @@ for pkg in sorted_pkgs:
                     echo "  Preserving $lib: still has dependents"
                 fi
             fi
-        done < /tmp/lfs_preserved_cleanup_list.txt && sudo rm -f /tmp/lfs_preserved_cleanup_list.txt'
+        done < /tmp/lfs_preserved_rm_list.txt && sudo rm -f /tmp/lfs_preserved_rm_list.txt'
     fi
 
     fi
@@ -2274,25 +2274,25 @@ function lfs_com {
     ssh_lfs "source ~/.zshrc ; $@"
 }
 
-function cleanup_old_share_dirs {
-    lfs_com "cleanup_old_share_dirs"
+function rm_old_share {
+    lfs_com "rm_old_share"
 }
 
-function cleanup_old_kernels {
-    lfs_com "cleanup_old_kernels"
+function rm_old_kerns {
+    lfs_com "rm_old_kerns"
 }
 
-function cleanup_book_src {
-    lfs_com "cleanup_book_src"
+function rm_book_src {
+    lfs_com "rm_book_src"
 }
 
-function cleanup_lfp_src {
-    lfs_com "cleanup_lfp_src"
+function rm_lfp_src {
+    lfs_com "rm_lfp_src"
 }
 
-function cleanup_src {
-    cleanup_book_src
-    cleanup_lfp_src
+function rm_src {
+    rm_book_src
+    rm_lfp_src
 }
 
 lfs_updc() {
@@ -2301,12 +2301,12 @@ lfs_updc() {
     local broken_pkgs=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
     
     if [ -z "$broken_pkgs" ]; then
-        cleanup_old_libraries
-        cleanup_old_doc_dirs
-        cleanup_old_kernels
-        cleanup_old_share_dirs
-        cleanup_book_src
-        cleanup_lfp_src
+        rm_old_libs
+        rm_old_docs
+        rm_old_kerns
+        rm_old_share
+        rm_book_src
+        rm_lfp_src
     else
         echo "Build failures or missing inventories detected for the following packages:"
         echo "$broken_pkgs"

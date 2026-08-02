@@ -150,8 +150,8 @@ if [ -n "$BASH_VERSION" ]; then
     export -f autoremove
 fi
 
-# `cleanup_old_share_dirs` = cleanup old versioned dirs in /usr/share
-cleanup_old_share_dirs() {
+# `rm_old_share` = cleanup old versioned dirs in /usr/share
+rm_old_share() {
     local dry_run=false
     if [[ "$1" == "--dry-run" ]]; then
         dry_run=true
@@ -222,5 +222,5 @@ cleanup_old_share_dirs() {
     fi
 }
 if [ -n "$BASH_VERSION" ]; then
-    export -f cleanup_old_share_dirs
+    export -f rm_old_share
 fi
