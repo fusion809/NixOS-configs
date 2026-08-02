@@ -2270,14 +2270,30 @@ DEPEOF
     ssh_lfs "~/.lfs_scripts/upos.sh"
 }
 
+function cleanup_share_dirs {
+    ssh_lfs "source ~/.zshrc; cleanup_share_dirs"
+}
+
+function cleanup_old_kernels {
+    ssh_lfs "source ~/.zshrc ; cleanup_old_kernels"
+}
+
+function clean_lfp_src {
+    ssh_lfs "source ~/.zshrc ; clean_lfp_src"
+}
+
+function clean_book_src {
+    ssh_lfs "sudo rm -rf /sources/* && mkdir -p /sources/archives"
+}
+
 lfs_updc() {
     lfs_update "$@"
     cleanup_old_libraries
     cleanup_old_doc_dirs
-    ssh_lfs "source ~/.zshrc ; cleanup_old_kernels"
-    ssh_lfs "source ~/.zshrc ; cleanup_share_dirs"
-    ssh_lfs "source ~/.zshrc ; clean_lfp_src"
-    ssh_lfs "sudo rm -rf /sources/* && mkdir -p /sources/archives"
+    cleanup_old_kernels
+    cleanup_share_dirs
+    clean_lfp_src
+    clean_book_src
 }
 
 alias lfs_updatec='lfs_updc'
