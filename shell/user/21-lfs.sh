@@ -2274,6 +2274,7 @@ lfs_updc() {
     lfs_update "$@"
     cleanup_old_libraries
     cleanup_old_doc_dirs
+    ssh_lfs "source ~/.zshrc ; cleanup_old_kernels"
     ssh_lfs "source ~/.zshrc ; cleanup_share_dirs"
     ssh_lfs "source ~/.zshrc ; clean_lfp_src"
     ssh_lfs "sudo rm -rf /sources/* && mkdir -p /sources/archives"

@@ -5,6 +5,7 @@ ds-fhs-env
 .swp
 wget-log
 core
+core.*
 dmesg*.log
 *.log
 hl*txt
