@@ -170,26 +170,56 @@ cleanup_share_dirs() {
         return 1
     fi
 
+    local deleted_count=0
     # Check top-level directories in /usr/share
-    find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | while IFS= read -r dir; do
+    for dir in $(find /usr/share -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort); do
         # We only want to clean up directories that look like they have a version suffix
         # to avoid wiping out things like /usr/share/man if it accidentally got untracked,
         # but the user specifically wanted to clean up versioned leftovers.
-        if [[ "$dir" =~ -[0-9]+(\.[0-9]+)*$ ]]; then
+        local dir_version=$(echo "$dir" | grep -oE -- '-[0-9]+(\.[0-9]+)*$' | sed 's/^-//')
+        if [[ -n "$dir_version" ]]; then
+            local base_name=$(echo "$dir" | sed -E "s/-${dir_version}\$//")
+            
             # Check if this directory or anything inside it is claimed by ANY active package
             if ! grep -q "^${dir}\$\|^${dir}/" "$all_files_db"; then
-                if [[ "$dry_run" == "true" ]]; then
-                    echo "Would delete orphaned versioned dir: $dir"
-                else
-                    echo "Deleting orphaned versioned dir: $dir"
-                    sudo rm -rf "$dir"
+                # Only delete if there is a newer version of this directory in /usr/share
+                local has_newer=false
+                for other_dir in $(find /usr/share -mindepth 1 -maxdepth 1 -type d -name "$(basename "${base_name}")-*" 2>/dev/null); do
+                    [[ "$other_dir" == "$dir" ]] && continue
+                    local other_version=$(echo "$other_dir" | grep -oE -- '-[0-9]+(\.[0-9]+)*$' | sed 's/^-//')
+                    if [[ -n "$other_version" ]]; then
+                        local highest=$(printf "%s\n%s\n" "$dir_version" "$other_version" | sort -V | tail -n 1)
+                        if [[ "$highest" == "$other_version" && "$highest" != "$dir_version" ]]; then
+                            has_newer=true
+                            break
+                        fi
+                    fi
+                done
+                
+                if [[ "$has_newer" == "true" ]]; then
+                    deleted_count=$((deleted_count + 1))
+                    if [[ "$dry_run" == "true" ]]; then
+                        echo "Would delete orphaned versioned dir (newer version exists): $dir"
+                    else
+                        echo "Deleting orphaned versioned dir: $dir"
+                        sudo rm -rf "$dir"
+                    fi
                 fi
             fi
         fi
     done
 
     rm -f "$all_files_db"
-    echo "Cleanup of /usr/share complete."
+    
+    if [[ "$deleted_count" -eq 0 ]]; then
+        echo "No orphaned versioned directories were found to delete."
+    fi
+    
+    if [[ "$dry_run" == "true" ]]; then
+        echo "Dry run complete."
+    else
+        echo "Cleanup of /usr/share complete."
+    fi
 }
 if [ -n "$BASH_VERSION" ]; then
     export -f cleanup_share_dirs
