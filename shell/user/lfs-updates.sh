@@ -9,14 +9,17 @@ for arg in "$@"; do
         echo "Usage: updates [options]"
         echo "Options:"
         echo "  --no-upstream  Check only LFS/BLFS book versions (disable upstream tracking) [DEFAULT is to track upstream]"
+        echo "  -v, --verbose  List custom packages with their local and remote versions"
         echo "  -h, --help     Show this help message"
         exit 0
     fi
 done
 
+verbose=false
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --no-upstream) upstream=false ;;
+        -v|--verbose) verbose=true ;;
     esac
     shift
 done
@@ -180,8 +183,10 @@ while IFS= read -r update_line; do
         label="[MISSING]"
     fi
 
-    str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
-    str+="\n"
+    if [[ "$verbose" == "true" ]]; then
+        str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
+        str+="\n"
+    fi
     j=$((j + 1))
 done <<< "$CUSTOM_UPDATES"
 

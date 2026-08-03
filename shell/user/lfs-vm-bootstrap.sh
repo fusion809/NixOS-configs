@@ -126,6 +126,14 @@ if [ -n "$BASH_VERSION" ]; then
     export -f lfs_commit
 fi
 
+# `commit` = lfs_commit (no-prefix alias)
+commit() {
+    lfs_commit "$@"
+}
+if [ -n "$BASH_VERSION" ]; then
+    export -f commit
+fi
+
 # `update` = lfs_update
 update() {
     lfs_update "$@"

@@ -36,7 +36,7 @@ lfs_sync_to_vm() {
     # Hook into ~/.bashrc if not already present
     ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo '# LFS update helpers' >> ~/.bashrc && echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
     ssh_lfs "touch ~/.zshrc && (grep -q 'lfs-vm-bootstrap.sh' ~/.zshrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.zshrc)"
-    echo "Sync complete. 'updates', 'update', and 'lfs_commit' are now available on the VM."
+    echo "Sync complete. 'updates', 'update', 'autobuild', 'autoremove', 'commit', 'updatec', and 'sync_to_vm' are now available on the host; 'updates', 'update', 'autobuild', 'autoremove', and 'commit' are available on the VM."
 }
 
 lfs_autobuild() {
@@ -1681,16 +1681,19 @@ lfs_update() {
             echo "Options:"
             echo "  --dry-run      Show what would be updated without downloading/building"
             echo "  --no-upstream  Check only LFS/BLFS book versions (disable upstream tracking) [DEFAULT is to track upstream]"
+            echo "  -v, --verbose  List custom packages with their local and remote versions"
             echo "  -h, --help     Show this help message"
             return 0
         fi
     done
 
+    local verbose=false
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
             --dry-run) dry_run=true ;;
             --no-upstream) upstream=false ;;
             --upstream) upstream=true ;; # Hidden compatibility flag
+            -v|--verbose) verbose=true ;;
         esac
         shift
     done
@@ -1822,7 +1825,9 @@ lfs_update() {
             continue
         fi
         
-        printf "Found custom update: %s: %s->%s\n" "$name" "$local_ver" "$remote_ver"
+        if [[ "$verbose" == "true" ]]; then
+            printf "Found custom update: %s: %s->%s\n" "$name" "$local_ver" "$remote_ver"
+        fi
         custom_updates_list+=("$name")
         update_msgs+=("${name}: ${local_ver}->${remote_ver}")
     done <<< "$custom_updates"
@@ -2291,5 +2296,19 @@ if [[ -n "$NIXCFG" && -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
     }
 
     alias lfs_updatec='lfs_updc'
+
+    # Short aliases without lfs_ prefix for host-side commands.
+    # Each wrapper calls a distinctly-named lfs_* function — no recursion possible.
+    autobuild()   { lfs_autobuild "$@"; }
+    autoremove()  { lfs_autoremove "$@"; }
+    updates()     { bash "$NIXCFG/shell/user/lfs-updates.sh" "$@"; }
+    update()      { lfs_update "$@"; }
+    updatec()     { lfs_updc "$@"; }
+    sync_to_vm()  { lfs_sync_to_vm "$@"; }
+    commit() {
+        source "$NIXCFG/shell/user/08-ssh.sh"
+        source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+        ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit $(printf '%q ' "$@")'"
+    }
 fi
 
