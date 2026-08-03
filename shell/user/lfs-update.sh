@@ -556,9 +556,10 @@ lfs_check_custom_updates() {
                     eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
                     echo 'set +e' > "$eval_script"
                     echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
+                    echo 'exec 3>&1 1>/dev/null' >> "$eval_script"
                     head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
-                    echo "echo \"\$$var_name\"" >> "$eval_script"
-                    remote_ver=$(cd "$pkg_dir" && timeout 60 bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
+                    echo "echo \"VER_RESULT:\$$var_name\" >&3" >> "$eval_script"
+                    remote_ver=$(cd "$pkg_dir" && timeout 60 bash "$eval_script" 2>/dev/null | grep '^VER_RESULT:' | sed 's/^VER_RESULT://' | tr -d '\r\n[:space:]')
                     rm -f "$eval_script"
                     if [ -z "$remote_ver" ]; then status="FAILED"; fi
                 fi

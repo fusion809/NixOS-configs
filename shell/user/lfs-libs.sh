@@ -1,16 +1,55 @@
 #!/usr/bin/env bash
 
+# Shared dependency cache paths
+LFS_DEP_CACHE="/tmp/lfs_dep_cache.txt"
+LFS_DEP_CACHE_LOCK="/tmp/lfs_dep_cache.lock"
+LFS_DEP_CACHE_DIRS="/usr/bin /usr/lib /lib /opt"
+
+# Ensure the shared dependency cache is up-to-date.
+# - If the cache is being built by another process, waits for it to finish.
+# - Rebuilds only when a file in the searched dirs is newer than the cache.
+lfs_ensure_dep_cache() {
+    # Wait for any concurrent build to finish (up to 5 minutes)
+    (
+        flock -w 300 9 || { echo "Timed out waiting for dep cache lock."; return 1; }
+
+        # Check staleness: rebuild if cache missing or any searched file is newer
+        local needs_rebuild=false
+        if [[ ! -s "$LFS_DEP_CACHE" ]]; then
+            needs_rebuild=true
+        else
+            # shellcheck disable=SC2086
+            if find $LFS_DEP_CACHE_DIRS -newer "$LFS_DEP_CACHE" -type f \( -executable -o -name "*.so*" \) 2>/dev/null | grep -q .; then
+                needs_rebuild=true
+            fi
+        fi
+
+        if [[ "$needs_rebuild" == "true" ]]; then
+            echo "Building dependency cache (searching $LFS_DEP_CACHE_DIRS)..."
+            local tmp_cache="${LFS_DEP_CACHE}.tmp.$$"
+            # shellcheck disable=SC2086
+            find $LFS_DEP_CACHE_DIRS -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
+                xargs -P"$(nproc)" -I{} sh -c \
+                    "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && \
+                     deps=\$(readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ') && \
+                     echo \"{}: \$deps\"" > "$tmp_cache"
+            mv -f "$tmp_cache" "$LFS_DEP_CACHE"
+            echo "Dependency cache built."
+        else
+            echo "Dependency cache is up-to-date."
+        fi
+    ) 9>"$LFS_DEP_CACHE_LOCK"
+}
+
 rm_old_libs_gpt() {
     local dep_cache="/tmp/lfs_dep_cache.txt"
     local pkg_cache="/tmp/lfs_pkg_cache.txt"
     
     echo "[LFS-AUTOBUILD] Generating dependency and package caches. This ensures accurate and fast cleanup..."
     
-    # 1. Generate system-wide dependency cache (File -> Shared Libs)
-    # We use -executable OR -name "*.so*" to catch both binaries and libs.
-    # readelf -d extracts the (NEEDED) entries.
-    find /usr/bin /usr/lib /lib /opt -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
-    xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && deps=\$(readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ') && echo \"{}: \$deps\"" > "$dep_cache"
+    # 1. Generate system-wide dependency cache (shared, with locking and staleness check)
+    lfs_ensure_dep_cache
+    local dep_cache="$LFS_DEP_CACHE"
     
     # 2. Generate package inventory mapping (File -> Package)
     # This maps every installed file back to the package that registered it in /var/lib/*-packages/
@@ -310,7 +349,9 @@ rm_old_libs_gpt() {
         fi
     done
     
-    rm -f "$dep_cache" "$pkg_cache"
+    rm -f "$pkg_cache"
+    # Note: dep_cache ($LFS_DEP_CACHE) is shared and not removed here;
+    # it will be reused or invalidated by staleness checks on the next run.
 }
 
 rm_old_libs() {
@@ -391,12 +432,11 @@ ls_old_libs_gpt() {
         return 0
     fi
 
-    local dep_cache="/tmp/lfs_dep_cache_ls.txt"
     if [[ "$show_deps" == "true" ]]; then
-        echo "Generating dependency cache. This may take a moment..."
-        find /usr/bin /usr/lib /lib /opt -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
-        xargs -P$(nproc) -I{} sh -c "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && deps=\$(readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ') && echo \"{}: \$deps\"" > "$dep_cache"
+        echo "Building/reusing shared dependency cache..."
+        lfs_ensure_dep_cache
     fi
+    local dep_cache="$LFS_DEP_CACHE"
 
     echo "--- Old Libraries ---"
     for i in "${old_items[@]}"; do
@@ -477,9 +517,7 @@ ls_old_libs_gpt() {
         fi
     done
 
-    if [[ "$show_deps" == "true" ]]; then
-        rm -f "$dep_cache"
-    fi
+    # Note: dep_cache ($LFS_DEP_CACHE) is shared and not removed here.
 }
 
 ls_old_libs() {
