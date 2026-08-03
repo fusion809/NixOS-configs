@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LFS VM Bootstrap - Auto-synced from host via lfs_sync_to_vm
+# LFS VM Bootstrap - Auto-synced from host via sync_to_vm
 # Provides `updates` and `update` commands inside the LFS VM.
 # DO NOT EDIT MANUALLY - changes will be overwritten on next sync.
 
