@@ -12,36 +12,59 @@ rm_old_docs_gpt() {
     [[ "$dry_run" == "true" ]] && echo "[DRY RUN] No files will be deleted."
     echo "Scanning $doc_root for stale old-version directories..."
 
-    # Pass 1: determine the newest versioned dir for each package base name.
-    declare -A latest=()
-    local dir base pkg_base
+    local removed=0 removed_kept=0
+
     while IFS= read -r dir; do
+        local base pkg_base
         base=$(basename "$dir")
         pkg_base=$(echo "$base" | sed -E 's/-[0-9][0-9a-zA-Z._+-]*$//')
         [[ "$pkg_base" == "$base" ]] && continue   # no version suffix → skip
-        latest["$pkg_base"]="$dir"                 # sort -V: last wins = newest
-    done < <(find "$doc_root" -mindepth 1 -maxdepth 1 -type d | sort -V)
 
-    # Pass 2: for every versioned dir that is NOT the newest for its base,
-    # delete it only if it is not listed in any package registry file.
-    local removed=0 kept_registered=0
-    while IFS= read -r dir; do
-        base=$(basename "$dir")
-        pkg_base=$(echo "$base" | sed -E 's/-[0-9][0-9a-zA-Z._+-]*$//')
-        [[ "$pkg_base" == "$base" ]] && continue
+        # Is there a strictly newer version directory for this package?
+        local has_newer=false newest_base=""
+        local other_dir other_base other_pkg_base newest
+        while IFS= read -r other_dir; do
+            [[ "$other_dir" == "$dir" ]] && continue
+            other_base=$(basename "$other_dir")
+            other_pkg_base=$(echo "$other_base" | sed -E 's/-[0-9][0-9a-zA-Z._+-]*$//')
+            [[ "$other_pkg_base" != "$pkg_base" ]] && continue
+            # Same package base — is other_base strictly newer than base?
+            newest=$(printf '%s\n%s\n' "$base" "$other_base" | sort -V | tail -n 1)
+            if [[ "$newest" == "$other_base" && "$newest" != "$base" ]]; then
+                has_newer=true
+                newest_base="$other_base"
+                break
+            fi
+        done < <(find "$doc_root" -mindepth 1 -maxdepth 1 -type d)
 
-        # Condition 1: is there a newer dir for this package?
-        [[ "${latest[$pkg_base]}" == "$dir" ]] && continue   # this IS the newest → keep
+        # No newer version exists → this IS the only/newest → always keep
+        [[ "$has_newer" == "false" ]] && continue
 
-        # Condition 2: is this dir listed in any registry file?
-        if grep -qrl "^${dir}" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null; then
-            echo "Keeping $base (older but listed in registry)"
-            kept_registered=$((kept_registered + 1))
+        # A newer version exists. Check if old version is legitimately still installed.
+        # Registry files have the current version as their first line. If the file
+        # containing the old path has a version line matching this dir's version,
+        # it's a genuine current entry (e.g. gcr-3 coexisting with gcr-4).
+        # If the version line has moved on (e.g. to linux-7.1.6), the path is stale.
+        local keep_it=false
+        local dir_version="${base#${pkg_base}-}"
+        local reg_file
+        while IFS= read -r reg_file; do
+            local reg_ver
+            reg_ver=$(head -n 1 "$reg_file" 2>/dev/null | tr -d '[:space:]')
+            if [[ "$reg_ver" == "$dir_version" ]]; then
+                keep_it=true
+                break
+            fi
+        done < <(grep -rl --exclude-dir=.git "^${dir}$" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null)
+
+        if [[ "$keep_it" == "true" ]]; then
+            echo "Keeping $base (legitimately in registry)"
+            removed_kept=$((removed_kept + 1))
             continue
         fi
 
-        # Older AND not in registry → stale, safe to delete.
-        echo "Removing stale: $base  (newer: $(basename "${latest[$pkg_base]}"))"
+        # Older AND stale/unregistered → safe to delete.
+        echo "Removing stale: $base  (newer: $newest_base)"
         if [[ "$dry_run" == "false" ]]; then
             sudo rm -rf -- "$dir"
         fi
@@ -49,12 +72,15 @@ rm_old_docs_gpt() {
     done < <(find "$doc_root" -mindepth 1 -maxdepth 1 -type d | sort -V)
 
     echo "---"
-    echo "Removed          : $removed"
-    echo "Kept (registered): $kept_registered"
+    echo "Removed : $removed"
+    echo "Kept    : $removed_kept"
 }
 
 rm_old_docs() {
-    ssh_lfs "$(declare -f rm_old_docs_gpt); rm_old_docs_gpt $*"
+    local funcdef args
+    funcdef=$(declare -f rm_old_docs_gpt)
+    args="$*"
+    printf '%s\nrm_old_docs_gpt %s\n' "$funcdef" "$args" | ssh_lfs "bash --norc --noprofile -s"
 }
 
 
