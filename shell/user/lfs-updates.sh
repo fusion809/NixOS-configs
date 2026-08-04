@@ -1,4 +1,5 @@
 source "$(dirname "${BASH_SOURCE[0]}")/21-lfs.sh"
+[[ -f "$(dirname "${BASH_SOURCE[0]}")/08-ssh.sh" ]] && source "$(dirname "${BASH_SOURCE[0]}")/08-ssh.sh"
 
 # Main
 upstream=true
@@ -25,7 +26,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Synchronize clock to prevent fetch errors from time skew
-if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
+if declare -f ssh_lfs >/dev/null 2>&1; then
     echo "Synchronizing LFS guest clock to host..."
     ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
 else
@@ -133,9 +134,11 @@ while read -r local_pkg; do
         lfs_progress_bar "$count" "$total_local" "Checking LFS/BLFS packages  [Global ${global_pct}%]" >&2
     fi
 done <<< "$LOCAL_PKGS"
-wait
+wait   # Wait for all local package comparison background jobs
 
 # Fetch custom updates (runs on VM via SSH, has its own internal progress bar)
+# This was briefly moved to the background, which broke the sequential global progress
+# percentage display. It remains here sequentially.
 CUSTOM_UPDATES_RAW=$(lfs_check_custom_updates \
     --global-offset $((total_upstream * w_up + total_local * w_loc)) \
     --global-total "$total_global" \
@@ -163,10 +166,13 @@ while IFS= read -r update_line; do
     custom_str+="${name} | ${local_ver} | ${remote_ver}"$'\n'
 
     # Skip if local and remote versions match exactly, or if both are MISSING
-    if [[ "$local_ver" == "$remote_ver" ]] || [[ "$local_ver" == *"MISSING"* && "$remote_ver" == *"MISSING"* ]]; then
-        # If it failed, we might want to know. Otherwise, skip all matches.
-        if [[ "$remote_ver" != *"FAILED"* ]] && ! echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
-            continue
+    # UNLESS verbose is true, in which case we print them anyway.
+    if [[ "$verbose" != "true" ]]; then
+        if [[ "$local_ver" == "$remote_ver" ]] || [[ "$local_ver" == *"MISSING"* && "$remote_ver" == *"MISSING"* ]]; then
+            # If it failed or has missing files, we might want to know regardless of verbose
+            if [[ "$remote_ver" != *"FAILED"* ]] && ! echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
+                continue
+            fi
         fi
     fi
 
@@ -181,12 +187,12 @@ while IFS= read -r update_line; do
         label="[FAILED]"
     elif [[ "$remote_ver" == *"MISSING"* ]]; then
         label="[MISSING]"
+    elif [[ "$local_ver" == "$remote_ver" ]]; then
+        label=""
     fi
 
-    if [[ "$verbose" == "true" ]]; then
-        str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
-        str+="\n"
-    fi
+    str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
+    str+="\n"
     j=$((j + 1))
 done <<< "$CUSTOM_UPDATES"
 

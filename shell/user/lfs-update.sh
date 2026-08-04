@@ -116,37 +116,61 @@ lfs_get_remote_packages() {
         shift
     done
 
-    KERNEL_VER=$(curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -Vr | head -n 1)
-    JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href="\./([0-9]+)}g) { print $1 }' | sort -rn | head -n 1)
-    if [[ -n "$JDK_MAJOR" ]]; then
-        JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | perl -nle 'while (m{(https://download\.java\.net/java/[^ "]+/openjdk-[0-9]+[^ "]*_linux-x64_bin\.tar\.gz)}g) { print $1 }' | head -n 1)
-        JDK_VER=$(echo "$JDK_TARBALL" | perl -nle 'while (m{openjdk-([0-9a-zA-Z\+\.\-]+)_linux-x64_bin}g) { print $1 }')
-        JDK_REMOTE="openjdk-${JDK_VER}_linux-x64_bin"
-    fi
-    # LFS packages scraping: Fix regex to include dots in versions (e.g. libxcrypt-4.5.2)
-    local lfs_remote=$(curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
-        grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.(tar\.[a-z0-9]+|zip)' | \
-        sed 's/\.tar.*//; s/\.zip//' | \
-        sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" |\
-        sort -u)
+    # Fetch kernel version, JDK info, LFS book packages, BLFS longindex, and all BLFS
+    # meta-pages in parallel to eliminate the largest sequential bottleneck.
+    local tmp_fetch=$(mktemp -d)
+    local tmp_meta=$(mktemp -d)
 
-    # BLFS individual packages from long index
-    local blfs_remote=$(curl -s "$BLFS_DEV_BOOK/longindex.html" | tr -d '\r' | \
+    # Kernel version
+    (curl -s -H "User-Agent: bash" https://www.kernel.org/ | grep -A 1 -E "mainline:|stable:" | grep -v "rc" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | sort -Vr | head -n 1 > "$tmp_fetch/kernel") &
+
+    # JDK: major lookup + tarball URL chained in one subshell (avoids extra wait round)
+    (
+        local jdk_major=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href="\./([0-9]+)}g) { print $1 }' | sort -rn | head -n 1)
+        if [[ -n "$jdk_major" ]]; then
+            local jdk_tarball=$(curl -s "https://jdk.java.net/${jdk_major}/" | perl -nle 'while (m{(https://download\.java\.net/java/[^ "]+/openjdk-[0-9]+[^ "]*_linux-x64_bin\.tar\.gz)}g) { print $1 }' | head -n 1)
+            local jdk_ver=$(echo "$jdk_tarball" | perl -nle 'while (m{openjdk-([0-9a-zA-Z\+\.\-]+)_linux-x64_bin}g) { print $1 }')
+            echo "openjdk-${jdk_ver}_linux-x64_bin" > "$tmp_fetch/jdk"
+        fi
+    ) &
+
+    # LFS book packages (kernel version substitution applied after wait)
+    (curl -s "$LFS_DEV_BOOK/chapter03/packages.html" | tr -d '\r' | \
+        grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.(tar\.[a-z0-9]+|zip)' | \
+        sed 's/\.tar.*//; s/\.zip//' | sort -u > "$tmp_fetch/lfs_raw") &
+
+    # BLFS longindex
+    (curl -s "$BLFS_DEV_BOOK/longindex.html" | tr -d '\r' | \
         perl -0777 -ne 'while (/SpiderMonkey:.*?firefox-([0-9.]+)/gs) { print "spidermonkey-$1\n" } while (/>([a-zA-Z0-9_\+\-]+\-[0-9][a-zA-Z0-9_\+\-\.]+)<\/a>/gs) { print "$1\n" }' | \
         sed "/[Vv]im-[0-9.]*$/d" | \
-        sort -u)
+        sort -u > "$tmp_fetch/blfs") &
 
-    # BLFS meta-pages for extra coverage (Xorg, KDE, etc.)
+    # BLFS meta-pages (Xorg, KDE, etc.) — all fetched concurrently with the above
     local blfs_metapages=("x/x7lib.html" "x/x7app.html" "x/x7font.html" "x/x7driver.html" "kde/frameworks6.html" "kde/plasma-all.html" "kde/plasma.html")
+    for page in "${blfs_metapages[@]}"; do
+        local safe_name="${page//\//\_}"
+        (curl -s "$BLFS_DEV_BOOK/$page" | tr -d '\r' | \
+            grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.(tar\.[a-z0-9]+|zip)' | \
+            sed 's/\.tar.*//; s/\.zip//' | sort -u > "$tmp_meta/$safe_name") &
+    done
+
+    wait
+
+    KERNEL_VER=$(cat "$tmp_fetch/kernel")
+    JDK_REMOTE=$(cat "$tmp_fetch/jdk" 2>/dev/null)
+    # Apply kernel version substitution now that KERNEL_VER is known
+    local lfs_remote=$(sed "s|^linux-[0-9.]*$|linux-${KERNEL_VER}|g" "$tmp_fetch/lfs_raw" | sort -u)
+    local blfs_remote=$(cat "$tmp_fetch/blfs")
+    rm -rf "$tmp_fetch"
+
+    # Merge BLFS meta-page results (fetched in parallel above)
     local blfs_extra=""
     local plasma_pkg_names=""
     local frameworks_pkg_names=""
     for page in "${blfs_metapages[@]}"; do
-        local page_pkgs="$(curl -s "$BLFS_DEV_BOOK/$page" | tr -d '\r' | \
-            grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.(tar\.[a-z0-9]+|zip)' | \
-            sed 's/\.tar.*//; s/\.zip//' | sort -u)"
+        local safe_name="${page//\//\_}"
+        local page_pkgs=$(cat "$tmp_meta/$safe_name" 2>/dev/null)
         blfs_extra+="${page_pkgs}"$'\n'
-        
         if [[ "$page" == "kde/plasma"* ]]; then
             plasma_pkg_names+=$(echo "$page_pkgs" | sed -E 's/-[0-9].*//')
             plasma_pkg_names+=$'\n'
@@ -155,6 +179,7 @@ lfs_get_remote_packages() {
             frameworks_pkg_names+=$'\n'
         fi
     done
+    rm -rf "$tmp_meta"
     
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
@@ -164,15 +189,68 @@ lfs_get_remote_packages() {
         local count=0
         local tmp_upstream=$(mktemp -d)
         
+        local gnome_pkgs=()
+        local other_pkgs=()
         for p in "${upstream_list[@]}"; do
+            case "$p" in
+                gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|gjs|glycin|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib|glib2|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)
+                    gnome_pkgs+=("$p") ;;
+                *)
+                    other_pkgs+=("$p") ;;
+            esac
+        done
+
+        if [[ ${#gnome_pkgs[@]} -gt 0 ]]; then
             (
-                uv=$(lfs_get_upstream_version "$p")
-                if [[ -n "$uv" ]]; then
-                    echo "${p}-${uv}" > "$tmp_upstream/$p"
-                else
-                    echo "${p}-FAILED" > "$tmp_upstream/$p"
-                fi
+                python3 -c '
+import sys, json, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+tmp_dir = sys.argv[1]
+packages = sys.argv[2:]
+def fetch_gnome(pkg):
+    name = pkg
+    if name == "glib2": name = "glib"
+    if name == "libxml2": name = "libxml2"
+    url = f"https://download.gnome.org/sources/{name}/cache.json"
+    try:
+        req = urllib.request.urlopen(url, timeout=10)
+        data = json.loads(req.read())
+        versions = data[1].get(name, [])
+        stable_versions = []
+        for v in versions:
+            parts = v.split(".")
+            if not all(p.isdigit() for p in parts): continue
+            ints = [int(p) for p in parts]
+            if ints[0] < 40 and len(ints) >= 2 and ints[1] % 2 != 0: continue
+            if any(p >= 90 for p in ints[1:]): continue
+            stable_versions.append(v)
+        if stable_versions:
+            stable_versions.sort(key=lambda x: [int(p) for p in x.split(".")])
+            return pkg, stable_versions[-1]
+    except Exception:
+        pass
+    return pkg, "FAILED"
+with ThreadPoolExecutor(max_workers=20) as ex:
+    for pkg, ver in ex.map(fetch_gnome, packages):
+        with open(f"{tmp_dir}/{pkg}", "w") as f:
+            if ver != "FAILED": f.write(f"{pkg}-{ver}\n")
+            else: f.write(f"{pkg}-FAILED\n")
+' "$tmp_upstream" "${gnome_pkgs[@]}"
             ) &
+        fi
+
+        for p in "${upstream_list[@]}"; do
+            # Only spawn subshells for non-GNOME packages; GNOME ones are batched in Python above
+            if [[ ! " ${gnome_pkgs[@]} " =~ " ${p} " ]]; then
+                (
+                    uv=$(lfs_get_upstream_version "$p")
+                    if [[ -n "$uv" ]]; then
+                        echo "${p}-${uv}" > "$tmp_upstream/$p"
+                    else
+                        echo "${p}-FAILED" > "$tmp_upstream/$p"
+                    fi
+                ) &
+            fi
             
             # Show progress based on jobs started
             count=$((count + 1))
@@ -194,50 +272,51 @@ lfs_get_remote_packages() {
         fi
         echo "" >&2
         
-        # Expand metapackage versions (plasma, frameworks) to all their constituent packages
+        # 3. Parallel expansion of metapackage versions
+        local tmp_expand=$(mktemp -d)
+
         if [[ -f "$tmp_upstream/plasma" ]]; then
             local plasma_up_ver=$(cat "$tmp_upstream/plasma" | cut -d- -f2)
-            # Scrape the directory listing directly to get the REAL list of components for this version
-            local remote_dir_url="https://download.kde.org/stable/plasma/${plasma_up_ver}/"
-            local tmp_listing="/tmp/plasma_listing.html"
-            local http_code=$(curl -sL -w "%{http_code}" "$remote_dir_url" -o "$tmp_listing")
-            if [[ "$http_code" == "200" ]]; then
-                local dir_pkgs=$(grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.tar\.xz' "$tmp_listing" | sed -E 's/-[0-9].*//' | sort -u)
-                if [[ -n "$dir_pkgs" ]]; then
-                    plasma_pkg_names="$dir_pkgs"
+            (
+                local _names="$plasma_pkg_names"
+                local tmp_listing="$tmp_expand/plasma_listing.html"
+                local http_code=$(curl -sL -w "%{http_code}" "https://download.kde.org/stable/plasma/${plasma_up_ver}/" -o "$tmp_listing")
+                if [[ "$http_code" == "200" ]]; then
+                    local dir_pkgs=$(grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.tar\.xz' "$tmp_listing" | sed -E 's/-[0-9].*//' | sort -u)
+                    [[ -n "$dir_pkgs" ]] && _names="$dir_pkgs"
                 fi
-            fi
-            rm -f "$tmp_listing"
-            for p in $(echo "$plasma_pkg_names" | sort -u); do
-                [[ -n "$p" ]] && echo "${p}-${plasma_up_ver}" > "$tmp_upstream/$p"
-            done
+                rm -f "$tmp_listing"
+                for p in $(echo "$_names" | sort -u); do
+                    [[ -n "$p" ]] && echo "${p}-${plasma_up_ver}" > "$tmp_upstream/$p"
+                done
+            ) &
         fi
-        
+
         if [[ -f "$tmp_upstream/frameworks6" || -f "$tmp_upstream/frameworks" ]]; then
             local fw_up_ver=""
             [[ -f "$tmp_upstream/frameworks6" ]] && fw_up_ver=$(cat "$tmp_upstream/frameworks6" | cut -d- -f2)
             [[ -z "$fw_up_ver" && -f "$tmp_upstream/frameworks" ]] && fw_up_ver=$(cat "$tmp_upstream/frameworks" | cut -d- -f2)
             if [[ -n "$fw_up_ver" ]]; then
-                # Fetch frameworks directory listing
                 local fw_mm=$(echo "$fw_up_ver" | cut -d. -f1,2)
-                local remote_dir_url="https://download.kde.org/stable/frameworks/${fw_mm}/"
-                local tmp_listing="/tmp/fw_listing.html"
-                local http_code=$(curl -sL -w "%{http_code}" "$remote_dir_url" -o "$tmp_listing")
-                if [[ "$http_code" == "200" ]]; then
-                    local dir_pkgs=$(grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.tar\.xz' "$tmp_listing" | sed -E 's/-[0-9].*//' | sort -u)
-                    if [[ -n "$dir_pkgs" ]]; then
-                        frameworks_pkg_names="$dir_pkgs"
+                (
+                    local _names="$frameworks_pkg_names"
+                    local tmp_listing="$tmp_expand/fw_listing.html"
+                    local http_code=$(curl -sL -w "%{http_code}" "https://download.kde.org/stable/frameworks/${fw_mm}/" -o "$tmp_listing")
+                    if [[ "$http_code" == "200" ]]; then
+                        local dir_pkgs=$(grep -oE '[a-zA-Z0-9_+.-]+-[0-9][a-zA-Z0-9_+.-]*\.tar\.xz' "$tmp_listing" | sed -E 's/-[0-9].*//' | sort -u)
+                        [[ -n "$dir_pkgs" ]] && _names="$dir_pkgs"
                     fi
-                fi
-                rm -f "$tmp_listing"
-                for p in $(echo "$frameworks_pkg_names" | sort -u); do
-                    [[ -n "$p" ]] && echo "${p}-${fw_up_ver}" > "$tmp_upstream/$p"
-                done
+                    rm -f "$tmp_listing"
+                    for p in $(echo "$_names" | sort -u); do
+                        [[ -n "$p" ]] && echo "${p}-${fw_up_ver}" > "$tmp_upstream/$p"
+                    done
+                ) &
             fi
         fi
 
-        # Efficiently merge upstream updates by filtering out original versions in one pass if possible
-        # or at least avoiding the quadratic echo/grep re-assignments.
+        wait
+        rm -rf "$tmp_expand"
+
         local replacements_regex=""
         for f in "$tmp_upstream"/*; do
             if [[ -f "$f" ]]; then
@@ -509,7 +588,7 @@ lfs_check_custom_updates() {
     total=${#scripts[@]}
     echo "TOTAL:$total"
     count=0
-    max_jobs=100
+    max_jobs=40
     
     # We need a shared counter and results file
     mkdir -p /tmp/lfs_updates_parallel
