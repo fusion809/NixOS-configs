@@ -890,18 +890,18 @@ if [[ -z "$PAGE_URL" ]]; then
         mp_html=$(curl -s "$BLFS_BOOK/$mp_page")
         if echo "$mp_html" | grep -iqE "[a-fA-F0-9]{32}[[:space:]]+${PACKAGE}[-_][0-9].*\.tar"; then
             PAGE_URL="$BLFS_BOOK/$mp_page"
-            METAPACKAGE_TARGET=$(basename "$mp_page" .html)
-            SINGLE_COMPONENT_MODE="$PACKAGE"
-            log "Found component '$PACKAGE' securely nested within metapackage: $METAPACKAGE_TARGET"
+            METAPACKAGE_TARGET="$PACKAGE"
+            PACKAGE=$(basename "$mp_page" .html)
+            log "Found component '$METAPACKAGE_TARGET' securely nested within metapackage: $PACKAGE"
             break
         fi
         
         # Fallback for Xorg where sometimes names are simplified
         if [[ "$mp_page" =~ "x7" ]] && echo "$mp_html" | grep -iqE "href=\"${PACKAGE}\.html\""; then
             PAGE_URL="$BLFS_BOOK/$mp_page"
-            METAPACKAGE_TARGET=$(basename "$mp_page" .html)
-            SINGLE_COMPONENT_MODE="$PACKAGE"
-            log "Found component '$PACKAGE' in Xorg metapackage: $METAPACKAGE_TARGET"
+            METAPACKAGE_TARGET="$PACKAGE"
+            PACKAGE=$(basename "$mp_page" .html)
+            log "Found component '$METAPACKAGE_TARGET' in Xorg metapackage: $PACKAGE"
             break
         fi
     done
