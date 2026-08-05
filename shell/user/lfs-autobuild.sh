@@ -519,6 +519,7 @@ if [[ -n "$CUSTOM_BUILD_SH" ]]; then
 set -e
 cd "$CUSTOM_DIR"
 # Create timestamp BEFORE build
+sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null || true
 touch "/tmp/build_start_timestamp_${TARGET_PKG}"
 BUILD_LOG="/tmp/build_log_${TARGET_PKG}.txt"
 # Run build; capture exit code independently so post-install steps don't mask it
@@ -4090,6 +4091,7 @@ _lfs_build_trap() {
 trap '_lfs_build_trap' EXIT
 
 # Record start time for file tracking
+sudo rm -f "/tmp/build_start_timestamp_${PACKAGE}" 2>/dev/null || true
 touch "/tmp/build_start_timestamp_${PACKAGE}"
 
 mkdir -p /sources/archives
@@ -4340,6 +4342,7 @@ print("Done writing ossl_asn1.c")
 fi
 
 echo "Marking build start time..."
+sudo rm -f "/tmp/build_start_timestamp_${PACKAGE}" 2>/dev/null || true
 touch /tmp/build_start_timestamp_${PACKAGE}
 
 # Record initial file state to handle clock drift/skew during build
