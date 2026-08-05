@@ -26,13 +26,13 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Synchronize clock to prevent fetch errors from time skew
-if declare -f ssh_lfs >/dev/null 2>&1; then
-    echo "Synchronizing LFS guest clock to host..."
-    ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
-else
-    echo "Synchronizing LFS clock from hardware clock..."
-    sudo hwclock -s >/dev/null 2>&1
-fi
+# if declare -f ssh_lfs >/dev/null 2>&1; then
+#     echo "Synchronizing LFS guest clock to host..."
+#     ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
+# else
+#     echo "Synchronizing LFS clock from hardware clock..."
+#     sudo hwclock -s >/dev/null 2>&1
+# fi
 
 # Compute the three phase sizes for a true global percentage upfront:
 #   Phase 1: upstream checks (fixed list in lfs_get_remote_packages)
