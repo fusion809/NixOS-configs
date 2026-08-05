@@ -158,15 +158,15 @@ fi
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
 
 # Synchronize clock to prevent build errors from time skew
-if [[ "$DRY_RUN" == "false" ]]; then
-    if [[ "$HOST_MODE" == "true" ]]; then
-        log "Synchronizing LFS guest clock to host..."
-        ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
-    else
-        log "Synchronizing LFS clock from hardware clock..."
-        as_root hwclock -s >/dev/null 2>&1
-    fi
-fi
+# if [[ "$DRY_RUN" == "false" ]]; then
+#     if [[ "$HOST_MODE" == "true" ]]; then
+#         log "Synchronizing LFS guest clock to host..."
+#         ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
+#     else
+#         log "Synchronizing LFS clock from hardware clock..."
+#         as_root hwclock -s >/dev/null 2>&1
+#     fi
+# fi
 error() { echo "[ERROR] $*" >&2; echo "$COMMANDS" > /tmp/cmds_final.out; exit 1; }
 
 check_and_build_deps() {
@@ -1237,6 +1237,12 @@ ${RAW_CONTENT}"
     if [[ "$PACKAGE" == "make-ca" ]]; then
         log "Removing optional CAcert download and trust modification commands..."
         RAW_CONTENT=$(echo "$RAW_CONTENT" | grep -vE "(wget http://www.cacert.org|openssl x509|/usr/sbin/make-ca -r|/etc/profile.d/pythoncerts.sh)")
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
+    fi
+
+    if [[ "$PACKAGE" == "ntp" ]]; then
+        log "Removing make install-ntpd for ntp as it's only needed on first install..."
+        RAW_CONTENT=$(echo "$RAW_CONTENT" | grep -v "make install-ntpd")
         RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
     fi
 

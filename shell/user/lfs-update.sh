@@ -778,18 +778,18 @@ lfs_update() {
     done
 
     # Synchronize clock to prevent build errors from time skew
-    if [[ "$dry_run" == "false" ]]; then
-        if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
-            # Running from host: sync VM clock to host time
-            echo "Synchronizing LFS guest clock to host..."
-            [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
-            ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
-        else
-            # Running on VM: try to sync from hardware clock
-            echo "Synchronizing LFS clock from hardware clock..."
-            sudo hwclock -s >/dev/null 2>&1
-        fi
-    fi
+    # if [[ "$dry_run" == "false" ]]; then
+    #     if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
+    #         # Running from host: sync VM clock to host time
+    #         echo "Synchronizing LFS guest clock to host..."
+    #         [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
+    #         ssh_lfs "sudo date -s '@$(date +%s)'" >/dev/null 2>&1
+    #     else
+    #         # Running on VM: try to sync from hardware clock
+    #         echo "Synchronizing LFS clock from hardware clock..."
+    #         sudo hwclock -s >/dev/null 2>&1
+    #     fi
+    # fi
 
     echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
     local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
