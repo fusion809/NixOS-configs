@@ -218,6 +218,8 @@ function send_walk {
 	fi
 
 	local src_dir="$base_dir/$date/Original/Best"
+	find $src_dir -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
+		-exec jpegoptim --strip-all --all-progressive {} +
 
 	if [ ! -d "$src_dir" ]; then
 		echo "Error: Directory not found - $src_dir"
