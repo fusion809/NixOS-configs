@@ -588,7 +588,7 @@ lfs_check_custom_updates() {
     total=${#scripts[@]}
     echo "TOTAL:$total"
     count=0
-    max_jobs=40
+    max_jobs=100
     
     # We need a shared counter and results file
     mkdir -p /tmp/lfs_updates_parallel
@@ -1342,6 +1342,7 @@ lfs_updc() {
         rm_old_share
         rm_book_src
         rm_lfp_src
+        lfs_commit
     else
         echo "Build failures or missing inventories detected for the following packages:"
         echo "$broken_pkgs"
