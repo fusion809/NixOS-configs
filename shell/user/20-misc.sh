@@ -165,7 +165,7 @@ function compress_trike() {
 		fi
 	fi
 
-	local original_dir="$base_dir/$date/Original/Best"
+	local original_dir="$base_dir/$date/Original/Boo_Best"
 	local compressed_dir="$base_dir/$date/Compressed"
 
 	if [ ! -d "$original_dir" ]; then
@@ -217,7 +217,7 @@ function send_walk {
 		fi
 	fi
 
-	local src_dir="$base_dir/$date/Original/Best"
+	local src_dir="$base_dir/$date/Original/Boo_Best"
 	find $src_dir -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
 		-exec jpegoptim --strip-all --all-progressive {} +
 
@@ -262,7 +262,7 @@ function send_trikes {
 		fi
 	fi
 
-	local src_dir="$base_dir/$date/Original/Best"
+	local src_dir="$base_dir/$date/Original/Boo_Best"
 	find $src_dir -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) \
 		-exec jpegoptim --strip-all --all-progressive {} +
 
