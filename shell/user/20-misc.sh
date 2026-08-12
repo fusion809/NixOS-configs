@@ -165,7 +165,7 @@ function compress_trike() {
 		fi
 	fi
 
-	local original_dir="$base_dir/$date/Original/Boo_Best"
+	local original_dir="$base_dir/$date/Original/Best"
 	local compressed_dir="$base_dir/$date/Compressed"
 
 	if [ ! -d "$original_dir" ]; then
