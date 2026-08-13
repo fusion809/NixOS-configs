@@ -1288,9 +1288,9 @@ for pkg in sorted_pkgs:
 
     echo "Updating Python packages via pip..."
     if [[ "$dry_run" == "true" ]]; then
-        echo "DRY RUN: pip3 list --format=freeze | cut -d= -f1 | xargs -n1 sudo pip3 install -U"
+        echo "DRY RUN: pip3 list --outdated 2>/dev/null | tail -n +3 | cut -d ' ' -f 1 | xargs -r sudo pip3 install -U"
     else
-        ssh_lfs "pip3 list --format=freeze | cut -d= -f1 | xargs -n1 sudo pip3 install -U"
+        ssh_lfs "pip3 list --outdated 2>/dev/null | tail -n +3 | cut -d ' ' -f 1 | xargs -r sudo pip3 install -U"
     fi
 
     echo "Updating Julia with juliaup..."

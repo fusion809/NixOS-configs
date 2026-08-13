@@ -1340,6 +1340,14 @@ while IFS= read -r line; do
             continue
         fi
 
+        # Skip openldap server installation components
+        if [[ "${PACKAGE,,}" == "openldap" ]]; then
+            if grep -q "slapd\.conf" <<< "$CURRENT_BLOCK" || grep -q "make install-slapd" <<< "$CURRENT_BLOCK"; then
+                log "Skipping openldap server installation block." >&2
+                continue
+            fi
+        fi
+
 
         # 4. Skip blfs-systemd-units / configuration install commands
         if [[ "$CURRENT_BLOCK" =~ make[[:space:]]+install-(dhcpcd|rsyncd|gpm) ]]; then
