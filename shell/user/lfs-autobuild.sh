@@ -471,7 +471,6 @@ for PACKAGE in "${PACKAGES[@]}"; do
             PACKAGE="plasma-all"
             log "Redirecting '$METAPACKAGE_TARGET' to plasma-all bundle (single-component build)."
             ;;
-        glib)                    PACKAGE="glib2" ;;
         # Xorg apps, libs, and fonts sub-packages
         libX11|libXext|libXrender|libXft|libXi|libXau|libXdmcp|libxcb|xcb-util*)
             METAPACKAGE_TARGET="$PACKAGE"
@@ -895,7 +894,7 @@ if [[ -z "$PAGE_URL" ]]; then
     log "Searching prominent metapackages for component '$PACKAGE'..."
     for mp_page in "kde/frameworks6.html" "kde/plasma-all.html" "x/x7app.html" "x/x7lib.html" "x/x7font.html"; do
         # Avoid misidentifying core packages that are just dependencies
-        if [[ "$PACKAGE" =~ ^(wayland|mesa|libglvnd|libdrm|vulkan-loader|libxkbcommon|systemd|dbus|glib2?|perl|python|jinja2|markupsafe|ninja|meson|cmake)$ ]]; then
+        if [[ "$PACKAGE" =~ ^(wayland|mesa|libglvnd|libdrm|vulkan-loader|libxkbcommon|systemd|dbus|perl|python|jinja2|markupsafe|ninja|meson|cmake)$ ]]; then
             continue
         fi
 
@@ -1210,12 +1209,6 @@ ${RAW_CONTENT}"
     if [[ "$PACKAGE" == "harfbuzz" ]]; then
         log "Disabling gtk-doc HTML generation for harfbuzz (xsltproc cannot load remote DocBook XSL)..."
         RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/meson setup/meson setup -Ddocs=disabled/g')
-        RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
-    fi
-
-    if [[ "$PACKAGE" == "glib2" ]]; then
-        log "Forcing system pcre2 for glib2..."
-        RAW_CONTENT=$(echo "$RAW_CONTENT" | sed 's/meson setup/meson setup -Dsystem_pcre2=enabled/g')
         RAW_CONTENT=$(echo "$RAW_CONTENT" | perl -0777 -pe 's/___BLOCK_START_(ROOT|USER)___\n___BLOCK_END___//gs')
     fi
 
@@ -1671,15 +1664,6 @@ PYEOF
     COMMANDS=$(echo "$COMMANDS" | sed -E "s@(\./mach build)@echo '${_FF_PY_B64}' | base64 -d > /tmp/ff_patch_webrender.py \&\& python3 /tmp/ff_patch_webrender.py\n\1@g")
     unset _FF_PY_SCRIPT _FF_PY_B64
 fi
-
-if [[ "${PACKAGE,,}" == "glib2" ]]; then
-    log "Applying glib2: updating gobject-introspection tarball path..."
-    # The BLFS glib2 page instructs building gobject-introspection from a tarball placed two
-    # directories above the build dir (../../gobject-introspection-*.tar.xz).
-    # Since we download it to /sources/archives/, we must update the tar command.
-    COMMANDS=$(echo "$COMMANDS" | sed -E "s|tar xf \.\./\.\./(gobject-introspection-[0-9.]+\.tar\.xz)|tar xf /sources/archives/\1|g")
-fi
-
 
 if [[ "${PACKAGE,,}" == "kdeplasma-addons" || "${METAPACKAGE_TARGET,,}" == "kdeplasma-addons" ]]; then
     log "Corrosion/Rust fix for kdeplasma-addons is handled in the KDE build loop awk template."
@@ -2554,9 +2538,15 @@ sys.exit(1)
             log "Found upstream libuv version: $UPSTREAM_VERSION"
             DOWNLOAD_URLS+=("https://dist.libuv.org/dist/v${UPSTREAM_VERSION}/libuv-v${UPSTREAM_VERSION}.tar.gz")
         fi
-    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)$ ]]; then
+    elif [[ "$PACKAGE" == "harfbuzz" ]]; then
+        log "Fetching latest upstream harfbuzz version from GitHub..."
+        UPSTREAM_VERSION=$(curl -s -H "User-Agent: bash" "https://api.github.com/repos/harfbuzz/harfbuzz/releases/latest" | perl -nle 'while (m{"tag_name":\s*"([0-9.]+)"}g) { print $1 }' | head -n 1)
+        if [[ -n "$UPSTREAM_VERSION" ]]; then
+            log "Found upstream harfbuzz version: $UPSTREAM_VERSION"
+            DOWNLOAD_URLS=("https://github.com/harfbuzz/harfbuzz/releases/download/${UPSTREAM_VERSION}/harfbuzz-${UPSTREAM_VERSION}.tar.xz")
+        fi
+    elif [[ "$PACKAGE" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|json-glib|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)$ ]]; then
         GNOME_PKG="$PACKAGE"
-        [[ "$GNOME_PKG" == "glib2" ]] && GNOME_PKG="glib"
         log "Fetching latest upstream GNOME version for $GNOME_PKG from download.gnome.org..."
         # Use helper from 21-lfs.sh if available
         if [ -f "$NIXCFG/shell/user/21-lfs.sh" ]; then
@@ -3130,7 +3120,7 @@ if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugi
     fi
 fi
 
-if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|vte|gnome-terminal|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ && -n "$UPSTREAM_VERSION" ]]; then
+if [[ "$UPSTREAM" == "true" && "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|vte|gnome-terminal|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker.*|grilo.*|gjs|glycin|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib-networking|glibmm|gmime|graphene|gsound|gtk-doc|gtkmm.*|json-glib|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome)$ && -n "$UPSTREAM_VERSION" ]]; then
     # Extract LFS version from the identified main download URL (e.g. gnome-shell-47.0.tar.xz)
     # GNOME versions might be major.minor or just major for some meta-packages, but mostly major.minor
     LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -F/ -nlae '$_=$F[$#F]; /'"${PACKAGE,,}"'-([0-9]+(?:\.[0-9]+)+)/ and print $1')
@@ -3233,7 +3223,7 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "rustc" && -n "$PREV_VERSION" && -n
 fi
 
 # Generic version replacement for any package that successfully resolved UPSTREAM_VERSION via fallback
-if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL" && ! "${PACKAGE,,}" =~ ^(linux|firefox|rustc|libuv)$ && ! "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && ! "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib2?|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)$ ]]; then
+if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" && -n "$MAIN_DOWNLOAD_URL" && ! "${PACKAGE,,}" =~ ^(linux|firefox|rustc|libuv|harfbuzz)$ && ! "${PACKAGE,,}" =~ ^(konsole|dolphin|dolphin-plugins|gwenview|libkdcraw|okular|kdenlive)$ && ! "${PACKAGE,,}" =~ ^(gnome-.*|gsettings-desktop-schemas|yelp|mutter|nautilus|gnome-terminal|vte|glycin|gjs|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker.*|grilo.*|folks|evolution.*|gtksourceview.*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm.*|json-glib|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)$ ]]; then
     # Extract LFS version from the identified main download URL
     LFS_VERSION=$(echo "$MAIN_DOWNLOAD_URL" | perl -nle "while (m{${PACKAGE}-\K[0-9]+(?:\.[0-9]+)+[a-zA-Z0-9_-]*}g) { print \$& }" | head -n 1)
     if [[ -z "$LFS_VERSION" ]]; then

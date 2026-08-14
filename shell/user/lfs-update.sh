@@ -112,7 +112,10 @@ sys.exit(1)
             # Use GitLab API to fetch the latest guaranteed 1.x stable tag by strictly filtering for 'libpeas-' prefix
             curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1
             ;;
-        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|libpeas|gjs|glycin|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib|glib2|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate|libsecret)
+        harfbuzz)
+            curl -s -H "User-Agent: bash" "https://api.github.com/repos/harfbuzz/harfbuzz/releases/latest" | perl -nle 'while (m{"tag_name":\s*"([0-9.]+)"}g) { print $1 }' | head -n 1
+            ;;
+        gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|libpeas|gjs|glycin|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|gjs|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|json-glib|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|libpeas|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate|libsecret)
             local gnome_pkg="$pkg"
             [[ "$gnome_pkg" == "glib2" ]] && gnome_pkg="glib"
             local base_url="https://download.gnome.org/sources/$gnome_pkg"
@@ -266,7 +269,7 @@ lfs_get_remote_packages() {
         local other_pkgs=()
         for p in "${upstream_list[@]}"; do
             case "$p" in
-                gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|gjs|glycin|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib|glib2|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|harfbuzz|json-glib|libadwaita|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)
+                gnome-*|gsettings-desktop-schemas|yelp|mutter|nautilus|gjs|glycin|tecla|gvfs|gexiv2|baobab|evince|epiphany|totem|tracker*|grilo*|folks|evolution*|gtksourceview*|adwaita-icon-theme|at-spi2-core|atkmm|cairomm|gdl|glib|glib2|glib-networking|glibmm|gmime|gnome-video-effects|graphene|gsound|gtk-doc|gtkmm*|json-glib|libchamplain|libgda|libgee|libgnome-keyring|libgsf|libgtop|libhandy|libnma|librsvg|libsecret|libsoup|mm-common|pangomm|phodav|pygobject|rest|vte|xdg-desktop-portal-gnome|tinysparql|localsearch|polkit-gnome|geocode-glib|libshumate)
                     gnome_pkgs+=("$p") ;;
                 *)
                     other_pkgs+=("$p") ;;
@@ -668,14 +671,31 @@ lfs_check_custom_updates() {
 
     local script=$(cat <<'EOF'
     sudo mkdir -p /var/lib/custom-packages 2>/dev/null || true
-    
+
     if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
         source ~/lfs_packaging/shared-funcs.sh
         while read -r func; do
             export -f "$func"
         done < <(declare -F | awk '{print $3}')
     fi
-    
+
+    # Intercept gn_ver for polkit-gnome so we don't hit the git ls-remote error in shared-funcs.sh
+    # but leave other custom packages (like glib2, libadwaita, gedit) using their own gn_ver logic
+    if declare -f gn_ver >/dev/null; then
+        eval "original_gn_ver() $(declare -f gn_ver | tail -n +2)"
+        gn_ver() {
+            if [[ "$1" == "polkit-gnome" ]]; then
+                curl -s --max-time 15 "https://gitlab.gnome.org/api/v4/projects/Archive%2Fpolicykit-gnome/repository/tags" | \
+                    perl -nle 'while (m{"name":"v?([0-9][0-9.]+)"}g) { print $1 }' | \
+                    grep -v "alpha\|beta\|rc" | sort -V | tail -n 1
+            else
+                original_gn_ver "$@"
+            fi
+        }
+        export -f gn_ver
+        export -f original_gn_ver
+    fi
+
     scripts=($(find ~/lfs_packaging -mindepth 2 -maxdepth 2 -name "build.sh" 2>/dev/null))
     total=${#scripts[@]}
     echo "TOTAL:$total"
@@ -706,6 +726,7 @@ lfs_check_custom_updates() {
             if [ -f "/var/lib/custom-packages/$pkg_name" ]; then
                 local_ver=$(head -n 1 "/var/lib/custom-packages/$pkg_name" 2>/dev/null | tr -d '\r\n[:space:]' || echo "none")
             fi
+
             
             remote_ver=""
             status="OK"
