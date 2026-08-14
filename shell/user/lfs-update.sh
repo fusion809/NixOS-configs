@@ -5,31 +5,64 @@ aver() {
 }
 
 gn_ver() {
-    if [[ "$1" == "gtk3" ]]; then
-        local up_ver=$(wget -cqO- https://gitlab.gnome.org/GNOME/gtk/-/tags | grep "tags/" | grep "\-3\." | cut -d '/' -f 6 | sed 's/".*//g' | grep -v "alpha\|beta\|\.rc" | sort -V | tail -n 1 | sed 's/^v//g')
-        if echo "$up_ver" | grep -q "[0-9]\.[0-9]"; then
-            echo "$up_ver"
-            return 0
-        fi
+    local pkg="$1"
+    local arch_name="${2:-$1}"
 
-        local git_ver=$(git ls-remote --tags --refs "https://gitlab.gnome.org/GNOME/gtk.git" | grep "refs/tags/3" | grep -v "alpha\|beta\|rc" | cut -d '/' -f 3 | grep -v ".9" | sort -V | tail -n 1)
-        if echo "$git_ver" | grep -q "[0-9]\.[0-9]"; then
-            echo "$git_ver"
-            return 0
-        fi
-    else
-        local up_ver=$(wget -cqO- https://gitlab.gnome.org/GNOME/$1/-/tags | grep "tags/" | cut -d '/' -f 6 | sed 's/".*//g' | grep -v "alpha\|beta\|\.rc" | sort -V | tail -n 1 | sed 's/^v//g')
-        if echo "$up_ver" | grep -q "[0-9]\.[0-9]"; then
-            echo "$up_ver"
-            return 0
-        fi
-        local git_ver=$(git ls-remote --tags --refs "https://gitlab.gnome.org/GNOME/$1.git" | grep "refs/tags/v[0-9]" | grep -v "alpha\|beta\|rc" | cut -d '/' -f 3 | sed 's/^v//g' | sort -V | tail -n 1)
-        if echo "$git_ver" | grep -q "[0-9]\.[0-9]"; then
-            echo "$git_ver"
-            return 0
-        fi
+    # 1. Try GNOME download server cache.json (fastest, most reliable)
+    local gnome_ver=$(curl -sL --max-time 15 "https://download.gnome.org/sources/$pkg/cache.json" | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    pkg = sys.argv[1]
+    versions = data[1].get(pkg, [])
+    stable = []
+    for v in versions:
+        parts = v.split(".")
+        if not all(p.isdigit() for p in parts): continue
+        ints = [int(p) for p in parts]
+        if ints[0] < 40 and len(ints) >= 2 and ints[1] % 2 != 0: continue
+        if any(p >= 90 for p in ints[1:]): continue
+        stable.append(v)
+    if stable:
+        stable.sort(key=lambda x: [int(p) for p in x.split(".")])
+        print(stable[-1])
+except Exception:
+    pass
+' "$pkg" 2>/dev/null)
+    if [[ -n "$gnome_ver" ]]; then
+        echo "$gnome_ver"
+        return 0
     fi
-    local arch_ver=$(aver "${2:-$1}")
+
+    # 2. Map packages with non-standard GitLab locations (namespace or project name differs)
+    local gl_pkg="$pkg"
+    local gl_namespace="GNOME"
+    local tag_filter="grep -v 'alpha\|beta\|\.rc'"
+    case "$pkg" in
+        gtk3)            gl_pkg="gtk"; tag_filter="grep '\-3\.' | grep -v 'alpha\|beta\|\.rc'" ;;
+        polkit-gnome)    gl_namespace="Archive"; gl_pkg="policykit-gnome" ;;
+    esac
+
+    # 3. Try GNOME GitLab web tags page
+    local up_ver=$(wget -cqO- "https://gitlab.gnome.org/${gl_namespace}/${gl_pkg}/-/tags" | grep "tags/" | cut -d '/' -f 6 | sed 's/".*//g' | eval "$tag_filter" | sort -V | tail -n 1 | sed 's/^v//g')
+    if echo "$up_ver" | grep -q "[0-9]\.[0-9]"; then
+        echo "$up_ver"
+        return 0
+    fi
+
+    # 4. Try GNOME GitLab REST API (avoids git ls-remote auth errors on missing/private repos)
+    local gl_encoded="${gl_namespace}%2F${gl_pkg}"
+    local api_ver=$(curl -s --max-time 15 "https://gitlab.gnome.org/api/v4/projects/${gl_encoded}/repository/tags" | \
+        perl -nle 'while (m{"name":"v?([0-9][0-9.]+)"}g) { print $1 }' | \
+        grep -v "alpha\|beta\|rc" | sort -V | tail -n 1)
+    [[ "$pkg" == "gtk3" ]] && api_ver=$(echo "$api_ver" | grep "^3\." | tail -n 1)
+    if echo "$api_ver" | grep -q "[0-9]\.[0-9]"; then
+        echo "$api_ver"
+        return 0
+    fi
+
+    # 5. Arch PKGBUILD fallback
+    local arch_ver=$(aver "$arch_name")
     if echo "$arch_ver" | grep -qP "[0-9]"; then
         echo "$arch_ver"
         return 0
