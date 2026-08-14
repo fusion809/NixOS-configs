@@ -1,5 +1,40 @@
 #!/usr/bin/env bash
 
+aver() {
+    wget -cqO- -T 10 "https://gitlab.archlinux.org/archlinux/packaging/packages/$1/-/raw/main/PKGBUILD" | grep "^pkgver=" | cut -d '=' -f 2
+}
+
+gn_ver() {
+    if [[ "$1" == "gtk3" ]]; then
+        local up_ver=$(wget -cqO- https://gitlab.gnome.org/GNOME/gtk/-/tags | grep "tags/" | grep "\-3\." | cut -d '/' -f 6 | sed 's/".*//g' | grep -v "alpha\|beta\|\.rc" | sort -V | tail -n 1 | sed 's/^v//g')
+        if echo "$up_ver" | grep -q "[0-9]\.[0-9]"; then
+            echo "$up_ver"
+            return 0
+        fi
+
+        local git_ver=$(git ls-remote --tags --refs "https://gitlab.gnome.org/GNOME/gtk.git" | grep "refs/tags/3" | grep -v "alpha\|beta\|rc" | cut -d '/' -f 3 | grep -v ".9" | sort -V | tail -n 1)
+        if echo "$git_ver" | grep -q "[0-9]\.[0-9]"; then
+            echo "$git_ver"
+            return 0
+        fi
+    else
+        local up_ver=$(wget -cqO- https://gitlab.gnome.org/GNOME/$1/-/tags | grep "tags/" | cut -d '/' -f 6 | sed 's/".*//g' | grep -v "alpha\|beta\|\.rc" | sort -V | tail -n 1 | sed 's/^v//g')
+        if echo "$up_ver" | grep -q "[0-9]\.[0-9]"; then
+            echo "$up_ver"
+            return 0
+        fi
+        local git_ver=$(git ls-remote --tags --refs "https://gitlab.gnome.org/GNOME/$1.git" | grep "refs/tags/v[0-9]" | grep -v "alpha\|beta\|rc" | cut -d '/' -f 3 | sed 's/^v//g' | sort -V | tail -n 1)
+        if echo "$git_ver" | grep -q "[0-9]\.[0-9]"; then
+            echo "$git_ver"
+            return 0
+        fi
+    fi
+    local arch_ver=$(aver "${2:-$1}")
+    if echo "$arch_ver" | grep -qP "[0-9]"; then
+        echo "$arch_ver"
+        return 0
+    fi
+}
 lfs_get_upstream_version() {
     local pkg="$1"
     case "$pkg" in
@@ -52,7 +87,7 @@ sys.exit(1)
             [[ "$gnome_pkg" == "libxml2" ]] && base_url="https://download.gnome.org/sources/libxml2"
             [[ "$gnome_pkg" == "libxslt" ]] && base_url="https://download.gnome.org/sources/libxslt"
             
-            local gn_ver=$(curl -sL "$base_url/cache.json" | python3 -c '
+            local gnome_ver=$(curl -sL "$base_url/cache.json" | python3 -c '
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -71,13 +106,18 @@ try:
 except Exception:
     pass
 ' 2>/dev/null)
-            if [[ -n "$gn_ver" ]]; then
-                echo "$gn_ver"
+            if [[ -n "$gnome_ver" ]]; then
+                echo "$gnome_ver"
             else
                 local major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
                 if [[ -n "$major" ]]; then
-                    curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$gnome_pkg"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1
+                    local rver=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$gnome_pkg"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+                    if [[ -n "$rver" ]]; then
+                        echo "$rver"
+                        return
+                    fi
                 fi
+                gn_ver "$gnome_pkg"
             fi
             ;;
         libgweather)
@@ -236,6 +276,18 @@ with ThreadPoolExecutor(max_workers=20) as ex:
             if ver != "FAILED": f.write(f"{pkg}-{ver}\n")
             else: f.write(f"{pkg}-FAILED\n")
 ' "$tmp_upstream" "${gnome_pkgs[@]}"
+                # Fallback via gn_ver for any GNOME packages the Python fetcher couldn't resolve
+                for _gp in "${gnome_pkgs[@]}"; do
+                    local _f="$tmp_upstream/$_gp"
+                    if [[ -f "$_f" ]] && grep -q "FAILED" "$_f"; then
+                        local _gname="$_gp"
+                        [[ "$_gname" == "glib2" ]] && _gname="glib"
+                        local _gv=$(gn_ver "$_gname")
+                        if [[ -n "$_gv" ]]; then
+                            echo "${_gp}-${_gv}" > "$_f"
+                        fi
+                    fi
+                done
             ) &
         fi
 
@@ -583,6 +635,13 @@ lfs_check_custom_updates() {
 
     local script=$(cat <<'EOF'
     sudo mkdir -p /var/lib/custom-packages 2>/dev/null || true
+    
+    if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
+        source ~/lfs_packaging/shared-funcs.sh
+        while read -r func; do
+            export -f "$func"
+        done < <(declare -F | awk '{print $3}')
+    fi
     
     scripts=($(find ~/lfs_packaging -mindepth 2 -maxdepth 2 -name "build.sh" 2>/dev/null))
     total=${#scripts[@]}

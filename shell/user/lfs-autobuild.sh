@@ -517,6 +517,14 @@ if [[ -n "$CUSTOM_BUILD_SH" ]]; then
     
     REMOTE_SCRIPT=$(cat <<'EOF'
 set -e
+
+if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
+    source ~/lfs_packaging/shared-funcs.sh
+    while read -r func; do
+        export -f "$func"
+    done < <(declare -F | awk '{print $3}')
+fi
+
 cd "$CUSTOM_DIR"
 # Create timestamp BEFORE build
 sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null || true
@@ -611,14 +619,18 @@ EOF
         # Determine target version from build script
         TARGET_VER=""
         EVAL_SCRIPT=$(cat <<EOF
-pkg_dir="$CUSTOM_DIR"
-build_script="$CUSTOM_BUILD_SH"
+pkg_dir="\$CUSTOM_DIR"
+build_script="\$CUSTOM_BUILD_SH"
+if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
+    source ~/lfs_packaging/shared-funcs.sh
+    while read -r func; do export -f "\$func"; done < <(declare -F | awk '{print \$3}')
+fi
 version_line_num=\$(grep -niE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d: -f1)
 var_name=\$(grep -iE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d= -f1)
 if [ -n "\$version_line_num" ]; then
     tmp_eval="/tmp/eval_autobuild_ver_\$\$.sh"
     echo 'set +e' > "\$tmp_eval"
-    echo 'export PATH=/opt/texlive/2025/bin/x86_64-linux:$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$tmp_eval"
+    echo 'export PATH=/opt/texlive/2025/bin/x86_64-linux:\$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "\$tmp_eval"
     head -n "\$version_line_num" "\$build_script" | tr -d '\r' >> "\$tmp_eval"
     echo "echo \"\\$\$var_name\"" >> "\$tmp_eval"
     cd "\$pkg_dir" && bash "\$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
@@ -2560,7 +2572,7 @@ sys.exit(1)
                 UPSTREAM_VERSION=$(curl -sL "https://gitlab.gnome.org/api/v4/projects/GNOME%2Flibpeas/repository/tags" | perl -nle 'while (m{"name":"libpeas-([0-9.]+)"}g) { print $1 }' | sort -V | tail -n 1)
             else
                 base_url="https://download.gnome.org/sources/$GNOME_PKG"
-                local gn_ver=$(curl -sL "$base_url/cache.json" | python3 -c '
+                local gnome_ver=$(curl -sL "$base_url/cache.json" | python3 -c '
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -2572,11 +2584,17 @@ try:
 except Exception:
     pass
 ' 2>/dev/null)
-                if [[ -n "$gn_ver" ]]; then
-                    UPSTREAM_VERSION="$gn_ver"
+                if [[ -n "$gnome_ver" ]]; then
+                    UPSTREAM_VERSION="$gnome_ver"
                 else
                     major=$(curl -sL "$base_url/" | perl -nle 'while (m{href="\K[0-9]+(\.[0-9]+)*(?=/?")}sg) { print $& }' | sort -V | tail -n 1)
-                    [ -n "$major" ] && UPSTREAM_VERSION=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$GNOME_PKG"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+                    if [[ -n "$major" ]]; then
+                        local rver=$(curl -sL "$base_url/$major/" | perl -nle 'while (m{href="\K'"$GNOME_PKG"'-([0-9.]+)\.tar}sg) { print $1 }' | sort -V | tail -n 1)
+                        [[ -n "$rver" ]] && UPSTREAM_VERSION="$rver"
+                    fi
+                    if [[ -z "$UPSTREAM_VERSION" ]] && declare -f gn_ver >/dev/null 2>&1; then
+                        UPSTREAM_VERSION=$(gn_ver "$GNOME_PKG")
+                    fi
                 fi
             fi
         fi
