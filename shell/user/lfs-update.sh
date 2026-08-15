@@ -753,6 +753,14 @@ lfs_check_custom_updates() {
                     eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
                     echo 'set +e' > "$eval_script"
                     echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
+                    # Source shared-funcs.sh so helper functions (e.g. xfd_ver) are available
+                    echo '[ -f ~/lfs_packaging/shared-funcs.sh ] && source ~/lfs_packaging/shared-funcs.sh' >> "$eval_script"
+                    # Pre-set common implicit name variables to the package directory basename
+                    # so that version= lines like version=$(xfd_ver $name) work even when
+                    # name= is not explicitly assigned before version= in the build script.
+                    echo "name=${pkg_basename@Q}" >> "$eval_script"
+                    echo "_name=${pkg_basename@Q}" >> "$eval_script"
+                    echo "NAME=${pkg_basename@Q}" >> "$eval_script"
                     echo 'exec 3>&1 1>/dev/null' >> "$eval_script"
                     head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
                     echo "echo \"VER_RESULT:\$$var_name\" >&3" >> "$eval_script"
