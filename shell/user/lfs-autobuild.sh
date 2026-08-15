@@ -1416,7 +1416,34 @@ fi
 # __END_ROOT__
 "
             else
-                log "Skipping non-critical test block." >&2
+                # Before discarding entirely, check if this block also contains
+                # meaningful build steps (e.g. perl Makefile.PL && make && make test).
+                # If so, strip only the test lines and keep the build portion.
+                local _build_only
+                _build_only=$(echo "$CURRENT_BLOCK" | grep -vE \
+                    '^[[:space:]]*(make[[:space:]]+(check|test|tests|jstest|jit-test|all-headless)|ninja[[:space:]]+(test|check)|meson[[:space:]]+test|x\.py[[:space:]]+test)([[:space:]]|$)' \
+                    | grep -vE '^[[:space:]]*$')
+                if [[ -n "$_build_only" ]] && \
+                   echo "$_build_only" | grep -qE '^[[:space:]]*(perl[[:space:]]+Makefile\.PL|\./configure|cmake[[:space:]]|meson[[:space:]]|python[[:space:]]+setup\.py)'; then
+                    log "Stripping test lines from mixed build+test block; keeping build steps." >&2
+                    CURRENT_BLOCK="$_build_only"
+                    # Fall through to the normal block-emission path below
+                    [[ "$_eff_type" == "root" ]] && COMMANDS+="# __BEGIN_ROOT__"$'\n'
+                    [[ "$_eff_type" == "user" ]] && COMMANDS+="# __BEGIN_USER__"$'\n'
+                    while IFS= read -r bline; do
+                        if [[ "$bline" =~ ^(make([[:space:]]|$)|./configure[[:space:]]&&[[:space:]]make([[:space:]]|$)) ]] && \
+                           [[ ! "$bline" =~ "install" ]] && \
+                           [[ ! "$bline" =~ "headers" ]] && \
+                           [[ ! "$bline" =~ "-j" ]]; then
+                            bline=$(echo "$bline" | sed -E 's/\bmake\b/make -j$(nproc)/g')
+                        fi
+                        COMMANDS+="$bline"$'\n'
+                    done <<< "$CURRENT_BLOCK"
+                    [[ "$_eff_type" == "root" ]] && COMMANDS+="# __END_ROOT__"$'\n'
+                    [[ "$_eff_type" == "user" ]] && COMMANDS+="# __END_USER__"$'\n'
+                else
+                    log "Skipping non-critical test block." >&2
+                fi
             fi
         elif [[ "$CURRENT_BLOCK" =~ "patch" ]]; then
             CURRENT_BLOCK="${CURRENT_BLOCK%$'\n'}"
