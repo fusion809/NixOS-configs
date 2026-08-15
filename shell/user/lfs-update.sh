@@ -718,6 +718,11 @@ lfs_check_custom_updates() {
             name_line=$(grep -iE '^[a-zA-Z_]*name=' "$build_script" | head -n 1)
             if [ -n "$name_line" ]; then
                 pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
+                # If the extracted name contains shell variable references it wasn't
+                # a static assignment — fall back to the directory name instead.
+                if echo "$pkg_name" | grep -q '\$'; then
+                    pkg_name="$pkg_basename"
+                fi
             else
                 pkg_name="$pkg_basename"
             fi
@@ -1062,6 +1067,10 @@ for build_script in $(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.
     name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
     if [ -n "$name_line" ]; then
         pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
+        # Fall back to dir name if value is dynamic (contains $)
+        if echo "$pkg_name" | grep -q '\$'; then
+            pkg_name="$dir_name"
+        fi
     else
         pkg_name="$dir_name"
     fi
