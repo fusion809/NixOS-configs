@@ -160,6 +160,10 @@ while IFS= read -r update_line; do
     local_ver=$(echo "$local_ver" | tr -d '[:space:]\r\n')
     remote_ver=$(echo "$remote_ver" | tr -d '[:space:]\r\n')
 
+    # Format git hashes differently if they are 40 chars long
+    if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
+    if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
+
     # Add to our tracking string so BLFS loop can skip it
     custom_str+="${name} | ${local_ver} | ${remote_ver}"$'\n'
     # Add to our tracking string so BLFS loop can skip it
@@ -175,10 +179,6 @@ while IFS= read -r update_line; do
             fi
         fi
     fi
-
-    # Format git hashes differently if they are 40 chars long
-    if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}" ; fi
-    if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}" ; fi
 
     label="[UPDATE]"
     if echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
