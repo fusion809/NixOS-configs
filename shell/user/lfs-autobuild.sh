@@ -543,13 +543,22 @@ fi
 sudo mkdir -p /var/lib/custom-packages
 # Determine the new version we just installed
 new_ver=""
-version_line_num=$(grep -niE '^[a-z_]*version=' build.sh | head -n 1 | cut -d: -f1 || true)
+version_line_num=""
+var_name=""
+ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' build.sh 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+if [ -z "$ver_match" ]; then
+    ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' build.sh 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+fi
+if [ -n "$ver_match" ]; then
+    version_line_num=$(echo "$ver_match" | cut -d: -f1)
+    var_line=$(echo "$ver_match" | cut -d: -f2-)
+    var_name=$(echo "$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
+fi
 if [ -n "$version_line_num" ]; then
     eval_script="/tmp/eval_ver_${TARGET_PKG}.sh"
     echo 'set +e' > "$eval_script"
     echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
     head -n "$version_line_num" build.sh | tr -d '\r' >> "$eval_script"
-    var_name=$(grep -iE '^[a-z_]*version=' build.sh | head -n 1 | cut -d= -f1 || true)
     echo "echo \"\$$var_name\"" >> "$eval_script"
     new_ver=$(bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
     rm -f "$eval_script"
@@ -624,8 +633,17 @@ if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
     source ~/lfs_packaging/shared-funcs.sh
     while read -r func; do export -f "\$func"; done < <(declare -F | awk '{print \$3}')
 fi
-version_line_num=\$(grep -niE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d: -f1)
-var_name=\$(grep -iE '^[a-z_]*version=' "\$build_script" | head -n 1 | cut -d= -f1)
+ver_match=\$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' "\$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+if [ -z "\$ver_match" ]; then
+    ver_match=\$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' "\$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+fi
+version_line_num=""
+var_name=""
+if [ -n "\$ver_match" ]; then
+    version_line_num=\$(echo "\$ver_match" | cut -d: -f1)
+    var_line=\$(echo "\$ver_match" | cut -d: -f2-)
+    var_name=\$(echo "\$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
+fi
 if [ -n "\$version_line_num" ]; then
     tmp_eval="/tmp/eval_autobuild_ver_\$\$.sh"
     echo 'set +e' > "\$tmp_eval"

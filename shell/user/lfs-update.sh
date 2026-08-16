@@ -735,8 +735,17 @@ lfs_check_custom_updates() {
             
             remote_ver=""
             status="OK"
-            version_line_num=$(grep -niE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d: -f1)
-            var_name=$(grep -iE '^[a-z_]*version=' "$build_script" | head -n 1 | cut -d= -f1)
+            version_line_num=""
+            var_name=""
+            ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+            if [ -z "$ver_match" ]; then
+                ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+            fi
+            if [ -n "$ver_match" ]; then
+                version_line_num=$(echo "$ver_match" | cut -d: -f1)
+                var_line=$(echo "$ver_match" | cut -d: -f2-)
+                var_name=$(echo "$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
+            fi
             if [ -n "$version_line_num" ]; then
                 # Extract the raw RHS of version= without executing anything
                 raw_ver_line=$(sed -n "${version_line_num}p" "$build_script" | tr -d '\r')
@@ -1011,6 +1020,18 @@ lfs_update() {
         
         # Skip if both are MISSING (not an update)
         if [[ "$local_ver" == "MISSING" && "$remote_ver" == "MISSING" ]]; then
+            continue
+        fi
+        
+        # Skip if remote version check failed — a failed check is not an update!
+        if [[ "$remote_ver" == "FAILED" || "$remote_ver" == *"FAILED"* ]]; then
+            echo "Failed to check custom update version for: $name"
+            continue
+        fi
+
+        # Skip if remote version is MISSING
+        if [[ "$remote_ver" == "MISSING" || "$remote_ver" == *"MISSING"* ]]; then
+            echo "Missing remote version for custom package: $name"
             continue
         fi
         
