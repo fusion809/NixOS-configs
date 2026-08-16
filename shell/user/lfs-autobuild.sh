@@ -1640,6 +1640,12 @@ if [[ "$PACKAGE" == "iptables" ]]; then
     COMMANDS=$(echo "$COMMANDS" | grep -vE "^[[:space:]]*(as_root[[:space:]]+|sudo[[:space:]]+)?make[[:space:]]+(install-iptables|install-ip6tables)([[:space:]]|$)")
 fi
 
+if [[ "$PACKAGE" == "texinfo" ]]; then
+    log "Applying texinfo: wrap info dir rebuild commands in as_root..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's|rm -v dir|as_root rm -v dir|g')
+    COMMANDS=$(echo "$COMMANDS" | sed 's|install-info \$f dir|as_root install-info \$f dir|g')
+fi
+
 if [[ "$PACKAGE" == "libtiff" ]]; then
     log "Applying libtiff: guard doc-dir rename against missing directory..."
     COMMANDS=$(echo "$COMMANDS" | sed 's|mv -v /usr/share/doc/tiff{|[ -d /usr/share/doc/tiff ] \&\& mv -v /usr/share/doc/tiff{|g')
