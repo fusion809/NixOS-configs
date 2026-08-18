@@ -600,7 +600,12 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-    find $EXISTING_DIRS -xdev -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+    find $EXISTING_DIRS -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+    if [[ "$TARGET_PKG" == "linux" ]]; then
+        [ -d "/boot" ] && find /boot -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+        [ -d "/lib/modules" ] && find /lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+        [ -d "/usr/lib/modules" ] && find /usr/lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+    fi
     
     # 2. Capture via build log (CMake/Meson files that are already up-to-date)
     if [ -f "$BUILD_LOG" ]; then
@@ -4417,7 +4422,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$XORG_MULTI_MODE" == "false" ]]; then
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-    find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | LC_ALL=C sort > /tmp/build_state_before_${PACKAGE}
+    find $EXISTING_DIRS -printf "%p %T@\n" 2>/dev/null | LC_ALL=C sort > /tmp/build_state_before_${PACKAGE}
 fi
 
 # Initialize inventory file with version before build starts to prevent overwriting DESTDIR captures
@@ -4459,12 +4464,12 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     
     # 1. Capture via timestamp (susceptible to clock drift/skew on long builds like Linux kernel)
-    find $EXISTING_DIRS -xdev -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
+    find $EXISTING_DIRS -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
     
     # 2. Capture via robust before-and-after diffing (immune to clock skew/drift)
     if [ -f "/tmp/build_state_before_${PACKAGE}" ]; then
         echo "Calculating installed files using state diff (before/after)..."
-        find $EXISTING_DIRS -xdev -printf "%p %T@\n" 2>/dev/null | LC_ALL=C sort > /tmp/build_state_after_${PACKAGE}
+        find $EXISTING_DIRS -printf "%p %T@\n" 2>/dev/null | LC_ALL=C sort > /tmp/build_state_after_${PACKAGE}
         LC_ALL=C comm -13 "/tmp/build_state_before_${PACKAGE}" "/tmp/build_state_after_${PACKAGE}" | cut -d' ' -f1 | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
     fi
 
@@ -4476,6 +4481,14 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
                 [ -e "$installed_file" ] && echo "$installed_file"
             done
         done | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
+    fi
+    
+    # Dedicated inventory capture for Linux kernel package to ensure kernel images, initramfs, and modules are recorded even across filesystem boundaries
+    if [[ "$PACKAGE" == "linux" ]]; then
+        echo "Recording kernel files for linux package..."
+        find /boot -type f 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null || true
+        [ -d "/lib/modules" ] && find /lib/modules -type f 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null || true
+        [ -d "/usr/lib/modules" ] && find /usr/lib/modules -type f 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null || true
     fi
     
     # Enrich inventory with archive manifest to catch files that weren't updated (up-to-date)
