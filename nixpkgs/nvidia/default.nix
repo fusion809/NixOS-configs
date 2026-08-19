@@ -95,6 +95,30 @@ in rec {
 
       # Fix Linux 7.1 missing of_gpio.h
       sed -i '/#include <linux\/of_gpio.h>/d' kernel/common/inc/nv-linux.h || true
+
+      # Fix Linux 7.2 missing strncpy in os-interface.c, linux_nvswitch.c, uvm_pmm_gpu.c, and nvidia-modeset-linux.c
+      sed -i 's/strncpy(buf, current->comm, len - 1);/strscpy(buf, current->comm, len);/' kernel/nvidia/os-interface.c || true
+      sed -i '1s/^/#include <linux\/string.h>\nextern char *strncpy(char *dest, const char *src, size_t count);\n/' kernel/nvidia/os-interface.c || true
+
+      sed -i 's/strncpy(regkey_val, regkey_val_start, regkey_val_len);/strscpy(regkey_val, regkey_val_start, regkey_val_len);/' kernel/nvidia/linux_nvswitch.c || true
+      sed -i 's/return strncpy(dest, src, length);/strscpy(dest, src, length); return dest;/' kernel/nvidia/linux_nvswitch.c || true
+      sed -i '1s/^/#include <linux\/string.h>\nextern char *strncpy(char *dest, const char *src, size_t count);\n/' kernel/nvidia/linux_nvswitch.c || true
+
+      sed -i 's/strncpy(chunk_split_cache\[level\]\.name, "uvm_gpu_chunk_t", sizeof(chunk_split_cache\[level\]\.name) - 1);/strscpy(chunk_split_cache[level].name, "uvm_gpu_chunk_t", sizeof(chunk_split_cache[level].name));/' kernel/nvidia-uvm/uvm_pmm_gpu.c || true
+      sed -i '1s/^/#include <linux\/string.h>\nextern char *strncpy(char *dest, const char *src, size_t count);\n/' kernel/nvidia-uvm/uvm_pmm_gpu.c || true
+      sed -i '1s/^/#include <linux\/string.h>\nextern char *strncpy(char *dest, const char *src, size_t count);\n/' kernel/nvidia-uvm/uvm_linux.h || true
+
+      sed -i 's/return strncpy(dest, src, n);/strscpy(dest, src, n); return dest;/' kernel/nvidia-modeset/nvidia-modeset-linux.c || true
+      sed -i '1s/^/#include <linux\/string.h>\nextern char *strncpy(char *dest, const char *src, size_t count);\n/' kernel/nvidia-modeset/nvidia-modeset-linux.c || true
+
+      # Fix Linux 7.2 drm_atomic_state -> drm_atomic_commit rename
+      for f in kernel/nvidia-drm/*.h kernel/nvidia-drm/*.c; do
+        sed -i '1s/^/#include <linux\/version.h>\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)\n#define drm_atomic_state drm_atomic_commit\n#define drm_atomic_state_alloc drm_atomic_commit_alloc\n#define drm_atomic_state_get drm_atomic_commit_get\n#define drm_atomic_state_put drm_atomic_commit_put\n#define drm_atomic_state_init drm_atomic_commit_init\n#define drm_atomic_state_clear drm_atomic_commit_clear\n#define __drm_atomic_state_free __drm_atomic_commit_free\n#define drm_atomic_state_default_clear drm_atomic_commit_default_clear\n#define drm_atomic_state_default_release drm_atomic_commit_default_release\n#endif\n/' "$f" || true
+      done
+
+      sed -i 's/#include <drm\/drm_crtc_helper.h>/#include <linux\/version.h>\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)\n#define drm_atomic_state drm_atomic_commit\n#endif\n#include <drm\/drm_crtc_helper.h>/' kernel/conftest.sh || true
+      sed -i 's/#include <drm\/drm_atomic.h>/#include <linux\/version.h>\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)\n#define drm_atomic_state drm_atomic_commit\n#endif\n#include <drm\/drm_atomic.h>/' kernel/conftest.sh || true
+      sed -i 's/#include <drm\/drm_modeset_helper_vtables.h>/#include <linux\/version.h>\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)\n#define drm_atomic_state drm_atomic_commit\n#endif\n#include <drm\/drm_modeset_helper_vtables.h>/' kernel/conftest.sh || true
     '';
   };
 

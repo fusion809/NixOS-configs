@@ -22,7 +22,7 @@
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
-  environment.systemPackages = import ./packages.nix { inherit pkgs; };
+  environment.systemPackages = import ./packages.nix { inherit pkgs inputs; };
 
   fonts = import ./fonts.nix { inherit pkgs; };
   hardware = import ./hardware.nix { };
@@ -73,14 +73,20 @@
     config = {
       common = {
         default = [ "gtk" ];
-        "org.freedesktop.impl.portal.FileChooser" = [ "kde" "gtk" ];
+        "org.freedesktop.impl.portal.FileChooser" = [
+          "kde"
+          "gtk"
+        ];
       };
       hyprland = {
         default = [
           "hyprland"
           "gtk"
         ];
-        "org.freedesktop.impl.portal.FileChooser" = [ "kde" "gtk" ];
+        "org.freedesktop.impl.portal.FileChooser" = [
+          "kde"
+          "gtk"
+        ];
       };
     };
   };

@@ -523,11 +523,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1787102618,
-        "narHash": "sha256-KZVKuR59qPGU+TCpOoDmQBdb/vKLnKoMRM1dBpwKxHo=",
+        "lastModified": 1787113699,
+        "narHash": "sha256-tVW3SpFP43nbfFcW0A15VtErQRNO0zOXm5pBiu77QHo=",
         "ref": "master",
-        "rev": "2a5f5131b7d1be71ec7c8adf9deb07dbe7b0166d",
-        "revCount": 1057989,
+        "rev": "628d4144bed41072ec77e46e6d4c7050843647c6",
+        "revCount": 1058001,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -571,11 +571,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1787001381,
-        "narHash": "sha256-Ue1Yo8gfHdD4TMtNewhA4tkSYeFqXThju0nCyJc3ALo=",
+        "lastModified": 1787070829,
+        "narHash": "sha256-vXNVDVtvfiQuXthP0NHPFdNvvMTkGpx0UP8oddIWbNk=",
         "ref": "nixos-unstable",
-        "rev": "ec2d622de0773551768cf98f3fc50cbcc003b9c5",
-        "revCount": 1057119,
+        "rev": "0ae2bc1419c3f345984c2629e72e7a631820fa4d",
+        "revCount": 1057639,
         "type": "git",
         "url": "https://github.com/NixOS/nixpkgs.git"
       },
@@ -673,7 +673,8 @@
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixvim": "nixvim",
         "vim-src": "vim-src",
-        "waybar": "waybar"
+        "waybar": "waybar",
+        "zen-browser": "zen-browser"
       }
     },
     "systems": {
@@ -790,6 +791,26 @@
       "original": {
         "owner": "hyprwm",
         "repo": "xdg-desktop-portal-hyprland",
+        "type": "github"
+      }
+    },
+    "zen-browser": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786685380,
+        "narHash": "sha256-3ZuubfWk7CHPF/60w5BVrVkzdO7Oed1MgZ+ugLsgww8=",
+        "owner": "youwen5",
+        "repo": "zen-browser-flake",
+        "rev": "e1e4aa6433a352f07059aeb8483ae42deb61f9b2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "youwen5",
+        "repo": "zen-browser-flake",
         "type": "github"
       }
     }

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 with pkgs;
 [
@@ -8,7 +8,6 @@ with pkgs;
   unstable.antigravity-ide
   brave
   discord
-  firefox
   gimp
   google-chrome
   inkscape
@@ -16,6 +15,7 @@ with pkgs;
   opencode
   pinta
   vscode
+  inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
   ###############################################################
   # Assorted packages
   ###############################################################
