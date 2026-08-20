@@ -64,6 +64,9 @@ with pkgs;
   p7zip
   pciutils
   python3
+  python314Packages.numpy
+  python314Packages.scipy
+  python314Packages.statsmodels
   scc
   smartmontools
   psmisc # For fuser
