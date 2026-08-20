@@ -17,3 +17,4 @@ export ARCHDF=$ARCHH/.files
 export ARCHCFG=$ARCH/$CFG
 export ARCHGBM=$ARCH/$GHUBM
 export ARCHGBO=$ARCH/$GHUBO
+export PYTHONSTARTUP="$HOME/.pythonrc"

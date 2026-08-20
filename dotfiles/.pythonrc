@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+from scipy.stats import norm
+pnorm = norm.cdf
+def p2norm(x):
+    return pnorm(x)-pnorm(-x)
+qnorm = norm.ppf
+import scipy.stats as st
+import numpy as np

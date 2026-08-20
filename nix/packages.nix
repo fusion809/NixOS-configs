@@ -67,6 +67,8 @@ with pkgs;
     python-pkgs: with python-pkgs; [
       scipy
       numpy
+      matplotlib
+      sympy
     ]
   ))
   scc
