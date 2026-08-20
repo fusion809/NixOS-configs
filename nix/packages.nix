@@ -63,10 +63,12 @@ with pkgs;
   optipng
   p7zip
   pciutils
-  python3
-  python314Packages.numpy
-  python314Packages.scipy
-  python314Packages.statsmodels
+  (python3.withPackages (
+    python-pkgs: with python-pkgs; [
+      scipy
+      numpy
+    ]
+  ))
   scc
   smartmontools
   psmisc # For fuser
