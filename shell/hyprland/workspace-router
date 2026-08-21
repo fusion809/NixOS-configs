@@ -113,17 +113,17 @@ handle() {
                dispatch_move 12 "$w_address"
            else
                local count_1=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 1)) | .[0].windows // 0')
-               local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 1 and .class == "google-chrome")) | .[0].title // ""')
+               local existing_title_1=$("$HYPRCTL" clients -j | jq -r 'map(select(.workspace.id == 12 and .class == "google-chrome")) | .[0].title // ""')
                
                if [ "$count_1" -eq 0 ] || [[ -z "$existing_title_1" ]] || [[ "$existing_title_1" == "New tab - Google Chrome" ]]; then
-                    dispatch_move 1 "$w_address"
+                    dispatch_move 12 "$w_address"
                 else
-                    local choice=$(echo -e "Current\n1(main)\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
+                    local choice=$(echo -e "Current\n7(PBS)\n12(Boo)" | rofi -dmenu -p "Select Workspace for Chrome:")
                     if [[ -n "$choice" ]] && [[ "$choice" != "Current" ]]; then
                         local t=$(echo "$choice" | cut -d '(' -f 1)
                         dispatch_move "$t" "$w_address"
                     elif [[ -z "$choice" ]]; then
-                        dispatch_move 1 "$w_address"
+                        dispatch_move 12 "$w_address"
                     fi
                 fi
             fi
