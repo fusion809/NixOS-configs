@@ -965,9 +965,12 @@ lfs_update() {
         # Find matching package in remote list (case-insensitive)
         local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9]|FAILED)" | head -n 1)
         if [[ -z "$remote_pkg" ]]; then
-            # Try fuzzy match: strip numeric suffix like 3 in gtk3 and try matching GTK-
+            # Try fuzzy match: only if name ends in numbers (e.g. gtk3 matching gtk+-3.x or qt6 matching qt-6.x)
             local name_base=$(echo "$name" | sed -E 's/[0-9]+$//')
-            [[ -n "$name_base" ]] && remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}[0-9]?-([0-9]|FAILED)" | head -n 1)
+            local name_num=$(echo "$name" | grep -oE '[0-9]+$')
+            if [[ -n "$name_num" && "$name_base" != "$name" ]]; then
+                remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}\\+?-(${name_num}\\.|${name_num}-|FAILED)" | head -n 1)
+            fi
         fi
         
         # if [[ "$name" =~ "gnome" ]] || [[ "$name" == "adwaita-icon-theme" ]] || [[ "$name" == "mutter" ]] || [[ "$name" == "nautilus" ]]; then

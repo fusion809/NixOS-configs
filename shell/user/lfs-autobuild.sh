@@ -1832,6 +1832,14 @@ if [[ "$PACKAGE" == "qt6" ]]; then
     log "Fixing Qt6 BLFS book patch path (../ to ../../) due to -d qtbase/"
     COMMANDS=$(echo "$COMMANDS" | sed 's|-i ../qt-everywhere|-i ../../qt-everywhere|g')
 
+    log "Stripping versioned /opt/qt-* directory creation and symlink from Qt6 commands..."
+    COMMANDS=$(echo "$COMMANDS" | grep -vE '^\s*mkdir\s+(-[a-zA-Z]+\s+)?/opt/qt-[0-9]' | grep -vE '^\s*ln\s+(-[a-zA-Z]+\s+)?qt-[0-9].*/opt/qt6')
+    COMMANDS+="
+    # Remove any broken versioned symlinks inside /opt/qt6 or empty /opt/qt-* folders
+    find /opt/qt6/ -maxdepth 1 -name 'qt-*' -type l -delete 2>/dev/null || true
+    find /opt/ -maxdepth 1 -name 'qt-[0-9]*' -type d -empty -delete 2>/dev/null || true
+"
+
     log "Fixing unterminated find -exec in qt6 BLFS commands..."
     # BLFS qt6 page has: find /opt/qt6 ... -exec ... {} without \; or +
     # Add \; to any -exec that ends the line without a terminator.
