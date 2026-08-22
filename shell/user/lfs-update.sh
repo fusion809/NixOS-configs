@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
+if ! declare -f aver >/dev/null 2>&1; then
 aver() {
     wget -cqO- -T 10 "https://gitlab.archlinux.org/archlinux/packaging/packages/$1/-/raw/main/PKGBUILD" | grep "^pkgver=" | cut -d '=' -f 2
 }
+fi
 
+if ! declare -f gn_ver >/dev/null 2>&1; then
 gn_ver() {
     local pkg="$1"
     local arch_name="${2:-$1}"
@@ -68,6 +71,7 @@ except Exception:
         return 0
     fi
 }
+fi
 lfs_get_upstream_version() {
     local pkg="$1"
     case "$pkg" in
