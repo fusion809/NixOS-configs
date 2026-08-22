@@ -26,6 +26,10 @@ sync_to_vm() {
     ssh_lfs "cat > ~/.lfs_scripts/upos.sh" \
         < "$NIXCFG/shell/user/upos.sh"
 
+    # Sync zsh theme
+    ssh_lfs "mkdir -p ~/.oh-my-zsh/themes"
+    ssh_lfs "cat > ~/.oh-my-zsh/themes/hnixos.zsh-theme" < "$NIXCFG/shell/hnixos.zsh"
+
     # Hook into ~/.bashrc if not already present
     ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo '# LFS update helpers' >> ~/.bashrc && echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
     ssh_lfs "touch ~/.zshrc && (grep -q 'lfs-vm-bootstrap.sh' ~/.zshrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.zshrc)"
