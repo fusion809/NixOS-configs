@@ -1,0 +1,8 @@
+#!/usr/bin/env R
+p2norm <- function(x) {
+	pnorm(x)-pnorm(-x)
+}
+
+q2norm <- function(x) {
+	qnorm(1-(1-x)/2)
+}

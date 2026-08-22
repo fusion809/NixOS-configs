@@ -39,7 +39,10 @@ in
   ".julia/config/startup.jl".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/startup.jl";
 
   # Python
-  ".pythonrc".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/.pythonrc";
+  ".pythonrc".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/pythonrc";
+
+  # R
+  ".Rprofile".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/Rprofile";
 
   # SSH
   ".ssh/config".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/config";
