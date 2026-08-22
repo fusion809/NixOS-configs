@@ -146,7 +146,7 @@ with pkgs;
   ###############################################################
   # Maths software
   ###############################################################
-  julia
+  (pkgs.callPackage ./julia-fhs-env.nix { })
   python313Packages.jupyterlab
   octave
   (pkgs.callPackage ./r-fhs-env.nix { })

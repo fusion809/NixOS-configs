@@ -35,6 +35,9 @@ in
   ".config/fastfetch/config.jsonc".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/fastfetch-config.jsonc";
 
+  # Julia
+  ".julia/config/startup.jl".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/startup.jl";
+
   # Python
   ".pythonrc".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/.pythonrc";
 
