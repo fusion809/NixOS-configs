@@ -6,3 +6,12 @@ p2norm <- function(x) {
 q2norm <- function(x) {
 	qnorm(1-(1-x)/2)
 }
+
+ME <- function(p, n, alpha=0.05) {
+	z = q2norm(1-alpha);
+	return(z * sqrt(p*(1-p)/n))
+}
+
+CI <- function(p, n, alpha=0.05) {
+	return(p+c(-1,1)*ME(p, n, alpha));
+}

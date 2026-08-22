@@ -59,6 +59,14 @@ let
     name = "julia";
     targetPkgs = commonPkgs;
     extraOutputsToInstall = [ "lib" "out" "dev" ];
+    extraBwrapArgs = [
+      "--bind-try"
+      "/data"
+      "/data"
+      "--bind-try"
+      "/arch"
+      "/arch"
+    ];
     profile = ''
       export LD_LIBRARY_PATH=/lib:/lib64:/usr/lib:/usr/lib64:$LD_LIBRARY_PATH
     '';

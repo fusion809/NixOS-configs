@@ -59,6 +59,14 @@ let
   r-fhs = pkgs.buildFHSEnv {
     name = "R";
     targetPkgs = commonPkgs;
+    extraBwrapArgs = [
+      "--bind-try"
+      "/data"
+      "/data"
+      "--bind-try"
+      "/arch"
+      "/arch"
+    ];
     runScript = "R";
   };
 
