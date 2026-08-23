@@ -1,0 +1,11 @@
+#!/usr/bin/env zsh
+if ! `sudo virsh list --all | grep "Linux From Scratch" | grep running &> /dev/null`; then
+	sudo virsh start "Linux From Scratch"
+else
+	echo "Linux From Scratch is already running..."
+fi
+if ! `hyprctl clients -j | grep "Linux From Scratch" &> /dev/null`; then 
+	virt-viewer --connect qemu:///system "Linux From Scratch"
+else
+	echo "The Linux From Scratch window is already open..."
+fi
