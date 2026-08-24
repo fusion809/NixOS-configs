@@ -14,6 +14,7 @@ with pkgs;
   nixfmt # Needed for Nix IDE extension of vscode/antigravity
   opencode
   pinta
+  unstable.wayvnc
   vscode
   inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
   ###############################################################
