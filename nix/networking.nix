@@ -5,9 +5,9 @@
   # Enable networking
   networkmanager.enable = true;
 
-  # WayVNC ports (5900 for HDMI-A-1, 5901 for DVI-D-1)
+  # WayVNC ports (5910 for HDMI-A-1, 5911 for DVI-D-1)
   firewall = {
     enable = true;
-    allowedTCPPorts = [ 5900 5901 ];
+    allowedTCPPorts = [ 5910 5911 ];
   };
 }
