@@ -35,6 +35,22 @@
   pulseaudio = { enable = false; };
   printing = { enable = false; };
   accounts-daemon.enable = true;
+  avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      addresses = true;
+      userServices = true;
+      workstation = true;
+    };
+  };
+  sunshine = {
+    enable = true;
+    autoStart = true;
+    capSysAdmin = true;
+    openFirewall = true;
+  };
   xserver = {
     enable = true;
     videoDrivers = [ "nvidia" ];
