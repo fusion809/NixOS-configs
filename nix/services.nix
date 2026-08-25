@@ -1,7 +1,9 @@
 { pkgs, username, ... }:
 
 {
-  blueman = { enable = true; };
+  blueman = {
+    enable = true;
+  };
   displayManager = {
     sddm.enable = true;
     defaultSession = "hyprland";
@@ -19,7 +21,9 @@
     #   '')
     # ];
   };
-  gvfs = { enable = true; };
+  gvfs = {
+    enable = true;
+  };
   pipewire = {
     enable = true;
     alsa.enable = true;
@@ -32,8 +36,15 @@
     # no need to redefine it in your config for now)
     #media-session.enable = true;
   };
-  pulseaudio = { enable = false; };
-  printing = { enable = false; };
+  pulseaudio = {
+    enable = false;
+  };
+  printing = {
+    enable = false;
+  };
+  tailscale = {
+    enable = true;
+  };
   accounts-daemon.enable = true;
   avahi = {
     enable = true;
