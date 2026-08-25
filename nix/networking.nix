@@ -8,6 +8,10 @@
   # WayVNC ports (5910 for HDMI-A-1, 5911 for DVI-D-1)
   firewall = {
     enable = true;
-    allowedTCPPorts = [ 5910 5911 ];
+    allowedTCPPorts = [
+      5910
+      5911
+      8000
+    ];
   };
 }
