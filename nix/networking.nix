@@ -13,5 +13,11 @@
       5911
       8000
     ];
+    allowedUDPPorts = [
+      1234
+    ];
+    trustedInterfaces = [
+      "tailscale0"
+    ];
   };
 }
