@@ -5,7 +5,7 @@ else
 	echo "Debian 13 is already running..."
 fi
 if ! `hyprctl clients -j | grep "Debian 13 on QEMU/KVM" &> /dev/null`; then 
-	virt-viewer --connect qemu:///system "Debian 13"
+	virt-manager --connect qemu:///system --show-domain-console "Debian 13"
 else
 	echo "The Debian 13 window is already open..."
 fi
