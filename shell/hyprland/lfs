@@ -5,7 +5,7 @@ else
 	echo "Linux From Scratch is already running..."
 fi
 if ! `hyprctl clients -j | grep "Linux From Scratch" &> /dev/null`; then 
-	virt-viewer --connect qemu:///system "Linux From Scratch"
+	virt-manager --connect qemu:///system --show-domain-console "Linux From Scratch"
 else
 	echo "The Linux From Scratch window is already open..."
 fi
