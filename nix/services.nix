@@ -70,4 +70,22 @@
       variant = "";
     };
   };
+  icecast = {
+    enable = true;
+    hostname = "nixos";
+    listen.port = 8001;
+    admin = {
+      password = "hackme";
+      user = "admin";
+    };
+    extraConf = ''
+      <authentication>
+        <source-password>hackme</source-password>
+      </authentication>
+      <limits>
+        <burst-size>0</burst-size>
+        <burst-on-connect>0</burst-on-connect>
+      </limits>
+    '';
+  };
 }
