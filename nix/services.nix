@@ -78,7 +78,7 @@
       password = "hackme";
       user = "admin";
     };
-    extraConf = ''
+    extraConfig = ''
       <authentication>
         <source-password>hackme</source-password>
       </authentication>
