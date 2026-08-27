@@ -320,19 +320,39 @@ for p in "$@"; do
     bs="${name_to_build[$p]:-}"
     deps=()
     if [[ -n "$bs" ]]; then
-        deps_line=$(grep -E "^depends=" "$bs" 2>/dev/null | head -n1)
-        if [[ -n "$deps_line" ]]; then
-            deps_val=$(echo "$deps_line" | sed -E "s/^[a-zA-Z_]+=\\(?//; s/\\)$//")
-            eval "deps=($deps_val)"
-        fi
+        while IFS= read -r dline; do
+            [[ -z "$dline" ]] && continue
+            dval=$(echo "$dline" | sed -E "s/^[a-zA-Z_]+=\\(?//; s/\\)$//")
+            eval "cur_deps=($dval)"
+            deps+=("${cur_deps[@]}")
+        done < <(grep -E "^(depends|lfs_depends|blfs_depends)=" "$bs" 2>/dev/null)
     fi
     found_edge=false
     for dep in "${deps[@]}"; do
-        if [[ -n "${pkg_set[$dep]+x}" && "$dep" != "$p" ]]; then
-            echo "$dep $p"
+        # Map common aliases (e.g. rust -> rustc, rustc -> rust)
+        dep_match=""
+        if [[ -n "${pkg_set[$dep]+x}" ]]; then
+            dep_match="$dep"
+        elif [[ "$dep" == "rust" && -n "${pkg_set[rustc]+x}" ]]; then
+            dep_match="rustc"
+        elif [[ "$dep" == "rustc" && -n "${pkg_set[rust]+x}" ]]; then
+            dep_match="rust"
+        elif [[ "$dep" =~ ^(cbindgen|rust-bindgen)$ && -n "${pkg_set[rustc]+x}" ]]; then
+            dep_match="rustc"
+        fi
+        if [[ -n "$dep_match" && "$dep_match" != "$p" ]]; then
+            echo "$dep_match $p"
             found_edge=true
         fi
     done
+    # Add implicit high-level toolkit dependency edges
+    if [[ "$p" == "qt6" && -n "${pkg_set[mesa]+x}" ]]; then
+        echo "mesa qt6"
+        found_edge=true
+    elif [[ "$p" == "sddm" && -n "${pkg_set[qt6]+x}" ]]; then
+        echo "qt6 sddm"
+        found_edge=true
+    fi
     if [[ "$found_edge" == "false" ]]; then
         echo "$p $p"
     fi
@@ -2066,6 +2086,11 @@ done
             $_ .= "done\n";
         }
     ')
+    # Fix 'rustc-LLVM ERROR: +amx-tf32 is not a recognized feature for this target'
+    SETUP_COMMANDS+='
+echo "[LFS-AUTOBUILD] Removing unsupported amx-tf32 target feature from rustc..."
+find compiler/ -type f -name "*.rs" -exec sed -i "/amx-tf32/d; /amx_tf32/d" {} + 2>/dev/null || true
+'
 fi
 
 if [[ "$PACKAGE" == "qca" ]]; then
@@ -4532,6 +4557,27 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
     sudo rm -f "/tmp/pkg_inventory/${PACKAGE}"
     echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/$PACKAGE"
+fi
+
+if [[ "$PACKAGE" == "llvm" ]]; then
+    echo "Cleaning up obsolete versioned LLVM/Clang binaries from previous versions..."
+    cur_major=""
+    if [[ -n "$UPSTREAM_VERSION" ]]; then
+        cur_major="${UPSTREAM_VERSION%%.*}"
+    elif [[ -n "$VERSION_TO_RECORD" ]]; then
+        cur_major="${VERSION_TO_RECORD%%.*}"
+    fi
+    if [[ -n "$cur_major" ]]; then
+        for bin in /usr/bin/clang-[0-9]* /usr/bin/clang++-[0-9]* /usr/bin/clang-cpp-[0-9]* /usr/bin/clang-cl-[0-9]* /usr/bin/clangd-[0-9]* /usr/bin/lldb-[0-9]* /usr/bin/lldb-dap-[0-9]* /usr/bin/lldb-server-[0-9]* /usr/bin/wasm-ld-[0-9]* /usr/bin/ld.lld-[0-9]* /usr/bin/lld-[0-9]*; do
+            [ -e "$bin" ] || continue
+            bname=$(basename "$bin")
+            bver=$(echo "$bname" | grep -oE "[0-9]+$")
+            if [ -n "$bver" ] && [ "$bver" != "$cur_major" ]; then
+                echo "Removing obsolete LLVM binary: $bin (current is $cur_major)"
+                sudo rm -f "$bin"
+            fi
+        done
+    fi
 fi
 
 if [[ "$RM_LIBS" == "true" ]]; then

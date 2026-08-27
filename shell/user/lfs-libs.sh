@@ -154,6 +154,15 @@ rm_old_libs_gpt() {
             for link in "${link_names[@]}"; do
                 all_names+=($(basename "$link"))
             done
+            # Extract internal DT_SONAME directly from the ELF header
+            local soname=$(readelf -d "$i" 2>/dev/null | grep '(SONAME)' | sed -E 's/.*\[(.*)\].*/\1/')
+            [ -n "$soname" ] && all_names+=("$soname")
+            # Also add major version alias if filename has minor/patch numbers
+            if [[ "$lib_basename" =~ \.so\.([0-9]+)\. ]]; then
+                all_names+=("${lib_basename%%.so.*}.so.${BASH_REMATCH[1]}")
+            elif [[ "$lib_basename" =~ -([0-9]+)\.([0-9.]*)\.so ]]; then
+                all_names+=("${lib_basename%%-[0-9]*}-${BASH_REMATCH[1]}.so")
+            fi
         fi
         
         # Ensure unique all_names and avoid empty checks
@@ -458,6 +467,15 @@ ls_old_libs_gpt() {
                 for link in "${link_names[@]}"; do
                     all_names+=($(basename "$link"))
                 done
+                # Extract internal DT_SONAME directly from the ELF header
+                local soname=$(readelf -d "$i" 2>/dev/null | grep '(SONAME)' | sed -E 's/.*\[(.*)\].*/\1/')
+                [ -n "$soname" ] && all_names+=("$soname")
+                # Also add major version alias if filename has minor/patch numbers
+                if [[ "$lib_basename" =~ \.so\.([0-9]+)\. ]]; then
+                    all_names+=("${lib_basename%%.so.*}.so.${BASH_REMATCH[1]}")
+                elif [[ "$lib_basename" =~ -([0-9]+)\.([0-9.]*)\.so ]]; then
+                    all_names+=("${lib_basename%%-[0-9]*}-${BASH_REMATCH[1]}.so")
+                fi
             fi
             
             all_names=($(printf "%s\n" "${all_names[@]}" | sort -u | grep -v "^$"))
