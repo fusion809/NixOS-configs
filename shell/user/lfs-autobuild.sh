@@ -1921,8 +1921,11 @@ if [[ "$PACKAGE" == "glycin" ]]; then
 fi
 
 if [[ "$PACKAGE" == "nautilus" ]]; then
-    log "Disabling SELinux support in nautilus (fix missing dependency)..."
+    log "Disabling SELinux support in nautilus and patching g_set_date_time redefinition with GLib..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D selinux=false /g; s/meson setup \.\./meson setup -D selinux=false \.\./g')
+    SETUP_COMMANDS+='
+find src/ -type f \( -name "*.c" -o -name "*.h" \) -exec sed -i "s/\bg_set_date_time\b/nautilus_set_date_time/g" {} + 2>/dev/null || true
+'
 fi
 
 if [[ "$PACKAGE" == "mesa" ]]; then
