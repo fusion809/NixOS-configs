@@ -3592,8 +3592,15 @@ if [[ "${PACKAGE,,}" == "plasma" || "${PACKAGE,,}" == "plasma-all" || \
 fi
 
 if [[ "$PACKAGE" == "sddm" ]]; then
-    log "Removing legacy /opt/xorg ServerPath modification for sddm..."
+    log "Fixing sddm post-install commands..."
     COMMANDS=$(echo "$COMMANDS" | grep -v "sed -i.orig '/ServerPath/ s|usr|opt/xorg|' /etc/sddm.conf")
+    # Strip malformed heredoc config blocks from the book page that break in non-interactive subshells
+    COMMANDS=$(echo "$COMMANDS" | perl -0777 -pe 's/cat\s*>\s*\/etc\/sddm[^\n]*<<[^\n]*\n.*?\nEOF\n?//gs')
+fi
+
+if [[ "${PACKAGE,,}" == "avahi" ]]; then
+    log "Applying avahi: fixing autoreconf command..."
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's/\bauroreconf\b/autoreconf/g')
 fi
 
 
