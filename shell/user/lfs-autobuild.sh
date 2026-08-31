@@ -4607,6 +4607,37 @@ if [[ "$PACKAGE" == "llvm" ]]; then
     fi
 fi
 
+# TeXLive: after a successful install, remove old year prefixes and flag dependents
+if [[ "$PACKAGE" == "texlive" ]] && [[ -n "$TEXLIVE_YEAR" ]]; then
+    echo "TeXLive $TEXLIVE_YEAR installed. Cleaning up old TeXLive year directories..."
+    for old_tl_dir in /opt/texlive/[0-9][0-9][0-9][0-9]; do
+        [ -d "$old_tl_dir" ] || continue
+        old_year=$(basename "$old_tl_dir")
+        [[ "$old_year" == "$TEXLIVE_YEAR" ]] && continue
+        echo "Removing old TeXLive installation: $old_tl_dir"
+        # Before removing, record any libraries in /usr/lib that were symlinked into the old prefix.
+        # These indicate packages (like dvisvgm) that need rebuilding against the new prefix.
+        for stale_link in /usr/lib/libkpathsea* /usr/lib/libptexenc* /usr/lib/libsynctex* /usr/lib/libtexlua* /usr/lib/libkpse*; do
+            [ -L "$stale_link" ] || continue
+            link_target=$(readlink -f "$stale_link" 2>/dev/null || true)
+            if [[ "$link_target" == "$old_tl_dir"/* ]]; then
+                echo "Stale symlink to old TeXLive found: $stale_link -> $link_target"
+                echo "$stale_link" | sudo tee -a "/tmp/preserved_libs_${PACKAGE}.txt" > /dev/null
+                sudo rm -f "$stale_link"
+            fi
+        done
+        sudo rm -rf "$old_tl_dir"
+        echo "Removed $old_tl_dir"
+    done
+    # Also update the /usr/lib libkpathsea symlink to point at the new prefix
+    new_lib="$TEXLIVE_PREFIX/lib/libkpathsea.so"
+    if [ -f "$new_lib" ]; then
+        sudo ln -sfv "$TEXLIVE_PREFIX/lib/libkpathsea.so" /usr/lib/libkpathsea.so
+        sudo ln -sfv "$TEXLIVE_PREFIX/lib/libkpathsea.so.6" /usr/lib/libkpathsea.so.6 2>/dev/null || true
+    fi
+fi
+
+
 if [[ "$RM_LIBS" == "true" ]]; then
     # Find files installed by this build (newer than timestamp)
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"

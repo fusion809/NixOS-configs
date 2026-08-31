@@ -1442,6 +1442,7 @@ for pkg in sorted_pkgs:
                 fi
             done < /tmp/lfs_preserved_rm_list.txt && sudo rm -f /tmp/lfs_preserved_rm_list.txt'
         fi
+    fi
 
     echo "Updating Python packages via pip..."
     if [[ "$dry_run" == "true" ]]; then
