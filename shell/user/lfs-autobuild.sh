@@ -1592,16 +1592,21 @@ if echo "$HTML_CONTENT" | grep -qiE "rust|rustc|cargo"; then
 fi
 
 # 2.6 Auto-detect TeXLive and set TEXLIVE_PREFIX
-if echo "$HTML_CONTENT" | grep -qiE "texlive"; then
+if echo "$HTML_CONTENT $PACKAGE" | grep -qiE "texlive"; then
     # Extract year from the texlive source archive URL (e.g. texlive-20250308-source.tar.xz -> 2025)
     TEXLIVE_YEAR=$(printf '%s\n' "${DOWNLOAD_URLS[@]}" | perl -nle 'while (m{(?i)texlive-\K[0-9]{4}}g) { print $& }' | head -n 1)
     if [[ -z "$TEXLIVE_YEAR" ]]; then
         # Fallback: try to extract from already-identified main filename
         TEXLIVE_YEAR=$(echo "$MAIN_FILENAME" | perl -nle 'while (m{texlive-\K[0-9]{4}}g) { print $& }')
     fi
+    if [[ -z "$TEXLIVE_YEAR" ]]; then
+        # Fallback: extract 4-digit year following texlive- or systems/texlive/ from HTML_CONTENT or COMMANDS
+        TEXLIVE_YEAR=$(echo "$HTML_CONTENT $COMMANDS" | perl -nle 'if (m{texlive-([0-9]{4})|systems/texlive/([0-9]{4})}i) { print $1 || $2 }' | head -n 1)
+    fi
     if [[ -n "$TEXLIVE_YEAR" ]]; then
         log "TeXLive detected: setting TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR"
         SETUP_COMMANDS+="export TEXLIVE_PREFIX=/opt/texlive/$TEXLIVE_YEAR
+export PATH=\$PATH:/opt/texlive/$TEXLIVE_YEAR/bin/\$(uname -m)-linux
 "
     else
         log "TeXLive detected but could not determine year from source filenames."
@@ -1777,9 +1782,9 @@ if target_run "command -v xsltproc" &>/dev/null; then
     fi
 fi
 
-# ALWAYS suppress doxygen, texlive, asciidoc, xmlto as requested
-if [[ "$COMMANDS" =~ "doxygen" || "$COMMANDS" =~ "texlive" || "$COMMANDS" =~ "asciidoc" || "$COMMANDS" =~ "xmlto" ]] || \
-   [[ "$HTML_CONTENT" =~ "doxygen" || "$HTML_CONTENT" =~ "texlive" || "$PACKAGE" == "git" || "$PACKAGE" == "gpm" ]]; then
+# ALWAYS suppress doxygen, texlive, asciidoc, xmlto as requested (except when building texlive itself)
+if [[ "$PACKAGE" != "texlive" ]] && { [[ "$COMMANDS" =~ "doxygen" || "$COMMANDS" =~ "texlive" || "$COMMANDS" =~ "asciidoc" || "$COMMANDS" =~ "xmlto" ]] || \
+   [[ "$HTML_CONTENT" =~ "doxygen" || "$HTML_CONTENT" =~ "texlive" || "$PACKAGE" == "git" || "$PACKAGE" == "gpm" ]]; }; then
     log "[INFO] Documentation building (doxygen/texlive/asciidoc) is explicitly suppressed."
     ENABLE_DOC_BUILD=false
     # Map to whichever tool was found (or both), doxygen takes precedence for the stripping logic
@@ -1831,7 +1836,6 @@ fi
 if [[ "$ENABLE_DOC_BUILD" == "false" ]]; then
     SETUP_COMMANDS+="
 MOCK_DOC_DIR=\"/tmp/mock_docs_\$\$\"
-TEXLIVE_PREFIX=\"/opt/texlive/2025\"
 mkdir -p \"\$MOCK_DOC_DIR\"
 for m in makeinfo asciidoc xmlto asciidoctor xmlproc docbook2x pdflatex xelatex lualatex texi2html texi2pdf texi2dvi dvips sphinx-build; do
     ln -sf /bin/true \"\$MOCK_DOC_DIR/\$m\"
@@ -1921,11 +1925,8 @@ if [[ "$PACKAGE" == "glycin" ]]; then
 fi
 
 if [[ "$PACKAGE" == "nautilus" ]]; then
-    log "Disabling SELinux support in nautilus and patching g_set_date_time redefinition with GLib..."
+    log "Disabling SELinux support in nautilus (fix missing dependency)..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D selinux=false /g; s/meson setup \.\./meson setup -D selinux=false \.\./g')
-    SETUP_COMMANDS+='
-find src/ -type f \( -name "*.c" -o -name "*.h" \) -exec sed -i "s/\bg_set_date_time\b/nautilus_set_date_time/g" {} + 2>/dev/null || true
-'
 fi
 
 if [[ "$PACKAGE" == "mesa" ]]; then
@@ -4238,6 +4239,22 @@ for url in "${DOWNLOAD_URLS[@]}"; do
                         echo "Successfully downloaded domain fallback: $fname"
                         dl_success=true
                     fi
+                fi
+
+                if [ "$dl_success" = "false" ] && [[ "$url" == *"historic/systems/texlive"* || "$url" == *"ftp.math.utah.edu"* ]]; then
+                    for mirror in "https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/" \
+                                  "https://mirrors.rit.edu/CTAN/historic/systems/texlive/" \
+                                  "https://ftp.kddilabs.jp/CTAN/historic/systems/texlive/" \
+                                  "http://ftp.math.utah.edu/pub/tex/historic/systems/texlive/"; do
+                        tex_rel=$(echo "$url" | sed -E 's#.*/(historic/systems/texlive/|systems/texlive/)##')
+                        alt_url="${mirror}${tex_rel}"
+                        echo "Trying TeXLive mirror fallback: $alt_url"
+                        if wget -nv -T 30 -t 3 --no-check-certificate --max-redirect=5 "$alt_url"; then
+                            echo "Successfully downloaded mirror fallback: $fname"
+                            dl_success=true
+                            break
+                        fi
+                    done
                 fi
                 
                 if [ "$dl_success" = "false" ]; then

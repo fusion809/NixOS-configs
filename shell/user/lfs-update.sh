@@ -1176,7 +1176,7 @@ def extract_deps(url):
             # Find required/recommended blocks
             blocks = re.findall(r"class=\"(required|recommended)\"(.*?)</p>", html, re.IGNORECASE | re.DOTALL)
             for _, block in blocks:
-                hrefs = re.findall(r"href=\"([^\"]+)\"", block)
+                hrefs = re.findall(r"href\s*=\s*\"([^\"]+)\"", block)
                 for href in hrefs:
                     # Clean up href to just the page name without extension
                     page_name = href.split("/")[-1].replace(".html", "")
@@ -1198,10 +1198,10 @@ for pkg in updates:
         search_pkg = "gst10-plugins-" + pkg.split("-")[-1]
     
     # Try exact match in longindex
-    m = re.search(r"href=\"([^\"]*/" + re.escape(search_pkg) + r"\.html)\"", longindex, re.IGNORECASE)
+    m = re.search(r"href\s*=\s*\"([^\"]*/" + re.escape(search_pkg) + r"\.html)\"", longindex, re.IGNORECASE)
     if not m:
         # Partial match
-        m = re.search(r"href=\"([^\"]*" + re.escape(search_pkg) + r"[^\"]*\.html)\"", longindex, re.IGNORECASE)
+        m = re.search(r"href\s*=\s*\"([^\"]*" + re.escape(search_pkg) + r"[^\"]*\.html)\"", longindex, re.IGNORECASE)
     
     if m:
         href = m.group(1).replace("../", "")
@@ -1442,13 +1442,59 @@ for pkg in sorted_pkgs:
                 fi
             done < /tmp/lfs_preserved_rm_list.txt && sudo rm -f /tmp/lfs_preserved_rm_list.txt'
         fi
-    fi
 
     echo "Updating Python packages via pip..."
     if [[ "$dry_run" == "true" ]]; then
-        echo "DRY RUN: pip3 list --outdated 2>/dev/null | tail -n +3 | cut -d ' ' -f 1 | xargs -r sudo pip3 install -U"
+        echo "DRY RUN: pip3 upgrade (pip-managed packages only, skipping meson/system-built ones)"
     else
-        ssh_lfs "pip3 list --outdated 2>/dev/null | tail -n +3 | cut -d ' ' -f 1 | xargs -r sudo pip3 install -U"
+        # Write the pip-filter script to a temp file on the VM and run it.
+        # This avoids all quoting/escaping issues with passing Python code over SSH.
+        local pip_script
+        pip_script=$(cat <<'PIPSCRIPT'
+import os, glob, subprocess, sys
+
+# Collect all site-packages directories
+try:
+    import site
+    site_dirs = list(site.getsitepackages()) if hasattr(site, 'getsitepackages') else []
+    site_dirs.append(site.getusersitepackages())
+except Exception:
+    site_dirs = []
+
+# Only upgrade packages that pip installed: they have both RECORD and INSTALLER=pip
+pip_managed = set()
+for d in site_dirs:
+    for dist in glob.glob(os.path.join(d, '*.dist-info')):
+        record = os.path.join(dist, 'RECORD')
+        installer = os.path.join(dist, 'INSTALLER')
+        if os.path.exists(record) and os.path.exists(installer):
+            try:
+                with open(installer) as f:
+                    if f.read().strip().lower() == 'pip':
+                        pip_managed.add(os.path.basename(dist).split('-')[0])
+            except Exception:
+                pass
+
+# Get outdated packages and filter to only pip-managed ones
+try:
+    out = subprocess.check_output(
+        ['pip3', 'list', '--outdated', '--format=columns'],
+        text=True, stderr=subprocess.DEVNULL
+    )
+except subprocess.CalledProcessError:
+    sys.exit(0)
+
+to_upgrade = []
+for line in out.splitlines()[2:]:
+    parts = line.split()
+    if parts and parts[0] in pip_managed:
+        to_upgrade.append(parts[0])
+
+if to_upgrade:
+    subprocess.run(['sudo', 'pip3', 'install', '-U'] + to_upgrade)
+PIPSCRIPT
+        )
+        printf '%s\n' "$pip_script" | ssh_lfs "python3 -"
     fi
 
     echo "Updating Julia with juliaup..."
