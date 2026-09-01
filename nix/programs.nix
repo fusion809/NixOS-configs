@@ -1,33 +1,55 @@
-{ pkgs, inputs, username, ... }:
+{
+  pkgs,
+  inputs,
+  username,
+  ...
+}:
 
 let
   lib = import ./lib.nix { inherit username; };
   nixcfgDir = lib.nixcfgDir;
 
-in {
+in
+{
   appimage = {
     enable = true;
     binfmt = true;
   };
-  fuse.userAllowOther = true; # allows kdeconnect SFTP mounts to be readable by Nautilus
+  fuse = {
+    userAllowOther = true;
+  }; # allows kdeconnect SFTP mounts to be readable by Nautilus
   bash.shellInit = ''
     export USER="${username}"
     export NIXCFG="${nixcfgDir}"
-  '' + builtins.readFile ../shell/root/main.sh;
-  firefox = { enable = false; };
+  ''
+  + builtins.readFile ../shell/root/main.sh;
+  firefox = {
+    enable = false;
+  };
   hyprland = {
     enable = true;
     # package =
     #   inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     package = pkgs.hyprland;
   };
-  kdeconnect.enable = true; # enables KDE Connect daemon + opens firewall ports 1714-1764
-  nano = { enable = false; };
+  kdeconnect = {
+    enable = true;
+  }; # enables KDE Connect daemon + opens firewall ports 1714-1764
+  localsend = {
+    enable = true;
+  };
+  nano = {
+    enable = false;
+  };
   nixvim = {
     enable = true;
     defaultEditor = true;
     colorschemes.monokai-pro.enable = true;
-    extraPlugins = with pkgs.vimPlugins; [ vim-nix nerdtree coc-nvim ];
+    extraPlugins = with pkgs.vimPlugins; [
+      vim-nix
+      nerdtree
+      coc-nvim
+    ];
     extraConfigVim = ''
       call coc#config('languageserver', {
         \ 'nix': {
@@ -63,12 +85,9 @@ in {
   };
   steam = {
     enable = true;
-    remotePlay.openFirewall =
-      true; # Open ports in the firewall for Steam Remote Play
-    dedicatedServer.openFirewall =
-      true; # Open ports in the firewall for Source Dedicated Server
-    localNetworkGameTransfers.openFirewall =
-      true; # Open ports in the firewall for Steam Local Network Game Transfers
+    remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+    dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
+    localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
 
     # Enable GameScope session for better Wayland support
     gamescopeSession.enable = true;
@@ -76,20 +95,26 @@ in {
     # Add extra compatibility packages for Nvidia + Wayland
     extraCompatPackages = with pkgs; [ proton-ge-bin ];
   };
-  virt-manager.enable = true;
+  virt-manager = {
+    enable = true;
+  };
   waybar = {
     enable = true;
-    package = let
-      pkg = (inputs.waybar.packages.${pkgs.stdenv.hostPlatform.system}.default).overrideAttrs (old: {
-        # Disable tests to avoid missing catch2 dependency and flaky test timeouts
-        doCheck = false;
-        mesonFlags = (old.mesonFlags or []) ++ [ "-Dtests=disabled" ];
-      });
-    in pkg // { override = args: pkg; };
+    package =
+      let
+        pkg = (inputs.waybar.packages.${pkgs.stdenv.hostPlatform.system}.default).overrideAttrs (old: {
+          # Disable tests to avoid missing catch2 dependency and flaky test timeouts
+          doCheck = false;
+          mesonFlags = (old.mesonFlags or [ ]) ++ [ "-Dtests=disabled" ];
+        });
+      in
+      pkg // { override = args: pkg; };
   };
 
   zsh = {
-    autosuggestions.enable = true;
+    autosuggestions = {
+      enable = true;
+    };
     enable = true;
     enableCompletion = true;
     ohMyZsh = {
@@ -100,7 +125,10 @@ in {
       export DISABLE_MAGIC_FUNCTIONS=true
       export USER="${username}"
       export NIXCFG="${nixcfgDir}"
-    '' + builtins.readFile ../shell/root/.zshrc;
-    syntaxHighlighting.enable = true;
+    ''
+    + builtins.readFile ../shell/root/.zshrc;
+    syntaxHighlighting = {
+      enable = true;
+    };
   };
 }

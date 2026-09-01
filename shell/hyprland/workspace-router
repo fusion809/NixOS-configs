@@ -133,6 +133,21 @@ handle() {
        (
            if is_floating; then exit 0; fi
 
+           if [[ -z "$w_title" ]]; then
+               sleep 0.2
+               w_title=$("$HYPRCTL" clients -j | jq -r --arg addr "0x$w_address" '.[] | select(.address == $addr) | .title // .initialTitle')
+           fi
+
+           if [[ "$w_title" =~ "Debian 13" ]]; then
+               dispatch_move 29 "$w_address"
+               dispatch_focus 29
+               exit 0
+           elif [[ "$w_title" =~ "Linux From Scratch" ]]; then
+               dispatch_move 30 "$w_address"
+               dispatch_focus 30
+               exit 0
+           fi
+
            local count_28=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 28)) | .[0].windows // 0')
            local count_29=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 29)) | .[0].windows // 0')
            local count_30=$("$HYPRCTL" workspaces -j | jq 'map(select(.id == 30)) | .[0].windows // 0')
