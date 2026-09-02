@@ -551,7 +551,7 @@ touch "/tmp/build_start_timestamp_${TARGET_PKG}"
 BUILD_LOG="/tmp/build_log_${TARGET_PKG}.txt"
 # Run build; capture exit code independently so post-install steps don't mask it
 set +e
-bash build.sh 2>&1 | tee "$BUILD_LOG"
+bash build.sh < /dev/null 2>&1 | tee "$BUILD_LOG"
 _build_exit=${PIPESTATUS[0]}
 set -e
 if [ $_build_exit -ne 0 ]; then
@@ -578,6 +578,9 @@ if [ -n "$version_line_num" ]; then
     eval_script="/tmp/eval_ver_${TARGET_PKG}.sh"
     echo 'set +e' > "$eval_script"
     echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
+    if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
+        echo 'source ~/lfs_packaging/shared-funcs.sh' >> "$eval_script"
+    fi
     head -n "$version_line_num" build.sh | tr -d '\r' >> "$eval_script"
     echo "echo \"\$$var_name\"" >> "$eval_script"
     new_ver=$(bash "$eval_script" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]')
@@ -604,6 +607,10 @@ if [ -z "$new_ver" ] && grep -q "git clone" build.sh; then
     fi
 fi
 
+if [ -z "$new_ver" ] && [ -f "/var/lib/custom-packages/${TARGET_PKG}" ]; then
+    new_ver=$(head -n 1 "/var/lib/custom-packages/${TARGET_PKG}" 2>/dev/null | tr -d '\r\n[:space:]')
+fi
+
 if [ -n "$new_ver" ]; then
     if [ $(wc -l < /var/lib/custom-packages/"$TARGET_PKG" 2>/dev/null || echo 0) -gt 1 ]; then
         sudo sed -i "1s/.*/$new_ver/" /var/lib/custom-packages/"$TARGET_PKG"
@@ -620,11 +627,11 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-    find $EXISTING_DIRS -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+    sudo find $EXISTING_DIRS -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
     if [[ "$TARGET_PKG" == "linux" ]]; then
-        [ -d "/boot" ] && find /boot -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
-        [ -d "/lib/modules" ] && find /lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
-        [ -d "/usr/lib/modules" ] && find /usr/lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+        [ -d "/boot" ] && sudo find /boot -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+        [ -d "/lib/modules" ] && sudo find /lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+        [ -d "/usr/lib/modules" ] && sudo find /usr/lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
     fi
     
     # 2. Capture via build log (CMake/Meson files that are already up-to-date)
@@ -637,7 +644,7 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
         sudo rm -f "$BUILD_LOG"
     fi
 
-    sudo awk '!seen[$0]++' "/var/lib/custom-packages/${TARGET_PKG}" > "/tmp/dedup_${TARGET_PKG}"
+    sudo awk '!seen[$0]++' "/var/lib/custom-packages/${TARGET_PKG}" | sudo tee "/tmp/dedup_${TARGET_PKG}" > /dev/null
     sudo mv "/tmp/dedup_${TARGET_PKG}" "/var/lib/custom-packages/${TARGET_PKG}"
     sudo chmod 755 "/var/lib/custom-packages/${TARGET_PKG}"
     echo "Recorded installed files for custom package $TARGET_PKG in /var/lib/custom-packages/"
@@ -651,36 +658,39 @@ EOF
         
         # Determine target version from build script
         TARGET_VER=""
-        EVAL_SCRIPT=$(cat <<EOF
-pkg_dir="\$CUSTOM_DIR"
-build_script="\$CUSTOM_BUILD_SH"
+        EVAL_SCRIPT=$(cat <<'EOF'
+pkg_dir="$CUSTOM_DIR"
+build_script="$CUSTOM_BUILD_SH"
 if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
     source ~/lfs_packaging/shared-funcs.sh
-    while read -r func; do export -f "\$func"; done < <(declare -F | awk '{print \$3}')
+    while read -r func; do export -f "$func"; done < <(declare -F | awk '{print $3}')
 fi
-ver_match=\$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' "\$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
-if [ -z "\$ver_match" ]; then
-    ver_match=\$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' "\$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+if [ -z "$ver_match" ]; then
+    ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
 fi
 version_line_num=""
 var_name=""
-if [ -n "\$ver_match" ]; then
-    version_line_num=\$(echo "\$ver_match" | cut -d: -f1)
-    var_line=\$(echo "\$ver_match" | cut -d: -f2-)
-    var_name=\$(echo "\$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
+if [ -n "$ver_match" ]; then
+    version_line_num=$(echo "$ver_match" | cut -d: -f1)
+    var_line=$(echo "$ver_match" | cut -d: -f2-)
+    var_name=$(echo "$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
 fi
-if [ -n "\$version_line_num" ]; then
-    tmp_eval="/tmp/eval_autobuild_ver_\$\$.sh"
-    echo 'set +e' > "\$tmp_eval"
-    echo 'export PATH=/opt/texlive/2025/bin/x86_64-linux:\$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "\$tmp_eval"
-    head -n "\$version_line_num" "\$build_script" | tr -d '\r' >> "\$tmp_eval"
-    echo "echo \"\\$\$var_name\"" >> "\$tmp_eval"
-    cd "\$pkg_dir" && bash "\$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
-    rm -f "\$tmp_eval"
+if [ -n "$version_line_num" ]; then
+    tmp_eval="/tmp/eval_autobuild_ver_$$.sh"
+    echo 'set +e' > "$tmp_eval"
+    echo 'export PATH=/opt/texlive/2025/bin/x86_64-linux:$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$tmp_eval"
+    if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
+        echo 'source ~/lfs_packaging/shared-funcs.sh' >> "$tmp_eval"
+    fi
+    head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$tmp_eval"
+    echo "echo \"\$$var_name\"" >> "$tmp_eval"
+    cd "$pkg_dir" && bash "$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
+    rm -f "$tmp_eval"
 fi
 EOF
 )
-        TARGET_VER=$(printf "%s" "$EVAL_SCRIPT" | target_run "bash -s" 2>/dev/null | tail -n 1)
+        TARGET_VER=$(printf "%s" "$EVAL_SCRIPT" | target_run "CUSTOM_DIR=\"$CUSTOM_DIR\" CUSTOM_BUILD_SH=\"$CUSTOM_BUILD_SH\" bash -s" 2>/dev/null | tail -n 1)
 
         if [[ -n "$INSTALLED_VER" && -n "$TARGET_VER" ]]; then
             if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
@@ -690,10 +700,11 @@ EOF
         fi
     fi
 
-    ssh_lfs "TARGET_PKG=\"$PACKAGE\" CUSTOM_DIR=\"$CUSTOM_DIR\" bash -s" <<EOF
-$(echo "$REMOTE_SCRIPT")
-EOF
+    # Write REMOTE_SCRIPT to a file on VM to avoid piping/stdin consumption issues during build
+    printf "%s\n" "$REMOTE_SCRIPT" | target_run "cat > /tmp/custom_build_runner_${PACKAGE}.sh && chmod +x /tmp/custom_build_runner_${PACKAGE}.sh"
+    target_run "TARGET_PKG=\"$PACKAGE\" CUSTOM_DIR=\"$CUSTOM_DIR\" bash /tmp/custom_build_runner_${PACKAGE}.sh"
     build_exit_code=$?
+    target_run "rm -f /tmp/custom_build_runner_${PACKAGE}.sh"
     if [ $build_exit_code -ne 0 ]; then
         echo "[ERROR] Custom build failed for $PACKAGE"
         exit $build_exit_code
@@ -1744,6 +1755,45 @@ PYEOF
     _FF_PY_B64=$(printf '%s' "$_FF_PY_SCRIPT" | base64 -w 0)
     COMMANDS=$(echo "$COMMANDS" | sed -E "s@(\./mach build)@echo '${_FF_PY_B64}' | base64 -d > /tmp/ff_patch_webrender.py \&\& python3 /tmp/ff_patch_webrender.py\n\1@g")
     unset _FF_PY_SCRIPT _FF_PY_B64
+
+    # Patch rust.configure to allow 'pc' vendor to match 'unknown' rust targets on Linux.
+    # Without this, Firefox's configure fails with "Don't know how to translate
+    # x86_64-pc-linux-gnu for rustc" when rustc only knows x86_64-unknown-linux-gnu.
+    # The vendor check is only used for final disambiguation so this is safe.
+    _FF_RUSTCFG_PATCH=$(cat << 'PYEOF'
+import re, sys
+path = "build/moz.configure/rust.configure"
+try:
+    with open(path) as f:
+        c = f.read()
+    # After the final vendor narrowing, if we still have no match and the host vendor is
+    # 'pc', retry with 'unknown' (common LFS/BLFS rustc scenario).
+    old = "        return None\n\n    rustc_target = find_candidate(candidates)"
+    new = (
+        "        # Allow 'pc' to alias 'unknown' on Linux (LFS rustc built as unknown-linux-gnu)\n"
+        "        if host_or_target.vendor == 'pc':\n"
+        "            narrowed = [c for c in candidates if c.target.vendor == 'unknown']\n"
+        "            if len(narrowed) == 1:\n"
+        "                return narrowed[0].rust_target\n"
+        "            elif narrowed:\n"
+        "                candidates = narrowed\n"
+        "        return None\n\n"
+        "    rustc_target = find_candidate(candidates)"
+    )
+    if old in c:
+        c = c.replace(old, new)
+        with open(path, 'w') as f:
+            f.write(c)
+        print("Patched " + path + " for pc->unknown vendor aliasing")
+    else:
+        print("Warning: could not find patch target in " + path + "; skipping")
+except Exception as e:
+    print("Warning: could not patch " + path + ": " + str(e))
+PYEOF
+)
+    _FF_RUSTCFG_B64=$(printf '%s' "$_FF_RUSTCFG_PATCH" | base64 -w 0)
+    COMMANDS=$(echo "$COMMANDS" | sed -E "s@(\./mach build)@echo '${_FF_RUSTCFG_B64}' | base64 -d > /tmp/ff_patch_rustcfg.py \&\& python3 /tmp/ff_patch_rustcfg.py\n\1@g")
+    unset _FF_RUSTCFG_PATCH _FF_RUSTCFG_B64
 fi
 
 if [[ "${PACKAGE,,}" == "kdeplasma-addons" || "${METAPACKAGE_TARGET,,}" == "kdeplasma-addons" ]]; then

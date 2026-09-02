@@ -194,4 +194,4 @@ while true; do
     done
     echo "DEBUG: Connection lost. Reconnecting..." >> "$LOGFILE"
     sleep 1
-done &
+done
