@@ -1736,6 +1736,9 @@ if [[ "${PACKAGE,,}" == "firefox" ]]; then
     # constants starting with C, V, or P (like COUNT). This prevents cbindgen from emitting
     # bare C++ identifiers that cause compilation errors.
     COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@sed -i "/const [CVP]/s/pub //" gfx/wr/webrender/src/texture_cache.rs 2>/dev/null || true\n\1@g')
+    # Clang 23+ treats -Wunused-template as an error in bundled HarfBuzz headers.
+    # Append --disable-warnings-as-errors to mozconfig before the build.
+    COMMANDS=$(echo "$COMMANDS" | sed -E 's@(\./mach build)@echo "ac_add_options --disable-warnings-as-errors" >> mozconfig\n\1@g')
     # Build the python patch script and base64-encode it so it can be safely injected into COMMANDS
     # and decoded/written on the VM at build time — avoids all quoting/escaping issues.
     _FF_PY_SCRIPT=$(cat << 'PYEOF'
@@ -1750,6 +1753,31 @@ try:
     print("Patched " + path)
 except Exception as e:
     print("Warning: could not patch " + path + ": " + str(e))
+
+# Patch HarfBuzz headers and moz.build to prevent -Wunused-template from breaking on Clang 23+
+hb_hh = "gfx/harfbuzz/src/hb.hh"
+try:
+    with open(hb_hh) as f:
+        c = f.read()
+    target = "/* Ignored intentionally. */\n#ifndef HB_NO_PRAGMA_GCC_DIAGNOSTIC_IGNORED"
+    if target in c and "-Wunused-template" not in c:
+        c = c.replace(target, target + '\n#pragma GCC diagnostic ignored "-Wunused-template"', 1)
+        with open(hb_hh, "w") as f:
+            f.write(c)
+        print("Patched " + hb_hh)
+except Exception as e:
+    print("Warning: could not patch " + hb_hh + ": " + str(e))
+
+hb_mb = "gfx/harfbuzz/src/moz.build"
+try:
+    with open(hb_mb) as f:
+        c = f.read()
+    if "HB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR" not in c:
+        with open(hb_mb, "a") as f:
+            f.write("\nDEFINES['HB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR'] = True\n")
+        print("Patched " + hb_mb)
+except Exception as e:
+    print("Warning: could not patch " + hb_mb + ": " + str(e))
 PYEOF
 )
     _FF_PY_B64=$(printf '%s' "$_FF_PY_SCRIPT" | base64 -w 0)
