@@ -3,7 +3,7 @@
 # Shared dependency cache paths
 LFS_DEP_CACHE="/tmp/lfs_dep_cache.txt"
 LFS_DEP_CACHE_LOCK="/tmp/lfs_dep_cache.lock"
-LFS_DEP_CACHE_DIRS="/usr/bin /usr/lib /lib /opt"
+LFS_DEP_CACHE_DIRS="/usr/bin /usr/sbin /usr/libexec /usr/lib /usr/lib64 /bin /sbin /lib /lib64 /opt /usr/local/bin /usr/local/sbin /usr/local/libexec /usr/local/lib /usr/local/lib64"
 
 # Ensure the shared dependency cache is up-to-date.
 # - If the cache is being built by another process, waits for it to finish.
@@ -13,22 +13,25 @@ lfs_ensure_dep_cache() {
     (
         flock -w 300 9 || { echo "Timed out waiting for dep cache lock."; return 1; }
 
+        local existing_dirs=()
+        for d in $LFS_DEP_CACHE_DIRS; do
+            [ -d "$d" ] && existing_dirs+=("$d")
+        done
+
         # Check staleness: rebuild if cache missing or any searched file is newer
         local needs_rebuild=false
         if [[ ! -s "$LFS_DEP_CACHE" ]]; then
             needs_rebuild=true
         else
-            # shellcheck disable=SC2086
-            if find $LFS_DEP_CACHE_DIRS -newer "$LFS_DEP_CACHE" -type f \( -executable -o -name "*.so*" \) 2>/dev/null | grep -q .; then
+            if find "${existing_dirs[@]}" -newer "$LFS_DEP_CACHE" -type f \( -executable -o -name "*.so*" \) 2>/dev/null | grep -q .; then
                 needs_rebuild=true
             fi
         fi
 
         if [[ "$needs_rebuild" == "true" ]]; then
-            echo "Building dependency cache (searching $LFS_DEP_CACHE_DIRS)..."
+            echo "Building dependency cache (searching ${existing_dirs[*]})..."
             local tmp_cache="${LFS_DEP_CACHE}.tmp.$$"
-            # shellcheck disable=SC2086
-            find $LFS_DEP_CACHE_DIRS -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
+            find "${existing_dirs[@]}" -type f \( -executable -o -name "*.so*" \) 2>/dev/null | \
                 xargs -P"$(nproc)" -I{} sh -c \
                     "readelf -d '{}' 2>/dev/null | grep -q '(NEEDED)' && \
                      deps=\$(readelf -d '{}' 2>/dev/null | grep '(NEEDED)' | sed -E 's/.*\[(.*)\].*/\1/' | tr '\n' ' ') && \
@@ -142,14 +145,14 @@ rm_old_libs_gpt() {
             echo "Path: $i"
             local dir_basename=$(basename "$i")
             all_names=($(find "$i" -name "*.so*" -printf "%f\n" 2>/dev/null | sort -u))
-            local outside_libs=($(find /usr/lib /lib -maxdepth 1 -name "lib${dir_basename}*.so*" -printf "%f\n" 2>/dev/null))
+            local outside_libs=($(find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -name "lib${dir_basename}*.so*" -printf "%f\n" 2>/dev/null))
             all_names+=("${outside_libs[@]}")
         else
             echo "Checking obsolete version (file): $(basename "$i")"
             echo "Path: $i"
             local lib_basename=$(basename "$i")
             local i_dir=$(dirname "$i")
-            local link_names=($(find "$i_dir" /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
+            local link_names=($(find "$i_dir" /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
             all_names=("$lib_basename")
             for link in "${link_names[@]}"; do
                 all_names+=($(basename "$link"))
@@ -184,7 +187,7 @@ rm_old_libs_gpt() {
         if [ ${#all_names[@]} -gt 0 ]; then
             for name in "${all_names[@]}"; do
                 # The cache format is "FILE: lib1 lib2 lib3 "
-                local matches=($(grep " $name " "$dep_cache" | cut -d: -f1))
+                local matches=($(grep -F " $name " "$dep_cache" | cut -d: -f1))
                 [ ${#matches[@]} -gt 0 ] && deps+=("${matches[@]}")
             done
         fi
@@ -202,22 +205,15 @@ rm_old_libs_gpt() {
             deps=("${outside_deps[@]}")
         fi
 
-        # Filter out deps that are also old libraries slated for deletion
+        # Filter out deps that no longer exist on disk
         if [ ${#deps[@]} -gt 0 ]; then
-            local valid_deps=()
+            local live_deps=()
             for d in "${deps[@]}"; do
-                local is_old=false
-                for old_item in "${old_items[@]}"; do
-                    if [ "$d" = "$old_item" ] || [[ "$d" == "$old_item/"* ]]; then
-                        is_old=true
-                        break
-                    fi
-                done
-                if [ "$is_old" = "false" ]; then
-                    valid_deps+=("$d")
+                if [ -e "$d" ]; then
+                    live_deps+=("$d")
                 fi
             done
-            deps=("${valid_deps[@]}")
+            deps=("${live_deps[@]}")
         fi
 
         if [ ${#deps[@]} -eq 0 ]; then
@@ -225,10 +221,29 @@ rm_old_libs_gpt() {
                 echo "Result: Unused. Deleting directory $i..."
                 sudo rm -rf -- "$i"
             else
+                # Safety check: before deleting an unused old .so, confirm replacement exists
+                local i_dir i_base i_sobase replacement_found
+                i_dir=$(dirname "$i")
+                i_base=$(basename "$i")
+                i_sobase=$(echo "$i_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
+                replacement_found=false
+                local search_base="${i_sobase%%.so}"
+                for candidate in "$i_dir"/${search_base}*; do
+                    if [[ "$candidate" != "$i" ]] && [ -e "$candidate" ]; then
+                        replacement_found=true
+                        break
+                    fi
+                done
+                if [ "$replacement_found" = false ]; then
+                    echo "Safety Hold: No replacement for $i_base found in $i_dir."
+                    echo "             Skipping deletion — no newer version found on disk."
+                    continue
+                fi
+
                 if [ ${#all_names[@]} -gt 1 ]; then
                     echo "Result: Unused (including symlinks: ${all_names[@]:1}). Deleting $i and its symlinks..."
                     for name in "${all_names[@]:1}"; do
-                       sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
+                       sudo rm -f "/usr/lib/$name" "/lib/$name" "/usr/lib64/$name" "/lib64/$name" 2>/dev/null
                     done
                 else
                     echo "Result: Unused. Deleting $i..."
@@ -246,6 +261,13 @@ rm_old_libs_gpt() {
         local found_pkgs=()
         for d in "${deps[@]}"; do
             local p=$(grep "^$d:" "$pkg_cache" | cut -d: -f2)
+            if [ -z "$p" ]; then
+                local real_d=$(realpath "$d" 2>/dev/null)
+                [ -n "$real_d" ] && p=$(grep "^$real_d:" "$pkg_cache" | cut -d: -f2)
+            fi
+            if [ -z "$p" ]; then
+                p=$(grep -rl "^$d$" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null | head -n1 | xargs basename 2>/dev/null)
+            fi
             [ -n "$p" ] && found_pkgs+=("$p")
         done
         
@@ -292,17 +314,9 @@ rm_old_libs_gpt() {
                  [ -f "$d" ] || continue
                  for name in "${all_names[@]}"; do
                      if readelf -d "$d" 2>/dev/null | grep -q "\[$name\]"; then
-                         # Check whether the binary belongs to a package we just rebuilt.
-                         # If it does, the dependency is legitimate (the rebuilt package
-                         # still needs this library, e.g. OpenSSL 4 ships libcrypto.so.3).
-                         local owner=$(grep -rl "^$d$" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null | head -n1 | xargs basename 2>/dev/null)
-                         if [ -n "$owner" ] && [[ -n "${rebuilt_packages[$owner]+x}" ]]; then
-                             echo "Note: $d still depends on $name but '$owner' was just rebuilt — dependency is current."
-                         else
-                             echo "Persistence: $d still depends on $name"
-                             remaining=1
-                             remaining_outsiders+=("$d")
-                         fi
+                         echo "Persistence: $d still depends on $name"
+                         remaining=1
+                         remaining_outsiders+=("$d")
                          break
                      fi
                  done
@@ -340,7 +354,7 @@ rm_old_libs_gpt() {
                      fi
                      echo "Final Action: All dependencies cleared. Deleting $i and its symlinks."
                      for name in "${all_names[@]:1}"; do
-                        sudo rm -f "/usr/lib/$name" "/lib/$name" 2>/dev/null
+                        sudo rm -f "/usr/lib/$name" "/lib/$name" "/usr/lib64/$name" "/lib64/$name" 2>/dev/null
                      done
                      sudo rm -f -- "$i"
                  fi
@@ -351,7 +365,7 @@ rm_old_libs_gpt() {
                      [ -n "$p" ] && blocker_pkgs+=("$p")
                  done
                  blocker_pkgs=($(printf "%s\n" "${blocker_pkgs[@]}" | sort -u))
-                 echo "Final Action: Keeping $i (non-rebuilt binaries still linked: ${blocker_pkgs[*]:-unknown})."
+                 echo "Final Action: Keeping $i (binaries still linked: ${blocker_pkgs[*]:-unknown} -> ${remaining_outsiders[*]})."
              fi
         else
             echo "Final Action: Keeping $i (rebuilds incomplete or blocked)."
@@ -364,7 +378,11 @@ rm_old_libs_gpt() {
 }
 
 rm_old_libs() {
-    ssh_lfs "source ~/.zshrc ; rm_old_libs_gpt"
+    if [[ -n "$NIXCFG" && -f "$NIXCFG/shell/user/lfs-libs.sh" ]]; then
+        source "$NIXCFG/shell/user/08-ssh.sh" 2>/dev/null
+        ssh_lfs "cat > ~/.lfs_scripts/lfs-libs.sh" < "$NIXCFG/shell/user/lfs-libs.sh"
+    fi
+    ssh_lfs "source ~/.zshrc ; source ~/.lfs_scripts/lfs-libs.sh 2>/dev/null ; rm_old_libs_gpt"
 }
 
 ls_old_libs_gpt() {
@@ -457,12 +475,12 @@ ls_old_libs_gpt() {
             if [ -d "$i" ]; then
                 local dir_basename=$(basename "$i")
                 all_names=($(find "$i" -name "*.so*" -printf "%f\n" 2>/dev/null | sort -u))
-                local outside_libs=($(find /usr/lib /lib -maxdepth 1 -name "lib${dir_basename}*.so*" -printf "%f\n" 2>/dev/null))
+                local outside_libs=($(find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -name "lib${dir_basename}*.so*" -printf "%f\n" 2>/dev/null))
                 all_names+=("${outside_libs[@]}")
             else
                 local lib_basename=$(basename "$i")
                 local i_dir=$(dirname "$i")
-                local link_names=($(find "$i_dir" /usr/lib /lib -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
+                local link_names=($(find "$i_dir" /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type l -printf "%p %l\n" 2>/dev/null | grep -w "$lib_basename$" | awk '{print $1}'))
                 all_names=("$lib_basename")
                 for link in "${link_names[@]}"; do
                     all_names+=($(basename "$link"))
@@ -491,7 +509,7 @@ ls_old_libs_gpt() {
             local deps=()
             if [ ${#all_names[@]} -gt 0 ]; then
                 for name in "${all_names[@]}"; do
-                    local matches=($(grep " $name " "$dep_cache" | cut -d: -f1))
+                    local matches=($(grep -F " $name " "$dep_cache" | cut -d: -f1))
                     [ ${#matches[@]} -gt 0 ] && deps+=("${matches[@]}")
                 done
             fi
@@ -508,20 +526,13 @@ ls_old_libs_gpt() {
             fi
 
             if [ ${#deps[@]} -gt 0 ]; then
-                local valid_deps=()
+                local live_deps=()
                 for d in "${deps[@]}"; do
-                    local is_old=false
-                    for old_item in "${old_items[@]}"; do
-                        if [ "$d" = "$old_item" ] || [[ "$d" == "$old_item/"* ]]; then
-                            is_old=true
-                            break
-                        fi
-                    done
-                    if [ "$is_old" = "false" ]; then
-                        valid_deps+=("$d")
+                    if [ -e "$d" ]; then
+                        live_deps+=("$d")
                     fi
                 done
-                deps=("${valid_deps[@]}")
+                deps=("${live_deps[@]}")
             fi
 
             if [ ${#deps[@]} -gt 0 ]; then
