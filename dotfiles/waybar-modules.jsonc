@@ -288,13 +288,13 @@
         "return-type": "json",
         "interval": 1
     },
-    "custom/updates": {
-        "format": "{}",
-        "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
-        "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
-        "signal": 8,
-        "interval": 60
-    },
+    // "custom/updates": {
+    //     "format": "{}",
+    //     "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/updates",
+    //     "on-click": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/update",
+    //     "signal": 8,
+    //     "interval": 60
+    // },
     "custom/clock": {
         "format": "{}",
         "exec": "$HOME/GitHub/mine/config/NixOS-configs/shell/hyprland/clock",
