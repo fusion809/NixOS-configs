@@ -1997,6 +1997,11 @@ if [[ "$PACKAGE" == "appstream" ]]; then
     COMMANDS=$(echo "$COMMANDS" | sed -E 's@(meson setup)@sed -i "s|xsl-ns/current|xsl/current|g" docs/meson.build 2>/dev/null || true\n\1@g')
 fi
 
+if [[ "$PACKAGE" == "librsvg" ]]; then
+    log "Enabling pixbuf-loader in librsvg (required for GNOME desktop & app icons)..."
+    COMMANDS=$(echo "$COMMANDS" | sed 's/meson setup /meson setup -D pixbuf-loader=enabled /g; s/meson setup \.\./meson setup -D pixbuf-loader=enabled \.\./g')
+fi
+
 if [[ "$PACKAGE" == "glycin" ]]; then
     log "Enabling GTK4 support in glycin (required for Nautilus 50.0+)..."
     COMMANDS=$(echo "$COMMANDS" | sed 's/-D libglycin-gtk4=false/-D libglycin-gtk4=true/g')

@@ -169,7 +169,7 @@ with pkgs;
   languagetool
   texliveFull
   onlyoffice-desktopeditors
-  texstudio
+  unstable.texstudio
   zotero
   hunspell
   hunspellDicts.en_AU
