@@ -166,7 +166,7 @@ def main():
     local_vers = get_local_versions()
 
     # Use 8 workers to prevent triggering GitHub HTTP 429 rate limiting
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {executor.submit(evaluate_package, s, local_vers): s for s in scripts}
         for future in as_completed(futures):
             try:
