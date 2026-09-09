@@ -14,6 +14,7 @@ sync_to_vm() {
     ssh_lfs "cat > ~/.lfs_scripts/lfs-autoremove.sh" < "$NIXCFG/shell/user/lfs-autoremove.sh"
     ssh_lfs "cat > ~/.lfs_scripts/lfs-autobuild-func.sh" < "$NIXCFG/shell/user/lfs-autobuild-func.sh"
     ssh_lfs "cat > ~/.lfs_scripts/lfs-sync-to-vm.sh" < "$NIXCFG/shell/user/lfs-sync-to-vm.sh"
+    ssh_lfs "cat > ~/.lfs_scripts/lfs-custom-updates.py && chmod +x ~/.lfs_scripts/lfs-custom-updates.py" < "$NIXCFG/shell/user/lfs-custom-updates.py"
     
     ssh_lfs "cat > ~/.lfs_scripts/lfs-updates.sh && chmod +x ~/.lfs_scripts/lfs-updates.sh" \
         < "$NIXCFG/shell/user/lfs-updates.sh"

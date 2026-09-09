@@ -47,6 +47,8 @@ lfs_ensure_dep_cache() {
 rm_old_libs_gpt() {
     local dep_cache="/tmp/lfs_dep_cache.txt"
     local pkg_cache="/tmp/lfs_pkg_cache.txt"
+    local tracked_cache="/tmp/lfs_tracked_cache.txt"
+    local active_symlink_targets="/tmp/lfs_active_symlink_targets.txt"
     
     echo "[LFS-AUTOBUILD] Generating dependency and package caches. This ensures accurate and fast cleanup..."
     
@@ -57,40 +59,47 @@ rm_old_libs_gpt() {
     # 2. Generate package inventory mapping (File -> Package)
     # This maps every installed file back to the package that registered it in /var/lib/*-packages/
     grep -r "^/" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null | sed -E 's|/var/lib/[^/]+-packages/([^:]+):(.*)|\2:\1|' > "$pkg_cache"
+    cut -d: -f1 "$pkg_cache" | sort -u > "$tracked_cache"
+
+    # Fast mapping of all active symlink targets in library directories
+    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type l -exec realpath {} + 2>/dev/null | sort -u > "$active_symlink_targets"
 
     echo "[LFS-AUTOBUILD] Caches generated. Evaluating system libraries..."
 
     # 3. Identify old versions (files only)
-    # A version is old if a newer version with the same base name exists.
-    local old_libs=($(find /usr/lib -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
-    | sort -V \
-    | awk '
-    {
-        base=$0
-        # Check if the file is an actual versioned shared library
-        if (base ~ /\.so\.[0-9]+(\.[0-9]+)*$/) {
-            orig = base
-            sub(/\.so\.[0-9.]+$/, ".so", base)
-            if (prev_base && base != prev_base) {
-                for (i=1; i < prev_count; i++) print prev[i]
-                prev_count = 0
-            }
-            prev[++prev_count] = orig
-            prev_base = base
-        } else if (base ~ /-[0-9]+(\.[0-9]+)*\.so$/) {
-            orig = base
-            sub(/-[0-9.]+/, "", base)
-            if (prev_base && base != prev_base) {
-                for (i=1; i < prev_count; i++) print prev[i]
-                prev_count = 0
-            }
-            prev[++prev_count] = orig
-            prev_base = base
-        }
-    }
-    END {
-        for (i=1; i < prev_count; i++) print prev[i]
-    }'))
+    # A library file is only old if:
+    #   a) It is NOT tracked in the package inventory (/var/lib/*-packages/)
+    #   b) It is NOT targeted by any active symlink (e.g. .so / .so.<soname>)
+    #   c) Another version/replacement of the library family exists on the system.
+    local cand_file="/tmp/lfs_cands.txt"
+    local untracked_file="/tmp/lfs_untracked.txt"
+    local combined_excludes="/tmp/lfs_excludes.txt"
+    cat "$tracked_cache" "$active_symlink_targets" | sort -u > "$combined_excludes"
+    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null | sort -u > "$cand_file"
+    awk 'NR==FNR {exclude[$0]=1; next} !(exclude[$0])' "$combined_excludes" "$cand_file" > "$untracked_file"
+
+    local old_libs=()
+    while read -r cand; do
+        [ -n "$cand" ] || continue
+        # Only consider it an old library if a replacement/sister file of the same base name exists
+        local cand_dir cand_base cand_sobase search_base replacement_found
+        cand_dir=$(dirname "$cand")
+        cand_base=$(basename "$cand")
+        cand_sobase=$(echo "$cand_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
+        search_base="${cand_sobase%%.so}"
+        replacement_found=false
+        for sister in "$cand_dir"/${search_base}*; do
+            if [[ "$sister" != "$cand" ]] && [ -e "$sister" ]; then
+                replacement_found=true
+                break
+            fi
+        done
+
+        if [ "$replacement_found" = true ]; then
+            old_libs+=("$cand")
+        fi
+    done < "$untracked_file"
+    rm -f "$cand_file" "$untracked_file"
 
     # 3b. Identify old versions (directories only)
     local old_dirs=($(find /usr/lib -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
@@ -115,7 +124,7 @@ rm_old_libs_gpt() {
     # e.g. /usr/lib/gtk-3.0 belongs to gtk3, not an obsolete version of gtk-4.0.
     local filtered_dirs=()
     for _dir in "${old_dirs[@]}"; do
-        if grep -qrl "^${_dir}" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null; then
+        if grep -q "^${_dir}" "$tracked_cache" 2>/dev/null; then
             echo "Skipping registered directory: $_dir (belongs to an installed package)"
         else
             filtered_dirs+=("$_dir")
@@ -127,7 +136,7 @@ rm_old_libs_gpt() {
 
     if [ ${#old_items[@]} -eq 0 ]; then
         echo "No old library versions found to clean up."
-        rm -f "$dep_cache" "$pkg_cache"
+        rm -f "$pkg_cache" "$tracked_cache" "$active_symlink_targets"
         return
     fi
 
@@ -240,15 +249,21 @@ rm_old_libs_gpt() {
                     continue
                 fi
 
-                if [ ${#all_names[@]} -gt 1 ]; then
-                    echo "Result: Unused (including symlinks: ${all_names[@]:1}). Deleting $i and its symlinks..."
-                    for name in "${all_names[@]:1}"; do
-                       sudo rm -f "/usr/lib/$name" "/lib/$name" "/usr/lib64/$name" "/lib64/$name" 2>/dev/null
-                    done
-                else
-                    echo "Result: Unused. Deleting $i..."
-                fi
+                echo "Result: Unused. Deleting $i..."
+                local i_real=$(realpath "$i" 2>/dev/null || echo "$i")
                 sudo rm -f -- "$i"
+                
+                # Clean up only untracked dangling symlinks that specifically pointed to this deleted file
+                for sym_dir in "$i_dir" /usr/lib /lib /usr/lib64 /lib64; do
+                    [ -d "$sym_dir" ] || continue
+                    for sym in "$sym_dir"/*; do
+                        if [ -L "$sym" ] && [ ! -e "$sym" ]; then
+                            if ! grep -qxF "$sym" "$tracked_cache" 2>/dev/null; then
+                                sudo rm -f "$sym" 2>/dev/null
+                            fi
+                        fi
+                    done
+                done
             fi
             continue
         fi
@@ -335,10 +350,8 @@ rm_old_libs_gpt() {
                      local i_dir i_base i_sobase replacement_found
                      i_dir=$(dirname "$i")
                      i_base=$(basename "$i")
-                     # Strip everything from .so onwards or after '-' to get base (e.g. libMagickCore-7.Q16HDRI or libsystemd-core)
                      i_sobase=$(echo "$i_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
                      replacement_found=false
-                     # Search for candidates matching the base name (without .so suffix for broader matching)
                      local search_base="${i_sobase%%.so}"
                      for candidate in "$i_dir"/${search_base}*; do
                          if [[ "$candidate" != "$i" ]] && [ -e "$candidate" ]; then
@@ -352,11 +365,20 @@ rm_old_libs_gpt() {
                          echo "             Run: autobuild -f <owning-package> to fix this manually."
                          continue
                      fi
-                     echo "Final Action: All dependencies cleared. Deleting $i and its symlinks."
-                     for name in "${all_names[@]:1}"; do
-                        sudo rm -f "/usr/lib/$name" "/lib/$name" "/usr/lib64/$name" "/lib64/$name" 2>/dev/null
-                     done
+                     echo "Final Action: All dependencies cleared. Deleting $i."
                      sudo rm -f -- "$i"
+
+                     # Clean up only untracked dangling symlinks that specifically pointed to this deleted file
+                     for sym_dir in "$i_dir" /usr/lib /lib /usr/lib64 /lib64; do
+                         [ -d "$sym_dir" ] || continue
+                         for sym in "$sym_dir"/*; do
+                             if [ -L "$sym" ] && [ ! -e "$sym" ]; then
+                                 if ! grep -qxF "$sym" "$tracked_cache" 2>/dev/null; then
+                                     sudo rm -f "$sym" 2>/dev/null
+                                 fi
+                             fi
+                         done
+                     done
                  fi
              else
                  local blocker_pkgs=()
@@ -372,7 +394,7 @@ rm_old_libs_gpt() {
         fi
     done
     
-    rm -f "$pkg_cache"
+    rm -f "$pkg_cache" "$tracked_cache" "$active_symlink_targets"
     # Note: dep_cache ($LFS_DEP_CACHE) is shared and not removed here;
     # it will be reused or invalidated by staleness checks on the next run.
 }
@@ -393,34 +415,43 @@ ls_old_libs_gpt() {
 
     echo "Scanning for old libraries in /usr/lib..."
 
-    local old_libs=($(find /usr/lib -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null \
-    | sort -V \
-    | awk '
-    {
-        base=$0
-        if (base ~ /\.so\.[0-9]+(\.[0-9]+)*$/) {
-            orig = base
-            sub(/\.so\.[0-9.]+$/, ".so", base)
-            if (prev_base && base != prev_base) {
-                for (i=1; i < prev_count; i++) print prev[i]
-                prev_count = 0
-            }
-            prev[++prev_count] = orig
-            prev_base = base
-        } else if (base ~ /-[0-9]+(\.[0-9]+)*\.so$/) {
-            orig = base
-            sub(/-[0-9.]+/, "", base)
-            if (prev_base && base != prev_base) {
-                for (i=1; i < prev_count; i++) print prev[i]
-                prev_count = 0
-            }
-            prev[++prev_count] = orig
-            prev_base = base
-        }
-    }
-    END {
-        for (i=1; i < prev_count; i++) print prev[i]
-    }'))
+    local pkg_cache="/tmp/lfs_pkg_cache.txt"
+    local tracked_cache="/tmp/lfs_tracked_cache.txt"
+    local active_symlink_targets="/tmp/lfs_active_symlink_targets.txt"
+
+    grep -r "^/" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null | sed -E 's|/var/lib/[^/]+-packages/([^:]+):(.*)|\2:\1|' > "$pkg_cache"
+    cut -d: -f1 "$pkg_cache" | sort -u > "$tracked_cache"
+
+    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type l -exec realpath {} + 2>/dev/null | sort -u > "$active_symlink_targets"
+
+    local cand_file="/tmp/lfs_cands.txt"
+    local untracked_file="/tmp/lfs_untracked.txt"
+    local combined_excludes="/tmp/lfs_excludes.txt"
+    cat "$tracked_cache" "$active_symlink_targets" | sort -u > "$combined_excludes"
+    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null | sort -u > "$cand_file"
+    awk 'NR==FNR {exclude[$0]=1; next} !(exclude[$0])' "$combined_excludes" "$cand_file" > "$untracked_file"
+
+    local old_libs=()
+    while read -r cand; do
+        [ -n "$cand" ] || continue
+        local cand_dir cand_base cand_sobase search_base replacement_found
+        cand_dir=$(dirname "$cand")
+        cand_base=$(basename "$cand")
+        cand_sobase=$(echo "$cand_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
+        search_base="${cand_sobase%%.so}"
+        replacement_found=false
+        for sister in "$cand_dir"/${search_base}*; do
+            if [[ "$sister" != "$cand" ]] && [ -e "$sister" ]; then
+                replacement_found=true
+                break
+            fi
+        done
+
+        if [ "$replacement_found" = true ]; then
+            old_libs+=("$cand")
+        fi
+    done < "$untracked_file"
+    rm -f "$cand_file" "$untracked_file"
 
     local old_dirs=($(find /usr/lib -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
     | sort -V \
@@ -440,11 +471,9 @@ ls_old_libs_gpt() {
         }
     }'))
 
-    # Filter out directories that are listed in the package registry:
-    # a directory like /usr/lib/gtk-3.0 belongs to gtk3, not an obsolete version.
     local filtered_dirs=()
     for _dir in "${old_dirs[@]}"; do
-        if grep -qrl "^${_dir}" /var/lib/book-packages /var/lib/custom-packages 2>/dev/null; then
+        if grep -q "^${_dir}" "$tracked_cache" 2>/dev/null; then
             : # registered — belongs to an installed package, skip
         else
             filtered_dirs+=("$_dir")
@@ -456,6 +485,7 @@ ls_old_libs_gpt() {
 
     if [ ${#old_items[@]} -eq 0 ]; then
         echo "No old library versions found."
+        rm -f "$pkg_cache" "$tracked_cache" "$active_symlink_targets"
         return 0
     fi
 
@@ -546,11 +576,16 @@ ls_old_libs_gpt() {
         fi
     done
 
+    rm -f "$pkg_cache" "$tracked_cache" "$active_symlink_targets"
     # Note: dep_cache ($LFS_DEP_CACHE) is shared and not removed here.
 }
 
 ls_old_libs() {
-    ssh_lfs "$(declare -f ls_old_libs_gpt); ls_old_libs_gpt $*"
+    if [[ -n "$NIXCFG" && -f "$NIXCFG/shell/user/lfs-libs.sh" ]]; then
+        source "$NIXCFG/shell/user/08-ssh.sh" 2>/dev/null
+        ssh_lfs "cat > ~/.lfs_scripts/lfs-libs.sh" < "$NIXCFG/shell/user/lfs-libs.sh"
+    fi
+    ssh_lfs "source ~/.zshrc ; source ~/.lfs_scripts/lfs-libs.sh 2>/dev/null ; ls_old_libs_gpt $*"
 }
 
 ls_orphaned_files_gpt() {

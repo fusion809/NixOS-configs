@@ -264,7 +264,9 @@ lfs_get_remote_packages() {
     local all_pkgs=$(echo -e "${lfs_remote}\n${blfs_remote}\n${blfs_extra}\n${JDK_REMOTE}" | grep -v "^$" | sort -u | tr -d '\r')
 
     if [[ "$upstream" == "true" ]]; then
-        local upstream_list=("rustc" "llvm" "libuv" "frameworks" "frameworks6" "extra-cmake-modules" "breeze-icons" "plasma" "konsole" "dolphin" "dolphin-plugins" "gwenview" "libkdcraw" "okular" "kdenlive" "gtk3" "gnome-shell" "glycin" "gjs" "nautilus" "libpeas" "tecla" "gnome-desktop" "gnome-shell-extensions" "gnome-session" "gnome-tweaks" "mutter" "yelp" "gvfs" "gnome-control-center" "gnome-settings-daemon" "gnome-keyring" "gnome-bluetooth" "gnome-backgrounds" "gnome-user-docs" "xdg-desktop-portal-gnome" "gexiv2" "adwaita-icon-theme" "baobab" "evince" "gnome-terminal" "glib2" "gsettings-desktop-schemas" "gnome-online-accounts" "gnome-menus" "gnome-autoar" "polkit-gnome" "geocode-glib" "evolution-data-server" "tracker" "tinysparql" "localsearch" "tracker-miners" "libshumate" "libjxl" "libdisplay-info")
+        # All packages previously tracked here now have custom build scripts in ~/lfs_packaging
+        # and are handled by lfs_check_custom_updates / lfs-custom-updates.py instead.
+        local upstream_list=()
         local total=${#upstream_list[@]}
         local count=0
         local tmp_upstream=$(mktemp -d)
@@ -673,159 +675,8 @@ lfs_check_custom_updates() {
         shift
     done
 
-    local script=$(cat <<'EOF'
-    sudo mkdir -p /var/lib/custom-packages 2>/dev/null || true
-
-    if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
-        source ~/lfs_packaging/shared-funcs.sh
-        while read -r func; do
-            export -f "$func"
-        done < <(declare -F | awk '{print $3}')
-    fi
-
-    # Intercept gn_ver for polkit-gnome so we don't hit the git ls-remote error in shared-funcs.sh
-    # but leave other custom packages (like glib2, libadwaita, gedit) using their own gn_ver logic
-    if declare -f gn_ver >/dev/null; then
-        eval "original_gn_ver() $(declare -f gn_ver | tail -n +2)"
-        gn_ver() {
-            if [[ "$1" == "polkit-gnome" ]]; then
-                curl -s --max-time 15 "https://gitlab.gnome.org/api/v4/projects/Archive%2Fpolicykit-gnome/repository/tags" | \
-                    perl -nle 'while (m{"name":"v?([0-9][0-9.]+)"}g) { print $1 }' | \
-                    grep -v "alpha\|beta\|rc" | sort -V | tail -n 1
-            else
-                original_gn_ver "$@"
-            fi
-        }
-        export -f gn_ver
-        export -f original_gn_ver
-    fi
-
-    scripts=($(find ~/lfs_packaging -mindepth 2 -maxdepth 2 -name "build.sh" 2>/dev/null))
-    total=${#scripts[@]}
-    echo "TOTAL:$total"
-    count=0
-    max_jobs=100
-    
-    # We need a shared counter and results file
-    mkdir -p /tmp/lfs_updates_parallel
-    rm -f /tmp/lfs_updates_parallel/*
-    echo 0 > /tmp/lfs_updates_parallel/counter
-
-    for build_script in "${scripts[@]}"; do
-        (
-            pkg_dir=$(dirname "$build_script")
-            pkg_basename=$(basename "$pkg_dir")
-            
-            # Output progress marker for local script to intercept
-            echo "PROGRESS:$pkg_basename"
-
-            name_line=$(grep -iE '^[a-zA-Z_]*name=' "$build_script" | head -n 1)
-            if [ -n "$name_line" ]; then
-                pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
-                # If the extracted name contains shell variable references it wasn't
-                # a static assignment — fall back to the directory name instead.
-                if echo "$pkg_name" | grep -q '\$'; then
-                    pkg_name="$pkg_basename"
-                fi
-            else
-                pkg_name="$pkg_basename"
-            fi
-            
-            local_ver="none"
-            if [ -f "/var/lib/custom-packages/$pkg_name" ]; then
-                local_ver=$(head -n 1 "/var/lib/custom-packages/$pkg_name" 2>/dev/null | tr -d '\r\n[:space:]' || echo "none")
-            fi
-
-            
-            remote_ver=""
-            status="OK"
-            version_line_num=""
-            var_name=""
-            ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
-            if [ -z "$ver_match" ]; then
-                ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
-            fi
-            if [ -n "$ver_match" ]; then
-                version_line_num=$(echo "$ver_match" | cut -d: -f1)
-                var_line=$(echo "$ver_match" | cut -d: -f2-)
-                var_name=$(echo "$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
-            fi
-            if [ -n "$version_line_num" ]; then
-                # Extract the raw RHS of version= without executing anything
-                raw_ver_line=$(sed -n "${version_line_num}p" "$build_script" | tr -d '\r')
-                # Get just the value part after '='
-                raw_ver=$(echo "$raw_ver_line" | cut -d= -f2- | tr -d '"' | tr -d "'" | tr -d '[:space:]')
-                
-                # If the value is a static string (no command substitution), use it directly
-                if ! echo "$raw_ver" | grep -qE '[$`]'; then
-                    [ -n "$raw_ver" ] && remote_ver="$raw_ver" || status="FAILED"
-                else
-                    # Dynamic version line - evaluate all lines UP TO AND INCLUDING version=
-                    # so that prerequisite variables (REPO_URL, name, etc.) are available.
-                    # This mirrors what lfs_autobuild does in its skip-logic eval.
-                    eval_script="/tmp/eval_ver_${pkg_basename}_$$.sh"
-                    echo 'set +e' > "$eval_script"
-                    echo 'export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$eval_script"
-                    # Source shared-funcs.sh so helper functions (e.g. xfd_ver) are available
-                    echo '[ -f ~/lfs_packaging/shared-funcs.sh ] && source ~/lfs_packaging/shared-funcs.sh' >> "$eval_script"
-                    # Pre-set common implicit name variables to the package directory basename
-                    # so that version= lines like version=$(xfd_ver $name) work even when
-                    # name= is not explicitly assigned before version= in the build script.
-                    echo "name=${pkg_basename@Q}" >> "$eval_script"
-                    echo "_name=${pkg_basename@Q}" >> "$eval_script"
-                    echo "NAME=${pkg_basename@Q}" >> "$eval_script"
-                    echo 'exec 3>&1 1>/dev/null' >> "$eval_script"
-                    head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$eval_script"
-                    echo "echo \"VER_RESULT:\$$var_name\" >&3" >> "$eval_script"
-                    remote_ver=$(cd "$pkg_dir" && timeout 60 bash "$eval_script" 2>/dev/null | grep '^VER_RESULT:' | sed 's/^VER_RESULT://' | tr -d '\r\n[:space:]')
-                    rm -f "$eval_script"
-                    if [ -z "$remote_ver" ]; then status="FAILED"; fi
-                fi
-            fi
-            
-            # Fallback: if we still have no version AND the build script clones a git repo,
-            # ask the remote for its current HEAD.
-            # Use the LAST matching git clone URL in the file — the package's own repo is
-            # typically cloned last, after any build-dependency repos.
-            if [ -z "$remote_ver" ] && grep -q "git clone" "$build_script"; then
-                repo_url=$(perl -nle 'while (m{git clone\s+(?:--\S+\s+)*(https?://\S+|git\@\S+)}g) { print $1 }' "$build_script" | tail -n 1)
-                if [ -n "$repo_url" ]; then
-                    status="OK"
-                    for attempt in 1 2 3; do
-                        remote_ver=$(timeout 15 git ls-remote "$repo_url" HEAD 2>/dev/null | awk '{print $1}')
-                        [ -n "$remote_ver" ] && break
-                        [ "$attempt" -lt 3 ] && sleep 2
-                    done
-                    if [ -z "$remote_ver" ]; then status="FAILED"; fi
-                fi
-            fi
-
-            if [ -z "$remote_ver" ] && [ "$status" == "OK" ]; then status="MISSING"; fi
-            
-            if [ "$status" != "OK" ]; then
-                # Use the real local_ver we already read (or "none" if not installed),
-                # only substitute FAILED for the remote side.
-                _display_local="${local_ver:-none}"
-                echo "RESULT:$pkg_name $_display_local FAILED"
-            elif [ -n "$remote_ver" ]; then
-                if [ "$local_ver" == "none" ]; then
-                    if [ -f "/var/lib/custom-packages/$pkg_basename" ]; then
-                        local_ver=$(head -n 1 "/var/lib/custom-packages/$pkg_basename" 2>/dev/null | tr -d '\r\n[:space:]' || echo "none")
-                    fi
-                fi
-                echo "RESULT:$pkg_name $local_ver $remote_ver"
-            fi
-        ) &
-        
-        # Limit jobs
-        while [ $(jobs -r | wc -l) -ge $max_jobs ]; do
-            sleep 0.1
-        done
-    done
-    wait
-    rm -rf /tmp/lfs_updates_parallel
-EOF
-)
+    # Delegate all version extraction to the parallel Python script on the VM.
+    # The script emits TOTAL:<n>, PROGRESS:<pkg>, and RESULT:<pkg> <local> <remote> lines.
     local results=""
     local total=0
     local count=0
@@ -845,34 +696,16 @@ EOF
             fi
         elif [[ $line == RESULT:* ]]; then
             local result_data="${line#RESULT:}"
-            # Format: pkg_name local_ver remote_ver -> strip extensions
             read -r pkg_name local_ver remote_ver <<< "$result_data"
-            local_ver="${local_ver%.tar.xz}"
-            local_ver="${local_ver%.tar.bz2}"
-            local_ver="${local_ver%.tar.gz}"
-            local_ver="${local_ver%.tar.lz}"
-            local_ver="${local_ver%.tar.lzma}"
-            local_ver="${local_ver%.tar.zst}"
-            local_ver="${local_ver%.zip}"
-            local_ver="${local_ver%.tgz}"
-            local_ver="${local_ver%.tbz2}"
-            local_ver="${local_ver%.patch}"
-            
-            remote_ver="${remote_ver%.tar.xz}"
-            remote_ver="${remote_ver%.tar.bz2}"
-            remote_ver="${remote_ver%.tar.gz}"
-            remote_ver="${remote_ver%.tar.lz}"
-            remote_ver="${remote_ver%.tar.lzma}"
-            remote_ver="${remote_ver%.tar.zst}"
-            remote_ver="${remote_ver%.zip}"
-            remote_ver="${remote_ver%.tgz}"
-            remote_ver="${remote_ver%.tbz2}"
-            remote_ver="${remote_ver%.patch}"
-            
+            # Strip archive extensions from versions
+            for ext in .tar.xz .tar.bz2 .tar.gz .tar.lz .tar.lzma .tar.zst .zip .tgz .tbz2 .patch; do
+                local_ver="${local_ver%$ext}"
+                remote_ver="${remote_ver%$ext}"
+            done
             results+="$pkg_name $local_ver $remote_ver"$'\n'
         fi
-    done < <(printf '%s\n' "$script" | ssh_lfs "bash -s")
-    
+    done < <(ssh_lfs "python3 ~/.lfs_scripts/lfs-custom-updates.py" 2>/dev/null)
+
     if [ "$total" -gt 0 ]; then
         if (( global_total > 0 )); then
             lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete [Global 100%]" >&2
@@ -881,12 +714,12 @@ EOF
         fi
         echo "" >&2
     fi
-    # Build output line by line to avoid any formatting issues
     while read -r line; do
         [[ -z "$line" ]] && continue
         printf '%s\n' "$line"
     done <<< "$results"
 }
+
 
 lfs_update() {
     local dry_run=false

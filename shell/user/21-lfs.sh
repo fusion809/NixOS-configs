@@ -20,8 +20,12 @@ lfs_progress_bar() {
     local total=$2
     local prefix=$3
     local width=30
-    local percent=$(( 100 * current / total ))
-    local filled=$(( width * current / total ))
+    local percent=0
+    local filled=0
+    if [[ "$total" -gt 0 ]]; then
+        percent=$(( 100 * current / total ))
+        filled=$(( width * current / total ))
+    fi
     local empty=$(( width - filled ))
     local bar=$(printf "%${filled}s" | tr ' ' '#')$(printf "%${empty}s" | tr ' ' '-')
     # Use fixed-width prefix and clear to end of line
