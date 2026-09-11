@@ -455,7 +455,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
     fi
 
     # Check if a custom package exists BEFORE translating aliases to avoid redirecting local packages to BLFS metapackages
-    if [ -d "$HOME/lfs_packaging/$PACKAGE" ]; then
+    if [ -d "$HOME/lfs_packaging/$PACKAGE" ] || [ -d "$HOME/lfs_packaging/uninstalled/$PACKAGE" ] || target_run "[ -d ~/lfs_packaging/$PACKAGE ] || [ -d ~/lfs_packaging/uninstalled/$PACKAGE ]" 2>/dev/null; then
         log "Found custom package for $PACKAGE, bypassing BLFS aliases."
     else
         # Translate friendly aliases to canonical upstream names used in archives/loops
@@ -510,14 +510,34 @@ for PACKAGE in "${PACKAGES[@]}"; do
     esac
     fi
 
-    # 0. Check for custom package in ~/lfs_packaging
-CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | xargs grep -il -E \"^[a-zA-Z_]*name=['\\\"']?${PACKAGE}['\\\"']?\\$\" 2>/dev/null | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
-if [[ -z "$CUSTOM_BUILD_SH" ]]; then
-    CUSTOM_BUILD_SH=$(target_run "find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -E \"/$PACKAGE/build.sh$\" | head -n 1" 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
-fi
-if [[ -n "$CUSTOM_BUILD_SH" ]]; then
-    CUSTOM_DIR=$(dirname "$CUSTOM_BUILD_SH")
-    log "Custom package detected at $CUSTOM_DIR"
+    # 0. Check for custom package in ~/lfs_packaging (prioritize exact directory match)
+    # Check 1: Direct directory match in ~/lfs_packaging/$PACKAGE/build.sh or uninstalled/$PACKAGE/build.sh
+    CUSTOM_BUILD_SH=$(target_run "
+        if [ -f ~/lfs_packaging/${PACKAGE}/build.sh ]; then
+            echo ~/lfs_packaging/${PACKAGE}/build.sh
+        elif [ -f ~/lfs_packaging/uninstalled/${PACKAGE}/build.sh ]; then
+            echo ~/lfs_packaging/uninstalled/${PACKAGE}/build.sh
+        else
+            find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -E \"/${PACKAGE}/build.sh\$\" | head -n 1
+        fi
+    " 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
+
+    # Check 2: If no exact directory match, check for canonical package name assignment in build.sh
+    # Strictly match name=, pkgname=, PKGNAME=, pkg_name= (NOT _name=, dirname=, repo_name=)
+    if [[ -z "$CUSTOM_BUILD_SH" ]]; then
+        CUSTOM_BUILD_SH=$(target_run "
+            find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | while read -r f; do
+                if grep -E -q \"^[[:space:]]*(export[[:space:]]+)?(pkg_?name|name|PKG_?NAME)=['\\\"']?${PACKAGE}['\\\"']?\\$\" \"\$f\" 2>/dev/null; then
+                    echo \"\$f\"
+                    break
+                fi
+            done
+        " 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
+    fi
+
+    if [[ -n "$CUSTOM_BUILD_SH" ]]; then
+        CUSTOM_DIR=$(dirname "$CUSTOM_BUILD_SH")
+        log "Custom package detected at $CUSTOM_DIR"
     
     if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
         log "Extracting dependencies for custom package '$PACKAGE'..."
@@ -679,6 +699,16 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     sudo chmod 755 "/var/lib/custom-packages/${TARGET_PKG}"
     echo "Recorded installed files for custom package $TARGET_PKG in /var/lib/custom-packages/"
     sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}"
+
+    # If the package was built and installed from ~/lfs_packaging/uninstalled/, move it to the active ~/lfs_packaging/
+    if [[ "$CUSTOM_DIR" == *"/lfs_packaging/uninstalled/"* ]]; then
+        pkg_base=$(basename "$CUSTOM_DIR")
+        target_dest="$HOME/lfs_packaging/$pkg_base"
+        if [ ! -d "$target_dest" ]; then
+            echo "Package $pkg_base installed successfully. Moving from uninstalled/ to ~/lfs_packaging/..."
+            mv "$CUSTOM_DIR" "$HOME/lfs_packaging/"
+        fi
+    fi
 fi
 EOF
 )
@@ -788,7 +818,7 @@ find_package_page() {
         # Before any hardcoded BLFS alias fires, check if the package has a custom
         # ~/lfs_packaging/ directory on the target. If so, return empty so the
         # caller's CUSTOM_BUILD_SH detection handles it instead of BLFS.
-        if target_run "[ -d ~/lfs_packaging/$pkg ]" 2>/dev/null; then
+        if target_run "[ -d ~/lfs_packaging/$pkg ] || [ -d ~/lfs_packaging/uninstalled/$pkg ]" 2>/dev/null; then
             log "find_package_page: '$pkg' has a custom ~/lfs_packaging dir — skipping BLFS alias."
             return 1
         fi
