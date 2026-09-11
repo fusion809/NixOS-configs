@@ -95,8 +95,12 @@ rm_old_share() {
 
     # Create a fast lookup of all currently owned files and directories
     local all_files_db=$(mktemp)
-    # Combine all package databases (ignoring first line versions/errors)
-    cat /var/lib/book-packages/* /var/lib/custom-packages/* 2>/dev/null | grep "^/" > "$all_files_db" || true
+    # Combine all package databases safely (ignoring empty directories or glob errors)
+    for pdir in /var/lib/book-packages /var/lib/custom-packages; do
+        if [[ -d "$pdir" ]]; then
+            find "$pdir" -maxdepth 1 -type f ! -name ".*" -exec cat {} + 2>/dev/null | grep "^/" >> "$all_files_db" || true
+        fi
+    done
 
     if [[ ! -s "$all_files_db" ]]; then
         echo "Error: Package database is empty or could not be read. Aborting cleanup for safety."

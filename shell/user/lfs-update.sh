@@ -508,28 +508,17 @@ lfs_get_local_packages() {
     [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
     [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
     
-    # Extract name-version from new inventory directories
+    # Extract name-version from inventory directories safely without shell glob errors
     ssh_lfs '
-        # 1. Official book packages (version is on the first line)
-        if [ -d /var/lib/book-packages ]; then
-            for f in /var/lib/book-packages/*; do
-                [ -f "$f" ] || continue
+        for d in /var/lib/book-packages /var/lib/custom-packages; do
+            [ -d "$d" ] || continue
+            find "$d" -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do
                 name=$(basename "$f")
                 ver=$(head -n 1 "$f" | grep -v "^#" | tr -d "[:space:]")
-                if [ -z "$ver" ]; then ver="VERSION_MISSING"; fi
+                [ -z "$ver" ] && ver="VERSION_MISSING"
                 echo "${name}-${ver}"
             done
-        fi
-        # 2. Custom packages (version is the file content)
-        if [ -d /var/lib/custom-packages ]; then
-            for f in /var/lib/custom-packages/*; do
-                [ -f "$f" ] || continue
-                name=$(basename "$f")
-                ver=$(head -n 1 "$f" | tr -d "[:space:]")
-                if [ -z "$ver" ]; then ver="VERSION_MISSING"; fi
-                echo "${name}-${ver}"
-            done
-        fi
+        done
     ' | sort -u | tr -d '\r'
 }
 
@@ -763,10 +752,11 @@ lfs_update() {
     #     fi
     # fi
 
-    echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
-    local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
-    echo "Fetching local package list from VM..."
-    local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g' | tr -d '\r')
+    # [BOOK CHECKS COMMENTED OUT - all packages are now custom builds in ~/lfs_packaging]
+    # echo "Fetching remote package list $([[ "$upstream" == "true" ]] && echo "including upstream " )from Development books..."
+    # local remote_list=$(lfs_get_remote_packages $([[ "$upstream" == "false" ]] && echo "--no-upstream") | tr -d '\r')
+    # echo "Fetching local package list from VM..."
+    # local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g' | tr -d '\r')
     
     # Packages with missing file inventories (≤1 line) need a forced rebuild regardless of version
     echo "Checking for packages with missing file inventories..."
@@ -780,66 +770,60 @@ lfs_update() {
         echo "Packages with missing inventories that will be force-rebuilt: ${broken_pkgs[*]}"
     fi
 
-    # DEBUG: echo "Remote list size: $(echo "$remote_list" | wc -l), Local list size: $(echo "$local_list" | wc -l)"
-
-    echo "Checking for updates..."
+    # echo "Checking for updates..."
     local updates=()
     local update_msgs=()
 
-    while read -r local_pkg; do
-        [[ -z "$local_pkg" ]] && continue
-        
-        # Exclude auxiliary texlive archives to prevent false positive updates against texlive-*-source
-        if [[ "$local_pkg" == texlive-*-texmf* ]] || [[ "$local_pkg" == texlive-*-extra* ]]; then
-            continue
-        fi
-
-        local name=$(echo "$local_pkg" | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
-        local local_ver=$(echo "$local_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
-
-        [[ -z "$name" || "$name" == "$local_pkg" ]] && continue
-
-        # Find matching package in remote list (case-insensitive)
-        local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9]|FAILED)" | head -n 1)
-        if [[ -z "$remote_pkg" ]]; then
-            # Try fuzzy match: only if name ends in numbers (e.g. gtk3 matching gtk+-3.x or qt6 matching qt-6.x)
-            local name_base=$(echo "$name" | sed -E 's/[0-9]+$//')
-            local name_num=$(echo "$name" | grep -oE '[0-9]+$')
-            if [[ -n "$name_num" && "$name_base" != "$name" ]]; then
-                remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}\\+?-(${name_num}\\.|${name_num}-|FAILED)" | head -n 1)
-            fi
-        fi
-        
-        # if [[ "$name" =~ "gnome" ]] || [[ "$name" == "adwaita-icon-theme" ]] || [[ "$name" == "mutter" ]] || [[ "$name" == "nautilus" ]]; then
-        #      echo "DEBUG: Checked $name. Local: $local_ver, Remote Pkg Found: ${remote_pkg:-NONE}"
-        # fi
-
-        if [[ -n "$remote_pkg" ]]; then
-            # Extract version carefully (anything after the first hyphen followed by a digit or FAILED)
-            local remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*|FAILED)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
-            
-            if [[ "$remote_ver" == "FAILED" ]]; then
-                echo "Failed to get upstream version for: $name"
-                continue
-            fi
-            
-            # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
-            local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
-            local remote_base=$(echo "$remote_ver" | sed -E 's/-[a-zA-Z]+$//')
-
-            if [[ "$local_base" != "$remote_base" ]]; then
-                local higher=$(echo -e "$local_base\n$remote_base" | sort -V | tail -n 1)
-                if [[ "$higher" == "$remote_base" ]]; then
-                    echo "Found update: $name: $local_ver->$remote_ver"
-                    # Exclude metapackages from updates to prevent redundant build cycles
-                    if [[ "$name" != "plasma-all" && "$name" != "plasma" && "$name" != "frameworks6" && "$name" != "frameworks" ]]; then
-                        updates+=("$name")
-                        update_msgs+=("${name}: ${local_ver}->${remote_ver}")
-                    fi
-                fi
-            fi
-        fi
-    done <<< "$local_list"
+    # while read -r local_pkg; do
+    #     [[ -z "$local_pkg" ]] && continue
+    #     
+    #     # Exclude auxiliary texlive archives to prevent false positive updates against texlive-*-source
+    #     if [[ "$local_pkg" == texlive-*-texmf* ]] || [[ "$local_pkg" == texlive-*-extra* ]]; then
+    #         continue
+    #     fi
+    # 
+    #     local name=$(echo "$local_pkg" | sed -E 's/^([a-zA-Z0-9_\+\-]+)-[0-9].*/\1/')
+    #     local local_ver=$(echo "$local_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
+    # 
+    #     [[ -z "$name" || "$name" == "$local_pkg" ]] && continue
+    # 
+    #     # Find matching package in remote list (case-insensitive)
+    #     local remote_pkg=$(echo "$remote_list" | grep -Ei "^${name}-([0-9]|FAILED)" | head -n 1)
+    #     if [[ -z "$remote_pkg" ]]; then
+    #         # Try fuzzy match: only if name ends in numbers (e.g. gtk3 matching gtk+-3.x or qt6 matching qt-6.x)
+    #         local name_base=$(echo "$name" | sed -E 's/[0-9]+$//')
+    #         local name_num=$(echo "$name" | grep -oE '[0-9]+$')
+    #         if [[ -n "$name_num" && "$name_base" != "$name" ]]; then
+    #             remote_pkg=$(echo "$remote_list" | grep -Ei "^${name_base}\\+?-(${name_num}\\.|${name_num}-|FAILED)" | head -n 1)
+    #         fi
+    #     fi
+    #     
+    #     if [[ -n "$remote_pkg" ]]; then
+    #         # Extract version carefully (anything after the first hyphen followed by a digit or FAILED)
+    #         local remote_ver=$(echo "$remote_pkg" | sed -E 's/^[a-zA-Z0-9_\+\-]+-([0-9].*|FAILED)/\1/; s/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$//' | tr -d '[:space:]')
+    #         
+    #         if [[ "$remote_ver" == "FAILED" ]]; then
+    #             echo "Failed to get upstream version for: $name"
+    #             continue
+    #         fi
+    #         
+    #         # Strip variant suffixes (e.g. -extra, -source) before numeric comparison
+    #         local local_base=$(echo "$local_ver" | sed -E 's/-[a-zA-Z]+$//')
+    #         local remote_base=$(echo "$remote_ver" | sed -E 's/-[a-zA-Z]+$//')
+    # 
+    #         if [[ "$local_base" != "$remote_base" ]]; then
+    #             local higher=$(echo -e "$local_base\n$remote_base" | sort -V | tail -n 1)
+    #             if [[ "$higher" == "$remote_base" ]]; then
+    #                 echo "Found update: $name: $local_ver->$remote_ver"
+    #                 # Exclude metapackages from updates to prevent redundant build cycles
+    #                 if [[ "$name" != "plasma-all" && "$name" != "plasma" && "$name" != "frameworks6" && "$name" != "frameworks" ]]; then
+    #                     updates+=("$name")
+    #                     update_msgs+=("${name}: ${local_ver}->${remote_ver}")
+    #                 fi
+    #             fi
+    #         fi
+    #     fi
+    # done <<< "$local_list"
 
     # Also check custom updates
     local custom_updates_list=()
@@ -1085,12 +1069,8 @@ for pkg in updates:
                 else:
                     graph[pkg].add(matched_dep)
 
-KDE_PKGS = {"extra-cmake-modules", "breeze-icons", "frameworks6", "frameworks", "plasma-all", "plasma"}
-have_kde = any(p in KDE_PKGS or "frameworks" in p or "plasma" in p for p in updates)
-
 def fetch_frameworks_order():
-    if not have_kde:
-        return []
+    """Fetch the KF6 build order from BLFS frameworks6 page."""
     try:
         req = urllib.request.Request(f"{blfs_book}/kde/frameworks6.html", headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as response:
@@ -1102,12 +1082,11 @@ def fetch_frameworks_order():
                 if t not in order:
                     order.append(t)
             return order
-    except Exception as e:
+    except Exception:
         return []
 
 def fetch_plasma_order():
-    if not have_kde:
-        return []
+    """Fetch the Plasma build order from BLFS plasma-all page."""
     try:
         req = urllib.request.Request(f"{blfs_book}/kde/plasma-all.html", headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as response:
@@ -1119,11 +1098,27 @@ def fetch_plasma_order():
                 if t not in order:
                     order.append(t)
             return order
-    except Exception as e:
+    except Exception:
         return []
 
 frameworks_order = fetch_frameworks_order()
 plasma_order = fetch_plasma_order()
+
+# Inject explicit ordering edges from frameworks/plasma build order so that
+# the toposort actually *enforces* the page order, not just uses it as a hint.
+# For each consecutive pair (prev -> pkg) in the page order, if both packages
+# are in the update set, add an edge: pkg depends on prev.
+for ordered_list in (frameworks_order, plasma_order):
+    # Build a lookup: {package_name: position_in_list}
+    pos = {p: i for i, p in enumerate(ordered_list)}
+    # Work through all packages being updated that appear in this ordered list
+    in_update = sorted([p for p in graph if p in pos], key=lambda p: pos[p])
+    for i in range(1, len(in_update)):
+        pkg  = in_update[i]
+        prev = in_update[i - 1]
+        # pkg must be built after prev — add edge pkg -> prev
+        if pkg != prev and prev not in graph[pkg]:  # avoid trivial self-loops
+            graph[pkg].add(prev)
 
 # Perform topological sort
 def toposort(graph):

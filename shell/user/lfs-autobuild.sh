@@ -545,10 +545,14 @@ if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
 fi
 
 cd "$CUSTOM_DIR"
-# Create timestamp BEFORE build
+# Create timestamp and record state BEFORE build
 sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null || true
 touch "/tmp/build_start_timestamp_${TARGET_PKG}"
 BUILD_LOG="/tmp/build_log_${TARGET_PKG}.txt"
+SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
+EXISTING_DIRS=""
+for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
+find $EXISTING_DIRS -printf "%p %C@\n" 2>/dev/null | LC_ALL=C sort > "/tmp/build_state_before_${TARGET_PKG}"
 # Run build; capture exit code independently so post-install steps don't mask it
 set +e
 bash build.sh < /dev/null 2>&1 | tee "$BUILD_LOG"
@@ -627,14 +631,25 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
     SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
-    sudo find $EXISTING_DIRS -newer "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+    # 1. Capture files with mtime OR ctime newer than start timestamp
+    # -cnewer is critical for precompiled binaries or tarballs extracted with cp -a / tar -p
+    # where original mtime from upstream is preserved
+    sudo find $EXISTING_DIRS \( -newer "/tmp/build_start_timestamp_${TARGET_PKG}" -o -cnewer "/tmp/build_start_timestamp_${TARGET_PKG}" \) 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+    
+    # 2. State diff capture (before vs after)
+    if [ -f "/tmp/build_state_before_${TARGET_PKG}" ]; then
+        find $EXISTING_DIRS -printf "%p %C@\n" 2>/dev/null | LC_ALL=C sort > "/tmp/build_state_after_${TARGET_PKG}"
+        LC_ALL=C comm -13 "/tmp/build_state_before_${TARGET_PKG}" "/tmp/build_state_after_${TARGET_PKG}" | cut -d' ' -f1 | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+        rm -f "/tmp/build_state_before_${TARGET_PKG}" "/tmp/build_state_after_${TARGET_PKG}"
+    fi
+
     if [[ "$TARGET_PKG" == "linux" ]]; then
         [ -d "/boot" ] && sudo find /boot -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
         [ -d "/lib/modules" ] && sudo find /lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
         [ -d "/usr/lib/modules" ] && sudo find /usr/lib/modules -type f 2>/dev/null | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
     fi
     
-    # 2. Capture via build log (CMake/Meson files that are already up-to-date)
+    # 3. Capture via build log (CMake/Meson files that are already up-to-date)
     if [ -f "$BUILD_LOG" ]; then
         echo "Parsing build log for additional files (Up-to-date/Installing)..."
         # Parse CMake: -- Installing: /path OR -- Up-to-date: /path
@@ -642,6 +657,21 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
         # Parse Meson: Installing <src> to <dst>
         grep -E "^Installing .* to /" "$BUILD_LOG" | sed -E 's@^Installing .* to (.*)$@\1@; s@^.*(/usr/|/bin/|/sbin/|/lib/|/lib64/|/etc/|/opt/)@\1@' | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
         sudo rm -f "$BUILD_LOG"
+    fi
+
+    # 4. Fallback: if package ends in -bin (like nodejs-bin), check if base package inventory exists to inherit if empty
+    inv_count=$(wc -l < "/var/lib/custom-packages/${TARGET_PKG}" 2>/dev/null || echo 0)
+    if [ "$inv_count" -le 1 ]; then
+        base_name="${TARGET_PKG%-bin}"
+        if [ "$base_name" != "$TARGET_PKG" ]; then
+            if [ -f "/var/lib/custom-packages/$base_name" ] && [ $(wc -l < "/var/lib/custom-packages/$base_name") -gt 1 ]; then
+                echo "Inheriting inventory from $base_name for $TARGET_PKG..."
+                tail -n +2 "/var/lib/custom-packages/$base_name" | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+            elif [ -f "/var/lib/book-packages/$base_name" ] && [ $(wc -l < "/var/lib/book-packages/$base_name") -gt 1 ]; then
+                echo "Inheriting inventory from $base_name for $TARGET_PKG..."
+                tail -n +2 "/var/lib/book-packages/$base_name" | sudo tee -a "/var/lib/custom-packages/${TARGET_PKG}" > /dev/null || true
+            fi
+        fi
     fi
 
     sudo awk '!seen[$0]++' "/var/lib/custom-packages/${TARGET_PKG}" | sudo tee "/tmp/dedup_${TARGET_PKG}" > /dev/null
@@ -4606,8 +4636,8 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     EXISTING_DIRS=""
     for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
     
-    # 1. Capture via timestamp (susceptible to clock drift/skew on long builds like Linux kernel)
-    find $EXISTING_DIRS -newer /tmp/build_start_timestamp_${PACKAGE} 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
+    # 1. Capture via timestamp (mtime or ctime)
+    find $EXISTING_DIRS \( -newer /tmp/build_start_timestamp_${PACKAGE} -o -cnewer /tmp/build_start_timestamp_${PACKAGE} \) 2>/dev/null | sudo tee -a "/tmp/pkg_inventory/${PACKAGE}" > /dev/null
     
     # 2. Capture via robust before-and-after diffing (immune to clock skew/drift)
     if [ -f "/tmp/build_state_before_${PACKAGE}" ]; then

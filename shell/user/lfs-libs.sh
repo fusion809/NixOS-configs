@@ -595,7 +595,13 @@ ls_orphaned_files_gpt() {
 
     echo "Gathering list of all tracked files..."
     local tracked_files="/tmp/tracked_files.txt"
-    cat /var/lib/book-packages/* /var/lib/custom-packages/* 2>/dev/null | awk 'FNR>1 {print $0}' | sort -u > "$tracked_files"
+    : > "$tracked_files"
+    for pdir in /var/lib/book-packages /var/lib/custom-packages; do
+        if [[ -d "$pdir" ]]; then
+            find "$pdir" -maxdepth 1 -type f ! -name ".*" -exec awk 'FNR>1 {print $0}' {} + 2>/dev/null >> "$tracked_files"
+        fi
+    done
+    sort -u -o "$tracked_files" "$tracked_files"
 
     echo "Calculating orphaned files..."
     local orphaned_files="/tmp/orphaned_files.txt"

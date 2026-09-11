@@ -43,6 +43,9 @@ for script in lfs-sync-to-vm.sh lfs-libs.sh lfs-kerns.sh lfs-share.sh lfs-autore
 done
 
 if [[ -n "$NIXCFG" && -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
+    source "$NIXCFG/shell/user/08-ssh.sh"
+    [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
+
     function lfs_com {
         ssh_lfs "source ~/.zshrc ; $@"
     }
