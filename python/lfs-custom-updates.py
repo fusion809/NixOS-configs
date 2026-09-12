@@ -54,6 +54,9 @@ def evaluate_package(script_path, local_vers):
         pkg_name = pkg_basename
 
     local_ver = local_vers.get(pkg_name, local_vers.get(pkg_basename, "none"))
+    # If a package is not recorded in inventory directories, do not track updates for it
+    if local_ver == "none":
+        return pkg_name, "none", "NONE", pkg_basename
 
     lines = content.splitlines()
     ver_line_idx = -1
@@ -160,17 +163,41 @@ def evaluate_package(script_path, local_vers):
 def main():
     packaging_dir = os.path.expanduser("~/lfs_packaging")
     scripts = sorted(glob.glob(os.path.join(packaging_dir, "*/build.sh")))
-    total = len(scripts)
-    print(f"TOTAL:{total}", flush=True)
-
     local_vers = get_local_versions()
 
-    # Use 8 workers to prevent triggering GitHub HTTP 429 rate limiting
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(evaluate_package, s, local_vers): s for s in scripts}
+    # Only track packages currently recorded in the inventory directories
+    eligible_scripts = []
+    for s in scripts:
+        pkg_basename = os.path.basename(os.path.dirname(s))
+        if pkg_basename in local_vers:
+            eligible_scripts.append(s)
+            continue
+        try:
+            with open(s, "r", errors="ignore") as f:
+                for _ in range(60):
+                    line = f.readline()
+                    if not line:
+                        break
+                    m = re.match(r"^[ \t]*(?:export[ \t]+)?(?:pkg_?name|name|PKG_?NAME)=([^\n]+)", line)
+                    if m:
+                        raw = m.group(1).strip().strip('"').strip("'")
+                        if raw in local_vers:
+                            eligible_scripts.append(s)
+                            break
+        except Exception:
+            pass
+
+    total = len(eligible_scripts)
+    print(f"TOTAL:{total}", flush=True)
+
+    # Use 12 workers to prevent triggering GitHub HTTP 429 rate limiting
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        futures = {executor.submit(evaluate_package, s, local_vers): s for s in eligible_scripts}
         for future in as_completed(futures):
             try:
                 pkg_name, local_ver, remote_ver, pkg_basename = future.result()
+                if local_ver == "none":
+                    continue
                 print(f"PROGRESS:{pkg_basename}", flush=True)
                 print(f"RESULT:{pkg_name} {local_ver} {remote_ver}", flush=True)
             except Exception:

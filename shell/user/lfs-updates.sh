@@ -21,8 +21,8 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Get total package count for global progress percentage
-total_custom_pkgs=$(ssh_lfs "find ~/lfs_packaging -mindepth 2 -maxdepth 2 -name 'build.sh' 2>/dev/null | wc -l" 2>/dev/null | tr -d '[:space:]\r')
+# Get total installed package count for global progress percentage
+total_custom_pkgs=$(ssh_lfs "find /var/lib/custom-packages /var/lib/book-packages -maxdepth 1 -type f ! -name '.*' 2>/dev/null | grep -vE '/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$' | wc -l" 2>/dev/null | tr -d '[:space:]\r')
 total_custom_pkgs=${total_custom_pkgs:-0}
 [[ "$total_custom_pkgs" -lt 1 ]] && total_custom_pkgs=1
 
@@ -41,6 +41,10 @@ while IFS= read -r update_line; do
     [[ -z "$update_line" ]] && continue
     read -r name local_ver remote_ver <<< "$update_line" || continue
     [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
+    # Skip packages not listed in inventory directories (uninstalled)
+    if [[ "$local_ver" == "none" || "$local_ver" == "MISSING" ]]; then
+        continue
+    fi
 
     local_ver=$(printf '%s\n' "$local_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
     remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
@@ -60,8 +64,6 @@ while IFS= read -r update_line; do
         label="[MISSING]"
     elif [[ "$local_ver" == "$remote_ver" ]]; then
         label=""
-    elif [[ "$local_ver" == "none" ]]; then
-        label="[UPDATE]"
     else
         # Check if remote version is actually newer than local version
         # Normalize hyphens to periods for sort -V (e.g. 3-6-2 -> 3.6.2)
