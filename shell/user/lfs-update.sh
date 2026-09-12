@@ -903,55 +903,131 @@ lfs_update() {
 
     local all_updates=("${updates[@]}" "${custom_updates_list[@]}")
     if [[ ${#all_updates[@]} -gt 0 ]]; then
+
+        # Only sort/resolve deps when there are 2+ packages; single-package is trivially ordered
+        if [[ ${#all_updates[@]} -gt 1 ]]; then
         echo "Resolving dependencies and determining build order..."
-        
-        # 1. Gather custom dependencies from VM
-        local custom_dep_edges=""
+
+        # --- Determine whether any packages are BLFS (book) packages ---
+        # If every package is in custom_updates_list, skip BLFS HTTP fetches entirely.
+        local _has_blfs_pkg=false
+        local _custom_set="|$(printf '%s|' "${custom_updates_list[@]}")"
+        for _p in "${all_updates[@]}"; do
+            if [[ "$_custom_set" != *"|${_p}|"* ]]; then
+                _has_blfs_pkg=true
+                break
+            fi
+        done
+
+        # --- Parallel: run custom-dep SSH call AND (if needed) longindex fetch concurrently ---
+        local _dep_tmp="/tmp/lfs_dep_edges_$$.txt"
+        local _longindex_tmp="/tmp/lfs_longindex_$$.html"
+        local _dep_pid=""
+        local _longindex_pid=""
+
+        # Custom deps from VM (background)
         if [[ ${#custom_updates_list[@]} -gt 0 ]]; then
             local pkg_list_escaped=$(printf '%s\n' "${all_updates[@]}" | paste -sd',')
             local dep_script=$(cat <<'DEPEOF'
-pkg_list="__PKG_LIST__"
-IFS=',' read -ra updates_array <<< "$pkg_list"
+import glob, os, re, sys
 
-declare -A name_to_dir
-for build_script in $(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null); do
-    pkg_dir=$(dirname "$build_script")
-    dir_name=$(basename "$pkg_dir")
-    name_line=$(grep -E '^[A-Z_]*NAME=' "$build_script" | head -n 1)
-    if [ -n "$name_line" ]; then
-        pkg_name=$(echo "$name_line" | cut -d= -f2 | tr -d '"' | tr -d "'")
-        # Fall back to dir name if value is dynamic (contains $)
-        if echo "$pkg_name" | grep -q '\$'; then
-            pkg_name="$dir_name"
-        fi
-    else
-        pkg_name="$dir_name"
-    fi
-    name_to_dir["$pkg_name"]="$dir_name"
-    name_to_dir["$dir_name"]="$dir_name"
-done
+pkg_list = "__PKG_LIST__".split(",")
+packaging_dir = os.path.expanduser("~/lfs_packaging")
+scripts = glob.glob(os.path.join(packaging_dir, "*/build.sh"))
 
-for u in "${updates_array[@]}"; do
-    dir_name="${name_to_dir[$u]:-$u}"
-    build_script=$(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name "build.sh" 2>/dev/null | grep -E "/${dir_name}/build.sh$" | head -n 1)
-    if [ -n "$build_script" ]; then
-        deps_line=$(grep -E '^depends=' "$build_script" | head -n 1)
-        if [ -n "$deps_line" ]; then
-            deps_val=$(echo "$deps_line" | sed -E 's/^[a-zA-Z_]+=\(?//' | sed -E 's/\)$//')
-            eval "deps=($deps_val)"
-            echo "CUSTOM_DEP:$u ${deps[*]}"
-        fi
-    fi
-done
+name_to_dir = {}
+dir_to_script = {}
+for s in scripts:
+    d = os.path.basename(os.path.dirname(s))
+    dir_to_script[d] = s
+    name_to_dir[d] = d
+    try:
+        with open(s, "r", errors="ignore") as f:
+            for _ in range(40):
+                line = f.readline()
+                if not line: break
+                m = re.match(r"^[ \t]*(?:export[ \t]+)?(?:pkg_?name|name|PKG_?NAME)=([^\n]+)", line)
+                if m:
+                    raw = m.group(1).strip().strip("\"'")
+                    if raw and "$" not in raw:
+                        name_to_dir[raw] = d
+                    break
+    except Exception:
+        pass
+
+for u in pkg_list:
+    d = name_to_dir.get(u, u)
+    s = dir_to_script.get(d)
+    if not s and os.path.isfile(os.path.join(packaging_dir, d, "build.sh")):
+        s = os.path.join(packaging_dir, d, "build.sh")
+    if s and os.path.isfile(s):
+        try:
+            with open(s, "r", errors="ignore") as f:
+                content = f.read()
+            dep_blocks = re.findall(r"(?:depends|blfs_depends|lfs_depends|dependencies)\s*=\s*\((.*?)\)", content, re.DOTALL)
+            deps = []
+            for block in dep_blocks:
+                clean = re.sub(r"#.*", "", block)
+                for token in clean.split():
+                    t = token.strip("\"'()")
+                    if t and not t.startswith("$") and t not in deps:
+                        deps.append(t)
+            if deps:
+                print(f"CUSTOM_DEP:{u} {' '.join(deps)}")
+        except Exception:
+            pass
 DEPEOF
 )
             dep_script="${dep_script/__PKG_LIST__/$pkg_list_escaped}"
-            custom_dep_edges=$(ssh_lfs "bash -c '$(echo "$dep_script" | sed "s/'/'\''/g")'" 2>/dev/null | grep "^CUSTOM_DEP:")
+            ( ssh_lfs "python3 -c '$(echo "$dep_script" |  sed "s/'/'\''/g")' 2>/dev/null \
+                | grep "^CUSTOM_DEP:" > "$_dep_tmp" ) &
+            _dep_pid=$!
+        else
+            touch "$_dep_tmp"
         fi
 
+        # BLFS longindex fetch (background, only if we have book packages)
+        if [[ "$_has_blfs_pkg" == "true" ]]; then
+            ( curl -s --max-time 15 -A "Mozilla/5.0" \
+                "${BLFS_DEV_BOOK:-https://linuxfromscratch.org/blfs/view/systemd}/longindex.html" \
+                > "$_longindex_tmp" 2>/dev/null ) &
+            _longindex_pid=$!
+        else
+            touch "$_longindex_tmp"
+        fi
+
+        # Wait for both background jobs
+        [[ -n "$_dep_pid" ]]      && wait "$_dep_pid"      2>/dev/null || true
+        [[ -n "$_longindex_pid" ]] && wait "$_longindex_pid" 2>/dev/null || true
+
+        local custom_dep_edges=""
+        [[ -f "$_dep_tmp" ]] && custom_dep_edges=$(cat "$_dep_tmp")
+        local _longindex_html=""
+        [[ -f "$_longindex_tmp" ]] && _longindex_html=$(cat "$_longindex_tmp")
+        rm -f "$_dep_tmp" "$_longindex_tmp"
+
         export CUSTOM_DEPS_ENV="$custom_dep_edges"
-        export LFS_BOOK_PYTHON="$LFS_DEV_BOOK"
-        export BLFS_BOOK_PYTHON="$BLFS_DEV_BOOK"
+        export LFS_BOOK_PYTHON="${LFS_DEV_BOOK:-https://www.linuxfromscratch.org/lfs/view/development}"
+        export BLFS_BOOK_PYTHON="${BLFS_DEV_BOOK:-https://linuxfromscratch.org/blfs/view/systemd}"
+        export LONGINDEX_HTML="$_longindex_html"
+        export HAS_BLFS_PKG="$_has_blfs_pkg"
+
+        # --- Frameworks/plasma order: use 6-hour on-disk cache ---
+        local _fw_cache="/tmp/lfs_fw_order.cache"
+        local _plasma_cache="/tmp/lfs_plasma_order.cache"
+        local _cache_ttl=21600  # 6 hours in seconds
+        local _now=$(date +%s)
+        # Invalidate stale caches
+        for _cf in "$_fw_cache" "$_plasma_cache"; do
+            if [[ -f "$_cf" ]]; then
+                local _mtime=$(stat -c %Y "$_cf" 2>/dev/null || echo 0)
+                if (( _now - _mtime > _cache_ttl )); then
+                    rm -f "$_cf"
+                fi
+            fi
+        done
+        export FW_CACHE_FILE="$_fw_cache"
+        export PLASMA_CACHE_FILE="$_plasma_cache"
 
         local sorted_updates=$(python3 -c '
 import urllib.request
@@ -959,28 +1035,23 @@ import re
 import sys
 import os
 import socket
+import json
 
 # Set a global timeout for all network requests to prevent hangs
 socket.setdefaulttimeout(10)
 
 lfs_book = os.environ.get("LFS_BOOK_PYTHON", "https://www.linuxfromscratch.org/lfs/view/development")
 blfs_book = os.environ.get("BLFS_BOOK_PYTHON", "https://linuxfromscratch.org/blfs/view/systemd")
+has_blfs = os.environ.get("HAS_BLFS_PKG", "false") == "true"
+fw_cache_file   = os.environ.get("FW_CACHE_FILE", "")
+plasma_cache_file = os.environ.get("PLASMA_CACHE_FILE", "")
 
 updates = sys.argv[1:]
 if not updates:
     sys.exit(0)
 
-# 1. Fetch longindex to map package to page URL
-def fetch_longindex():
-    try:
-        req = urllib.request.Request(f"{blfs_book}/longindex.html", headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=10) as response:
-            return response.read().decode("utf-8")
-    except Exception as e:
-        print(f"Error fetching BLFS longindex: {e}", file=sys.stderr)
-        return ""
-
-longindex = fetch_longindex()
+# longindex was pre-fetched by the shell and passed via env
+longindex = os.environ.get("LONGINDEX_HTML", "") if has_blfs else ""
 
 # Extract dependencies for a given URL
 def extract_deps(url):
@@ -989,43 +1060,32 @@ def extract_deps(url):
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as response:
             html = response.read().decode("utf-8")
-            
             # Find required/recommended blocks
             blocks = re.findall(r"class=\"(required|recommended)\"(.*?)</p>", html, re.IGNORECASE | re.DOTALL)
             for _, block in blocks:
                 hrefs = re.findall(r"href\s*=\s*\"([^\"]+)\"", block)
                 for href in hrefs:
-                    # Clean up href to just the page name without extension
                     page_name = href.split("/")[-1].replace(".html", "")
-                    
-                    # Convert gst10-plugins back to gst-plugins to match local names
                     page_name = re.sub(r"^gst10-plugins-", "gst-plugins-", page_name)
-                    
-                    # Store as potential dep, we resolve against available updates later
                     deps.append(page_name)
-    except Exception as e:
+    except Exception:
         pass
     return deps
 
-# 2.2 Resolve and build required dependencies before this package
+# Map packages to their BLFS page URLs (only for book packages)
 pkg_urls = {}
-for pkg in updates:
-    search_pkg = pkg
-    if re.match(r"^gst-plugins-(base|good|bad|ugly|libav|vaapi)$", pkg):
-        search_pkg = "gst10-plugins-" + pkg.split("-")[-1]
-    
-    # Try exact match in longindex
-    m = re.search(r"href\s*=\s*\"([^\"]*/" + re.escape(search_pkg) + r"\.html)\"", longindex, re.IGNORECASE)
-    if not m:
-        # Partial match
-        m = re.search(r"href\s*=\s*\"([^\"]*" + re.escape(search_pkg) + r"[^\"]*\.html)\"", longindex, re.IGNORECASE)
-    
-    if m:
-        href = m.group(1).replace("../", "")
-        pkg_urls[pkg] = f"{blfs_book}/{href}"
-    else:
-        # Check LFS if not in BLFS
-        if pkg == "linux":
+if has_blfs and longindex:
+    for pkg in updates:
+        search_pkg = pkg
+        if re.match(r"^gst-plugins-(base|good|bad|ugly|libav|vaapi)$", pkg):
+            search_pkg = "gst10-plugins-" + pkg.split("-")[-1]
+        m = re.search(r"href\s*=\s*\"([^\"]*/" + re.escape(search_pkg) + r"\.html)\"", longindex, re.IGNORECASE)
+        if not m:
+            m = re.search(r"href\s*=\s*\"([^\"]*" + re.escape(search_pkg) + r"[^\"]*\.html)\"", longindex, re.IGNORECASE)
+        if m:
+            href = m.group(1).replace("../", "")
+            pkg_urls[pkg] = f"{blfs_book}/{href}"
+        elif pkg == "linux":
             pkg_urls[pkg] = f"{lfs_book}/chapter10/kernel.html"
 
 graph = {pkg: set() for pkg in updates}
@@ -1048,10 +1108,9 @@ for pkg in updates:
                 if p == dep or p.startswith(dep + "-") or dep.startswith(p + "-"):
                     matched_dep = p
                     break
-            
             if matched_dep and matched_dep != pkg:
                 graph[pkg].add(matched_dep)
-    elif pkg in pkg_urls:
+    if pkg in pkg_urls:
         deps = extract_deps(pkg_urls[pkg])
         for dep in deps:
             matched_dep = None
@@ -1059,112 +1118,118 @@ for pkg in updates:
                 if p == dep or p.startswith(dep + "-") or dep.startswith(p + "-"):
                     matched_dep = p
                     break
-            
             if matched_dep and matched_dep != pkg:
-                # Avoid circular deps within the same page (common on metapackage pages)
                 if pkg_urls.get(pkg) == pkg_urls.get(matched_dep):
-                    # Only enforce order for critical build tools
                     if matched_dep in ["extra-cmake-modules", "breeze-icons"]:
                         graph[pkg].add(matched_dep)
                 else:
                     graph[pkg].add(matched_dep)
 
+def _load_order_cache(cache_file):
+    """Load a cached order list from a JSON file."""
+    if cache_file and os.path.isfile(cache_file):
+        try:
+            with open(cache_file) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return None
+
+def _save_order_cache(cache_file, order):
+    """Save an order list to a JSON file."""
+    if cache_file:
+        try:
+            with open(cache_file, "w") as f:
+                json.dump(order, f)
+        except Exception:
+            pass
+
 def fetch_frameworks_order():
-    """Fetch the KF6 build order from BLFS frameworks6 page."""
+    cached = _load_order_cache(fw_cache_file)
+    if cached is not None:
+        return cached
     try:
         req = urllib.request.Request(f"{blfs_book}/kde/frameworks6.html", headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as response:
             html = response.read().decode("utf-8")
-            # Extract names from the md5 block: e.g. "karchive-6.23.0.tar.xz"
             tars = re.findall(r"([a-z0-9-]+)-6\.[0-9]+\.[0-9]+\.tar\.xz", html)
             order = []
             for t in tars:
                 if t not in order:
                     order.append(t)
+            _save_order_cache(fw_cache_file, order)
             return order
     except Exception:
         return []
 
 def fetch_plasma_order():
-    """Fetch the Plasma build order from BLFS plasma-all page."""
+    cached = _load_order_cache(plasma_cache_file)
+    if cached is not None:
+        return cached
     try:
         req = urllib.request.Request(f"{blfs_book}/kde/plasma-all.html", headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as response:
             html = response.read().decode("utf-8")
-            # Extract names from the md5 block or links
             tars = re.findall(r"([a-z0-9-]+)-6\.[0-9]+\.[0-9]+\.tar\.xz", html)
             order = []
             for t in tars:
                 if t not in order:
                     order.append(t)
+            _save_order_cache(plasma_cache_file, order)
             return order
     except Exception:
         return []
 
-frameworks_order = fetch_frameworks_order()
-plasma_order = fetch_plasma_order()
+# Only fetch KDE ordering if any package appears KDE-related (heuristic: k* prefix or plasma*)
+_might_have_kde = any(
+    re.match(r"^(k[a-z]|plasma|breeze|extra-cmake-modules|sddm|milou|discover|kcm|kwin)", p)
+    for p in updates
+)
+if _might_have_kde:
+    frameworks_order = fetch_frameworks_order()
+    plasma_order = fetch_plasma_order()
+else:
+    frameworks_order = []
+    plasma_order = []
 
-# Inject explicit ordering edges from frameworks/plasma build order so that
-# the toposort actually *enforces* the page order, not just uses it as a hint.
-# For each consecutive pair (prev -> pkg) in the page order, if both packages
-# are in the update set, add an edge: pkg depends on prev.
+# Inject explicit ordering edges from frameworks/plasma build order
 for ordered_list in (frameworks_order, plasma_order):
-    # Build a lookup: {package_name: position_in_list}
     pos = {p: i for i, p in enumerate(ordered_list)}
-    # Work through all packages being updated that appear in this ordered list
     in_update = sorted([p for p in graph if p in pos], key=lambda p: pos[p])
     for i in range(1, len(in_update)):
         pkg  = in_update[i]
         prev = in_update[i - 1]
-        # pkg must be built after prev — add edge pkg -> prev
-        if pkg != prev and prev not in graph[pkg]:  # avoid trivial self-loops
+        if pkg != prev and prev not in graph[pkg]:
             graph[pkg].add(prev)
 
-# Perform topological sort
 def toposort(graph):
-    # Calculate in-degrees
-    in_degree = {u: 0 for u in graph}
-    for u in graph:
-        for v in graph[u]:
-            in_degree[u] += 1
-    
-    # We want to build nodes with in_degree 0 first
-    # So we need to reverse the graph: dependency -> dependents
     adj = {u: [] for u in graph}
     for u in graph:
         for v in graph[u]:
             adj[v].append(u)
-    
-    # Recalculate in_degree: count how many nodes each node depends on
     in_degree = {u: len(graph[u]) for u in graph}
-    
-    priority_pkgs = ["extra-cmake-modules", "breeze-icons"]
-    
+    priority_pkgs = ["extra-cmake-modules", "breeze-icons", "rustc", "llvm", "glib", "texlive", "qt6"]
     def get_sort_key(pkg):
         prio = 0 if pkg in priority_pkgs else 1
         fw_index = frameworks_order.index(pkg) if pkg in frameworks_order else 9999
         plasma_index = plasma_order.index(pkg) if pkg in plasma_order else 9999
         return (prio, fw_index, plasma_index, pkg)
-    
-    queue = [u for u in in_degree if in_degree[u] == 0]
-    queue.sort(key=get_sort_key)
-    
+    queue = sorted([u for u in in_degree if in_degree[u] == 0], key=get_sort_key)
     result = []
-    while queue:
+    while len(result) < len(graph):
+        if not queue:
+            unvisited = [u for u in in_degree if u not in result]
+            unvisited.sort(key=lambda u: (in_degree[u], get_sort_key(u)))
+            queue.append(unvisited[0])
         u = queue.pop(0)
+        if u in result:
+            continue
         result.append(u)
-        
         for v in adj[u]:
             in_degree[v] -= 1
             if in_degree[v] == 0:
                 queue.append(v)
                 queue.sort(key=get_sort_key)
-                    
-    # Handle cycles by appending remaining nodes
-    remaining = [node for node in graph if node not in result]
-    remaining.sort(key=lambda x: (x not in priority_pkgs, x))
-    result.extend(remaining)
-            
     return result
 
 sorted_pkgs = toposort(graph)
@@ -1178,6 +1243,10 @@ for pkg in sorted_pkgs:
                 [[ -n "$pkg" ]] && all_updates+=("$pkg")
             done <<< "$sorted_updates"
         fi
+
+        unset _has_blfs_pkg _custom_set _dep_tmp _longindex_tmp _dep_pid _longindex_pid
+        unset _fw_cache _plasma_cache _cache_ttl _now _cf _mtime
+        fi  # end: ${#all_updates[@]} -gt 1
 
         echo "Applying updates in dependency order:"
         for pkg in "${all_updates[@]}"; do
