@@ -64,6 +64,7 @@ lfs_package_commit() {
 
     local msg="$1"
     local push_needed=false
+    local comp_msg=""
     for dir in /var/lib/book-packages /var/lib/custom-packages; do
         if [ -d "$dir/.git" ]; then
             (
@@ -111,7 +112,26 @@ lfs_package_commit() {
                 fi
             )
         fi
+        comp_msg+="${final_msg} "
     done
+    pushd "$HOME/build_duration"
+    echo "Committing changes in ~/build_duration"
+    comp_msg+=" +";
+    comp_msg+=(git ls-files --others --exclude-standard |
+awk '
+{
+    files[NR] = $0
+}
+END {
+    for (i = 1; i <= NR; i++) {
+        if (i > 1 && i < NR) printf ", "
+        if (i == NR && NR > 1) printf " and "
+        printf "%s", files[i]
+    }
+    print ""
+}')
+    push "$comp_msg"
+    popd
 }
 
 if [ -n "$BASH_VERSION" ]; then
