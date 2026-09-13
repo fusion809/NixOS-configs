@@ -114,10 +114,9 @@ lfs_package_commit() {
         fi
         comp_msg+="${final_msg} "
     done
-    pushd "$HOME/build_duration"
     echo "Committing changes in ~/build_duration"
     comp_msg+=" +";
-    comp_msg+=(git ls-files --others --exclude-standard |
+    comp_msg+="$(git -C "$HOME/build_duration" ls-files --others --exclude-standard |
 awk '
 {
     files[NR] = $0
@@ -129,9 +128,10 @@ END {
         printf "%s", files[i]
     }
     print ""
-}')
-    push "$comp_msg"
-    popd
+}')"
+    git -C "$HOME/build_duration" add --all
+    git -C "$HOME/build_duration" commit -m "$comp_msg"
+    git -C "$HOME/build_duration" push origin master
 }
 
 if [ -n "$BASH_VERSION" ]; then
