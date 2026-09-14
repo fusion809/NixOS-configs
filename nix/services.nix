@@ -24,6 +24,9 @@
   gvfs = {
     enable = true;
   };
+  openssh = {
+    enable = true;
+  };
   pipewire = {
     enable = true;
     alsa.enable = true;

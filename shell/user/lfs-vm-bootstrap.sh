@@ -115,7 +115,11 @@ lfs_package_commit() {
         comp_msg+="${final_msg} "
     done
     echo "Committing changes in ~/build_duration"
-    comp_msg+=" +";
+    if [[ "${comp_msg}" =~ '^ *$' ]]; then
+        comp_msg="+"
+    else
+        comp_msg+="+"
+    fi
     comp_msg+="$(git -C "$HOME/build_duration" ls-files --others --exclude-standard |
 awk '
 {

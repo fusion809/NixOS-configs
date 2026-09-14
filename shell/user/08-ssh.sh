@@ -311,3 +311,7 @@ function update_all {
 function hpc {
     ssh_debian "bash -ic hpc"
 }
+
+function ssh_termux {
+    TERM=xterm-256color sshpass -f "$HOME/.config/vm_pass" ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 8022 -t u0_a42@100.98.59.26 "$@"
+}
