@@ -594,7 +594,7 @@ save_usrlib="$(cd /usr/lib; ls ld-linux*[^g])
              libquadmath.so.0.0.0
              libstdc++.so.6.0.34
              libitm.so.1.0.0
-             libatomic.so.1.2.0"
+	     libatomic.so.1.2.0)"
 
 cd /usr/lib
 
@@ -979,8 +979,8 @@ for u in pkg_list:
 DEPEOF
 )
             dep_script="${dep_script/__PKG_LIST__/$pkg_list_escaped}"
-            ( ssh_lfs "python3 -c '$(echo "$dep_script" |  sed "s/'/'\''/g")' 2>/dev/null \
-                | grep "^CUSTOM_DEP:" > "$_dep_tmp" ) &
+	    ( printf '%s\n' "$dep_script" | ssh_lfs 'python3 -' 2>/dev/null \
+    | grep '^CUSTOM_DEP:' > "$_dep_tmp" ) &
             _dep_pid=$!
         else
             touch "$_dep_tmp"
