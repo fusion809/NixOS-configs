@@ -169,6 +169,47 @@ log() { echo "[$(date +'%H:%M:%S')] $*"; }
 # fi
 error() { echo "[ERROR] $*" >&2; echo "$COMMANDS" > /tmp/cmds_final.out; exit 1; }
 
+_PKG_LOGGING_ACTIVE=false
+_PKG_LOG_TARGET=""
+_PKG_BUILD_START=""
+
+_start_pkg_log() {
+    local pkg="$1"
+    _PKG_BUILD_START=$(date +%s)
+    _PKG_LOG_TARGET="$pkg"
+    mkdir -p "$HOME/build_duration" "$HOME/build_logs"
+    if [[ "$HOST_MODE" == "true" ]]; then
+        target_run "mkdir -p ~/build_duration ~/build_logs" 2>/dev/null || true
+    fi
+    exec 3>&1 4>&2
+    exec > >(tee "$HOME/build_logs/$_PKG_LOG_TARGET") 2>&1
+    _PKG_LOGGING_ACTIVE=true
+}
+
+_finish_pkg_log() {
+    local success="${1:-false}"
+    if [[ "$_PKG_LOGGING_ACTIVE" == "true" ]]; then
+        if [[ "$success" == "true" && -n "$_PKG_BUILD_START" && -n "$_PKG_LOG_TARGET" ]]; then
+            local dur=$(( $(date +%s) - _PKG_BUILD_START ))
+            echo "$dur" >> "$HOME/build_duration/$_PKG_LOG_TARGET"
+            if [[ "$HOST_MODE" == "true" ]]; then
+                target_run "echo $dur >> ~/build_duration/$_PKG_LOG_TARGET" 2>/dev/null || true
+                ssh_lfs "cat > ~/build_logs/$_PKG_LOG_TARGET" < "$HOME/build_logs/$_PKG_LOG_TARGET" 2>/dev/null || true
+            fi
+        fi
+        exec 1>&3 2>&4 3>&- 4>&-
+        sleep 0.1
+        _PKG_LOGGING_ACTIVE=false
+        unset _PKG_BUILD_START
+        unset _PKG_LOG_TARGET
+    fi
+}
+
+_pkg_log_exit_trap() {
+    _finish_pkg_log false
+}
+trap _pkg_log_exit_trap EXIT
+
 check_and_build_deps() {
     local deps="$1"
     if [[ -z "$deps" ]]; then
@@ -454,6 +495,9 @@ for PACKAGE in "${PACKAGES[@]}"; do
         fi
     fi
 
+    # Start logging output and build duration for this package
+    _start_pkg_log "$PACKAGE"
+
     # Check if a custom package exists BEFORE translating aliases to avoid redirecting local packages to BLFS metapackages
     if [ -d "$HOME/lfs_packaging/$PACKAGE" ] || [ -d "$HOME/lfs_packaging/uninstalled/$PACKAGE" ] || target_run "[ -d ~/lfs_packaging/$PACKAGE ] || [ -d ~/lfs_packaging/uninstalled/$PACKAGE ]" 2>/dev/null; then
         log "Found custom package for $PACKAGE, bypassing BLFS aliases."
@@ -549,6 +593,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
     
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "DRY RUN: Would execute $CUSTOM_BUILD_SH on VM."
+        _finish_pkg_log false
         continue
     fi
     
@@ -755,6 +800,7 @@ EOF
         if [[ -n "$INSTALLED_VER" && -n "$TARGET_VER" ]]; then
             if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
                 log "[LFS-AUTOBUILD] Skipping custom package $PACKAGE: version $INSTALLED_VER already installed (use -f to force build)."
+                _finish_pkg_log false
                 continue
             fi
         fi
@@ -781,6 +827,7 @@ EOF
         fi
     fi
 
+    _finish_pkg_log true
     continue
 fi
 
@@ -3632,12 +3679,14 @@ if [[ "$FORCE" != "true" ]]; then
     if [[ -n "$INSTALLED_VER" && -n "$TARGET_VER" ]]; then
         if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
             log "[LFS-AUTOBUILD] Skipping already installed package: $PACKAGE (version $INSTALLED_VER, use -f to force rebuild)"
+            _finish_pkg_log false
             continue
         fi
     elif [[ -n "$INSTALLED_VER" ]]; then
         # If we have it installed but couldn't determine target version from book/upstream,
         # we still skip by default unless forced.
         log "[LFS-AUTOBUILD] Skipping already installed package (target version unknown): $PACKAGE (use -f to force rebuild)"
+        _finish_pkg_log false
         continue
     fi
 fi
@@ -4918,6 +4967,10 @@ if [[ "$HOST_MODE" == "true" ]]; then
 else
     # Running on guest already (piped)
     sudo bash /tmp/remote_script_${PACKAGE}.sh
+    CODE=$?
+    if [[ $CODE -ne 0 ]]; then
+        error "Build script failed for $PACKAGE."
+    fi
 fi
 rm -f /tmp/remote_script_${PACKAGE}.sh
 
@@ -4928,5 +4981,7 @@ if [[ "$STRIP" == "true" ]] && [[ "$HOST_MODE" == "true" ]]; then
         lfs_strip
     fi
 fi
+
+_finish_pkg_log true
 
 done
