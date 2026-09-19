@@ -80,4 +80,6 @@ if [[ -n "$NIXCFG" && -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
         source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
         ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit $(printf '%q ' "$@")'"
     }
+    lfs_commit() { commit "$@"; }
+    lfs_package_commit() { commit "$@"; }
 fi
