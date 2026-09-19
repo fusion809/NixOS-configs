@@ -39,26 +39,32 @@ fi
 
 # Helper to format package list with English grammar / Oxford comma
 _lfs_format_pkg_list() {
-    local -a items=("$@")
-    local n=${#items[@]}
+    [ -n "$ZSH_VERSION" ] && emulate -L bash
+    local n=$#
     if [ "$n" -eq 0 ]; then
         echo ""
-    elif [ "$n" -eq 1 ]; then
-        echo "${items[0]}"
-    elif [ "$n" -eq 2 ]; then
-        echo "${items[0]} and ${items[1]}"
-    else
-        local res=""
-        for ((i=0; i<n-1; i++)); do
-            res+="${items[i]}, "
-        done
-        res+="and ${items[n-1]}"
-        echo "$res"
+        return
     fi
+    if [ "$n" -eq 1 ]; then
+        echo "$1"
+        return
+    fi
+    if [ "$n" -eq 2 ]; then
+        echo "$1 and $2"
+        return
+    fi
+    local res=""
+    while [ $# -gt 1 ]; do
+        res+="$1, "
+        shift
+    done
+    res+="and $1"
+    echo "$res"
 }
 
 # ---- Commit and Push Registry Changes ----
 lfs_package_commit() {
+    [ -n "$ZSH_VERSION" ] && emulate -L bash
     if [[ "$1" == "-h" || "$1" == "--help" ]]; then
         echo "Usage: lfs_commit [message]"
         echo "Example: lfs_commit 'Updated kernel to 6.6.1'"
