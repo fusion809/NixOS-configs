@@ -3,7 +3,7 @@
 lfs_autoremove_gpt() {
     local dry_run=false
     local force=false
-    local pkg=""
+    local pkgs=()
     
     for arg in "$@"; do
         if [[ "$arg" == "--dry-run" ]]; then
@@ -11,14 +11,26 @@ lfs_autoremove_gpt() {
         elif [[ "$arg" == "-f" || "$arg" == "--force" ]]; then
             force=true
         else
-            pkg="$arg"
+            pkgs+=("$arg")
         fi
     done
 
-    if [ -z "$pkg" ]; then
-        echo "Usage: lfs_autoremove [--dry-run] [-f] <package_name>"
+    if [ ${#pkgs[@]} -eq 0 ]; then
+        echo "Usage: lfs_autoremove [--dry-run] [-f] <package_name> [<package_name> ...]"
         return 1
     fi
+
+    local overall_rc=0
+    for pkg in "${pkgs[@]}"; do
+        _lfs_autoremove_one "$pkg" "$dry_run" "$force" || overall_rc=$?
+    done
+    return $overall_rc
+}
+
+_lfs_autoremove_one() {
+    local pkg="$1"
+    local dry_run="$2"
+    local force="$3"
 
     local inv_file=""
     if [ -f "/var/lib/custom-packages/$pkg" ]; then
@@ -188,14 +200,54 @@ lfs_autoremove_gpt() {
     fi
 }
 
+du_pkg() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: du_pkg <package_name> [<package_name> ...]"
+        return 1
+    fi
+
+    local overall_rc=0
+    local use_numfmt=false
+    command -v numfmt &>/dev/null && use_numfmt=true
+
+    for pkg in "$@"; do
+        local inv_file=""
+        if [ -f "/var/lib/custom-packages/$pkg" ]; then
+            inv_file="/var/lib/custom-packages/$pkg"
+        elif [ -f "/var/lib/book-packages/$pkg" ]; then
+            inv_file="/var/lib/book-packages/$pkg"
+        else
+            echo "Package $pkg not found in inventory." >&2
+            overall_rc=1
+            continue
+        fi
+
+        local total
+        total=$(
+            tail -n +2 "$inv_file" | while IFS= read -r f; do
+                [[ -z "$f" ]] && continue
+                [ -f "$f" ] && [ ! -L "$f" ] && stat -c '%s' "$f" 2>/dev/null
+            done | awk '{s += $1} END { print s+0 }'
+        )
+
+        # Pretty-print using numfmt if available, otherwise fall back to raw bytes
+        if [[ "$use_numfmt" == true ]]; then
+            printf "%s\t%s\n" "$(printf '%d' "$total" | numfmt --to=iec-i --suffix=B)" "$pkg"
+        else
+            printf "%d\t%s\n" "$total" "$pkg"
+        fi
+    done
+
+    return $overall_rc
+}
+
 lfs_autoremove() {
     local args=("$@")
     if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
         source "$NIXCFG/shell/user/08-ssh.sh"
         source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
-        ssh_lfs "$(declare -f lfs_autoremove_gpt); lfs_autoremove_gpt $(printf '%q ' "${args[@]}")"
+        ssh_lfs "$(declare -f lfs_autoremove_gpt _lfs_autoremove_one); lfs_autoremove_gpt $(printf '%q ' "${args[@]}")"
     else
         lfs_autoremove_gpt "${args[@]}"
     fi
 }
-

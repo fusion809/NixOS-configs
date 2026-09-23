@@ -62,7 +62,7 @@ with open('shell/user/lfs-kerns.sh', 'w') as f:
 write_funcs('lfs-share.sh', ['rm_old_docs_gpt', 'rm_old_docs'])
 
 # lfs-autoremove.sh
-write_funcs('lfs-autoremove.sh', ['lfs_autoremove_gpt', 'lfs_autoremove'])
+write_funcs('lfs-autoremove.sh', ['lfs_autoremove_gpt', '_lfs_autoremove_one', 'du_pkg', 'lfs_autoremove'])
 
 # lfs-autobuild-func.sh
 write_funcs('lfs-autobuild-func.sh', ['lfs_autobuild'])
