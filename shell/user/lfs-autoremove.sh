@@ -222,12 +222,16 @@ du_pkg() {
             continue
         fi
 
+        # Emit NUL-delimited paths for all regular, non-symlink inventory files,
+        # then hand them all to a single xargs stat invocation.  xargs batches
+        # the paths so only a handful of stat(1) processes are spawned regardless
+        # of how many files the package owns.
         local total
         total=$(
             tail -n +2 "$inv_file" | while IFS= read -r f; do
                 [[ -z "$f" ]] && continue
-                [ -f "$f" ] && [ ! -L "$f" ] && stat -c '%s' "$f" 2>/dev/null
-            done | awk '{s += $1} END { print s+0 }'
+                [ -f "$f" ] && [ ! -L "$f" ] && printf '%s\0' "$f"
+            done | xargs -0 stat -c '%s' 2>/dev/null | awk '{s += $1} END { print s+0 }'
         )
 
         # Pretty-print using numfmt if available, otherwise fall back to raw bytes
