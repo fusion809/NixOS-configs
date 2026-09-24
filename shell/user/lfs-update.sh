@@ -1395,13 +1395,6 @@ PIPSCRIPT
         printf '%s\n' "$pip_script" | ssh_lfs "python3 -"
     fi
 
-    echo "Updating Julia with juliaup..."
-    if [[ "$dry_run" == "true" ]]; then
-        echo "DRY RUN: juliaup update"
-    else
-        ssh_lfs 'export PATH=$PATH:$HOME/.juliaup/bin && juliaup update'
-    fi
-
     if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
         echo "Checking system health before committing updates..."
         local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && echo "$pkg"; done')
