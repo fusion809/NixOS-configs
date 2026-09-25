@@ -1,6 +1,10 @@
+from pathlib import Path
 import re
 
-with open('shell/user/21-lfs.sh', 'r') as f:
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SHELL_USER_DIR = REPO_ROOT / 'shell' / 'user'
+
+with open(SHELL_USER_DIR / '21-lfs.sh', 'r') as f:
     lines = f.readlines()
 
 def extract_func(func_name, lines):
@@ -44,7 +48,7 @@ def write_funcs(filename, funcs):
             content += res + "\n"
     
     if content != "#!/usr/bin/env bash\n\n":
-        with open(f'shell/user/{filename}', 'w') as f:
+        with open(SHELL_USER_DIR / filename, 'w') as f:
             f.write(content)
 
 # lfs-libs.sh
@@ -55,7 +59,7 @@ write_funcs('lfs-libs.sh', [
 ])
 
 # lfs-kerns.sh
-with open('shell/user/lfs-kerns.sh', 'w') as f:
+with open(SHELL_USER_DIR / 'lfs-kerns.sh', 'w') as f:
     f.write("#!/usr/bin/env bash\n\n# rm_old_kerns is invoked via alias, placeholder here if needed\n")
 
 # lfs-share.sh
@@ -76,7 +80,7 @@ write_funcs('lfs-update.sh', [
 ])
 
 # Now write back the modified 21-lfs.sh
-with open('shell/user/21-lfs.sh.new', 'w') as f:
+with open(SHELL_USER_DIR / '21-lfs.sh.new', 'w') as f:
     for line in lines:
         if line is not None:
             f.write(line)
