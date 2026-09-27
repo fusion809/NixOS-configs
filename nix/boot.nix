@@ -10,7 +10,7 @@
   #kernelPackages = pkgs.linuxPackages_6_12;
   kernelPackages = pkgs.linuxPackages_latest;
   loader = {
-    timeout = -1;
+    timeout = 0;
     grub = {
       enable = true;
       device = "nodev";
