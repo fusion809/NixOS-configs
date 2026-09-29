@@ -21,95 +21,47 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Get total installed package count for global progress percentage
+# Get total installed package count for the progress bar denominator
 total_custom_pkgs=$(ssh_lfs "find /var/lib/custom-packages /var/lib/book-packages -maxdepth 1 -type f ! -name '.*' 2>/dev/null | grep -vE '/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$' | wc -l" 2>/dev/null | tr -d '[:space:]\r')
-total_custom_pkgs=${total_custom_pkgs:-0}
+total_custom_pkgs=${total_custom_pkgs:-1}
 [[ "$total_custom_pkgs" -lt 1 ]] && total_custom_pkgs=1
 
-# Identify packages with missing file inventories
-BROKEN_PKGS=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do if [ $(wc -l < "$f") -le 1 ] || grep -q "BUILD_FAILED" "$f"; then basename "$f"; fi; done' | tr -d '\r')
+# Python now handles: BROKEN_PKGS detection, version comparison, labeling, and table formatting.
+# We just stream its output and print the pre-built table — no bash per-package loop needed.
+py_args=""
+[[ "$verbose" == "true" ]] && py_args="--verbose"
 
-# Run the parallel Python version checker on the VM, with global progress tracking
-CUSTOM_UPDATES_RAW=$(lfs_check_custom_updates \
-    --global-offset 0 --global-total "$total_custom_pkgs" --global-weight 1)
-CUSTOM_UPDATES=$(echo "$CUSTOM_UPDATES_RAW" | grep -E '^[a-zA-Z0-9._+-]+ [^ ]+ [^ ]+$')
+table=""
+in_table=false
+count=0
+total=$total_custom_pkgs
 
-str=""
-j=0
-
-while IFS= read -r update_line; do
-    [[ -z "$update_line" ]] && continue
-    read -r name local_ver remote_ver <<< "$update_line" || continue
-    [[ -z "$name" || -z "$local_ver" || -z "$remote_ver" ]] && continue
-    # Skip packages not listed in inventory directories (uninstalled)
-    if [[ "$local_ver" == "none" || "$local_ver" == "MISSING" ]]; then
-        continue
+while IFS= read -r line; do
+    line="${line%$'\r'}"
+    if [[ $line == TOTAL:* ]]; then
+        total="${line#TOTAL:}"
+    elif [[ $line == PROGRESS:* ]]; then
+        count=$((count + 1))
+        n="${line#PROGRESS:}"
+        lfs_progress_bar "$count" "$total" "Checking ~/lfs_packaging: $n" >&2
+    elif [[ $line == TABLE_START ]]; then
+        in_table=true
+    elif [[ $line == TABLE_END ]]; then
+        in_table=false
+    elif [[ $line == TABLE_EMPTY ]]; then
+        table=""
+    elif [[ $line == RESULT:* ]]; then
+        : # forwarded to lfs-update.sh consumers; ignored here
+    elif [[ "$in_table" == true ]]; then
+        table+="$line"$'\n'
     fi
+done < <(ssh_lfs "python3 ~/.lfs_scripts/lfs-custom-updates.py $py_args" 2>/dev/null)
 
-    local_ver=$(printf '%s\n' "$local_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
-    remote_ver=$(printf '%s\n' "$remote_ver" | sed -E 's#\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$##')
-    local_ver=$(echo "$local_ver" | tr -d '[:space:]\r\n')
-    remote_ver=$(echo "$remote_ver" | tr -d '[:space:]\r\n')
+lfs_progress_bar "$total" "$total" "~/lfs_packaging checks complete" >&2
+echo "" >&2
 
-    # Abbreviate git hashes
-    if [[ ${#local_ver} -eq 40 ]]; then local_ver="${local_ver:0:7}"; fi
-    if [[ ${#remote_ver} -eq 40 ]]; then remote_ver="${remote_ver:0:7}"; fi
-
-    label="[UPDATE]"
-    if echo "$BROKEN_PKGS" | grep -Fxq "$name" 2>/dev/null; then
-        label="[FILES MISSING]"
-    elif [[ "$remote_ver" == *"FAILED"* ]]; then
-        label="[FAILED]"
-    elif [[ "$remote_ver" == *"MISSING"* ]]; then
-        label="[MISSING]"
-    elif [[ "$local_ver" == "$remote_ver" ]]; then
-        label=""
-    else
-        # Check if remote version is actually newer than local version
-        # Normalize hyphens to periods for sort -V (e.g. 3-6-2 -> 3.6.2)
-        local_norm="${local_ver//-/.}"
-        remote_norm="${remote_ver//-/.}"
-        
-        if [[ "$local_norm" == "$remote_norm" ]]; then
-            label=""
-        elif [[ "$local_ver" =~ ^[0-9a-f]{7,40}$ ]] && [[ "$remote_ver" =~ ^[0-9a-f]{7,40}$ ]]; then
-            # Git commit hashes - different hashes indicate a new commit
-            label="[UPDATE]"
-        else
-            higher=$(printf '%s\n%s\n' "$local_norm" "$remote_norm" | sort -V | tail -n 1)
-            if [[ "$higher" == "$remote_norm" && "$local_norm" != "$remote_norm" ]]; then
-                label="[UPDATE]"
-            else
-                # Local version is newer than or equal to remote (e.g. ghostscript 10.08.0 vs 10.05.01)
-                label=""
-            fi
-        fi
-    fi
-
-    # Skip up-to-date packages unless verbose
-    if [[ "$verbose" != "true" ]]; then
-        if [[ -z "$label" ]]; then
-            continue
-        fi
-        if [[ "$local_ver" == "$remote_ver" ]] && [[ "$label" != *"MISSING"* ]] && [[ "$label" != *"FAILED"* ]]; then
-            continue
-        fi
-    fi
-
-    str+=$(printf "%-30s | %-15s | %-15s %s" "$name" "$local_ver" "$remote_ver" "$label")
-    str+="\n"
-    j=$((j + 1))
-done <<< "$CUSTOM_UPDATES"
-
-if [[ $j -gt 0 ]]; then
-    startStr="--------------------------------------------------------------------------------\n"
-    startStr+=$(printf "%-30s | %-15s | %-15s\n" "Package" "Local" "Remote")
-    startStr+="\n--------------------------------------------------------------------------------\n"
-    sorted_str=$(echo -e "$str" | grep -v "^$" | sort -f)
-    str="${startStr}${sorted_str}\n"
-fi
-if [[ -z "$str" ]]; then
+if [[ -z "$table" ]]; then
     echo "No updates available"
 else
-    echo -e "$str"
+    printf '%s' "$table"
 fi
