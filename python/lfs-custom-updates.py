@@ -12,6 +12,7 @@ _ARCHIVE_RE = re.compile(
     r'\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2|patch(\.(xz|bz2|gz|lz|lzma|zst))?)$'
 )
 
+
 def get_local_versions():
     local_vers = {}
     for d in ["/var/lib/custom-packages", "/var/lib/book-packages"]:
@@ -27,8 +28,9 @@ def get_local_versions():
                         pass
     return local_vers
 
+
 def get_broken_pkgs():
-    """Return a set of package names whose inventory files have <=1 line or contain BUILD_FAILED."""
+    """Return set of pkg names whose inventory files have <=1 line or contain BUILD_FAILED."""
     broken = set()
     skip = {"COMMIT_EDITMSG", "HEAD", "config", "description", "ORIG_HEAD"}
     for d in ["/var/lib/book-packages", "/var/lib/custom-packages"]:
@@ -50,6 +52,7 @@ def get_broken_pkgs():
             pass
     return broken
 
+
 def get_safe_lines(lines, ver_line_idx):
     prefix = lines[:ver_line_idx + 1]
     res = subprocess.run(["bash", "-n", "-c", "\n".join(prefix)], stderr=subprocess.DEVNULL)
@@ -62,27 +65,9 @@ def get_safe_lines(lines, ver_line_idx):
             return candidate
     return prefix
 
-def evaluate_package(script_path, local_vers):
-    pkg_dir = os.path.dirname(script_path)
-    pkg_basename = os.path.basename(pkg_dir)
 
-    try:
-        with open(script_path, "r", errors="ignore") as f:
-            content = f.read()
-    except Exception:
-        return pkg_basename, "none", "FAILED", pkg_basename
-
-    m_name = re.search(r"(?m)^[ \t]*(?:export[ \t]+)?[a-zA-Z_]*name=([^\n]+)", content)
-    if m_name:
-        raw_name = m_name.group(1).strip().strip('"').strip("'")
-        pkg_name = pkg_basename if "$" in raw_name else raw_name
-    else:
-        pkg_name = pkg_basename
-
-    local_ver = local_vers.get(pkg_name, local_vers.get(pkg_basename, "none"))
-    if local_ver == "none":
-        return pkg_name, "none", "NONE", pkg_basename
-
+def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
+    """Fetch the remote version by executing the version expression in bash."""
     lines = content.splitlines()
     ver_line_idx = -1
     var_name = "version"
@@ -201,9 +186,31 @@ def evaluate_package(script_path, local_vers):
                 except Exception:
                     time.sleep(0.5)
 
-    if not remote_ver:
-        remote_ver = "FAILED"
+    return remote_ver or "FAILED"
 
+
+def evaluate_package(script_path, local_vers):
+    pkg_dir = os.path.dirname(script_path)
+    pkg_basename = os.path.basename(pkg_dir)
+
+    try:
+        with open(script_path, "r", errors="ignore") as f:
+            content = f.read()
+    except Exception:
+        return pkg_basename, "none", "FAILED", pkg_basename
+
+    m_name = re.search(r"(?m)^[ \t]*(?:export[ \t]+)?[a-zA-Z_]*name=([^\n]+)", content)
+    if m_name:
+        raw_name = m_name.group(1).strip().strip('"').strip("'")
+        pkg_name = pkg_basename if "$" in raw_name else raw_name
+    else:
+        pkg_name = pkg_basename
+
+    local_ver = local_vers.get(pkg_name, local_vers.get(pkg_basename, "none"))
+    if local_ver == "none":
+        return pkg_name, "none", "NONE", pkg_basename
+
+    remote_ver = _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver)
     return pkg_name, local_ver, remote_ver, pkg_basename
 
 
@@ -219,7 +226,6 @@ def _is_newer(remote, local):
     l = local.replace("-", ".")
     if r == l:
         return False
-    # Git hashes: any difference = new commit
     if re.match(r'^[0-9a-f]{7,40}$', remote) and re.match(r'^[0-9a-f]{7,40}$', local):
         return True
     try:
@@ -239,7 +245,6 @@ def classify(pkg_name, local_ver, remote_ver, broken_pkgs, verbose):
     local_ver = _strip_archive(local_ver).strip()
     remote_ver = _strip_archive(remote_ver).strip()
 
-    # Abbreviate git hashes
     if len(local_ver) == 40:
         local_ver = local_ver[:7]
     if len(remote_ver) == 40:
@@ -302,9 +307,9 @@ def main():
     total = len(eligible_scripts)
     print(f"TOTAL:{total}", flush=True)
 
-    rows = []  # (pkg_name, local_ver, remote_ver, label)
+    rows = []
 
-    # 16 workers: most time is network I/O so more threads reduces wall time
+    # 16 workers: most time is network I/O
     with ThreadPoolExecutor(max_workers=16) as executor:
         futures = {executor.submit(evaluate_package, s, local_vers): s for s in eligible_scripts}
         for future in as_completed(futures):
@@ -322,7 +327,7 @@ def main():
             except Exception:
                 pass
 
-    # Emit pre-formatted table — sorted alphabetically, all in Python, no bash forks needed
+    # Emit pre-formatted table — sorted alphabetically
     rows.sort(key=lambda r: r[0].lower())
     if rows:
         sep = "-" * 80
