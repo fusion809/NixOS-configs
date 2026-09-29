@@ -20,15 +20,12 @@ let
       pkg-config
 
       # Core system libraries
+      # NOTE: Do NOT include libunwind, libuv, libgit2, pcre2, or mbedtls here.
+      # Julia requires its own patched/bundled versions (especially libunwind for JIT DWARF unwinding).
       glibc
       zlib
       curl
       openssl
-      libuv
-      pcre2
-      mbedtls
-      libunwind
-      libgit2
 
       # Graphics, fonts, and plotting support (GR, Makie, Plots, Cairo, etc.)
       fontconfig
@@ -45,20 +42,24 @@ let
       glib
       mesa
       libglvnd
-      xorg.libX11
-      xorg.libXext
-      xorg.libXrender
-      xorg.libXcursor
-      xorg.libXfixes
-      xorg.libXi
-      xorg.libXrandr
-      xorg.libxcb
+      libx11
+      libxext
+      libxrender
+      libxcursor
+      libxfixes
+      libxi
+      libxrandr
+      libxcb
     ];
 
   julia-fhs = pkgs.buildFHSEnv {
     name = "julia";
     targetPkgs = commonPkgs;
-    extraOutputsToInstall = [ "lib" "out" "dev" ];
+    extraOutputsToInstall = [
+      "lib"
+      "out"
+      "dev"
+    ];
     extraBwrapArgs = [
       "--bind-try"
       "/data"
@@ -68,7 +69,7 @@ let
       "/arch"
     ];
     profile = ''
-      export LD_LIBRARY_PATH=/lib:/lib64:/usr/lib:/usr/lib64:$LD_LIBRARY_PATH
+      export LD_LIBRARY_PATH=/usr/lib64/julia:/usr/lib/julia:/lib:/lib64:/usr/lib:/usr/lib64''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
     '';
     runScript = "julia";
   };
