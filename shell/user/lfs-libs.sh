@@ -75,7 +75,7 @@ rm_old_libs_gpt() {
     local untracked_file="/tmp/lfs_untracked.txt"
     local combined_excludes="/tmp/lfs_excludes.txt"
     cat "$tracked_cache" "$active_symlink_targets" | sort -u > "$combined_excludes"
-    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null | sort -u > "$cand_file"
+    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" -o -name "lib*[0-9].[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null | sort -u > "$cand_file"
     awk 'NR==FNR {exclude[$0]=1; next} !(exclude[$0])' "$combined_excludes" "$cand_file" > "$untracked_file"
 
     local old_libs=()
@@ -85,7 +85,7 @@ rm_old_libs_gpt() {
         local cand_dir cand_base cand_sobase search_base replacement_found
         cand_dir=$(dirname "$cand")
         cand_base=$(basename "$cand")
-        cand_sobase=$(echo "$cand_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
+        cand_sobase=$(echo "$cand_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/; s/[0-9]+([._][0-9]+)*\.so$/.so/')
         search_base="${cand_sobase%%.so}"
         replacement_found=false
         for sister in "$cand_dir"/${search_base}*; do
@@ -183,7 +183,7 @@ rm_old_libs_gpt() {
         # Guard against matching linker scripts or raw symlinks like libc.so and libm.so
         local safe_names=()
         for name in "${all_names[@]}"; do
-            if [[ "$name" =~ \.so\.[0-9]+ ]] || [[ "$name" =~ -[0-9]+\.so$ ]]; then
+            if [[ "$name" =~ \.so\.[0-9]+ ]] || [[ "$name" =~ -[0-9]+\.so$ ]] || [[ "$name" =~ [0-9]+([._][0-9]+)*\.so$ ]]; then
                 safe_names+=("$name")
             else
                 echo "Skipping generic/unsafe name '$name' to prevent false positive matches."
@@ -428,7 +428,7 @@ ls_old_libs_gpt() {
     local untracked_file="/tmp/lfs_untracked.txt"
     local combined_excludes="/tmp/lfs_excludes.txt"
     cat "$tracked_cache" "$active_symlink_targets" | sort -u > "$combined_excludes"
-    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null | sort -u > "$cand_file"
+    find /usr/lib /lib /usr/lib64 /lib64 -maxdepth 1 -type f \( -name "lib*.so.[0-9]*" -o -name "lib*-[0-9]*.so" -o -name "lib*[0-9].[0-9]*.so" \) ! -name "*.dbg" ! -name "*-gdb.py" 2>/dev/null | sort -u > "$cand_file"
     awk 'NR==FNR {exclude[$0]=1; next} !(exclude[$0])' "$combined_excludes" "$cand_file" > "$untracked_file"
 
     local old_libs=()
@@ -437,7 +437,7 @@ ls_old_libs_gpt() {
         local cand_dir cand_base cand_sobase search_base replacement_found
         cand_dir=$(dirname "$cand")
         cand_base=$(basename "$cand")
-        cand_sobase=$(echo "$cand_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
+        cand_sobase=$(echo "$cand_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/; s/[0-9]+([._][0-9]+)*\.so$/.so/')
         search_base="${cand_sobase%%.so}"
         replacement_found=false
         for sister in "$cand_dir"/${search_base}*; do
