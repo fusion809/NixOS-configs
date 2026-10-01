@@ -234,7 +234,7 @@ rm_old_libs_gpt() {
                 local i_dir i_base i_sobase replacement_found
                 i_dir=$(dirname "$i")
                 i_base=$(basename "$i")
-                i_sobase=$(echo "$i_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
+                i_sobase=$(echo "$i_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/; s/[0-9]+([._][0-9]+)*\.so$/.so/')
                 replacement_found=false
                 local search_base="${i_sobase%%.so}"
                 for candidate in "$i_dir"/${search_base}*; do
@@ -350,7 +350,7 @@ rm_old_libs_gpt() {
                      local i_dir i_base i_sobase replacement_found
                      i_dir=$(dirname "$i")
                      i_base=$(basename "$i")
-                     i_sobase=$(echo "$i_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/')
+                     i_sobase=$(echo "$i_base" | sed -E 's/-[0-9.]+\.so/.so/; s/\.so\.[0-9.]+$/.so/; s/[0-9]+([._][0-9]+)*\.so$/.so/')
                      replacement_found=false
                      local search_base="${i_sobase%%.so}"
                      for candidate in "$i_dir"/${search_base}*; do
