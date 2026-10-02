@@ -3,7 +3,9 @@
 }:
 
 let
-  juliaPkg = pkgs.unstable.julia or pkgs.julia;
+  # NOTE: pkgs.unstable.julia (1.13.1) crashes with "stack smashing detected".
+  # Using stable pkgs.julia (1.12.6) until the issue is resolved upstream.
+  juliaPkg = pkgs.julia;
 
   commonPkgs =
     pkgs: with pkgs; [
