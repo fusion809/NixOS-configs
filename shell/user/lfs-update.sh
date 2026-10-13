@@ -1437,6 +1437,8 @@ lfs_updc() {
         rm_old_share
         rm_book_src
         rm_lfp_src
+        pkgs_table -ats
+        logs_commit
         lfs_commit
     else
         echo "Build failures or missing inventories detected for the following packages:"
