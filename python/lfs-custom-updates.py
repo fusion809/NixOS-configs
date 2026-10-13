@@ -66,27 +66,6 @@ def get_safe_lines(lines, ver_line_idx):
     return prefix
 
 
-import threading
-
-# Thread-safe in-memory caches for the duration of a single run
-_cache_lock = threading.Lock()
-_git_cache = {}
-_snippet_cache = {}
-
-
-def _ver_key(v):
-    """Natural sort key matching version sort semantics without spawning subprocesses."""
-    tokens = []
-    for part in re.split(r'(\d+)', v):
-        if not part:
-            continue
-        if part.isdigit():
-            tokens.append((0, int(part), ""))
-        else:
-            tokens.append((1, 0, part))
-    return tokens
-
-
 def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
     """Fetch the remote version by executing the version expression in bash."""
     lines = content.splitlines()
@@ -121,11 +100,6 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
             remote_ver = val_part
         else:
             safe_lines = get_safe_lines(lines, ver_line_idx)
-            cache_key = (pkg_basename, "\n".join(safe_lines))
-            with _cache_lock:
-                if cache_key in _snippet_cache:
-                    return _snippet_cache[cache_key]
-
             snippet = (
                 "set +e\n"
                 "export PATH=/opt/texlive/2025/bin/x86_64-linux:$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\n"
@@ -163,17 +137,6 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
                 "    done\n"
                 "    command curl \"${args[@]}\"\n"
                 "}\n"
-                "wget() {\n"
-                "    local has_t=0\n"
-                "    for a in \"$@\"; do\n"
-                "        [[ \"$a\" == \"-T\" || \"$a\" =~ ^--timeout ]] && has_t=1\n"
-                "    done\n"
-                "    if [[ $has_t -eq 1 ]]; then\n"
-                "        command wget \"$@\"\n"
-                "    else\n"
-                "        command wget -T 5 -t 1 \"$@\"\n"
-                "    fi\n"
-                "}\n"
                 f"name={repr(pkg_basename)}\n"
                 f"_name={repr(pkg_basename)}\n"
                 f"NAME={repr(pkg_basename)}\n"
@@ -181,52 +144,49 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
                 + "\n".join(safe_lines) + "\n"
                 + f'echo "VER_RESULT:${var_name}" >&3\n'
             )
-            try:
-                proc = subprocess.run(
-                    ["bash", "-c", snippet],
-                    cwd=pkg_dir,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                    text=True,
-                    timeout=18
-                )
-                for out_line in proc.stdout.splitlines():
-                    if out_line.startswith("VER_RESULT:"):
-                        res = out_line[11:].strip()
-                        if res and "429" not in res and "error" not in res.lower():
-                            remote_ver = res
-                            break
-            except Exception:
-                pass
-
-            if remote_ver:
-                with _cache_lock:
-                    _snippet_cache[cache_key] = remote_ver
+            for attempt in range(3):
+                try:
+                    proc = subprocess.run(
+                        ["bash", "-c", snippet],
+                        cwd=pkg_dir,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                        text=True,
+                        timeout=25
+                    )
+                    for out_line in proc.stdout.splitlines():
+                        if out_line.startswith("VER_RESULT:"):
+                            res = out_line[11:].strip()
+                            if res and "429" not in res and "error" not in res.lower():
+                                remote_ver = res
+                                break
+                    if remote_ver:
+                        break
+                    time.sleep(0.5 * (attempt + 1))
+                except Exception:
+                    time.sleep(0.5)
 
     if not remote_ver and "git clone" in content:
         m_git = re.findall(r"git clone\s+(?:--\S+\s+)*(https?://\S+|git@\S+)", content)
         if m_git:
             repo_url = m_git[-1]
-            with _cache_lock:
-                if repo_url in _git_cache:
-                    return _git_cache[repo_url]
-            try:
-                proc = subprocess.run(
-                    ["git", "ls-remote", repo_url, "HEAD"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                    text=True,
-                    timeout=8
-                )
-                if proc.returncode == 0 and proc.stdout:
-                    remote_ver = proc.stdout.split()[0].strip()
-                    with _cache_lock:
-                        _git_cache[repo_url] = remote_ver
-            except Exception:
-                pass
+            for attempt in range(3):
+                try:
+                    proc = subprocess.run(
+                        ["git", "ls-remote", repo_url, "HEAD"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                        text=True,
+                        timeout=15
+                    )
+                    if proc.returncode == 0 and proc.stdout:
+                        remote_ver = proc.stdout.split()[0].strip()
+                        break
+                    time.sleep(1.0 * (attempt + 1))
+                except Exception:
+                    time.sleep(0.5)
 
-    res_final = remote_ver or "FAILED"
-    return res_final
+    return remote_ver or "FAILED"
 
 
 def evaluate_package(script_path, local_vers):
@@ -268,7 +228,16 @@ def _is_newer(remote, local):
         return False
     if re.match(r'^[0-9a-f]{7,40}$', remote) and re.match(r'^[0-9a-f]{7,40}$', local):
         return True
-    return _ver_key(l) < _ver_key(r)
+    try:
+        result = subprocess.run(
+            ["sort", "-V"],
+            input=f"{l}\n{r}\n",
+            capture_output=True, text=True
+        )
+        winner = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else r
+        return winner == r and r != l
+    except Exception:
+        return False
 
 
 def classify(pkg_name, local_ver, remote_ver, broken_pkgs, verbose):
@@ -306,11 +275,6 @@ def classify(pkg_name, local_ver, remote_ver, broken_pkgs, verbose):
 
 
 def main():
-    try:
-        os.nice(19)
-    except Exception:
-        pass
-
     verbose = "--verbose" in sys.argv or "-v" in sys.argv
 
     packaging_dir = os.path.expanduser("~/lfs_packaging")
