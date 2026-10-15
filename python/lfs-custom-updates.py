@@ -268,8 +268,6 @@ def classify(pkg_name, local_ver, remote_ver, broken_pkgs, verbose):
     if not verbose:
         if not label:
             return None
-        if local_ver == remote_ver and "[MISSING]" not in label and "[FAILED]" not in label:
-            return None
 
     return label, local_ver, remote_ver
 
@@ -326,6 +324,14 @@ def main():
                     print(f"RESULT:{pkg_name} {lv} {rv}", flush=True)
             except Exception:
                 pass
+
+    # Ensure any packages with broken inventories that lacked a packaging script are still reported
+    seen_pkgs = {r[0] for r in rows}
+    for b in broken_pkgs:
+        if b not in seen_pkgs:
+            lv = local_vers.get(b, "none")
+            rows.append((b, lv, "none", "[FILES MISSING]"))
+            print(f"RESULT:{b} {lv} none", flush=True)
 
     # Emit pre-formatted table — sorted alphabetically
     rows.sort(key=lambda r: r[0].lower())

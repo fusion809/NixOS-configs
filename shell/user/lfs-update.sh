@@ -1000,16 +1000,10 @@ DEPEOF
         [[ -n "$_dep_pid" ]]      && wait "$_dep_pid"      2>/dev/null || true
         [[ -n "$_longindex_pid" ]] && wait "$_longindex_pid" 2>/dev/null || true
 
-        local custom_dep_edges=""
-        [[ -f "$_dep_tmp" ]] && custom_dep_edges=$(cat "$_dep_tmp")
-        local _longindex_html=""
-        [[ -f "$_longindex_tmp" ]] && _longindex_html=$(cat "$_longindex_tmp")
-        rm -f "$_dep_tmp" "$_longindex_tmp"
-
-        export CUSTOM_DEPS_ENV="$custom_dep_edges"
+        export CUSTOM_DEPS_FILE="$_dep_tmp"
         export LFS_BOOK_PYTHON="${LFS_DEV_BOOK:-https://www.linuxfromscratch.org/lfs/view/development}"
         export BLFS_BOOK_PYTHON="${BLFS_DEV_BOOK:-https://linuxfromscratch.org/blfs/view/systemd}"
-        export LONGINDEX_HTML="$_longindex_html"
+        export LONGINDEX_FILE="$_longindex_tmp"
         export HAS_BLFS_PKG="$_has_blfs_pkg"
 
         # --- Frameworks/plasma order: use 6-hour on-disk cache ---
@@ -1050,8 +1044,15 @@ updates = sys.argv[1:]
 if not updates:
     sys.exit(0)
 
-# longindex was pre-fetched by the shell and passed via env
-longindex = os.environ.get("LONGINDEX_HTML", "") if has_blfs else ""
+# longindex was pre-fetched by the shell to a temp file to avoid E2BIG env limit
+longindex = ""
+longindex_file = os.environ.get("LONGINDEX_FILE", "")
+if has_blfs and longindex_file and os.path.exists(longindex_file):
+    try:
+        with open(longindex_file, "r", errors="ignore") as f:
+            longindex = f.read()
+    except Exception:
+        pass
 
 # Extract dependencies for a given URL
 def extract_deps(url):
@@ -1090,7 +1091,17 @@ if has_blfs and longindex:
 
 graph = {pkg: set() for pkg in updates}
 
-custom_deps_raw = os.environ.get("CUSTOM_DEPS_ENV", "")
+custom_deps_file = os.environ.get("CUSTOM_DEPS_FILE", "")
+custom_deps_raw = ""
+if custom_deps_file and os.path.exists(custom_deps_file):
+    try:
+        with open(custom_deps_file, "r", errors="ignore") as f:
+            custom_deps_raw = f.read()
+    except Exception:
+        pass
+if not custom_deps_raw:
+    custom_deps_raw = os.environ.get("CUSTOM_DEPS_ENV", "")
+
 custom_deps = {}
 for line in custom_deps_raw.split("\n"):
     if line.startswith("CUSTOM_DEP:"):
@@ -1244,6 +1255,8 @@ for pkg in sorted_pkgs:
             done <<< "$sorted_updates"
         fi
 
+        rm -f "$_dep_tmp" "$_longindex_tmp"
+        unset CUSTOM_DEPS_FILE LONGINDEX_FILE CUSTOM_DEPS_ENV HAS_BLFS_PKG FW_CACHE_FILE PLASMA_CACHE_FILE
         unset _has_blfs_pkg _custom_set _dep_tmp _longindex_tmp _dep_pid _longindex_pid
         unset _fw_cache _plasma_cache _cache_ttl _now _cf _mtime
         fi  # end: ${#all_updates[@]} -gt 1
