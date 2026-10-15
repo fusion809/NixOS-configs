@@ -1341,6 +1341,43 @@ for pkg in sorted_pkgs:
         fi
     fi
 
+    pipup "${dry_run}"
+
+    if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
+        echo "Checking system health before committing updates..."
+        local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && echo "$pkg"; done')
+        if [[ -z "$broken_pkgs_check" ]]; then
+            echo "System healthy. Triggering automated registry commit..."
+            ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit'"
+        else
+            echo "Warning: The following packages are missing inventories:"
+            echo "$broken_pkgs_check"
+            echo "--------------------------------------------------------------------------------"
+            while read -r pkg; do
+                [[ -z "$pkg" ]] && continue
+                echo ">>> Last 5 lines of output for $pkg:"
+                if [[ -f "/tmp/lfs-autobuild.log" ]]; then
+                    # Search only the last 500,000 lines to keep it fast even if the log is huge
+                    tail -n 500000 /tmp/lfs-autobuild.log | sed -n "/Building .*$pkg\.\.\./,/Building /p" | grep -v "Building " | tail -n 5
+                else
+                    echo "  Log file /tmp/lfs-autobuild.log not found."
+                fi
+                echo "--------------------------------------------------------------------------------"
+            done <<< "$broken_pkgs_check"
+            echo "Skipping commit. If you have builds in progress, wait for them to finish and run lfs_package_commit."
+            echo "TIP: You can watch build progress with: tail -f /tmp/lfs-autobuild.log"
+            echo "Skipping commit."
+        fi
+    fi
+    ssh_lfs "~/.lfs_scripts/upos.sh"
+}
+
+
+pipup() {
+    # Upgrade pip3-managed packages on the LFS VM (or locally when run inside the VM).
+    # Accepts an optional first argument: "true" to do a dry run, anything else (or omitted) to upgrade.
+    local dry_run="${1:-false}"
+
     echo "Updating Python packages via pip..."
     if [[ "$dry_run" == "true" ]]; then
         echo "DRY RUN: pip3 upgrade (pip-managed packages only, skipping meson/system-built ones)"
@@ -1394,36 +1431,7 @@ PIPSCRIPT
         )
         printf '%s\n' "$pip_script" | ssh_lfs "python3 -"
     fi
-
-    if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
-        echo "Checking system health before committing updates..."
-        local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && echo "$pkg"; done')
-        if [[ -z "$broken_pkgs_check" ]]; then
-            echo "System healthy. Triggering automated registry commit..."
-            ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit'"
-        else
-            echo "Warning: The following packages are missing inventories:"
-            echo "$broken_pkgs_check"
-            echo "--------------------------------------------------------------------------------"
-            while read -r pkg; do
-                [[ -z "$pkg" ]] && continue
-                echo ">>> Last 5 lines of output for $pkg:"
-                if [[ -f "/tmp/lfs-autobuild.log" ]]; then
-                    # Search only the last 500,000 lines to keep it fast even if the log is huge
-                    tail -n 500000 /tmp/lfs-autobuild.log | sed -n "/Building .*$pkg\.\.\./,/Building /p" | grep -v "Building " | tail -n 5
-                else
-                    echo "  Log file /tmp/lfs-autobuild.log not found."
-                fi
-                echo "--------------------------------------------------------------------------------"
-            done <<< "$broken_pkgs_check"
-            echo "Skipping commit. If you have builds in progress, wait for them to finish and run lfs_package_commit."
-            echo "TIP: You can watch build progress with: tail -f /tmp/lfs-autobuild.log"
-            echo "Skipping commit."
-        fi
-    fi
-    ssh_lfs "~/.lfs_scripts/upos.sh"
 }
-
 
 lfs_updc() {
     lfs_update "$@"

@@ -34,5 +34,5 @@ sync_to_vm() {
     # Hook into ~/.bashrc if not already present
     ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo '# LFS update helpers' >> ~/.bashrc && echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
     ssh_lfs "touch ~/.zshrc && (grep -q 'lfs-vm-bootstrap.sh' ~/.zshrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.zshrc)"
-    echo "Sync complete. 'updates', 'update', 'autobuild', 'autoremove', 'commit', 'updatec', and 'sync_to_vm' are now available on the host; 'updates', 'update', 'autobuild', 'autoremove', and 'commit' are available on the VM."
+    echo "Sync complete. 'updates', 'update', 'autobuild', 'autoremove', 'commit', 'updatec', 'pipup', and 'sync_to_vm' are now available on the host; 'updates', 'update', 'autobuild', 'autoremove', 'pipup', and 'commit' are available on the VM."
 }
