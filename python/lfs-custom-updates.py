@@ -22,7 +22,7 @@ def get_local_versions():
                     try:
                         with open(entry.path, "r", errors="ignore") as f:
                             line = f.readline().strip()
-                            if line:
+                            if line and line != "BUILD_FAILED":
                                 local_vers[entry.name] = line
                     except Exception:
                         pass
@@ -30,7 +30,7 @@ def get_local_versions():
 
 
 def get_broken_pkgs():
-    """Return set of pkg names whose inventory files have <=1 line or contain BUILD_FAILED."""
+    """Return set of pkg names whose inventory files have <=1 line (missing files)."""
     broken = set()
     skip = {"COMMIT_EDITMSG", "HEAD", "config", "description", "ORIG_HEAD"}
     for d in ["/var/lib/book-packages", "/var/lib/custom-packages"]:
@@ -44,7 +44,10 @@ def get_broken_pkgs():
                     with open(entry.path, "r", errors="ignore") as f:
                         content = f.read()
                     lines = [l for l in content.splitlines() if l.strip()]
-                    if len(lines) <= 1 or "BUILD_FAILED" in content:
+                    # Ignore pure failed-build marker files (not installed packages)
+                    if not lines or lines[0] == "BUILD_FAILED":
+                        continue
+                    if len(lines) <= 1:
                         broken.add(entry.name)
                 except Exception:
                     pass
@@ -324,14 +327,6 @@ def main():
                     print(f"RESULT:{pkg_name} {lv} {rv}", flush=True)
             except Exception:
                 pass
-
-    # Ensure any packages with broken inventories that lacked a packaging script are still reported
-    seen_pkgs = {r[0] for r in rows}
-    for b in broken_pkgs:
-        if b not in seen_pkgs:
-            lv = local_vers.get(b, "none")
-            rows.append((b, lv, "none", "[FILES MISSING]"))
-            print(f"RESULT:{b} {lv} none", flush=True)
 
     # Emit pre-formatted table — sorted alphabetically
     rows.sort(key=lambda r: r[0].lower())

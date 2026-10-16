@@ -250,14 +250,21 @@ if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]]; then
     fi
 fi
 
-# Fallback: check registry
-if [ -f "/var/lib/book-packages/\$dep" ] || [ -f "/var/lib/custom-packages/\$dep" ]; then
-    echo installed
-    exit 0
-fi
+# Fallback: check registry (ignore BUILD_FAILED marker files)
+for reg in "/var/lib/custom-packages/\$dep" "/var/lib/book-packages/\$dep"; do
+    if [ -f "$reg" ]; then
+        reg_line=$(head -n 1 "$reg" 2>/dev/null | tr -d "[:space:]")
+        if [ "$reg_line" != "BUILD_FAILED" ] && [ -n "$reg_line" ]; then
+            echo installed && exit 0
+        fi
+    fi
+done
 
 pkg-config --exists "$dep" 2>/dev/null && echo installed && exit 0
 pkg-config --exists "${dep}-1" "${dep}-0" 2>/dev/null && echo installed && exit 0
+if [ "$dep" == "gc" ]; then
+    pkg-config --exists bdw-gc 2>/dev/null && echo installed && exit 0
+fi
 
 # 2. Xorg special cases
 if [[ "$dep" =~ ^x7(font|lib|app|driver)$ ]]; then
@@ -287,12 +294,14 @@ if [[ "$dep" == "plasma-all" || "$dep" == "plasma" ]]; then
     ([ -f /usr/bin/plasma-desktop ] || [ -f /usr/lib/libPlasma.so ]) && echo installed && exit 0
 fi
 
-# 5. Executable check
-command -v "$dep" >/dev/null 2>&1 && echo installed && exit 0
+# 5. Executable check (skip short names like 'gc' where unrelated tools e.g. Graphviz /usr/bin/gc cause false positives)
+if [ "$dep" != "gc" ] && [ ${#dep} -gt 2 ]; then
+    command -v "$dep" >/dev/null 2>&1 && echo installed && exit 0
+fi
 
-# 6. Library search
+# 6. Library search (require '.' or '-' after name to prevent 'gc' matching 'libgcrypt' or 'gsl' matching prefix)
 dep_u=$(echo "$dep" | tr '-' '_')
-ls /usr/lib/lib${dep_u}*.so* /usr/lib/lib${dep}*.so* /usr/lib/${dep}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+ls /usr/lib/lib${dep_u}.so* /usr/lib/lib${dep_u}-*.so* /usr/lib/lib${dep}.so* /usr/lib/lib${dep}-*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
 
 # 7. Versioned pkg-config fallback
 dep_base=$(echo "$dep" | sed -E 's/[0-9]+$//')
@@ -302,10 +311,10 @@ if [ -n "$dep_ver" ]; then
     ls /usr/lib/lib${dep_base}-${dep_ver}.so* /usr/lib/lib${dep_base}${dep_ver}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
 fi
 
-# 8. Include/Share dir check
+# 8. Include/Share dir check (exact cmake directory names only, no wildcard substring matching)
 ls -d /usr/include/${dep} /usr/include/${dep_u} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
 dep_nodash=$(echo "$dep" | tr -d '-')
-find /usr/lib/cmake -maxdepth 1 -iname "${dep}" -o -iname "${dep_nodash}" -o -iname "*${dep_nodash}*" 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
+find /usr/lib/cmake -maxdepth 1 \( -iname "${dep}" -o -iname "${dep_nodash}" \) 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
 ls -d /usr/share/${dep} /usr/share/icons/${dep} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
 ls -d /usr/share/doc/${dep}-* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
 
