@@ -216,6 +216,17 @@ check_and_build_deps() {
         return 0
     fi
     log "Required deps: $(echo "$deps" | tr '\n' ' ')"
+
+    # Fast check for installed packages in /var/lib/custom-packages/
+    local dep_list=$(echo "$deps" | tr '\n' ' ')
+    local installed_deps_str
+    installed_deps_str=$(target_run "for d in $dep_list; do if [ -f \"/var/lib/custom-packages/\$d\" ] && ! grep -q '^BUILD_FAILED' \"/var/lib/custom-packages/\$d\" 2>/dev/null; then echo \"\$d\"; fi; done" 2>/dev/null | tr -d '\r')
+
+    declare -A _inst_map=()
+    while read -r d; do
+        [[ -n "$d" ]] && _inst_map["$d"]=1
+    done <<< "$installed_deps_str"
+
     while read -r dep; do
         [[ -z "$dep" ]] && continue
         # Skip if already being built (circular dep guard)
@@ -223,107 +234,10 @@ check_and_build_deps() {
             log "Skipping dep '$dep': already in build stack."
             continue
         fi
-        
-        # Check if the dependency is installed on the VM
-        # Write check to a temp file to avoid heredoc-in-$() syntax issues
-        _dep_check_script="/tmp/dep_check_${dep//[^a-zA-Z0-9]/_}.sh"
-        cat > "$_dep_check_script" <<DEPCHECK
-dep='$dep'
-# 1. Standard pkg-config check
-# Special check for KDE/Plasma upstream dependencies to ensure version compatibility
-if [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]]; then
-    # Identify KDE components that usually share the Frameworks/Plasma version
-    if [[ "$dep" =~ ^(k[a-z0-9]+|breeze-icons|extra-cmake-modules|attica|polkit-kde-agent-1|libkscreen|libksysguard|milou|plasma-|sddm-kcm|khotkeys|kwrited|kscreenlocker|ksshaskpass|kgamma|kdecoration|ksysguard)$ ]]; then
-        # Check if the installed version in our registry matches the target upstream version
-        for reg_dir in "/var/lib/book-packages" "/var/lib/custom-packages"; do
-            if [ -f "\$reg_dir/\$dep" ]; then
-                INSTALLED_VER=\$(head -n 1 "\$reg_dir/\$dep" | grep -v "^#" | tr -d "[:space:]")
-                # Compare only major.minor if it's a dot-zero release or if versions match exactly
-                if [[ "\$INSTALLED_VER" == "$UPSTREAM_VERSION" ]] || [[ "\$INSTALLED_VER" == "${UPSTREAM_VERSION}.0" ]] || [[ "\${INSTALLED_VER}.0" == "$UPSTREAM_VERSION" ]]; then
-                    echo installed && exit 0
-                else
-                    echo "outdated (\$INSTALLED_VER vs $UPSTREAM_VERSION)" >&2
-                    exit 1
-                fi
-            fi
-        done
-    fi
-fi
 
-# Fallback: check registry (ignore BUILD_FAILED marker files)
-for reg in "/var/lib/custom-packages/\$dep" "/var/lib/book-packages/\$dep"; do
-    if [ -f "$reg" ]; then
-        reg_line=$(head -n 1 "$reg" 2>/dev/null | tr -d "[:space:]")
-        if [ "$reg_line" != "BUILD_FAILED" ] && [ -n "$reg_line" ]; then
-            echo installed && exit 0
-        fi
-    fi
-done
-
-pkg-config --exists "$dep" 2>/dev/null && echo installed && exit 0
-pkg-config --exists "${dep}-1" "${dep}-0" 2>/dev/null && echo installed && exit 0
-if [ "$dep" == "gc" ]; then
-    pkg-config --exists bdw-gc 2>/dev/null && echo installed && exit 0
-fi
-
-# 2. Xorg special cases
-if [[ "$dep" =~ ^x7(font|lib|app|driver)$ ]]; then
-    # If we have any of the common component dirs, assume it is installed
-    # e.g. for x7font, check if /usr/share/fonts/X11 exists
-    [ "$dep" == "x7font" ] && [ -d /usr/share/fonts/X11 ] && echo installed && exit 0
-    [ "$dep" == "x7lib" ] && [ -d /usr/include/X11 ] && echo installed && exit 0
-fi
-
-# 3. Mesa special case (often called mesa but provides gbm, egl, gl)
-if [ "$dep" == "mesa" ]; then
-    pkg-config --exists gbm egl gl 2>/dev/null && echo installed && exit 0
-fi
-
-# 4. xcursor-themes special case
-if [ "$dep" == "xcursor-themes" ]; then
-    [ -d /usr/share/icons/whiteglass ] && echo installed && exit 0
-fi
-
-# 4.5 KDE/Plasma Meta-package special cases
-if [[ "$dep" == "frameworks6" || "$dep" == "frameworks" ]]; then
-    # Check for core components like extra-cmake-modules or kf6-config
-    (pkg-config --exists extra-cmake-modules || [ -d /usr/lib/cmake/KF6 ] || [ -d /usr/include/KF6 ]) && echo installed && exit 0
-fi
-if [[ "$dep" == "plasma-all" || "$dep" == "plasma" ]]; then
-    # Check for plasma-desktop or similar
-    ([ -f /usr/bin/plasma-desktop ] || [ -f /usr/lib/libPlasma.so ]) && echo installed && exit 0
-fi
-
-# 5. Executable check (skip short names like 'gc' where unrelated tools e.g. Graphviz /usr/bin/gc cause false positives)
-if [ "$dep" != "gc" ] && [ ${#dep} -gt 2 ]; then
-    command -v "$dep" >/dev/null 2>&1 && echo installed && exit 0
-fi
-
-# 6. Library search (require '.' or '-' after name to prevent 'gc' matching 'libgcrypt' or 'gsl' matching prefix)
-dep_u=$(echo "$dep" | tr '-' '_')
-ls /usr/lib/lib${dep_u}.so* /usr/lib/lib${dep_u}-*.so* /usr/lib/lib${dep}.so* /usr/lib/lib${dep}-*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-
-# 7. Versioned pkg-config fallback
-dep_base=$(echo "$dep" | sed -E 's/[0-9]+$//')
-dep_ver=$(echo "$dep" | grep -oE '[0-9]+$')
-if [ -n "$dep_ver" ]; then
-    pkg-config --exists "${dep_base}+-${dep_ver}.0" "${dep_base}-${dep_ver}.0" 2>/dev/null && echo installed && exit 0
-    ls /usr/lib/lib${dep_base}-${dep_ver}.so* /usr/lib/lib${dep_base}${dep_ver}*.so* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-fi
-
-# 8. Include/Share dir check (exact cmake directory names only, no wildcard substring matching)
-ls -d /usr/include/${dep} /usr/include/${dep_u} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-dep_nodash=$(echo "$dep" | tr -d '-')
-find /usr/lib/cmake -maxdepth 1 \( -iname "${dep}" -o -iname "${dep_nodash}" \) 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-ls -d /usr/share/${dep} /usr/share/icons/${dep} 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-ls -d /usr/share/doc/${dep}-* 2>/dev/null | head -n1 | grep -q . && echo installed && exit 0
-
-echo not_installed
-DEPCHECK
-        dep_status=$(target_run "bash -s" < "$_dep_check_script" 2>/dev/null | grep -vE '^(Warning:|Connection|IP|SSH|grep:)' | tr -d '\r' | tail -n1)
-        rm -f "$_dep_check_script"
-
-        if [[ "$dep_status" != "installed" ]]; then
+        if [[ -n "${_inst_map[$dep]:-}" ]]; then
+            log "Dependency '$dep' already installed."
+        else
             log "Required dep '$dep' not found — building it first..."
             pass_args=()
             [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
@@ -331,8 +245,6 @@ DEPCHECK
             RESOLVE_DEPS=true BUILDING_STACK="$BUILDING_STACK" \
                 "$0" "${pass_args[@]}" "$dep" \
                 || log "[WARNING] Failed to build dep '$dep'. Continuing with main build..."
-        else
-            log "Dependency '$dep' already installed."
         fi
     done <<< "$deps"
 }
