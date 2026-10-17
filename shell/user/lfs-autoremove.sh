@@ -1,29 +1,48 @@
 #!/usr/bin/env bash
 
-lfs_autoremove_gpt() {
-    local dry_run=false
-    local force=false
-    local pkgs=()
-    
-    for arg in "$@"; do
-        if [[ "$arg" == "--dry-run" ]]; then
-            dry_run=true
-        elif [[ "$arg" == "-f" || "$arg" == "--force" ]]; then
-            force=true
-        else
-            pkgs+=("$arg")
-        fi
-    done
-
-    if [ ${#pkgs[@]} -eq 0 ]; then
-        echo "Usage: lfs_autoremove [--dry-run] [-f] <package_name> [<package_name> ...]"
+du_pkg() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: du_pkg <package_name> [<package_name> ...]"
         return 1
     fi
 
     local overall_rc=0
-    for pkg in "${pkgs[@]}"; do
-        _lfs_autoremove_one "$pkg" "$dry_run" "$force" || overall_rc=$?
+    local use_numfmt=false
+    command -v numfmt &>/dev/null && use_numfmt=true
+
+    for pkg in "$@"; do
+        local inv_file=""
+        if [ -f "/var/lib/custom-packages/$pkg" ]; then
+            inv_file="/var/lib/custom-packages/$pkg"
+        elif [ -f "/var/lib/book-packages/$pkg" ]; then
+            inv_file="/var/lib/book-packages/$pkg"
+        else
+            echo "Package $pkg not found in inventory." >&2
+            overall_rc=1
+            continue
+        fi
+
+        # Skip blank lines, convert to NUL-delimited, and hand all paths to
+        # xargs stat in one shot — no per-file bash builtin checks needed.
+        # stat format: '%i %s %f'  (inode, size, raw hex mode)
+        #   hex mode first digit '8' → regular file  (skip dirs '4', symlinks 'a', …)
+        # awk deduplicates by inode so hardlinked files are counted only once,
+        # matching du behaviour.
+        local total
+        total=$(
+            tail -n +2 "$inv_file" | grep -v '^$' | tr '\n' '\0' \
+              | xargs -0 stat -c '%i %s %f' 2>/dev/null \
+              | awk 'substr($3,1,1)=="8" && !seen[$1]++ { s+=$2 } END { print s+0 }'
+        )
+
+        # Pretty-print using numfmt if available, otherwise fall back to raw bytes
+        if [[ "$use_numfmt" == true ]]; then
+            printf "%s\t%s\n" "$(printf '%d' "$total" | numfmt --to=iec-i --suffix=B)" "$pkg"
+        else
+            printf "%d\t%s\n" "$total" "$pkg"
+        fi
     done
+
     return $overall_rc
 }
 
@@ -41,6 +60,11 @@ _lfs_autoremove_one() {
         echo "Package $pkg not found in inventory."
         return 1
     fi
+
+    local pkg_version
+    pkg_version=$(head -n 1 "$inv_file" 2>/dev/null | tr -d '\r\n')
+    local pkg_size
+    pkg_size=$(du_pkg "$pkg" 2>/dev/null | awk '{print $1}')
 
     echo "Reading inventory for $pkg..."
     local inv_files=()
@@ -192,57 +216,41 @@ _lfs_autoremove_one() {
     fi
 
     if [[ "$dry_run" == "true" ]]; then
+        echo "Would write package log: ${HOME:-~}/logs/$pkg.log (version: $pkg_version, size: $pkg_size)"
         echo "Would delete inventory file: $inv_file"
         echo "[DRY RUN] Uninstallation simulation of $pkg complete."
     else
+        mkdir -p "${HOME:-~}/logs"
+        printf "%s\n%s\n" "$pkg_version" "$pkg_size" > "${HOME:-~}/logs/$pkg.log"
         sudo rm -f "$inv_file"
         echo "Uninstallation of $pkg complete."
     fi
 }
 
-du_pkg() {
-    if [ $# -eq 0 ]; then
-        echo "Usage: du_pkg <package_name> [<package_name> ...]"
+lfs_autoremove_gpt() {
+    local dry_run=false
+    local force=false
+    local pkgs=()
+    
+    for arg in "$@"; do
+        if [[ "$arg" == "--dry-run" ]]; then
+            dry_run=true
+        elif [[ "$arg" == "-f" || "$arg" == "--force" ]]; then
+            force=true
+        else
+            pkgs+=("$arg")
+        fi
+    done
+
+    if [ ${#pkgs[@]} -eq 0 ]; then
+        echo "Usage: lfs_autoremove [--dry-run] [-f] <package_name> [<package_name> ...]"
         return 1
     fi
 
     local overall_rc=0
-    local use_numfmt=false
-    command -v numfmt &>/dev/null && use_numfmt=true
-
-    for pkg in "$@"; do
-        local inv_file=""
-        if [ -f "/var/lib/custom-packages/$pkg" ]; then
-            inv_file="/var/lib/custom-packages/$pkg"
-        elif [ -f "/var/lib/book-packages/$pkg" ]; then
-            inv_file="/var/lib/book-packages/$pkg"
-        else
-            echo "Package $pkg not found in inventory." >&2
-            overall_rc=1
-            continue
-        fi
-
-        # Skip blank lines, convert to NUL-delimited, and hand all paths to
-        # xargs stat in one shot — no per-file bash builtin checks needed.
-        # stat format: '%i %s %f'  (inode, size, raw hex mode)
-        #   hex mode first digit '8' → regular file  (skip dirs '4', symlinks 'a', …)
-        # awk deduplicates by inode so hardlinked files are counted only once,
-        # matching du behaviour.
-        local total
-        total=$(
-            tail -n +2 "$inv_file" | grep -v '^$' | tr '\n' '\0' \
-              | xargs -0 stat -c '%i %s %f' 2>/dev/null \
-              | awk 'substr($3,1,1)=="8" && !seen[$1]++ { s+=$2 } END { print s+0 }'
-        )
-
-        # Pretty-print using numfmt if available, otherwise fall back to raw bytes
-        if [[ "$use_numfmt" == true ]]; then
-            printf "%s\t%s\n" "$(printf '%d' "$total" | numfmt --to=iec-i --suffix=B)" "$pkg"
-        else
-            printf "%d\t%s\n" "$total" "$pkg"
-        fi
+    for pkg in "${pkgs[@]}"; do
+        _lfs_autoremove_one "$pkg" "$dry_run" "$force" || overall_rc=$?
     done
-
     return $overall_rc
 }
 
@@ -251,8 +259,15 @@ lfs_autoremove() {
     if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
         source "$NIXCFG/shell/user/08-ssh.sh"
         source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
-        ssh_lfs "$(declare -f lfs_autoremove_gpt _lfs_autoremove_one); lfs_autoremove_gpt $(printf '%q ' "${args[@]}")"
+        ssh_lfs "$(declare -f du_pkg _lfs_autoremove_one lfs_autoremove_gpt); lfs_autoremove_gpt $(printf '%q ' "${args[@]}")"
     else
         lfs_autoremove_gpt "${args[@]}"
     fi
 }
+
+if ! declare -f autoremove >/dev/null 2>&1; then
+    autoremove() {
+        lfs_autoremove "$@"
+    }
+fi
+

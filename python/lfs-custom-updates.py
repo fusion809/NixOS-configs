@@ -202,7 +202,7 @@ def evaluate_package(script_path, local_vers):
     except Exception:
         return pkg_basename, "none", "FAILED", pkg_basename
 
-    m_name = re.search(r"(?m)^[ \t]*(?:export[ \t]+)?[a-zA-Z_]*name=([^\n]+)", content)
+    m_name = re.search(r"(?m)^[ \t]*(?:export[ \t]+)?(?:pkg_?name|name|PKG_?NAME)=([^\n]+)", content)
     if m_name:
         raw_name = m_name.group(1).strip().strip('"').strip("'")
         pkg_name = pkg_basename if "$" in raw_name else raw_name

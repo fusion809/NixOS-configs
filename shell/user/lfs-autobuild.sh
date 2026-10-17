@@ -270,16 +270,23 @@ declare -A name_to_build=()
 while IFS= read -r bs; do
     dir=$(dirname "$bs")
     dir_name=$(basename "$dir")
-    pkg_name=$(grep -iE "^[a-zA-Z_]*name=" "$bs" 2>/dev/null | head -n1 | cut -d= -f2 | tr -d "\"'"'"'" | tr -d "[:space:]")
-    [[ -z "$pkg_name" ]] && pkg_name="$dir_name"
+    pkg_name=$(grep -E "^[[:space:]]*(export[[:space:]]+)?(pkg_?name|name|PKG_?NAME)=" "$bs" 2>/dev/null | head -n1 | cut -d= -f2 | tr -d "\"'"'"'" | tr -d "[:space:]")
+    [[ -z "$pkg_name" || "$pkg_name" =~ [\$\`] ]] && pkg_name="$dir_name"
+    alt_name=$(grep -E "^[[:space:]]*(export[[:space:]]+)?_name=" "$bs" 2>/dev/null | head -n1 | cut -d= -f2 | tr -d "\"'"'"'" | tr -d "[:space:]")
     name_to_build["$pkg_name"]="$bs"
     name_to_build["$dir_name"]="$bs"
+    name_to_build["${dir_name,,}"]="$bs"
+    name_to_build["${pkg_name,,}"]="$bs"
+    if [[ -n "$alt_name" && ! "$alt_name" =~ [\$\`] ]]; then
+        name_to_build["$alt_name"]="$bs"
+        name_to_build["${alt_name,,}"]="$bs"
+    fi
 done < <(find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null)
 
 # Emit tsort edges: "dependency package" (dep must come first)
 printed_self=()
 for p in "$@"; do
-    bs="${name_to_build[$p]:-}"
+    bs="${name_to_build[$p]:-${name_to_build[${p,,}]:-}}"
     deps=()
     if [[ -n "$bs" ]]; then
         while IFS= read -r dline; do
@@ -420,7 +427,9 @@ for PACKAGE in "${PACKAGES[@]}"; do
     _start_pkg_log "$PACKAGE"
 
     # Check if a custom package exists BEFORE translating aliases to avoid redirecting local packages to BLFS metapackages
-    if [ -d "$HOME/lfs_packaging/$PACKAGE" ] || [ -d "$HOME/lfs_packaging/uninstalled/$PACKAGE" ] || target_run "[ -d ~/lfs_packaging/$PACKAGE ] || [ -d ~/lfs_packaging/uninstalled/$PACKAGE ]" 2>/dev/null; then
+    if [ -d "$HOME/lfs_packaging/$PACKAGE" ] || [ -d "$HOME/lfs_packaging/${PACKAGE,,}" ] || \
+       [ -d "$HOME/lfs_packaging/uninstalled/$PACKAGE" ] || [ -d "$HOME/lfs_packaging/uninstalled/${PACKAGE,,}" ] || \
+       target_run "[ -d ~/lfs_packaging/$PACKAGE ] || [ -d ~/lfs_packaging/${PACKAGE,,} ] || [ -d ~/lfs_packaging/uninstalled/$PACKAGE ] || [ -d ~/lfs_packaging/uninstalled/${PACKAGE,,} ]" 2>/dev/null; then
         log "Found custom package for $PACKAGE, bypassing BLFS aliases."
     else
         # Translate friendly aliases to canonical upstream names used in archives/loops
@@ -482,17 +491,22 @@ for PACKAGE in "${PACKAGES[@]}"; do
             echo ~/lfs_packaging/${PACKAGE}/build.sh
         elif [ -f ~/lfs_packaging/uninstalled/${PACKAGE}/build.sh ]; then
             echo ~/lfs_packaging/uninstalled/${PACKAGE}/build.sh
+        elif [ -f ~/lfs_packaging/${PACKAGE,,}/build.sh ]; then
+            echo ~/lfs_packaging/${PACKAGE,,}/build.sh
+        elif [ -f ~/lfs_packaging/uninstalled/${PACKAGE,,}/build.sh ]; then
+            echo ~/lfs_packaging/uninstalled/${PACKAGE,,}/build.sh
         else
-            find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -E \"/${PACKAGE}/build.sh\$\" | head -n 1
+            find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | grep -iE \"/${PACKAGE}/build.sh\$\" | head -n 1
         fi
     " 2>/dev/null | grep -vE "^(Warning:|Connection|IP|SSH|grep:)" | tr -d '\r')
 
     # Check 2: If no exact directory match, check for canonical package name assignment in build.sh
-    # Strictly match name=, pkgname=, PKGNAME=, pkg_name= (NOT _name=, dirname=, repo_name=)
+    # Match name=, pkgname=, PKGNAME=, pkg_name=, or _name= / case-insensitive for flexibility
     if [[ -z "$CUSTOM_BUILD_SH" ]]; then
         CUSTOM_BUILD_SH=$(target_run "
             find ~/lfs_packaging -mindepth 2 -maxdepth 4 -name build.sh 2>/dev/null | while read -r f; do
-                if grep -E -q \"^[[:space:]]*(export[[:space:]]+)?(pkg_?name|name|PKG_?NAME)=['\\\"']?${PACKAGE}['\\\"']?\\$\" \"\$f\" 2>/dev/null; then
+                if grep -E -q \"^[[:space:]]*(export[[:space:]]+)?(pkg_?name|name|PKG_?NAME|_name)=['\\\"']?${PACKAGE}['\\\"']?\\$\" \"\$f\" 2>/dev/null || \
+                   grep -iE -q \"^[[:space:]]*(export[[:space:]]+)?(pkg_?name|name|PKG_?NAME|_name)=['\\\"']?${PACKAGE}['\\\"']?\\$\" \"\$f\" 2>/dev/null; then
                     echo \"\$f\"
                     break
                 fi
@@ -502,7 +516,15 @@ for PACKAGE in "${PACKAGES[@]}"; do
 
     if [[ -n "$CUSTOM_BUILD_SH" ]]; then
         CUSTOM_DIR=$(dirname "$CUSTOM_BUILD_SH")
-        log "Custom package detected at $CUSTOM_DIR"
+        canonical_pkg=$(target_run "
+            grep -E '^[[:space:]]*(export[[:space:]]+)?(pkg_?name|name|PKG_?NAME)=' '$CUSTOM_BUILD_SH' 2>/dev/null | head -n1 | cut -d= -f2 | tr -d \"'\\\"\" | tr -d '[:space:]'
+        " 2>/dev/null | tr -d '\r')
+        if [[ -n "$canonical_pkg" && ! "$canonical_pkg" =~ [\$\`] ]]; then
+            PACKAGE="$canonical_pkg"
+        else
+            PACKAGE=$(basename "$CUSTOM_DIR")
+        fi
+        log "Custom package detected at $CUSTOM_DIR (package: $PACKAGE)"
     
     if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
         log "Extracting dependencies for custom package '$PACKAGE'..."
@@ -535,13 +557,14 @@ cd "$CUSTOM_DIR"
 sudo rm -f "/tmp/build_start_timestamp_${TARGET_PKG}" 2>/dev/null || true
 touch "/tmp/build_start_timestamp_${TARGET_PKG}"
 BUILD_LOG="/tmp/build_log_${TARGET_PKG}.txt"
+mkdir -p "$HOME/build_logs"
 SEARCH_DIRS="/usr /bin /sbin /lib /lib64 /etc /opt /boot"
 EXISTING_DIRS=""
 for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
 find $EXISTING_DIRS -printf "%p %C@\n" 2>/dev/null | LC_ALL=C sort > "/tmp/build_state_before_${TARGET_PKG}"
 # Run build; capture exit code independently so post-install steps don't mask it
 set +e
-bash build.sh < /dev/null 2>&1 | tee "$BUILD_LOG"
+bash build.sh < /dev/null 2>&1 | tee "$BUILD_LOG" "$HOME/build_logs/${TARGET_PKG}"
 _build_exit=${PIPESTATUS[0]}
 set -e
 if [ $_build_exit -ne 0 ]; then
