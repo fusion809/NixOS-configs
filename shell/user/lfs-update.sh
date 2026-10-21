@@ -442,11 +442,10 @@ lfs_rebuild_missing_inventories() {
     [[ -f "$NIXCFG/shell/user/18-vms.sh" ]] && source "$NIXCFG/shell/user/18-vms.sh" >/dev/null 2>&1
 
     echo "Scanning for packages with missing file inventories..."
-    # 1. Use -maxdepth 1 to avoid entering subdirectories like .git
-    # 2. Match ! -name ".*" to ignore hidden files
-    # 3. Exclude known metadata files via grep
+    # Only scan custom packages — book-package inventory files are legacy artefacts
+    # and must never be auto-rebuilt by updatec/update.
     local missing_pkgs=$(ssh_lfs '
-        find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | 
+        find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | 
         grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | 
         while read -r f; do
             pkg_name=$(basename "$f")
@@ -758,9 +757,11 @@ lfs_update() {
     # echo "Fetching local package list from VM..."
     # local local_list=$(lfs_get_local_packages | sed 's/.tar.*//g' | tr -d '\r')
     
-    # Packages with missing file inventories (≤1 line) need a forced rebuild regardless of version
+    # Packages with missing file inventories (≤1 line) need a forced rebuild regardless of version.
+    # Only check /var/lib/custom-packages — book-package files in /var/lib/book-packages are legacy
+    # artefacts and must never trigger an auto-rebuild via updatec/update.
     echo "Checking for packages with missing file inventories..."
-    local broken_pkgs_raw=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
+    local broken_pkgs_raw=$(ssh_lfs 'find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
     local broken_pkgs=()
     while IFS= read -r bp; do
         [[ -z "$bp" ]] && continue
@@ -1358,7 +1359,8 @@ for pkg in sorted_pkgs:
 
     if [[ "$dry_run" == "false" && ( ${#updates[@]} -gt 0 || ${#custom_updates_list[@]} -gt 0 ) ]]; then
         echo "Checking system health before committing updates..."
-        local broken_pkgs_check=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && echo "$pkg"; done')
+        # Only check custom packages; book-package inventory files are legacy artefacts.
+        local broken_pkgs_check=$(ssh_lfs 'find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do pkg=$(basename "$f"); [ $(wc -l < "$f") -le 1 ] && echo "$pkg"; done')
         if [[ -z "$broken_pkgs_check" ]]; then
             echo "System healthy. Triggering automated registry commit..."
             ssh_lfs "bash -c 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null && lfs_package_commit'"
@@ -1449,7 +1451,8 @@ PIPSCRIPT
 lfs_updc() {
     lfs_update "$@"
 
-    local broken_pkgs=$(ssh_lfs 'find /var/lib/book-packages /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
+    # Only check custom packages — book-package inventory files are legacy artefacts.
+    local broken_pkgs=$(ssh_lfs 'find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
 
     if [ -z "$broken_pkgs" ]; then
         rm_old_libs

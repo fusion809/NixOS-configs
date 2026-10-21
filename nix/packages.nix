@@ -16,7 +16,6 @@ with pkgs;
   pinta
   unstable.wayvnc
   vscode
-  inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
   ###############################################################
   # Assorted packages
   ###############################################################

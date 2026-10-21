@@ -76,3 +76,22 @@ if [[ -z "$table" ]]; then
 else
     printf '%s' "$table"
 fi
+
+# --- Broken-inventory check ---
+# Scan /var/lib/custom-packages only; book-package inventory files are legacy
+# artefacts and must never appear here as actionable items.
+broken_inv=$(ssh_lfs 'find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null |
+    grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" |
+    while read -r f; do
+        (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"
+    done' 2>/dev/null | tr -d '\r')
+
+if [[ -n "$broken_inv" ]]; then
+    echo ""
+    echo "WARNING: The following custom packages have missing or failed inventories:"
+    echo "$broken_inv" | while read -r pkg; do
+        [[ -z "$pkg" ]] && continue
+        echo "  ⚠  $pkg"
+    done
+    echo "Run 'autobuild -f <pkg>' to restore each one."
+fi

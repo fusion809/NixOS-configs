@@ -578,9 +578,20 @@ sudo mkdir -p /var/lib/custom-packages
 new_ver=""
 version_line_num=""
 var_name=""
-ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' build.sh 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+# Strip heredoc content from build.sh before searching for version variable,
+# so that e.g. 'Version=1.0' inside a .desktop file heredoc isn't matched.
+_nh_lines=$(awk "/<</ {
+    line = \$0; sub(/.*<<-?[[:space:]]*/, \"\", line)
+    gsub(/^'|'\$|^\"|\"\$/, \"\", line); gsub(/[[:space:]].*\$/, \"\", line)
+    if (length(line) > 0) { delim = line; in_here = 1; print NR \":\" \$0; next }
+}
+in_here && \$0 == delim { in_here = 0; next }
+in_here { next }
+{ print NR \":\" \$0 }
+" build.sh 2>/dev/null)
+ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
 if [ -z "$ver_match" ]; then
-    ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' build.sh 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+    ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
 fi
 if [ -n "$ver_match" ]; then
     version_line_num=$(echo "$ver_match" | cut -d: -f1)
@@ -714,9 +725,19 @@ if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
     source ~/lfs_packaging/shared-funcs.sh
     while read -r func; do export -f "$func"; done < <(declare -F | awk '{print $3}')
 fi
-ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+# Strip heredoc content from build script before searching for version variable.
+_nh_lines=$(awk "/<</ {
+    line = \$0; sub(/.*<<-?[[:space:]]*/, \"\", line)
+    gsub(/^'|'\$|^\"|\"\$/, \"\", line); gsub(/[[:space:]].*\$/, \"\", line)
+    if (length(line) > 0) { delim = line; in_here = 1; print NR \":\" \$0; next }
+}
+in_here && \$0 == delim { in_here = 0; next }
+in_here { next }
+{ print NR \":\" \$0 }
+" "$build_script" 2>/dev/null)
+ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
 if [ -z "$ver_match" ]; then
-    ver_match=$(grep -niE '^[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' "$build_script" 2>/dev/null | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+    ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
 fi
 version_line_num=""
 var_name=""
