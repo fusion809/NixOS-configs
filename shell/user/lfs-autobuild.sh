@@ -53,6 +53,24 @@ else
     }
 fi
 
+# Source autoremove helper if available
+if [ -f "$NIXCFG/shell/user/lfs-autoremove.sh" ]; then
+    source "$NIXCFG/shell/user/lfs-autoremove.sh"
+elif [ -f "$HOME/.lfs_scripts/lfs-autoremove.sh" ]; then
+    source "$HOME/.lfs_scripts/lfs-autoremove.sh"
+fi
+
+do_autoremove() {
+    local args=("$@")
+    if declare -f autoremove >/dev/null 2>&1; then
+        autoremove "${args[@]}"
+    elif [[ "$HOST_MODE" == "true" ]]; then
+        ssh_lfs "autoremove $(printf '%q ' "${args[@]}")"
+    else
+        autoremove "${args[@]}"
+    fi
+}
+
 LFS_BOOK_DEFAULT="https://www.linuxfromscratch.org/lfs/view/development"
 BLFS_BOOK_DEFAULT="https://linuxfromscratch.org/blfs/view/systemd"
 LFS_BOOK="$LFS_BOOK_DEFAULT"
@@ -73,8 +91,11 @@ PACKAGES=()
 XORG_MULTI_MODE=false
 FORCE=false
 YES=false
+OVERRIDE=false
 SKIP_TESTS=false
 IGNORE_TEST_FAILURES=false
+KEEP_GOING=true
+FAILED_PACKAGES=()
 
 usage() {
     echo "Usage: autobuild [options] <package-name> [package-name-2...]"
@@ -90,7 +111,10 @@ usage() {
     echo "  --blfs-book <book>    Specify BLFS book (e.g., systemd, development, stable, or full URL)"
     echo "  --skip-tests          Skip test commands (make check/test, etc.)"
     echo "  --ignore-test-failures Ignore test failures by appending '|| true' to test commands"
+    echo "  -k, --keep-going      Continue building remaining packages if one fails [DEFAULT]"
+    echo "  --stop-on-error       Stop immediately if any package fails to build"
     echo "  -f, --force           Force build even if already installed"
+    echo "  -o, --override        Override conflicts by autoremoving conflicting packages"
     echo "  -h, --help            Show this help message"
     echo "$COMMANDS" > /tmp/cmds_final.out
 }
@@ -132,7 +156,10 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --skip-tests) SKIP_TESTS=true ;;
         --ignore-test-failures) IGNORE_TEST_FAILURES=true ;;
+        -k|--keep-going) KEEP_GOING=true ;;
+        --stop-on-error) KEEP_GOING=false ;;
         -f|--force) FORCE=true ;;
+        -o|--override) OVERRIDE=true ;;
         -y|--yes) YES=true ;;
         -h|--help) usage; exit 0 ;;
         -*) echo "Unknown option: $1"; usage ;;
@@ -168,6 +195,20 @@ log() { echo "[$(date +'%H:%M:%S')] $*"; }
 #     fi
 # fi
 error() { echo "[ERROR] $*" >&2; echo "$COMMANDS" > /tmp/cmds_final.out; exit 1; }
+
+fail_pkg() {
+    local msg="$1"
+    local failed_target="${2:-$PACKAGE}"
+    echo "[ERROR] $msg" >&2
+    echo "$COMMANDS" > /tmp/cmds_final.out
+    FAILED_PACKAGES+=("$failed_target")
+    _finish_pkg_log false
+    rm -f "/tmp/remote_script_${PACKAGE}.sh" "/tmp/custom_build_runner_${PACKAGE}.sh" 2>/dev/null || true
+    BUILDING_STACK="${_PREV_STACK:-}"
+    if [[ "$KEEP_GOING" == "false" ]]; then
+        exit 1
+    fi
+}
 
 _PKG_LOGGING_ACTIVE=false
 _PKG_LOG_TARGET=""
@@ -242,6 +283,12 @@ check_and_build_deps() {
             pass_args=()
             [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
             [[ "$SKIP_TESTS" == "true" ]] && pass_args+=("--skip-tests")
+            [[ "$OVERRIDE" == "true" ]] && pass_args+=("--override")
+            if [[ "$KEEP_GOING" == "true" ]]; then
+                pass_args+=("--keep-going")
+            else
+                pass_args+=("--stop-on-error")
+            fi
             RESOLVE_DEPS=true BUILDING_STACK="$BUILDING_STACK" \
                 "$0" "${pass_args[@]}" "$dep" \
                 || log "[WARNING] Failed to build dep '$dep'. Continuing with main build..."
@@ -356,6 +403,9 @@ for PACKAGE in "${PACKAGES[@]}"; do
         log "Skipping '$PACKAGE': already in build stack (circular dependency guard)."
         continue
     fi
+    _PREV_STACK="$BUILDING_STACK"
+    export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
+
     # Reset per-package variables to prevent leakage between packages in the same loop
     unset DOWNLOAD_URLS
     declare -a DOWNLOAD_URLS=()
@@ -378,8 +428,6 @@ for PACKAGE in "${PACKAGES[@]}"; do
     FRAMEWORKS_MODE=false
     PLASMA_MODE=false
     UPSTREAM="$INITIAL_UPSTREAM"
-    
-    export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 
     if [[ "$PACKAGE" == "xorg-libs" || "$PACKAGE" == "xorg-lib" ]]; then
         if ls "$HOME/lfs_packaging"/libX* 1> /dev/null 2>&1; then
@@ -393,9 +441,17 @@ for PACKAGE in "${PACKAGES[@]}"; do
                     [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
                     [[ "$FORCE" == "true" ]] && pass_args+=("-f")
                     [[ "$SKIP_TESTS" == "true" ]] && pass_args+=("--skip-tests")
-                    "$0" "${pass_args[@]}" "$local_pkg" || error "Failed to build $local_pkg"
+                    if [[ "$KEEP_GOING" == "true" ]]; then
+                        pass_args+=("--keep-going")
+                    else
+                        pass_args+=("--stop-on-error")
+                    fi
+                    if ! "$0" "${pass_args[@]}" "$local_pkg"; then
+                        fail_pkg "Failed to build $local_pkg" "$local_pkg"
+                    fi
                 fi
             done
+            BUILDING_STACK="${_PREV_STACK:-}"
             continue
         fi
     fi
@@ -414,10 +470,18 @@ for PACKAGE in "${PACKAGES[@]}"; do
                     [[ "$DRY_RUN" == "true" ]] && pass_args+=("--dry-run")
                     [[ "$FORCE" == "true" ]] && pass_args+=("-f")
                     [[ "$SKIP_TESTS" == "true" ]] && pass_args+=("--skip-tests")
-                    "$0" "${pass_args[@]}" "$local_pkg" || error "Failed to build $local_pkg"
+                    if [[ "$KEEP_GOING" == "true" ]]; then
+                        pass_args+=("--keep-going")
+                    else
+                        pass_args+=("--stop-on-error")
+                    fi
+                    if ! "$0" "${pass_args[@]}" "$local_pkg"; then
+                        fail_pkg "Failed to build $local_pkg" "$local_pkg"
+                    fi
                 fi
             done
             if [[ "$built_any" == "true" ]]; then
+                BUILDING_STACK="${_PREV_STACK:-}"
                 continue
             fi
         fi
@@ -526,6 +590,57 @@ for PACKAGE in "${PACKAGES[@]}"; do
         fi
         log "Custom package detected at $CUSTOM_DIR (package: $PACKAGE)"
     
+    # Check for conflicts in custom package
+    CUSTOM_CONFLICTS=$(target_run "awk '
+        /^[[:space:]]*(export[[:space:]]+)?conflicts=/ {
+            in_c = 1
+            sub(/^[[:space:]]*(export[[:space:]]+)?conflicts=[(]?/, \"\")
+            if (sub(/[)].*$/, \"\")) { print; in_c = 0; next }
+            print
+            next
+        }
+        in_c {
+            if (sub(/[)].*$/, \"\")) { print; in_c = 0 }
+            else { print }
+        }
+    ' \"$CUSTOM_BUILD_SH\" 2>/dev/null | tr -d '\"' | tr -d \"'\" | tr ' ' '\n' | tr -d '\r' | sort -u | grep -v '^$'")
+
+    if [[ -n "$CUSTOM_CONFLICTS" ]]; then
+        conflicts_list=$(echo "$CUSTOM_CONFLICTS" | tr '\n' ' ')
+        log "Checking conflicting package(s) for '$PACKAGE': $conflicts_list"
+        installed_conflicts_str=$(target_run "for c in $conflicts_list; do
+            clc=\"\${c,,}\"
+            if ([ -f \"/var/lib/custom-packages/\$c\" ] && ! grep -q '^BUILD_FAILED' \"/var/lib/custom-packages/\$c\" 2>/dev/null) || \
+               ([ -f \"/var/lib/custom-packages/\$clc\" ] && ! grep -q '^BUILD_FAILED' \"/var/lib/custom-packages/\$clc\" 2>/dev/null) || \
+               ([ -f \"/var/lib/book-packages/\$c\" ] && ! grep -q '^BUILD_FAILED' \"/var/lib/book-packages/\$c\" 2>/dev/null) || \
+               ([ -f \"/var/lib/book-packages/\$clc\" ] && ! grep -q '^BUILD_FAILED' \"/var/lib/book-packages/\$clc\" 2>/dev/null); then
+                echo \"\$c\"
+            fi
+        done" 2>/dev/null | tr -d '\r')
+
+        declare -a installed_conflicts=()
+        while read -r c; do
+            [[ -n "$c" && "$c" != "$PACKAGE" ]] && installed_conflicts+=("$c")
+        done <<< "$installed_conflicts_str"
+
+        if [[ ${#installed_conflicts[@]} -gt 0 ]]; then
+            if [[ "$OVERRIDE" != "true" ]]; then
+                fail_pkg "Package '$PACKAGE' conflicts with installed package(s): ${installed_conflicts[*]}. Refusing to build without --override/-o." "$PACKAGE"
+                continue
+            else
+                log "Overriding conflict(s) for '$PACKAGE'. Running autoremove on: ${installed_conflicts[*]}..."
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    echo "DRY RUN: Would run autoremove on: ${installed_conflicts[*]}"
+                else
+                    rm_args=()
+                    [[ "$FORCE" == "true" ]] && rm_args+=("-f")
+                    rm_args+=("${installed_conflicts[@]}")
+                    do_autoremove "${rm_args[@]}"
+                fi
+            fi
+        fi
+    fi
+
     if [[ "${RESOLVE_DEPS:-true}" != "false" ]]; then
         log "Extracting dependencies for custom package '$PACKAGE'..."
         CUSTOM_DEPS=$(target_run "grep -E '^(depends|lfs_depends|blfs_depends)=' \"$CUSTOM_BUILD_SH\" | sed -E 's/^[^=]+=//; s/[\"'\''()]//g'" | tr ' ' '\n' | tr -d '\r' | sort -u | grep -v '^$')
@@ -766,6 +881,7 @@ EOF
             if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
                 log "[LFS-AUTOBUILD] Skipping custom package $PACKAGE: version $INSTALLED_VER already installed (use -f to force build)."
                 _finish_pkg_log false
+                BUILDING_STACK="${_PREV_STACK:-}"
                 continue
             fi
         fi
@@ -777,8 +893,8 @@ EOF
     build_exit_code=$?
     target_run "rm -f /tmp/custom_build_runner_${PACKAGE}.sh"
     if [ $build_exit_code -ne 0 ]; then
-        echo "[ERROR] Custom build failed for $PACKAGE"
-        exit $build_exit_code
+        fail_pkg "Custom build failed for $PACKAGE"
+        continue
     fi
 
 
@@ -793,6 +909,7 @@ EOF
     fi
 
     _finish_pkg_log true
+    BUILDING_STACK="${_PREV_STACK:-}"
     continue
 fi
 
@@ -986,11 +1103,13 @@ if [[ "$PACKAGE" == "openjdk" ]]; then
     log "Special case for OpenJDK: Fetching the latest JDK release from jdk.java.net..."
     JDK_MAJOR=$(curl -s https://jdk.java.net/ | perl -nle 'while (m{href=\x22\./\K[0-9]+}g) { print $& }' | sort -rn | head -n 1)
     if [[ -z "$JDK_MAJOR" ]]; then
-        error "Could not determine latest JDK major version."
+        fail_pkg "Could not determine latest JDK major version."
+        continue
     fi
     JDK_TARBALL=$(curl -s "https://jdk.java.net/${JDK_MAJOR}/" | perl -nle 'while (m{https://download.java.net/java/.*?/openjdk-[0-9]+.*?_linux-x64_bin\.tar\.gz}g) { print $& }' | head -n 1)
     if [[ -z "$JDK_TARBALL" ]]; then
-        error "Could not determine latest JDK tarball URL."
+        fail_pkg "Could not determine latest JDK tarball URL."
+        continue
     fi
     DOWNLOAD_URLS=("$JDK_TARBALL")
     PKG_BASE="openjdk"
@@ -1046,11 +1165,8 @@ if [[ -z "$PAGE_URL" ]]; then
 fi
 
 if [[ -z "$PAGE_URL" ]]; then
-    error "Could not find page for package '$PACKAGE'"
-fi
-
-if [[ -z "$PAGE_URL" ]]; then
-    error "Could not find page for package '$PACKAGE'"
+    fail_pkg "Could not find page for package '$PACKAGE'"
+    continue
 fi
 
 log "Found package page: $PAGE_URL"
@@ -1082,7 +1198,8 @@ HTML_CONTENT=$(curl -s "$PAGE_URL")
 FULL_HTML_CONTENT="$HTML_CONTENT"
 
 if [[ -z "$HTML_CONTENT" ]]; then
-    error "Empty content from $PAGE_URL"
+    fail_pkg "Empty content from $PAGE_URL"
+    continue
 fi
 
 # 2.1 Help extraction by slicing HTML if URL has a fragment (e.g. #pygobject3)
@@ -1625,7 +1742,8 @@ done <<< "$RAW_CONTENT"
 
 log "Extracted commands: $COMMANDS"
 if [[ -z "$COMMANDS" ]]; then
-    error "Could not extract build commands for '$PACKAGE'"
+    fail_pkg "Could not extract build commands for '$PACKAGE'"
+    continue
 fi
 
 # Package-specific source fixes after command processing
@@ -3084,7 +3202,8 @@ fi
 
 # Final deduplication and prioritization
 if [[ ${#DOWNLOAD_URLS[@]} -eq 0 ]] && [[ "$FRAMEWORKS_MODE" == "false" ]] && [[ "$XORG_MULTI_MODE" == "false" ]]; then
-    error "Could not find any download URLs for '$PACKAGE'"
+    fail_pkg "Could not find any download URLs for '$PACKAGE'"
+    continue
 fi
 
 # Remove duplicates while preserving order
@@ -4104,7 +4223,9 @@ if [[ "$DRY_RUN" == "true" ]]; then
             echo "DRY RUN: STRIP skipped because 21-lfs.sh is not available locally."
         fi
     fi
-    exit 0
+    _finish_pkg_log false
+    BUILDING_STACK="${_PREV_STACK:-}"
+    continue
 fi
 
 # 4. Remote Execution
@@ -4920,21 +5041,24 @@ REMOTE_EOF
 if [[ "$HOST_MODE" == "true" ]]; then
     log "Transferring build script to remote VM..."
     if ! cp_to_vm "Linux From Scratch" /tmp/remote_script_${PACKAGE}.sh /tmp/remote_script_${PACKAGE}.sh; then
-        error "Failed to transfer build script to remote VM."
+        fail_pkg "Failed to transfer build script to remote VM."
+        continue
     fi
     log "Executing remote build script..."
     ssh_lfs "sudo bash /tmp/remote_script_${PACKAGE}.sh"
     CODE=$?
 # ssh_lfs "rm -f /tmp/remote_script_${PACKAGE}.sh"
     if [[ $CODE -ne 0 ]]; then
-        error "Remote build script failed for $PACKAGE."
+        fail_pkg "Remote build script failed for $PACKAGE."
+        continue
     fi
 else
     # Running on guest already (piped)
     sudo bash /tmp/remote_script_${PACKAGE}.sh
     CODE=$?
     if [[ $CODE -ne 0 ]]; then
-        error "Build script failed for $PACKAGE."
+        fail_pkg "Build script failed for $PACKAGE."
+        continue
     fi
 fi
 rm -f /tmp/remote_script_${PACKAGE}.sh
@@ -4948,5 +5072,16 @@ if [[ "$STRIP" == "true" ]] && [[ "$HOST_MODE" == "true" ]]; then
 fi
 
 _finish_pkg_log true
+BUILDING_STACK="${_PREV_STACK:-}"
 
 done
+
+if [[ ${#FAILED_PACKAGES[@]} -gt 0 ]]; then
+    log "========================================"
+    log "Build completed with ${#FAILED_PACKAGES[@]} failure(s):"
+    for failed in "${FAILED_PACKAGES[@]}"; do
+        log "  - $failed"
+    done
+    log "========================================"
+    exit 1
+fi
