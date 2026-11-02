@@ -42,25 +42,87 @@ function pstart {
 }
 
 function bm3u8 {
+	# Find yt-dlp's Python interpreter (which has curl_cffi for Cloudflare bypass)
+	local _ytdlp_wrapped _bm3u8_python
+	_ytdlp_wrapped=$(grep -o '/nix/store/[^ ]*\.yt-dlp-wrapped' "$(which yt-dlp)" 2>/dev/null | head -n 1)
+	if [[ -n "$_ytdlp_wrapped" ]]; then
+		_bm3u8_python=$(head -n 1 "$_ytdlp_wrapped" | sed 's|#! *||')
+	fi
+	[[ -z "$_bm3u8_python" ]] && _bm3u8_python="python3"
+
+	local _fetch_script="$HOME/.files/bm3u8-fetch.py"
+
 	cddf
-	for url in "$@"; do
+
+	# Helper: return 0 if argument looks like a URL
+	_bm3u8_is_url() {
+		local _clean="${1//\\/}"
+		[[ "$_clean" =~ ^https?:// || "$_clean" =~ ^// ]]
+	}
+
+	# Parse arguments:
+	# Supports:
+	#   bm3u8 url1 [url2 ...]
+	#   bm3u8 url1 "title1" [url2 "title2" ...]
+	# If an argument is followed by a non-URL argument, treat that non-URL argument as its title.
+	local _pairs=()
+	while [[ $# -gt 0 ]]; do
+		local _u="$1"
+		shift
+		local _t=""
+		if [[ $# -gt 0 ]] && ! _bm3u8_is_url "$1"; then
+			_t="$1"
+			shift
+		fi
+		_pairs+=("$_u" "$_t")
+	done
+
+	# Process pairs: _pairs is [url, title, url, title, ...]
+	local _i=0
+	while [[ $_i -lt ${#_pairs[@]} ]]; do
+		local _url="${_pairs[$_i]}"
+		local _explicit_title="${_pairs[$((_i + 1))]}"
+		_i=$((_i + 2))
 		(
-			page=$(wget -cqO- "$url")
-			# Try hlsAuto first (old site format)
-			m3u8URL=$(echo "$page" | grep "hlsAuto" | cut -d '"' -f 4 | sed 's/\\//g')
-			# Fallback: grep for a src="..._TPL_.mp4..." or any src .mp4 URL (new site format)
-			if [[ -z "$m3u8URL" ]]; then
-				m3u8URL=$(echo "$page" | grep '.mp4"' | grep src | cut -d '"' -f 4 | sed 's/\\//g' | head -n 1)
-				# Normalise protocol-relative URLs
-				if [[ "$m3u8URL" == //* ]]; then
-					m3u8URL="https:$m3u8URL"
+			local m3u8URL filename fetch_out fetch_rc
+
+			# Use bm3u8-fetch.py if available (handles Cloudflare + age gate detection)
+			if [[ -x "$_fetch_script" ]]; then
+				if [[ -n "$_explicit_title" ]]; then
+					fetch_out=$("$_bm3u8_python" "$_fetch_script" "$_url" "$_explicit_title" 2>&1)
+				else
+					fetch_out=$("$_bm3u8_python" "$_fetch_script" "$_url" 2>&1)
 				fi
-			fi
-			filename=$(echo "$page" | grep "<title>" | sed 's/<[/]*title>//g' | head -n 1 | python3 -c "import html,sys;print(html.unescape(sys.stdin.read().strip()))" | sed 's/\s*[-|]\s*[A-Za-z0-9]*\(.com\)\?\s*$//g')
-			if [[ -z "$m3u8URL" ]]; then
-				echo "ERROR: Could not find stream URL for $url" >&2
+				fetch_rc=$?
+				# Print any stderr (age gate instructions, errors) through
+				echo "$fetch_out" | grep -v '^STREAM_URL:' | grep -v '^TITLE:' | grep -v '^AGE_GATE:' >&2
+				if [[ $fetch_rc -eq 0 ]]; then
+					m3u8URL=$(echo "$fetch_out" | grep '^STREAM_URL:' | head -n 1 | sed 's/^STREAM_URL://')
+					filename=$(echo "$fetch_out" | grep '^TITLE:' | head -n 1 | sed 's/^TITLE://')
+				else
+					# Non-zero exit (age gate=1, no stream=2, error=3) – already reported
+					exit 0
+				fi
 			else
-				wget -c "$m3u8URL" -O "$filename.m3u8"
+				# Fallback: legacy wget path (will likely get Cloudflare 403, kept for safety)
+				local page
+				page=$(wget -cqO- "$_url" 2>/dev/null)
+				m3u8URL=$(echo "$page" | grep "hlsAuto" | cut -d '"' -f 4 | sed 's/\\//g')
+				if [[ -z "$m3u8URL" ]]; then
+					m3u8URL=$(echo "$page" | grep '.mp4"' | grep src | cut -d '"' -f 4 | sed 's/\\//g' | head -n 1)
+					[[ "$m3u8URL" == //* ]] && m3u8URL="https:$m3u8URL"
+				fi
+				filename="${_explicit_title:-$(echo "$page" | grep "<title>" | sed 's/<[/]*title>//g' | head -n 1 \
+					| python3 -c "import html,sys;print(html.unescape(sys.stdin.read().strip()))" \
+					| sed 's/\s*[-|]\s*[A-Za-z0-9]*\(.com\)\?\s*$//g')}"
+			fi
+
+			if [[ -z "$m3u8URL" ]]; then
+				echo "ERROR: Could not find stream URL for $_url" >&2
+			else
+				# Normalise protocol-relative URLs
+				[[ "$m3u8URL" == //* ]] && m3u8URL="https:$m3u8URL"
+				wget -c "$m3u8URL" -O "${filename}.m3u8"
 			fi
 		) &
 	done

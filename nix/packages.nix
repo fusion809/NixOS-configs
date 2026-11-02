@@ -155,7 +155,7 @@ with pkgs;
   ###############################################################
   # NixOS utilities
   ###############################################################
-  codex
+  unstable.codex
   home-manager
   nix-prefetch-git
   linuxPackages_latest.kernel
