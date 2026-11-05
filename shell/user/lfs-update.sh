@@ -1370,17 +1370,20 @@ for pkg in sorted_pkgs:
             echo "--------------------------------------------------------------------------------"
             while read -r pkg; do
                 [[ -z "$pkg" ]] && continue
-                echo ">>> Last 5 lines of output for $pkg:"
-                if [[ -f "/tmp/lfs-autobuild.log" ]]; then
+                local pkg_log
+                pkg_log=$(ls -t "$HOME/logs/autobuild-${pkg}-"*".log" 2>/dev/null | head -n 1)
+                if [[ -n "$pkg_log" && -f "$pkg_log" ]]; then
+                    tail -n 5 "$pkg_log"
+                elif [[ -f "/tmp/lfs-autobuild.log" ]]; then
                     # Search only the last 500,000 lines to keep it fast even if the log is huge
                     tail -n 500000 /tmp/lfs-autobuild.log | sed -n "/Building .*$pkg\.\.\./,/Building /p" | grep -v "Building " | tail -n 5
                 else
-                    echo "  Log file /tmp/lfs-autobuild.log not found."
+                    echo "  Log file for $pkg not found."
                 fi
                 echo "--------------------------------------------------------------------------------"
             done <<< "$broken_pkgs_check"
             echo "Skipping commit. If you have builds in progress, wait for them to finish and run lfs_package_commit."
-            echo "TIP: You can watch build progress with: tail -f /tmp/lfs-autobuild.log"
+            echo "TIP: You can watch build progress in: ~/logs/autobuild-<pkg>-<PID>.log"
             echo "Skipping commit."
         fi
     fi

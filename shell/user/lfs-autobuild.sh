@@ -182,6 +182,19 @@ if [[ ${#PACKAGES[@]} -eq 0 ]]; then
     exit 1
 fi
 
+# Set up process-wide log file: $HOME/logs/autobuild-pkgname-PID.log
+_AUTOBUILD_PKGNAME="${PACKAGES[0]:-unknown}"
+if [[ ${#PACKAGES[@]} -gt 1 ]]; then
+    _AUTOBUILD_PKGNAME=$(IFS=-; echo "${PACKAGES[*]}")
+fi
+_AUTOBUILD_PID="$$"
+mkdir -p "$HOME/logs"
+_AUTOBUILD_LOG="$HOME/logs/autobuild-${_AUTOBUILD_PKGNAME}-${_AUTOBUILD_PID}.log"
+
+# Save original stdout/stderr on FDs 5 and 6, and tee all output to $_AUTOBUILD_LOG
+exec 5>&1 6>&2
+exec > >(tee -a "$_AUTOBUILD_LOG") 2>&1
+
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
 
 # Synchronize clock to prevent build errors from time skew
@@ -247,7 +260,11 @@ _finish_pkg_log() {
 }
 
 _pkg_log_exit_trap() {
+    local rc=$?
     _finish_pkg_log false
+    exec 1>&5 2>&6 5>&- 6>&- 2>/dev/null || true
+    sleep 0.1
+    exit $rc
 }
 trap _pkg_log_exit_trap EXIT
 
@@ -649,8 +666,72 @@ for PACKAGE in "${PACKAGES[@]}"; do
         fi
     fi
     
+    # Determine target version from build script
+    TARGET_VER=""
+    EVAL_SCRIPT=$(cat <<'EOF'
+pkg_dir="$CUSTOM_DIR"
+build_script="$CUSTOM_BUILD_SH"
+if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
+    source ~/lfs_packaging/shared-funcs.sh
+    while read -r func; do export -f "$func"; done < <(declare -F | awk '{print $3}')
+fi
+# Strip heredoc content from build script before searching for version variable.
+_nh_lines=$(awk "/<</ {
+    line = \$0; sub(/.*<<-?[[:space:]]*/, \"\", line)
+    gsub(/^'|'\$|^\"|\"\$/, \"\", line); gsub(/[[:space:]].*\$/, \"\", line)
+    if (length(line) > 0) { delim = line; in_here = 1; print NR \":\" \$0; next }
+}
+in_here && \$0 == delim { in_here = 0; next }
+in_here { next }
+{ print NR \":\" \$0 }
+" "$build_script" 2>/dev/null)
+ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+if [ -z "$ver_match" ]; then
+    ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
+fi
+version_line_num=""
+var_name=""
+if [ -n "$ver_match" ]; then
+    version_line_num=$(echo "$ver_match" | cut -d: -f1)
+    var_line=$(echo "$ver_match" | cut -d: -f2-)
+    var_name=$(echo "$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
+fi
+if [ -n "$version_line_num" ]; then
+    tmp_eval="/tmp/eval_autobuild_ver_$$.sh"
+    echo 'set +e' > "$tmp_eval"
+    echo 'export PATH=/opt/texlive/2025/bin/x86_64-linux:$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$tmp_eval"
+    if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
+        echo 'source ~/lfs_packaging/shared-funcs.sh' >> "$tmp_eval"
+    fi
+    head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$tmp_eval"
+    echo "echo \"\$$var_name\"" >> "$tmp_eval"
+    cd "$pkg_dir" && bash "$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
+    rm -f "$tmp_eval"
+fi
+EOF
+)
+    TARGET_VER=$(printf "%s" "$EVAL_SCRIPT" | target_run "CUSTOM_DIR=\"$CUSTOM_DIR\" CUSTOM_BUILD_SH=\"$CUSTOM_BUILD_SH\" bash -s" 2>/dev/null | tail -n 1)
+
+    # Skip logic for custom packages: evaluate version on VM before building
+    if [[ "$FORCE" != "true" ]]; then
+        INSTALLED_VER=$(target_run "[ -f /var/lib/custom-packages/$PACKAGE ] && head -n 1 /var/lib/custom-packages/$PACKAGE" 2>/dev/null | tr -d '\r\n[:space:]')
+        if [[ -n "$INSTALLED_VER" && -n "$TARGET_VER" ]]; then
+            if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
+                log "[LFS-AUTOBUILD] Skipping custom package $PACKAGE: version $INSTALLED_VER already installed (use -f to force build)."
+                _finish_pkg_log false
+                BUILDING_STACK="${_PREV_STACK:-}"
+                continue
+            fi
+        fi
+    fi
+
+    if [[ -n "$TARGET_VER" ]]; then
+        echo "[VERSION] $PACKAGE: $TARGET_VER"
+        log "Installing $PACKAGE version: $TARGET_VER"
+    fi
+    
     if [[ "$DRY_RUN" == "true" ]]; then
-        echo "DRY RUN: Would execute $CUSTOM_BUILD_SH on VM."
+        echo "DRY RUN: Would execute $CUSTOM_BUILD_SH on VM (version: ${TARGET_VER:-unknown})."
         _finish_pkg_log false
         continue
     fi
@@ -757,6 +838,7 @@ if [ -n "$new_ver" ]; then
         echo "$new_ver" | sudo tee /var/lib/custom-packages/"$TARGET_PKG" > /dev/null
     fi
     echo "Updated registry for $TARGET_PKG to version $new_ver"
+    echo "[VERSION] $TARGET_PKG: $new_ver"
 else
     echo "Could not determine version for $TARGET_PKG to update registry"
 fi
@@ -827,65 +909,6 @@ if [ -f "/tmp/build_start_timestamp_${TARGET_PKG}" ]; then
 fi
 EOF
 )
-    # Skip logic for custom packages: evaluate version on VM before building
-    if [[ "$FORCE" != "true" ]]; then
-        INSTALLED_VER=$(target_run "[ -f /var/lib/custom-packages/$PACKAGE ] && head -n 1 /var/lib/custom-packages/$PACKAGE" 2>/dev/null | tr -d '\r\n[:space:]')
-        
-        # Determine target version from build script
-        TARGET_VER=""
-        EVAL_SCRIPT=$(cat <<'EOF'
-pkg_dir="$CUSTOM_DIR"
-build_script="$CUSTOM_BUILD_SH"
-if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
-    source ~/lfs_packaging/shared-funcs.sh
-    while read -r func; do export -f "$func"; done < <(declare -F | awk '{print $3}')
-fi
-# Strip heredoc content from build script before searching for version variable.
-_nh_lines=$(awk "/<</ {
-    line = \$0; sub(/.*<<-?[[:space:]]*/, \"\", line)
-    gsub(/^'|'\$|^\"|\"\$/, \"\", line); gsub(/[[:space:]].*\$/, \"\", line)
-    if (length(line) > 0) { delim = line; in_here = 1; print NR \":\" \$0; next }
-}
-in_here && \$0 == delim { in_here = 0; next }
-in_here { next }
-{ print NR \":\" \$0 }
-" "$build_script" 2>/dev/null)
-ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
-if [ -z "$ver_match" ]; then
-    ver_match=$(echo "$_nh_lines" | grep -iE ':[[:space:]]*(export[[:space:]]+)?[a-zA-Z0-9_]*(version|VERSION|pkgver|PKGVER|pkg_ver|VER)=' | grep -vE '_(major|minor|micro|patch|dir|url|repo|min|max|code|hash|sha|md5)=' | tail -n 1)
-fi
-version_line_num=""
-var_name=""
-if [ -n "$ver_match" ]; then
-    version_line_num=$(echo "$ver_match" | cut -d: -f1)
-    var_line=$(echo "$ver_match" | cut -d: -f2-)
-    var_name=$(echo "$var_line" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//; s/=.*//' | tr -d '[:space:]')
-fi
-if [ -n "$version_line_num" ]; then
-    tmp_eval="/tmp/eval_autobuild_ver_$$.sh"
-    echo 'set +e' > "$tmp_eval"
-    echo 'export PATH=/opt/texlive/2025/bin/x86_64-linux:$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' >> "$tmp_eval"
-    if [ -f ~/lfs_packaging/shared-funcs.sh ]; then
-        echo 'source ~/lfs_packaging/shared-funcs.sh' >> "$tmp_eval"
-    fi
-    head -n "$version_line_num" "$build_script" | tr -d '\r' >> "$tmp_eval"
-    echo "echo \"\$$var_name\"" >> "$tmp_eval"
-    cd "$pkg_dir" && bash "$tmp_eval" 2>/dev/null | tail -n 1 | tr -d '\r\n[:space:]'
-    rm -f "$tmp_eval"
-fi
-EOF
-)
-        TARGET_VER=$(printf "%s" "$EVAL_SCRIPT" | target_run "CUSTOM_DIR=\"$CUSTOM_DIR\" CUSTOM_BUILD_SH=\"$CUSTOM_BUILD_SH\" bash -s" 2>/dev/null | tail -n 1)
-
-        if [[ -n "$INSTALLED_VER" && -n "$TARGET_VER" ]]; then
-            if [[ "$INSTALLED_VER" == "$TARGET_VER" ]]; then
-                log "[LFS-AUTOBUILD] Skipping custom package $PACKAGE: version $INSTALLED_VER already installed (use -f to force build)."
-                _finish_pkg_log false
-                BUILDING_STACK="${_PREV_STACK:-}"
-                continue
-            fi
-        fi
-    fi
 
     # Write REMOTE_SCRIPT to a file on VM to avoid piping/stdin consumption issues during build
     printf "%s\n" "$REMOTE_SCRIPT" | target_run "cat > /tmp/custom_build_runner_${PACKAGE}.sh && chmod +x /tmp/custom_build_runner_${PACKAGE}.sh"
@@ -3737,26 +3760,32 @@ if [[ "$UPSTREAM" == "true" && "$PACKAGE" == "llvm" && -n "$UPSTREAM_VERSION" ]]
     fi
 fi
 
+# Identify target version
+TARGET_VER="$LFS_VERSION"
+if [[ "$UPSTREAM" == "true" ]]; then
+    if [[ -n "$UPSTREAM_FULL" ]]; then
+        TARGET_VER="$UPSTREAM_FULL"
+    elif [[ -n "$UPSTREAM_VERSION" ]]; then
+        TARGET_VER="$UPSTREAM_VERSION"
+    fi
+fi
+
+# In Xorg multi-package mode, LFS_VERSION is never extracted from the URL block.
+# Try to recover it from DOWNLOAD_URLS by finding the URL that matches $PACKAGE.
+if [[ -z "$TARGET_VER" && "$XORG_MULTI_MODE" == "true" && ${#DOWNLOAD_URLS[@]} -gt 0 ]]; then
+    pkg_lower="${PACKAGE,,}"
+    for _url in "${DOWNLOAD_URLS[@]}"; do
+        _fname=$(basename "$_url")
+        # Match: libXpm-3.5.17.tar.xz  (case-insensitive on package name)
+        if echo "$_fname" | grep -qi "^${pkg_lower}[-_][0-9]"; then
+            TARGET_VER=$(echo "$_fname" | perl -nle 'while (m{[-_]\K[0-9][0-9a-z.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2)$//')
+            [[ -n "$TARGET_VER" ]] && log "Extracted Xorg multi-mode version for $PACKAGE from URL: $TARGET_VER" && break
+        fi
+    done
+fi
+
 # Skip logic for official packages
 if [[ "$FORCE" != "true" ]]; then
-    # Identify target version for comparison
-    TARGET_VER="$LFS_VERSION"
-    [[ "$UPSTREAM" == "true" && -n "$UPSTREAM_VERSION" ]] && TARGET_VER="$UPSTREAM_VERSION"
-
-    # In Xorg multi-package mode, LFS_VERSION is never extracted from the URL block.
-    # Try to recover it from DOWNLOAD_URLS by finding the URL that matches $PACKAGE.
-    if [[ -z "$TARGET_VER" && "$XORG_MULTI_MODE" == "true" && ${#DOWNLOAD_URLS[@]} -gt 0 ]]; then
-        pkg_lower="${PACKAGE,,}"
-        for _url in "${DOWNLOAD_URLS[@]}"; do
-            _fname=$(basename "$_url")
-            # Match: libXpm-3.5.17.tar.xz  (case-insensitive on package name)
-            if echo "$_fname" | grep -qi "^${pkg_lower}[-_][0-9]"; then
-                TARGET_VER=$(echo "$_fname" | perl -nle 'while (m{[-_]\K[0-9][0-9a-z.]*(?:\.[0-9]+[a-z0-9.]*)*}g) { print $& }' | head -n 1 | sed -E 's/\.(tar\.(xz|bz2|gz|lz|lzma|zst)|zip|tgz|tbz2)$//')
-                [[ -n "$TARGET_VER" ]] && log "Extracted Xorg multi-mode version for $PACKAGE from URL: $TARGET_VER" && break
-            fi
-        done
-    fi
-
     # Identify installed version
     INSTALLED_VER=$(ssh_lfs "[ -f /var/lib/book-packages/$PACKAGE ] && head -n 1 /var/lib/book-packages/$PACKAGE" 2>/dev/null | tr -d '\r')
     
@@ -3773,6 +3802,12 @@ if [[ "$FORCE" != "true" ]]; then
         _finish_pkg_log false
         continue
     fi
+fi
+
+PKG_VER="${TARGET_VER:-$LFS_VERSION}"
+if [[ -n "$PKG_VER" ]]; then
+    echo "[VERSION] $PACKAGE: $PKG_VER"
+    log "Installing $PACKAGE version: $PKG_VER"
 fi
 
 # Early URL rewriting for KDE single packages to prevent pruning
@@ -4289,6 +4324,8 @@ fi
                 loop_content = loop_content "\n        if [ \"$PKGNAME\" != \"${METAPACKAGE_TARGET}\" ] && [ \"$DIRNAME\" != \"${METAPACKAGE_TARGET}\" ]; then continue; fi";
                 loop_content = loop_content "\n    elif [ -n \"${PACKAGE}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ]; then";
                 loop_content = loop_content "\n        if [ \"$PKGNAME\" != \"${PACKAGE}\" ] && [ \"$DIRNAME\" != \"${PACKAGE}\" ]; then continue; fi\n    fi";
+                loop_content = loop_content "\n    echo \"[VERSION] ${PKGNAME}: ${PKGVER}\"";
+                loop_content = loop_content "\n    echo \"Installing ${PKGNAME} version: ${PKGVER}\"";
                 loop_content = loop_content "\n    echo \"[KDE-LOOP] Building component: $PKGNAME\"";
                 loop_content = loop_content "\n    TARBALL=$(echo \"$line\" | awk \x27{print $2}\x27)";
                 loop_content = loop_content "\n    if [ ! -f \"/sources/archives/${TARBALL}\" ] && { [ -z \"${METAPACKAGE_TARGET}\" ] && [ \"${PACKAGE}\" != \"frameworks6\" ] && [ \"${PACKAGE}\" != \"plasma-all\" ] && [ \"${PACKAGE}\" != \"xorg-lib\" ] || [ -n \"${METAPACKAGE_TARGET}\" ]; }; then continue; fi";
@@ -4862,6 +4899,7 @@ if [[ "$FRAMEWORKS_MODE" == "false" && "$PLASMA_MODE" == "false" && "$XORG_MULTI
     sudo chmod 755 "/var/lib/book-packages/${PACKAGE}"
     sudo rm -f "/tmp/pkg_inventory/${PACKAGE}"
     echo "Recorded installed files for $PACKAGE in /var/lib/book-packages/$PACKAGE"
+    echo "[VERSION] $PACKAGE: ${VERSION_TO_RECORD:-$PKG_VER}"
 fi
 
 if [[ "$PACKAGE" == "llvm" ]]; then

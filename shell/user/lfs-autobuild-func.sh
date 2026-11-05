@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 
 lfs_autobuild() {
-    local logfile="/tmp/lfs-autobuild.log"
-    # Truncate log if it exceeds 100MB to keep searches fast
-    if [[ -f "$logfile" ]] && [[ $(stat -c%s "$logfile") -gt 104857600 ]]; then
-        echo "--- Log truncated at $(date) (over 100MB) ---" > "$logfile"
-    fi
-    echo "--- Build session starting at $(date) ---" | tee -a "$logfile" >/dev/null
-    
     # Only source SSH helpers and sync scripts when running on the host
     if [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]]; then
         source "$NIXCFG/shell/user/08-ssh.sh"
@@ -25,15 +18,15 @@ lfs_autobuild() {
             < "$NIXCFG/shell/user/lfs-updates.sh"
         ssh_lfs "cat > ~/.lfs_scripts/lfs-vm-bootstrap.sh" \
             < "$NIXCFG/shell/user/lfs-vm-bootstrap.sh"
+        ssh_lfs "cat > ~/.lfs_scripts/lfs-autobuild-func.sh" \
+            < "$NIXCFG/shell/user/lfs-autobuild-func.sh"
         ssh_lfs "grep -q 'lfs-vm-bootstrap.sh' ~/.bashrc || echo 'source ~/.lfs_scripts/lfs-vm-bootstrap.sh 2>/dev/null' >> ~/.bashrc"
-        echo "Building $@..." | tee -a "$logfile" >/dev/null
-        ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")" 2>&1 | tee -a "$logfile"
-        return ${PIPESTATUS[0]}
+        ssh_lfs "bash ~/.lfs_autobuild.sh $(printf '%q ' "$@")"
+        return $?
     else
         # Running directly on the VM, no syncing needed, just execute it locally
-        echo "Building $@..." | tee -a "$logfile" >/dev/null
-        bash ~/.lfs_autobuild.sh "$@" 2>&1 | tee -a "$logfile"
-        return ${PIPESTATUS[0]}
+        bash ~/.lfs_autobuild.sh "$@"
+        return $?
     fi
 }
 
