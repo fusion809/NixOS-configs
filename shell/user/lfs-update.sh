@@ -1452,7 +1452,7 @@ PIPSCRIPT
 }
 
 lfs_updc() {
-    lfs_update "$@"
+    lfs_update "$@" || return $?
 
     # Only check custom packages — book-package inventory files are legacy artefacts.
     local broken_pkgs=$(ssh_lfs 'find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')

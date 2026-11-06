@@ -160,7 +160,7 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
                     for out_line in proc.stdout.splitlines():
                         if out_line.startswith("VER_RESULT:"):
                             res = out_line[11:].strip()
-                            if res and "429" not in res and "error" not in res.lower():
+                            if res and is_plausible_version(res, local_ver):
                                 remote_ver = res
                                 break
                     if remote_ver:
@@ -190,6 +190,22 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
                     time.sleep(0.5)
 
     return remote_ver or "FAILED"
+
+
+def is_plausible_version(candidate, local):
+    """Validate that candidate looks like a plausible version update relative to local."""
+    if not candidate or candidate.lower() in {"failed", "missing", "none", "error"}:
+        return False
+    # Reject HTTP error indicators / rate limits
+    if re.search(r'(429|500|502|503|504|error|denied|timeout|not found|retry)', candidate, re.IGNORECASE):
+        return False
+    # Reject 4-digit year anomalies if local version is semver (e.g. local 2.4.0 vs remote 2026)
+    if re.match(r'^(?:19|20)\d{2}$', candidate) and not re.match(r'^(?:19|20)\d{2}', local):
+        return False
+    # Reject bare small integer if local has dots (e.g. Retry-After: 65, HTTP status 10, etc.)
+    if re.match(r'^\d{1,2}$', candidate) and '.' in local:
+        return False
+    return True
 
 
 def evaluate_package(script_path, local_vers):
@@ -224,6 +240,8 @@ def _strip_archive(v):
 def _is_newer(remote, local):
     """Return True if remote is strictly newer than local using sort -V semantics."""
     if remote == local:
+        return False
+    if not is_plausible_version(remote, local):
         return False
     r = remote.replace("-", ".")
     l = local.replace("-", ".")
@@ -310,8 +328,8 @@ def main():
 
     rows = []
 
-    # 16 workers: most time is network I/O
-    with ThreadPoolExecutor(max_workers=16) as executor:
+    # 8 workers: balanced network concurrency without overwhelming DNS / rate limits
+    with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {executor.submit(evaluate_package, s, local_vers): s for s in eligible_scripts}
         for future in as_completed(futures):
             try:
