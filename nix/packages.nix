@@ -6,8 +6,9 @@ with pkgs;
   # Assorted apps
   ###############################################################
   unstable.antigravity-ide
-  unstable.brave-origin
   unstable.chatgpt
+  unstable.firefox
+  unstable.tor-browser
   discord
   gimp
   google-chrome

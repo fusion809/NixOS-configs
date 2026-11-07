@@ -67,13 +67,9 @@ handle() {
 
     local target=""
 
-    if [[ "$w_class" =~ brave-browser ]]; then
+    if [[ "$w_class" =~ firefox ]]; then
         if is_floating; then return; fi
-        if [[ "$w_title" == "New Private Tab - Brave" ]]; then
-            target=3
-        else
-            target=15
-        fi
+        target=15
         dispatch_move "$target" "$w_address"
 
     elif [[ "$w_class" =~ vlc ]]; then
