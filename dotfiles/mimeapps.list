@@ -5,7 +5,7 @@ application/x-shellscript=antigravity.desktop;
 audio/mpeg=vlc.desktop;vlc-2.desktop;
 audio/x-wav=vlc.desktop;
 chemical/x-marvin=MarvinSketch.desktop;
-image/jpeg=org.kde.gwenview.desktop;okularApplication_kimgio.desktop;brave-browser.desktop;google-chrome.desktop;com.brave.Browser.desktop;pinta.desktop;com.google.Chrome.desktop;gimp.desktop;
+image/jpeg=org.kde.gwenview.desktop;okularApplication_kimgio.desktop;firefox.desktop;google-chrome.desktop;com.brave.Browser.desktop;pinta.desktop;com.google.Chrome.desktop;gimp.desktop;
 image/png=org.kde.gwenview.desktop;gimp.desktop;com.brave.Browser.desktop;google-chrome.desktop;pinta.desktop;okularApplication_kimgio.desktop;
 image/svg+xml=org.inkscape.Inkscape.desktop;
 text/html=google-chrome-stable-2.desktop;google-chrome-stable.desktop;
@@ -13,7 +13,7 @@ text/markdown=antigravity.desktop;
 text/plain=antigravity.desktop;
 text/x-julia=antigravity.desktop;
 text/x-python=antigravity.desktop;
-video/mp4=vlc.desktop;brave-browser.desktop;vlc-3.desktop;
+video/mp4=vlc.desktop;firefox.desktop;vlc-3.desktop;
 video/quicktime=vlc.desktop;
 video/webm=/home/fusion809/.local/share/applications/vlc-5.desktop;
 video/x-matroska=vlc.desktop;
@@ -44,7 +44,8 @@ x-scheme-handler/http=google-chrome.desktop
 x-scheme-handler/https=google-chrome.desktop
 x-scheme-handler/kdeconnect=org.kde.dolphin.desktop
 x-scheme-handler/unknown=google-chrome.desktop
+x-scheme-handler/codex=chatgpt.desktop
 
 [Removed Associations]
 image/jpeg=eog.desktop;
-image/png=brave-browser.desktop;com.google.Chrome.desktop;
+image/png=firefox.desktop;com.google.Chrome.desktop;
