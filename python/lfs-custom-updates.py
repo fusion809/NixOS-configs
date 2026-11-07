@@ -196,6 +196,11 @@ def is_plausible_version(candidate, local):
     """Validate that candidate looks like a plausible version update relative to local."""
     if not candidate or candidate.lower() in {"failed", "missing", "none", "error"}:
         return False
+    # Git commit IDs are valid versions for rolling -git packages. Their hex
+    # digits can coincidentally contain strings such as "504", which must not
+    # be mistaken for HTTP status codes by the check below.
+    if re.fullmatch(r"[0-9a-fA-F]{7,40}", candidate):
+        return True
     # Reject HTTP error indicators / rate limits
     if re.search(r'(429|500|502|503|504|error|denied|timeout|not found|retry)', candidate, re.IGNORECASE):
         return False

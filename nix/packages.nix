@@ -7,6 +7,7 @@ with pkgs;
   ###############################################################
   unstable.antigravity-ide
   brave
+  unstable.chatgpt
   discord
   gimp
   google-chrome
