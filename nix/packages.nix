@@ -6,7 +6,7 @@ with pkgs;
   # Assorted apps
   ###############################################################
   unstable.antigravity-ide
-  brave
+  unstable.brave-origin
   unstable.chatgpt
   discord
   gimp

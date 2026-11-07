@@ -23,6 +23,18 @@
     in
     with pkgs;
     {
+      # Newer VS Code archives no longer always include their bundled ripgrep
+      # binary. Nixpkgs' postPatch removes it unconditionally before linking
+      # the Nix-provided binary, so tolerate the missing file and create its
+      # parent directory when needed.
+      vscode = super.vscode.overrideAttrs (oldAttrs: {
+        postPatch = builtins.replaceStrings
+          [ "rm resources/app/node_modules/@vscode/ripgrep/bin/rg" ]
+          [
+            "mkdir -p resources/app/node_modules/@vscode/ripgrep/bin\nrm -f resources/app/node_modules/@vscode/ripgrep/bin/rg"
+          ]
+          oldAttrs.postPatch;
+      });
       openraPackages = import (forkNixpkgsPath + /openra/default.nix) {
         inherit pkgs homeDir;
       }; # Import as a set
