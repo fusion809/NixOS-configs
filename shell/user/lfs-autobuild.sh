@@ -182,18 +182,26 @@ if [[ ${#PACKAGES[@]} -eq 0 ]]; then
     exit 1
 fi
 
-# Set up process-wide log file: $HOME/logs/autobuild-pkgname-PID.log
-_AUTOBUILD_PKGNAME="${PACKAGES[0]:-unknown}"
-if [[ ${#PACKAGES[@]} -gt 1 ]]; then
-    _AUTOBUILD_PKGNAME=$(IFS=-; echo "${PACKAGES[*]}")
-fi
+# Set up a per-package process log. The filename is switched as the package
+# loop advances, so a long list of requested packages never becomes part of
+# the filename.
 _AUTOBUILD_PID="$$"
 mkdir -p "$HOME/logs"
-_AUTOBUILD_LOG="$HOME/logs/autobuild-${_AUTOBUILD_PKGNAME}-${_AUTOBUILD_PID}.log"
 
-# Save original stdout/stderr on FDs 5 and 6, and tee all output to $_AUTOBUILD_LOG
+# Save original stdout/stderr on FDs 5 and 6. All log tees write back to the
+# original stdout, even when the destination log is changed during a build.
 exec 5>&1 6>&2
-exec > >(tee -a "$_AUTOBUILD_LOG") 2>&1
+
+_set_autobuild_log() {
+    local pkg="${1:-unknown}"
+    # Keep the basename comfortably below the filesystem's NAME_MAX.
+    pkg="${pkg//[^[:alnum:]._-]/_}"
+    pkg="${pkg:0:180}"
+    _AUTOBUILD_LOG="$HOME/logs/autobuild-${pkg}-${_AUTOBUILD_PID}.log"
+    exec > >(tee -a "$_AUTOBUILD_LOG" >&5) 2>&1
+}
+
+_set_autobuild_log "${PACKAGES[0]:-unknown}"
 
 log() { echo "[$(date +'%H:%M:%S')] $*"; }
 
@@ -420,6 +428,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
         log "Skipping '$PACKAGE': already in build stack (circular dependency guard)."
         continue
     fi
+    _set_autobuild_log "$PACKAGE"
     _PREV_STACK="$BUILDING_STACK"
     export BUILDING_STACK="${BUILDING_STACK:+${BUILDING_STACK}:}${PACKAGE}"
 

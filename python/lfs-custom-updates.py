@@ -13,6 +13,25 @@ _ARCHIVE_RE = re.compile(
 )
 
 
+def _find_texlive_bin():
+    """Find the newest installed TeX Live binary directory, if present."""
+    try:
+        versions = [
+            entry.name
+            for entry in os.scandir("/opt/texlive")
+            if entry.name.isdigit() and entry.is_dir(follow_symlinks=False)
+        ]
+    except OSError:
+        return ""
+    if not versions:
+        return ""
+    candidate = os.path.join("/opt/texlive", max(versions), "bin", "x86_64-linux")
+    return candidate if os.path.isdir(candidate) else ""
+
+
+_TEXLIVE_BIN = _find_texlive_bin()
+
+
 def get_local_versions():
     local_vers = {}
     for d in ["/var/lib/custom-packages", "/var/lib/book-packages"]:
@@ -42,9 +61,17 @@ def get_broken_pkgs():
                     continue
                 try:
                     with open(entry.path, "r", errors="ignore") as f:
-                        content = f.read()
-                    lines = [l for l in content.splitlines() if l.strip()]
-                    # Ignore pure failed-build marker files (not installed packages)
+                        # Inventories can contain very large file lists. We only
+                        # need to know whether there are two non-empty lines, so
+                        # stop reading as soon as that is established.
+                        lines = []
+                        for line in f:
+                            line = line.strip()
+                            if line:
+                                lines.append(line)
+                                if len(lines) == 2:
+                                    break
+                    # Ignore empty files and pure failed-build marker files.
                     if not lines or lines[0] == "BUILD_FAILED":
                         continue
                     if len(lines) <= 1:
@@ -79,6 +106,9 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
     match_pattern1 = re.compile(r"^[ \t]*(?:export[ \t]+)?(version|VERSION|pkgver|PKGVER|pkg_ver|PKG_VER|VER)=([^\n]+)")
     match_pattern2 = re.compile(r"^[ \t]*(?:export[ \t]+)?([a-zA-Z0-9_]*(?:version|VERSION|pkgver|PKGVER|pkg_ver|VER))=([^\n]+)")
 
+    # Build scripts commonly declare dependency versions later in the file.
+    # The package version is the first top-level canonical version variable;
+    # retaining the last match can silently report a dependency's version.
     for i, line in enumerate(lines):
         if exclude_pattern.search(line):
             continue
@@ -86,6 +116,7 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
         if m:
             var_name = m.group(1)
             ver_line_idx = i
+            break
 
     if ver_line_idx == -1:
         for i, line in enumerate(lines):
@@ -95,6 +126,7 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
             if m:
                 var_name = m.group(1)
                 ver_line_idx = i
+                break
 
     remote_ver = ""
     if ver_line_idx != -1:
@@ -105,7 +137,7 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
             safe_lines = get_safe_lines(lines, ver_line_idx)
             snippet = (
                 "set +e\n"
-                "export PATH=/opt/texlive/2025/bin/x86_64-linux:$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\n"
+                f'export PATH="{_TEXLIVE_BIN + ":" if _TEXLIVE_BIN else ""}$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"\n'
                 "export LFP=${LFP:-$HOME/lfs_packaging}\n"
                 f"export INST_VER={repr(local_ver)}\n"
                 "[ -f ~/lfs_packaging/shared-funcs.sh ] && source ~/lfs_packaging/shared-funcs.sh\n"
@@ -160,8 +192,12 @@ def _fetch_remote_ver(script_path, pkg_basename, pkg_dir, content, local_ver):
                     for out_line in proc.stdout.splitlines():
                         if out_line.startswith("VER_RESULT:"):
                             res = out_line[11:].strip()
-                            if res and is_plausible_version(res, local_ver):
-                                remote_ver = res
+                            if res:
+                                # Do not rerun a successful lookup just because
+                                # its value is implausible. The shell expression
+                                # may perform several network requests; retrying
+                                # it for every suspicious tag can add minutes.
+                                remote_ver = res if is_plausible_version(res, local_ver) else "FAILED"
                                 break
                     if remote_ver:
                         break
@@ -204,9 +240,28 @@ def is_plausible_version(candidate, local):
     # Reject HTTP error indicators / rate limits
     if re.search(r'(429|500|502|503|504|error|denied|timeout|not found|retry)', candidate, re.IGNORECASE):
         return False
-    # Reject 4-digit year anomalies if local version is semver (e.g. local 2.4.0 vs remote 2026)
-    if re.match(r'^(?:19|20)\d{2}$', candidate) and not re.match(r'^(?:19|20)\d{2}', local):
+    # Reject malformed versions and date-based tags from repositories that also
+    # contain unrelated projects' releases (e.g. libva's 20110104.5.3.0.0035).
+    # tzdata uses a four-digit year followed directly by a release letter
+    # (for example, 2026f), with no separator between them.
+    tzdata_release = re.fullmatch(r"(?:19|20)[0-9]{2}[a-z]", candidate, re.IGNORECASE)
+    if ".." in candidate or (
+        not re.fullmatch(r"[0-9]+(?:[._+-][0-9A-Za-z]+)*", candidate)
+        and not tzdata_release
+    ):
         return False
+    # Reject year-prefixed tags when this package uses ordinary numeric versions.
+    if re.match(r'^(?:19|20)\d{2}(?:\.|$)', candidate) and not re.match(r'^(?:19|20)\d{2}(?:\.|$)', local):
+        return False
+    # A very large major-version jump is commonly a tag from another project or
+    # an obsolete versioning scheme (notably KDE's old YY.MM tags). Require a
+    # human check rather than presenting it as an actionable update.
+    local_major = re.match(r"^([0-9]+)", local)
+    remote_major = re.match(r"^([0-9]+)", candidate)
+    if local_major and remote_major:
+        old_major, new_major = int(local_major.group(1)), int(remote_major.group(1))
+        if new_major > max(old_major + 2, old_major * 2):
+            return False
     # Reject bare small integer if local has dots (e.g. Retry-After: 65, HTTP status 10, etc.)
     if re.match(r'^\d{1,2}$', candidate) and '.' in local:
         return False

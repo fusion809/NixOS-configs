@@ -20,6 +20,9 @@ sync_to_vm() {
         < "$NIXCFG/shell/user/lfs-updates.sh"
     ssh_lfs "cat > ~/.lfs_scripts/lfs-vm-bootstrap.sh" \
         < "$NIXCFG/shell/user/lfs-vm-bootstrap.sh"
+    ssh_lfs "mkdir -p ~/lfs-scripts"
+    ssh_lfs "cat > ~/lfs-scripts/updates_check_and_run.sh && chmod +x ~/lfs-scripts/updates_check_and_run.sh" \
+        < "$NIXCFG/shell/user/updates-check-and-run.sh"
     ssh_lfs "cat > ~/.lfs_autobuild.sh && chmod +x ~/.lfs_autobuild.sh" \
         < "$NIXCFG/shell/user/lfs-autobuild.sh"
     ssh_lfs "cat > ~/.lfs_scripts/xorg_loop.awk" \

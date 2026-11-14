@@ -646,6 +646,34 @@ EOF
     fi
 }
 
+lfs_get_cached_custom_updates() {
+    ssh_lfs "python3 -c 'import os, sys, time
+path = os.path.expanduser(\"~/logs/updates.log\")
+try:
+    if time.time() - os.path.getmtime(path) > 1200:
+        raise RuntimeError()
+    with open(path, errors=\"ignore\") as report:
+        lines = report.read().splitlines()
+    valid_header = any(line.lstrip().startswith(\"Package\") and \"|\" in line and \"Remote\" in line for line in lines)
+    if not valid_header and not any(\"No updates available\" in line for line in lines):
+        raise RuntimeError()
+    print(\"__LFS_UPDATE_CACHE_HIT__\")
+    for line in lines:
+        if \"[UPDATE]\" not in line and \"[FILES MISSING]\" not in line:
+            continue
+        fields = line.split(\"|\")
+        if len(fields) < 3:
+            continue
+        package = fields[0].strip()
+        local_version = fields[1].strip()
+        remote_fields = fields[2].split()
+        if package and package != \"Package\" and local_version and remote_fields:
+            print(package, local_version, remote_fields[0])
+except (OSError, ValueError, RuntimeError):
+    sys.exit(1)
+'"
+}
+
 lfs_check_custom_updates() {
     # Only source SSH helpers when running on the host
     [[ -f "$NIXCFG/shell/user/08-ssh.sh" ]] && source "$NIXCFG/shell/user/08-ssh.sh"
@@ -668,6 +696,19 @@ lfs_check_custom_updates() {
     local results=""
     local total=0
     local count=0
+
+    # `updates` has already checked the same upstream versions and writes its
+    # completed table to this report. Reuse it for updatec while it is fresh,
+    # instead of repeating hundreds of network requests before any build starts.
+    local cached_report
+    cached_report=$(lfs_get_cached_custom_updates 2>/dev/null)
+    if [[ "$cached_report" == "__LFS_UPDATE_CACHE_HIT__"* ]]; then
+        local cached_rows="${cached_report#*$'\n'}"
+        while IFS= read -r line; do
+            [[ -n "$line" ]] && printf '%s\n' "$line"
+        done <<< "$cached_rows"
+        return 0
+    fi
 
     while read -r line; do
         line=$(echo "$line" | tr -d '\r')
@@ -708,6 +749,28 @@ lfs_check_custom_updates() {
     done <<< "$results"
 }
 
+
+lfs_custom_broken_inventory_list() {
+    # Inspect only the first two lines of each top-level inventory file.
+    # Running head, grep, wc, and basename once per file caused updatec startup
+    # to reread every full inventory before it could check for updates.
+    ssh_lfs "python3 -c 'import os
+directory = \"/var/lib/custom-packages\"
+skip = {\"COMMIT_EDITMSG\", \"HEAD\", \"config\", \"description\", \"ORIG_HEAD\"}
+if os.path.isdir(directory):
+    for entry in os.scandir(directory):
+        if entry.name.startswith(\".\") or entry.name in skip or not entry.is_file(follow_symlinks=False):
+            continue
+        try:
+            with open(entry.path, \"r\", errors=\"ignore\") as inventory:
+                first = inventory.readline().rstrip(\"\\r\\n\")
+                second = inventory.readline()
+            if first == \"BUILD_FAILED\" or not second or not second.endswith(\"\\n\"):
+                print(entry.name)
+        except OSError:
+            pass
+'"
+}
 
 lfs_update() {
     local dry_run=false
@@ -761,7 +824,7 @@ lfs_update() {
     # Only check /var/lib/custom-packages — book-package files in /var/lib/book-packages are legacy
     # artefacts and must never trigger an auto-rebuild via updatec/update.
     echo "Checking for packages with missing file inventories..."
-    local broken_pkgs_raw=$(ssh_lfs 'find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
+    local broken_pkgs_raw=$(lfs_custom_broken_inventory_list 2>/dev/null | tr -d '\r')
     local broken_pkgs=()
     while IFS= read -r bp; do
         [[ -z "$bp" ]] && continue
@@ -1455,7 +1518,7 @@ lfs_updc() {
     lfs_update "$@" || return $?
 
     # Only check custom packages — book-package inventory files are legacy artefacts.
-    local broken_pkgs=$(ssh_lfs 'find /var/lib/custom-packages -maxdepth 1 -type f ! -name ".*" 2>/dev/null | grep -vE "/(COMMIT_EDITMSG|HEAD|config|description|ORIG_HEAD)$" | while read -r f; do (head -n 1 "$f" | grep -q "^BUILD_FAILED$" || [ $(wc -l < "$f") -le 1 ]) && basename "$f"; done' 2>/dev/null | tr -d '\r')
+    local broken_pkgs=$(lfs_custom_broken_inventory_list 2>/dev/null | tr -d '\r')
 
     if [ -z "$broken_pkgs" ]; then
         rm_old_libs

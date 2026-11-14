@@ -105,7 +105,21 @@ in
         pkg = (inputs.waybar.packages.${pkgs.stdenv.hostPlatform.system}.default).overrideAttrs (old: {
           # Disable tests to avoid missing catch2 dependency and flaky test timeouts
           doCheck = false;
-          mesonFlags = (old.mesonFlags or [ ]) ++ [ "-Dtests=disabled" ];
+          # The flake package flags include options removed from this Waybar
+          # revision. Meson rejects the entire configure when it sees them.
+          mesonFlags =
+            builtins.filter
+              (
+                flag:
+                !(builtins.any (option: pkgs.lib.hasPrefix "-D${option}=" flag) [
+                  "wwan"
+                  "mango"
+                  "niri"
+                  "umbriel"
+                ])
+              )
+              (old.mesonFlags or [ ])
+            ++ [ "-Dtests=disabled" ];
         });
       in
       pkg // { override = args: pkg; };
